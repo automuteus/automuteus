@@ -21,7 +21,7 @@ func main() {
 	captureResults := make(chan capture.GameState)
 
 	//start the background worker that should be capturing the screen to monitor game state changes
-	//go capSettings.CaptureLoop(captureResults)
+	go capSettings.CaptureLoop(captureResults)
 
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {

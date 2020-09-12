@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+const DEBUG_DONT_TRANSITION = false
 const TempImageFilename = "temp.png"
 
 const discussXStartScalar = 0.28
@@ -104,30 +105,38 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState) {
 			gameStrings := genericCapture(settings.endingBounds)
 			if intersects(gameStrings, BeginningStrings) {
 				log.Println("Game has begun!")
-				res <- GAME
-				gameState = GAME
+				if !DEBUG_DONT_TRANSITION {
+					res <- GAME
+					gameState = GAME
+				}
 			}
 		case GAME:
 			discussStrings := genericCapture(settings.discussBounds)
 			if intersects(discussStrings, DiscussionStrings) {
 				log.Println("Discussion phase has begun!")
-				res <- DISCUSS
-				gameState = DISCUSS
+				if !DEBUG_DONT_TRANSITION {
+					res <- DISCUSS
+					gameState = DISCUSS
+				}
 			} else {
 				//only check the end strings if we clearly havent begun a discussion
 				endStrings := genericCapture(settings.endingBounds)
 				if intersects(endStrings, EndgameStrings) {
 					log.Println("Game is over!")
-					res <- PREGAME
-					gameState = PREGAME
+					if !DEBUG_DONT_TRANSITION {
+						res <- PREGAME
+						gameState = PREGAME
+					}
 				}
 			}
 		case DISCUSS:
 			endDiscussStrings := genericCapture(settings.discussBounds)
 			if intersects(endDiscussStrings, EndDiscussionStrings) {
 				log.Println("Discussion is over!")
-				res <- GAME
-				gameState = GAME
+				if !DEBUG_DONT_TRANSITION {
+					res <- GAME
+					gameState = GAME
+				}
 			}
 		}
 

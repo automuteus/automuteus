@@ -10,7 +10,11 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 )
+
+const AmongUsDefaultName = "Player"
+const AmongUsDefaultColor = "Cyan"
 
 const CommandPrefix = ".au"
 
@@ -24,16 +28,21 @@ type DiscordUser struct {
 var GuildMembersCache = make(map[string]DiscordUser)
 
 type UserData struct {
-	user       DiscordUser
-	voiceState discordgo.VoiceState
-
+	user         DiscordUser
+	voiceState   discordgo.VoiceState
+	tracking     bool
 	amongUsColor string
 	amongUsName  string
+	amongUsAlive bool
 }
 
 var VoiceStatusCache = make(map[string]UserData)
 
+var DelaySec = 1
+
 var ExclusiveChannelId = ""
+
+var TrackingVoiceId = ""
 
 func MakeAndStartBot(token, guild, channel string, results chan capture.GameState) {
 	ExclusiveChannelId = channel
@@ -88,33 +97,44 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 		case capture.KILL:
 			return
 		case capture.PREGAME:
-			muteAllGuildMembers(dg, guild, false)
+			if ExclusiveChannelId != "" {
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
+			}
+			muteAllTrackedMembers(dg, guild, false)
 		case capture.GAME:
-			muteAllGuildMembers(dg, guild, true)
+			if ExclusiveChannelId != "" {
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", DelaySec))
+			}
+			time.Sleep(time.Second * time.Duration(DelaySec))
+			muteAllTrackedMembers(dg, guild, true)
 		case capture.DISCUSS:
-			muteAllGuildMembers(dg, guild, false)
+			if ExclusiveChannelId != "" {
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting players!"))
+			}
+			muteAllTrackedMembers(dg, guild, false)
 		}
 	}
 }
 
-func muteAllGuildMembers(dg *discordgo.Session, guildId string, mute bool) {
-
-	for user, _ := range VoiceStatusCache {
-		buf := bytes.NewBuffer([]byte{})
-		if mute {
-			buf.WriteString("Muting ")
-		} else {
-			buf.WriteString("Unmuting ")
-		}
-		buf.WriteString(user)
-		//buf.WriteString(v.User.Username)
-		//if v.Nick != "" {
-		//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
-		//}
-		log.Println(buf.String())
-		err := guildMemberMute(dg, guildId, user, mute)
-		if err != nil {
-			log.Println(err)
+func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool) {
+	for user, v := range VoiceStatusCache {
+		if v.tracking {
+			buf := bytes.NewBuffer([]byte{})
+			if mute {
+				buf.WriteString("Muting ")
+			} else {
+				buf.WriteString("Unmuting ")
+			}
+			buf.WriteString(v.user.userName)
+			//buf.WriteString(v.User.Username)
+			//if v.Nick != "" {
+			//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
+			//}
+			log.Println(buf.String())
+			err := guildMemberMute(dg, guildId, user, mute)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -131,11 +151,14 @@ func guildMemberMute(session *discordgo.Session, guildID string, userID string, 
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
 func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-	log.Println("Members Chunk Update")
-	//if the user is already in the voice status cache
+	//if the user is already in the voice status cache, only update if we don't know the voice channel to track,
+	//or the user has ENTERED this voice channel
 	if v, ok := VoiceStatusCache[m.UserID]; ok {
 		v.voiceState = *m.VoiceState
+		//only track if we have no tracked channel so far, or the user is in the tracked channel
+		v.tracking = TrackingVoiceId == "" || m.ChannelID == TrackingVoiceId
 		VoiceStatusCache[m.UserID] = v
+		log.Printf("Saw a cached user's voice status change, tracking: %v\n", v.tracking)
 	} else {
 		user := DiscordUser{}
 		//if we know of the user from the more general cache (we should)
@@ -150,12 +173,16 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 				discriminator: "",
 			}
 		}
-
+		//only track if we have no tracked channel so far, or the user is in the tracked channel. Otherwise, don't track
+		tracking := TrackingVoiceId == "" || m.ChannelID == TrackingVoiceId
+		log.Printf("Saw a user's voice status change, tracking: %v\n", tracking)
 		VoiceStatusCache[m.UserID] = UserData{
 			user:         user,
 			voiceState:   *m.VoiceState,
-			amongUsColor: "",
-			amongUsName:  "",
+			tracking:     tracking,
+			amongUsColor: AmongUsDefaultColor,
+			amongUsName:  AmongUsDefaultName,
+			amongUsAlive: true,
 		}
 	}
 }
@@ -187,34 +214,85 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				if len(args[1:]) == 0 {
 					//TODO print usage of this command specifically
 				} else {
-
-					for _, v := range args[1:] {
-						if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
-							//strip the special characters off front and end
-							idLookup := v[3 : len(v)-1]
-							for id, user := range GuildMembersCache {
-								if id == idLookup {
-									VoiceStatusCache[id] = UserData{
-										user:         user,
-										voiceState:   discordgo.VoiceState{},
-										amongUsColor: "",
-										amongUsName:  "",
-									}
-									if user.nick != "" {
-										s.ChannelMessageSend(m.ChannelID, "Added "+user.userName+" ("+user.nick+") to game!")
-									} else {
-										s.ChannelMessageSend(m.ChannelID, "Added "+user.userName+" to game!")
-									}
-									break
-								}
-							}
-						} else {
-							s.ChannelMessageSend(m.ChannelID, "I don't currently support any syntax beyond `@` direct mentions, sorry!")
-						}
+					responses := processAddUsersArgs(args[1:])
+					buf := bytes.NewBuffer([]byte("Results:\n"))
+					for name, msg := range responses {
+						buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
 					}
+					s.ChannelMessageSend(m.ChannelID, buf.String())
 				}
+			} else if args[0] == "track" || args[0] == "t" {
+				if len(args[1:]) == 0 {
+					//TODO print usage of this command specifically
+				} else {
+					channelName := strings.Join(args[1:], " ")
+
+					channels, err := s.GuildChannels(m.GuildID)
+					if err != nil {
+						log.Println(err)
+					}
+
+					resp := processTrackChannelArg(channelName, channels)
+					s.ChannelMessageSend(m.ChannelID, resp)
+				}
+			} else if args[0] == "list" || args[0] == "l" {
+				resp := playerListResponse()
+				s.ChannelMessageSend(m.ChannelID, resp)
 			}
 		}
 	}
+}
 
+func processAddUsersArgs(args []string) map[string]string {
+	responses := make(map[string]string)
+	for _, v := range args {
+		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
+			//strip the special characters off front and end
+			idLookup := v[3 : len(v)-1]
+			for id, user := range GuildMembersCache {
+				if id == idLookup {
+					VoiceStatusCache[id] = UserData{
+						user:         user,
+						voiceState:   discordgo.VoiceState{},
+						tracking:     true, //always assume true if we're adding users manually
+						amongUsColor: AmongUsDefaultColor,
+						amongUsName:  AmongUsDefaultName,
+						amongUsAlive: true,
+					}
+					nameIdx := user.userName
+					if user.nick != "" {
+						nameIdx = user.userName + " (" + user.nick + ")"
+					}
+					responses[nameIdx] = "Added successfully!"
+				}
+			}
+		} else {
+			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
+		}
+	}
+	return responses
+}
+
+func processTrackChannelArg(channelName string, allChannels []*discordgo.Channel) string {
+	for _, c := range allChannels {
+		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
+			TrackingVoiceId = c.ID
+			return fmt.Sprintf("Now tracking %s channel for mute/unmute!", c.Name)
+		}
+	}
+	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
+}
+
+func playerListResponse() string {
+	buf := bytes.NewBuffer([]byte("Player List:\n"))
+	for _, player := range VoiceStatusCache {
+		if player.tracking {
+			emoji := ":heart:"
+			if !player.amongUsAlive {
+				emoji = ":skull:"
+			}
+			buf.WriteString(fmt.Sprintf("<@!%s>: %s (%s) %s\n", player.user.userID, player.amongUsName, player.amongUsColor, emoji))
+		}
+	}
+	return buf.String()
 }
