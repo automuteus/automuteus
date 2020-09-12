@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/kbinani/screenshot"
 	"image"
-	"image/color"
 	"image/png"
 	"log"
 	"os"
@@ -139,6 +138,20 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 					res <- GAME
 					gameState = GAME
 				}
+			} else {
+				//this is an edge case, but the game can end if someone leaves during discussion
+				//only check the end strings if we clearly havent begun a discussion
+				endStrings := genericCapture(settings.endingBounds, TempImageFilename)
+				if debugLogs {
+					log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
+				}
+				if intersects(endStrings, EndgameStrings) {
+					log.Println("Game is over!")
+					if !DEBUG_DONT_TRANSITION {
+						res <- PREGAME
+						gameState = PREGAME
+					}
+				}
 			}
 		}
 
@@ -203,34 +216,13 @@ func generateCaptureWindow(xRes, yRes float64, xScalar, widthScalar, yScalar, he
 
 func genericCapture(bounds image.Rectangle, filename string) []string {
 	img, err := screenshot.CaptureRect(bounds)
-
 	if err != nil {
 		panic(err)
-	}
-	size := img.Bounds().Size()
-	rect := image.Rect(0, 0, size.X, size.Y)
-	wImg := image.NewRGBA(rect)
-	for x := 0; x < size.X; x++ {
-		// and now loop thorough all of this x's y
-		for y := 0; y < size.Y; y++ {
-			pixel := img.At(x, y)
-			originalColor := color.RGBAModel.Convert(pixel).(color.RGBA)
-			// Offset colors a little, adjust it to your taste
-			r := float64(originalColor.R) * 0.92126
-			g := float64(originalColor.G) * 0.97152
-			b := float64(originalColor.B) * 0.90722
-			// average
-			grey := uint8((r + g + b) / 3)
-			c := color.RGBA{
-				R: grey, G: grey, B: grey, A: originalColor.A,
-			}
-			wImg.Set(x, y, c)
-		}
 	}
 
 	file, _ := os.Create(filename)
 	defer file.Close()
-	png.Encode(file, wImg)
+	png.Encode(file, img)
 
 	cmd := exec.Command(`C:\Program Files\Tesseract-OCR\tesseract.exe`, filename, "stdout")
 	//cmd.Stdin = strings.NewReader("some input")
