@@ -80,9 +80,17 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 		}
 	}
 
+	if channel != "" {
+		dg.ChannelMessageSend(channel, "Bot is Online!")
+	}
+
 	go discordListener(dg, guild, results)
 
 	<-sc
+
+	if channel != "" {
+		dg.ChannelMessageSend(channel, "Bot is going Offline!")
+	}
 
 	//kill the worker before we terminate the worker forcibly
 	results <- capture.KILL
