@@ -61,7 +61,7 @@ and modify values as necessary (you should've collected the `DISCORD` values in 
 4. Proceed to steps 2 and 3 of the `Easiest` install section above.
 
 # Sample Usage
-Assuming a bot that has just been started, you should run the following commands for a game (or sequence of games):
+Assuming a bot that has just been started, you should type the following commands in Discord:
 ```
 .au a @<player1> @<player2> ... 
 Adds all players so they are tracked
@@ -75,14 +75,20 @@ Adds all players so they are tracked
 Get Playing! You can continue to play game after game, and any users that enter or leave the tracked voice channel (or enter/leave ANY voice channel, if you didn't run the `.au t` command) will be muted/unmuted appropriately.
 
 Alternatively, you could run this one command -albeit with a limitation-:
+```
+.au t <voice channel name>
+EMPTY voice channel you intend to use.
 
-`.au t <voice channel name>` EMPTY voice channel you intend to use.
+Then have all players join that voice channel.
+```
+The bot is incapable of fetching the full state of the server, so it either
 
-Then have all players join that voice channel. 
+1. Needs to be provided a full list of all users to track, or
+2. Know the voice channel to track, and record users that enter/leave that voice channel.
 
-The bot is incapable of fetching the full state of the server, so it either 1. Needs to be provided a full list of all users to track, or 2. Know the voice channel to track, and record users that enter/leave that voice channel. This is a limitation of the discordgo library I am using, but any of the 2 above approaches should work.
+This is a limitation of the discordgo library I am using, but any of the 2 above approaches should work.
 
-Theoretically, if there are 0 users on the discord server currently, then all players will be automatically picked up as they enter the server voice channels. But assuming all users are already in voice, use the commands above
+Theoretically, if there are 0 users on the discord server currently, then all players will be automatically picked up as they enter the server voice channels. But assuming all users are already in voice, use the commands above.
 
 # Configuration
 ```
@@ -101,9 +107,9 @@ The Discord Bot uses the `.au` prefix for any commands
 
 |Command| Alias | Arguments | Description | Example |
 |---|---|---|---|---|
-|`.au list`|`.au l`|None|Print the currently tracked players, and their status (Beta)||
+|`.au list`|`.au l`|None|Print the currently tracked players, and their in-game status (Beta)||
 |`.au help`|`.au h`|None|Print help info and command usage||
-|`.au add`|`.au a`|@mentions|Add players to the tracked list (which should be muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
+|`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
 |`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
 
 # Troubleshooting
