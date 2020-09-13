@@ -78,11 +78,14 @@ func MakeSettingsFromEnv() CaptureSettings {
 		TESSERACT_PATH = tesseractPathStr
 	}
 	monitorStr := os.Getenv("MONITOR")
-	num, err := strconv.Atoi(monitorStr)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("You provided an invalid display number for the MONITOR!\n"))
-	} else {
-		log.Printf("Running capture on display %d\n", num)
+	num := 0
+	if monitorStr != "" {
+		num, err := strconv.Atoi(monitorStr)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("You provided an invalid display number for the MONITOR!\n"))
+		} else {
+			log.Printf("Running capture on display %d\n", num)
+		}
 	}
 
 	if capSettings.fullScreen {
