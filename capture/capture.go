@@ -195,19 +195,20 @@ func intersects(a, b []string) bool {
 	return false
 }
 
-const xLeftStartScalar = 0.205
-const xRightStartScalar = 0.547
-const xWidthScalar = 0.18
+const xLeftStartScalar = 0.143
+const xRightStartScalar = 0.484
+const xWidthScalar = 0.0625
 
 var yScalars = []float64{
-	0.198, //1st row
-	0.326, //2nd row
-	0.451, //3rd row
-	0.579, //4th row
-	0.705, //5th row
+	0.203, //1st row
+	0.331, //2nd row
+	0.456, //3rd row
+	0.584, //4th row
+	0.710, //5th row
 }
 
-const yHeightScalar = 0.06
+//height of the player image
+const yHeightScalar = 0.09
 
 func (settings *CaptureSettings) generatePlayerNameBounds() {
 	settings.playerNameBounds = make([]image.Rectangle, 10)

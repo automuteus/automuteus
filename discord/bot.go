@@ -61,7 +61,10 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	dg.AddHandler(voiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages)
+
+	//dg.AddHandler(guildMembers)
+
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
 
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -189,9 +192,11 @@ func guildMemberMute(session *discordgo.Session, guildID string, userID string, 
 	return
 }
 
-// This function will be called (due to AddHandler above) every time a new
-// message is created on any channel that the authenticated bot has access to.
+// Gets called whenever a voice state change occurs
 func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
+
+	updateVoiceStatusCache(s, m.GuildID)
+
 	//if the user is already in the voice status cache, only update if we don't know the voice channel to track,
 	//or the user has ENTERED this voice channel
 	if v, ok := VoiceStatusCache[m.UserID]; ok {
@@ -236,9 +241,34 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 	}
 }
 
+func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
+	g, err := s.State.Guild(guildID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, state := range g.VoiceStates {
+		//add the user we haven't seen in our cache before
+		if _, ok := VoiceStatusCache[state.UserID]; !ok {
+			VoiceStatusCache[state.UserID] = UserData{
+				user: DiscordUser{
+					userID: state.UserID,
+				},
+				voiceState:   *state,
+				tracking:     TrackingVoiceId == "" || state.ChannelID == TrackingVoiceId,
+				amongUsColor: "Cyan",
+				amongUsName:  "Player",
+				amongUsAlive: true,
+			}
+		}
+	}
+}
+
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	updateVoiceStatusCache(s, m.GuildID)
 
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
