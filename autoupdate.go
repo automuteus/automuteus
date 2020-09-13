@@ -28,7 +28,7 @@ func main() {
 		line = strings.ReplaceAll(line, "\"", "")
 		line = strings.ReplaceAll(strings.ReplaceAll(line, "[", ""), "]", "")
 		line = strings.ReplaceAll(strings.ReplaceAll(line, "{", ""), "}", "")
-		if strings.HasPrefix(line, "browser_download_url") && strings.HasSuffix(line, ".exe") {
+		if strings.HasPrefix(line, "browser_download_url") && strings.HasSuffix(line, "amongusdiscord.exe") {
 			url := strings.Replace(line, "browser_download_url:", "", 1)
 			log.Println(url)
 			err := DownloadFile("amongusdiscord.exe", url)
