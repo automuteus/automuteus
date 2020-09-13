@@ -16,17 +16,6 @@ this utility in Go would help both myself, and users of the app. Go compiles to 
 Tesseract OCR utility, users only need a single release executable to run the bot (outside of all the Discord bot configuration
 necessary on your respective server).
 
-# How it Works
-amongusdiscord uses Tesseract for OCR (Optical Character Recognition) to scan the Among Us game screen, and determine
-if a discussion is occurring, a round is starting, etc., and if it should mute/unmute players in the Discord server automatically.
-
-The application uses scaling values, and automatically detects the screen resolution of your main display. In theory, this should mean *any* resolution in fullscreen mode
-should work, but more testing is needed to say this for certain.
-
-Work is currently being done to also keep dead players muted, and potentially allow the the meeting caller to speak first
-for some amount of time, but these are much harder problems, particularly with Tesseract's limitations, and the additional
-processing required.
-
 # Installation
 ## Pre-Installation Steps, Do Not Skip!
 1. Install [Tesseract OCR](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-v5.0.0-alpha.20200328.exe).
@@ -114,7 +103,25 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
 |`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
 
+# How it Works
+amongusdiscord uses Tesseract for OCR (Optical Character Recognition) to scan the Among Us game screen, and determine
+if a discussion is occurring, a round is starting, etc., and if it should mute/unmute players in the Discord server automatically.
+
+The application uses scaling values, and automatically detects the screen resolution of your main display. In theory, this should mean *any* resolution in fullscreen mode
+should work, but more testing is needed to say this for certain.
+
+Work is currently being done to also keep dead players muted, and potentially allow the the meeting caller to speak first
+for some amount of time, but these are much harder problems, particularly with Tesseract's limitations, and the additional
+processing required.
+
 # Troubleshooting
+## Running the executable does nothing, I don't see any window pop up!
+To get more information, try running the executable from a command line window. You can type `cmd` in the Windows search bar, then use `cd C:\...` to navigate to the folder where the .exe is located. Once in that folder, try running the executable with `./amongusdiscord.exe` or `amongusdiscord.exe`, and the output should help you solve the problem.
+
+Common issues:
+* Your tesseract executable is located somewhere besides `C:\Program Files\Tesseract-OCR\tesseract.exe`
+* Your `final.env` file is actually named `final.env.txt`. You can rename the file using the command line and typing `rename final.env.txt final.env`
+
 ## Optical Character Recognition (Tesseract-OCR)
 To diagnose OCR problems, you can run the executable with additional arguments to see the OCR output, and `.png` files of what the program captured. There are images provided in the `images` folder of the repository that can assist with troubleshooting; fullscreen these on your primary display before running the executable for debugging.
 
