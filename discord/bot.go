@@ -38,6 +38,7 @@ type UserData struct {
 
 var VoiceStatusCache = make(map[string]UserData)
 
+var GameStartDelay = 0
 var GameResumeDelay = 0
 var DiscussStartDelay = 0
 
@@ -45,7 +46,8 @@ var ExclusiveChannelId = ""
 
 var TrackingVoiceId = ""
 
-func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameResumeDelay, discussStartDelay int) {
+func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay int) {
+	GameStartDelay = gameStartDelay
 	GameResumeDelay = gameResumeDelay
 	DiscussStartDelay = discussStartDelay
 
@@ -102,6 +104,8 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	dg.Close()
 }
 
+var GameState capture.GameState
+
 func discordListener(dg *discordgo.Session, guild string, res <-chan capture.GameState) {
 	for {
 		msg := <-res
@@ -118,18 +122,25 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 				VoiceStatusCache[i] = v
 			}
 			muteAllTrackedMembers(dg, guild, false, false)
+			GameState = capture.PREGAME
 		case capture.GAME:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", GameResumeDelay))
 			}
-			time.Sleep(time.Second * time.Duration(GameResumeDelay))
+			if GameState == capture.PREGAME {
+				time.Sleep(time.Second * time.Duration(GameStartDelay))
+			} else if GameState == capture.DISCUSS {
+				time.Sleep(time.Second * time.Duration(GameResumeDelay))
+			}
 			muteAllTrackedMembers(dg, guild, true, false)
+			GameState = capture.GAME
 		case capture.DISCUSS:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
 			}
 			time.Sleep(time.Second * time.Duration(DiscussStartDelay))
 			muteAllTrackedMembers(dg, guild, false, true)
+			GameState = capture.DISCUSS
 		}
 	}
 }
@@ -234,66 +245,92 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for i, v := range args {
 				args[i] = strings.ToLower(v)
 			}
-
-			if len(args) == 0 || args[0] == "help" || args[0] == "h" {
-				_, err := s.ChannelMessageSend(m.ChannelID, helpResponse())
-				if err != nil {
-					log.Println(err)
-				}
-			} else if args[0] == "add" || args[0] == "a" {
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-				} else {
-					responses := processAddUsersArgs(args[1:])
-					buf := bytes.NewBuffer([]byte("Results:\n"))
-					for name, msg := range responses {
-						buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+			if len(args) == 0 {
+				s.ChannelMessageSend(m.ChannelID, helpResponse())
+			} else {
+				switch args[0] {
+				case "help":
+				case "h":
+					s.ChannelMessageSend(m.ChannelID, helpResponse())
+					break
+				case "add":
+				case "a":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+					} else {
+						responses := processAddUsersArgs(args[1:])
+						buf := bytes.NewBuffer([]byte("Results:\n"))
+						for name, msg := range responses {
+							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+						}
+						s.ChannelMessageSend(m.ChannelID, buf.String())
 					}
-					s.ChannelMessageSend(m.ChannelID, buf.String())
-				}
-			} else if args[0] == "track" || args[0] == "t" {
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-				} else {
-					channelName := strings.Join(args[1:], " ")
+					break
+				case "track":
+				case "t":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+					} else {
+						channelName := strings.Join(args[1:], " ")
 
-					channels, err := s.GuildChannels(m.GuildID)
-					if err != nil {
-						log.Println(err)
+						channels, err := s.GuildChannels(m.GuildID)
+						if err != nil {
+							log.Println(err)
+						}
+
+						resp := processTrackChannelArg(channelName, channels)
+						s.ChannelMessageSend(m.ChannelID, resp)
 					}
-
-					resp := processTrackChannelArg(channelName, channels)
+					break
+				case "list":
+				case "l":
+					resp := playerListResponse()
 					s.ChannelMessageSend(m.ChannelID, resp)
-				}
-			} else if args[0] == "list" || args[0] == "l" {
-				resp := playerListResponse()
-				s.ChannelMessageSend(m.ChannelID, resp)
-			} else if args[0] == "reset" || args[0] == "r" {
-				for i, v := range VoiceStatusCache {
-					v.tracking = false
-					v.amongUsAlive = true
-					VoiceStatusCache[i] = v
-				}
-				s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
-			} else if args[0] == "dead" || args[0] == "d" {
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-				} else {
-					responses := processMarkDeadUsers(args[1:])
-					buf := bytes.NewBuffer([]byte("Results:\n"))
-					for name, msg := range responses {
-						buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+					break
+				case "reset":
+				case "r":
+					for i, v := range VoiceStatusCache {
+						v.tracking = false
+						v.amongUsAlive = true
+						VoiceStatusCache[i] = v
 					}
-					s.ChannelMessageSend(m.ChannelID, buf.String())
-				}
-			} else if args[0] == "unmuteall" || args[0] == "ua" {
-				s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting all players!")
-				for id, _ := range VoiceStatusCache {
-					err := guildMemberMute(s, m.GuildID, id, false)
-					if err != nil {
-						log.Println(err)
+					s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
+					break
+				case "dead":
+				case "d":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+					} else {
+						responses := processMarkDeadUsers(args[1:])
+						buf := bytes.NewBuffer([]byte("Results:\n"))
+						for name, msg := range responses {
+							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+						}
+						s.ChannelMessageSend(m.ChannelID, buf.String())
 					}
+					break
+				case "unmuteall":
+				case "ua":
+					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting all players!")
+					for id, _ := range VoiceStatusCache {
+						err := guildMemberMute(s, m.GuildID, id, false)
+						if err != nil {
+							log.Println(err)
+						}
 
+					}
+					break
+				case "muteall":
+				case "ma":
+					s.ChannelMessageSend(m.ChannelID, "Forcibly muting all players!")
+					for id, _ := range VoiceStatusCache {
+						err := guildMemberMute(s, m.GuildID, id, true)
+						if err != nil {
+							log.Println(err)
+						}
+
+					}
+					break
 				}
 			}
 		}

@@ -95,11 +95,16 @@ FULLSCREEN = true # only fullscreen is supported for now (screen resolution is a
 # Below is the default; leave commented out unless you installed tesseract elsewhere
 # TESSERACT_PATH = C:\Program Files\Tesseract-OCR\tesseract.exe
 
+# Only change this value if you run multiple monitors and also encounter an issue
+# 0 (the default) should be the primary display in a multi-monitor setup, but you may need
+# to use values 0,1,2, etc if you have issues
+# MONITOR = 0
+
 # how many seconds before players are muted after the "Voting Results" text is displayed
-GAME_RESUME_DELAY = 5
+GAME_RESUME_DELAY = 6
 
 # how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed
-DISCUSS_START_DELAY = 2
+DISCUSS_START_DELAY = 0
 
 DEBUG_LOGS = false # print the OCR output for debugging
 

@@ -68,9 +68,19 @@ func main() {
 		log.Println("No DISCORD_CHANNEL_ID provided, assuming commands from any channel are equally valid")
 	}
 
+	gameStartDelayStr := os.Getenv("GAME_START_DELAY")
+	gameStartDelay := 2
+	num, err := strconv.Atoi(gameStartDelayStr)
+	if err == nil {
+		log.Printf("Using GAME_START_DELAY of %d seconds\n", num)
+		gameStartDelay = num
+	} else {
+		log.Printf("Error parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameStartDelay)
+	}
+
 	gameResumeDelayStr := os.Getenv("GAME_RESUME_DELAY")
-	gameResumeDelay := 5
-	num, err := strconv.Atoi(gameResumeDelayStr)
+	gameResumeDelay := 6
+	num, err = strconv.Atoi(gameResumeDelayStr)
 	if err == nil {
 		log.Printf("Using GAME_RESUME_DELAY of %d seconds\n", num)
 		gameResumeDelay = num
@@ -79,7 +89,7 @@ func main() {
 	}
 
 	discussStartDelayStr := os.Getenv("DISCUSS_START_DELAY")
-	discussStartDelay := 2
+	discussStartDelay := 0
 	num, err = strconv.Atoi(discussStartDelayStr)
 	if err == nil {
 		log.Printf("Using DISCUSS_START_DELAY of %d seconds\n", num)
@@ -89,5 +99,5 @@ func main() {
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameResumeDelay, discussStartDelay)
+	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay)
 }
