@@ -243,7 +243,8 @@ func genericCapture(bounds image.Rectangle, filename string) []string {
 
 	file, err := os.Create(filename)
 	if err != nil {
-		log.Println("Encountered an issue making temp.png file!")
+		log.Println("Encountered an issue making temp.png file! Maybe a permissions problem?")
+		log.Println(err)
 	}
 	defer file.Close()
 	err = png.Encode(file, img)

@@ -106,9 +106,10 @@ The Discord Bot uses the `.au` prefix for any commands
 |---|---|---|---|---|
 |`.au help`|`.au h`|None|Print help info and command usage||
 |`.au list`|`.au l`|None|Print the currently tracked players, and their in-game status (Beta)||
-|`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
 |`.au dead`|`.au d`|@mentions|Mark a user as dead so they aren't unmuted during discussions|`.au d @DiscordUser1 @DiscordUser2`|
 |`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
+|`.au bcast`|`.au b`|roomcode and region|Broadcast the room code and region to players|`.au b abcd asia`|
+|`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
 |`.au reset`|`.au r`|None|Reset the tracked player list manually (mainly for debug)||
 |`.au muteall`|`.au ma`|None|Forcibly mute ALL users (mainly for debug)||
 |`.au unmuteall`|`.au ua`|None|Forcibly unmute ALL users (mainly for debug)||
