@@ -365,6 +365,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						s.ChannelMessageSend(m.ChannelID, buf.String())
 					}
 					break
+				case "alive":
+				case "al":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+					} else {
+						responses := processMarkDeadUsers(s, m.GuildID, args[1:])
+						buf := bytes.NewBuffer([]byte("Results:\n"))
+						for name, msg := range responses {
+							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+						}
+						s.ChannelMessageSend(m.ChannelID, buf.String())
+					}
+					break
 				case "unmuteall":
 				case "ua":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
@@ -386,10 +399,57 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 					}
 					break
+				case "broadcast":
+				case "bcast":
+				case "b":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+					} else {
+						str, err := processBroadcastArgs(args[1:])
+						if err != nil {
+							log.Println(err)
+						}
+						s.ChannelMessageSend(m.ChannelID, str)
+					}
 				}
 			}
 		}
 	}
+}
+
+func processBroadcastArgs(args []string) (string, error) {
+	buf := bytes.NewBuffer([]byte{})
+	code, region := "", ""
+	//just the room code
+	code = strings.ToUpper(args[0])
+
+	if len(args) > 1 {
+		region = strings.ToLower(args[1])
+		switch region {
+		case "na":
+		case "north":
+			region = "North America"
+		case "eu":
+		case "europe":
+			region = "Europe"
+		case "as":
+		case "asia":
+			region = "Asia"
+		}
+	}
+	for _, player := range VoiceStatusCache {
+		if player.tracking {
+			buf.WriteString(fmt.Sprintf("<@!%s> ", player.user.userID))
+		}
+	}
+	buf.WriteString(fmt.Sprintf("\nThe Room Code is **%s**\n", code))
+
+	if region == "" {
+		buf.WriteString("I wasn't told the Region, though :cry:")
+	} else {
+		buf.WriteString(fmt.Sprintf("The Region is **%s**\n", region))
+	}
+	return buf.String(), nil
 }
 
 func processAddUsersArgs(args []string) map[string]string {
