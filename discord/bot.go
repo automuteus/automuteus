@@ -112,6 +112,11 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 			}
+			//Loop through and reset players (game over = everyone alive again)
+			for i, v := range VoiceStatusCache {
+				v.amongUsAlive = true
+				VoiceStatusCache[i] = v
+			}
 			muteAllTrackedMembers(dg, guild, false, false)
 		case capture.GAME:
 			if ExclusiveChannelId != "" {

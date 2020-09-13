@@ -17,7 +17,13 @@ Tesseract OCR utility, users only need a single release executable to run the bo
 necessary on your respective server).
 
 # Installation
-## Pre-Installation Steps, Do Not Skip!
+## Installation Video
+[![Demo Video](https://img.youtube.com/vi/vo_qcwZzNzw/0.jpg)](https://youtu.be/vo_qcwZzNzw)
+
+If you followed all the steps in the video above, you're done with the installation and can start using the bot, or see the
+Usage/Commands sections below! If you prefer text instructions over videos, follow all the instructions below instead.
+
+## Pre-Installation Steps, Important!!!
 1. Install [Tesseract OCR](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-v5.0.0-alpha.20200328.exe).
 After installation, you should have a `tesseract.exe` in `C:\Program Files\Tesseract-OCR\` (this is required by the bot).
 2. Create an Application and Bot account for your Discord Server (requires Admin privileges on the Server in question). 
@@ -32,7 +38,7 @@ After installation, you should have a `tesseract.exe` in `C:\Program Files\Tesse
 
     e. Scroll back up to `Scopes`, and copy the URL in the field that begins with `https://discord.com/api/oauth2/authorize?`. Paste this in a new browser tab, and grant the App access to whatever server you wish it to access. Close this tab when Finalized.
 
-    f. Last step, almost there! Now we need to get the `DISCORD_GUILD_ID` and the `DISCORD_CHANNEL_ID`. Go to https://discord.com/app, and navigate to the Server you want the Bot to communicate in (Servers are also known as Guilds). Navigate to the text channel you will want the Bot to send messages and receive commands in, and observe the URL in your browser. It will have the format `https://discord.com/channels/<DISCORD_GUILD_ID>/<DISCORD_CHANNEL_ID>`. Use these ID fields to populate the `sample.env` in the installation steps below (or paste the IDs somewhere else for now, making sure to label them appropriately). If this text channel is private or limited to certain roles, you will need to manually grant access to the Bot.
+    f. Last step, almost there! Now we need to get the `DISCORD_GUILD_ID` and the `DISCORD_CHANNEL_ID`. Go to https://discord.com/app, and navigate to the Server you want the Bot to communicate in (Servers are also known as Guilds). Navigate to the text channel you will want the Bot to send messages and receive commands in, and look at the URL in your browser. It will have the format `https://discord.com/channels/<DISCORD_GUILD_ID>/<DISCORD_CHANNEL_ID>`. Use these ID fields to populate the `sample.env` in the installation steps below (or paste the IDs somewhere else for now, making sure to label them appropriately). If this text channel is private or limited to certain roles, you will need to manually grant access to the Bot.
 
 Congrats, you've done the hardest part; setting up the Bot and Application within Discord!
 
@@ -40,10 +46,9 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 
 ## Easiest:
 1. [Download the latest release executable (`.exe`)](https://github.com/denverquane/amongusdiscord/releases) for this bot.
-2. Place the [`sample.env`](https://github.com/denverquane/amongusdiscord/blob/master/sample.env) from this repo into the same folder as the `amongusdiscord.exe` from step 1, 
-and modify values as necessary (you should've collected the `DISCORD` values in the Pre-Installation steps above). When finished, rename the file `final.env`. You can, alternatively, copy the sample text in the "Configuration" section below, and paste into any text editor, making sure to name the file
-`final.env`.
-3. Run the executable from step 2, either by double-clicking or using `./amongusdiscord.exe` in a terminal window! The bot should now be running, and you should see a message from the Bot in the Text Channel you chose in the Pre-Installation!
+2. Make a text file in the same directory as the `amongusdiscord.exe` you just downloaded. Inside, paste the contents of [`sample.env`](https://github.com/denverquane/amongusdiscord/blob/master/sample.env) (or the values in the "Configuration" section down below)
+and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_CHANNEL_ID` that you got from the preinstallation steps. **Save the file as `final.env`**. If you're using Notepad, make sure it saves (using "Save As") as `final.env` with "All Types", and **not** `final.env` Text type ".txt".
+3. Run the executable from step 2, either by double-clicking or using `./amongusdiscord.exe` in a terminal window. The bot should now be running, and you should see a message from the Bot in the Text Channel you chose in the Pre-Installation!
 
 ## Install From Source:
 1. [Install Go 1.15.2](https://golang.org/dl/go1.15.2.windows-amd64.msi), but any version of Go 1.12+ should work (currently developing with Go 1.13).
