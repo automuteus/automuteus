@@ -45,6 +45,7 @@ var DiscussStartDelay = 0
 var ExclusiveChannelId = ""
 
 var TrackingVoiceId = ""
+var TrackingVoiceName = ""
 
 func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay int) {
 	GameStartDelay = gameStartDelay
@@ -204,8 +205,9 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 
 		//only track if we have no tracked channel so far, or the user is in the tracked channel
 		v.tracking = TrackingVoiceId == "" || m.ChannelID == TrackingVoiceId
+
 		VoiceStatusCache[m.UserID] = v
-		log.Printf("Saw a cached \"%s\" user's voice status change, tracking: %v\n", m.UserID, v.tracking)
+		log.Printf("Saw a cached \"%s\" user's voice status change, tracking: %v\n", v.user.userName, v.tracking)
 		//unmute the member if they left the chat while muted
 		if !v.tracking && m.Mute {
 			guildMemberMute(s, m.GuildID, m.UserID, false)
@@ -245,6 +247,22 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 	g, err := s.State.Guild(guildID)
 	if err != nil {
 		log.Println(err)
+	}
+
+	//make sure all the people in the voice status cache are still in voice
+	for id, v := range VoiceStatusCache {
+		foundUser := false
+		for _, state := range g.VoiceStates {
+			if state.UserID == id {
+				foundUser = true
+				break
+			}
+		}
+		//TODO can you server unmute someone not in voice? Prob not...
+		if !foundUser {
+			v.tracking = false
+			VoiceStatusCache[id] = v
+		}
 	}
 
 	for _, state := range g.VoiceStates {
@@ -443,14 +461,22 @@ func processTrackChannelArg(channelName string, allChannels []*discordgo.Channel
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 			TrackingVoiceId = c.ID
-			return fmt.Sprintf("Now tracking %s channel for mute/unmute!", c.Name)
+			TrackingVoiceName = c.Name
+			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute!", c.Name)
 		}
 	}
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
 func playerListResponse() string {
-	buf := bytes.NewBuffer([]byte("Player List:\n"))
+	buf := bytes.NewBuffer([]byte{})
+	if TrackingVoiceId != "" {
+		buf.WriteString(fmt.Sprintf("Currently tracking \"%s\" Voice Channel:\n", TrackingVoiceName))
+	} else {
+		buf.WriteString("Not tracking a Voice Channel; all players will be Automuted (use `.au t` to track)\n")
+	}
+
+	buf.WriteString("Player List:\n")
 	for _, player := range VoiceStatusCache {
 		if player.tracking {
 			emoji := ":heart:"
