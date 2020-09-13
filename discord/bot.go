@@ -108,30 +108,40 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 			}
-			muteAllTrackedMembers(dg, guild, false)
+			muteAllTrackedMembers(dg, guild, false, false)
 		case capture.GAME:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", DelaySec))
 			}
 			time.Sleep(time.Second * time.Duration(DelaySec))
-			muteAllTrackedMembers(dg, guild, true)
+			muteAllTrackedMembers(dg, guild, true, false)
 		case capture.DISCUSS:
 			if ExclusiveChannelId != "" {
-				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting players!"))
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players!"))
 			}
-			muteAllTrackedMembers(dg, guild, false)
+			muteAllTrackedMembers(dg, guild, false, true)
 		}
 	}
 }
 
-func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool) {
+func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, checkAlive bool) {
+	skipExec := false
 	for user, v := range VoiceStatusCache {
 		if v.tracking {
 			buf := bytes.NewBuffer([]byte{})
 			if mute {
 				buf.WriteString("Muting ")
 			} else {
-				buf.WriteString("Unmuting ")
+				if checkAlive {
+					if v.amongUsAlive {
+						buf.WriteString("Unmuting (alive) ")
+					} else {
+						buf.WriteString("Not Unmuting (dead) ")
+						skipExec = true
+					}
+				} else {
+					buf.WriteString("Unmuting ")
+				}
 			}
 			buf.WriteString(v.user.userName)
 			//buf.WriteString(v.User.Username)
@@ -139,9 +149,11 @@ func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool) {
 			//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
 			//}
 			log.Println(buf.String())
-			err := guildMemberMute(dg, guildId, user, mute)
-			if err != nil {
-				log.Println(err)
+			if !skipExec {
+				err := guildMemberMute(dg, guildId, user, mute)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}
@@ -246,6 +258,33 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			} else if args[0] == "list" || args[0] == "l" {
 				resp := playerListResponse()
 				s.ChannelMessageSend(m.ChannelID, resp)
+			} else if args[0] == "reset" || args[0] == "r" {
+				for i, v := range VoiceStatusCache {
+					v.tracking = false
+					v.amongUsAlive = true
+					VoiceStatusCache[i] = v
+				}
+				s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
+			} else if args[0] == "dead" || args[0] == "d" {
+				if len(args[1:]) == 0 {
+					//TODO print usage of this command specifically
+				} else {
+					responses := processMarkDeadUsers(args[1:])
+					buf := bytes.NewBuffer([]byte("Results:\n"))
+					for name, msg := range responses {
+						buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+					}
+					s.ChannelMessageSend(m.ChannelID, buf.String())
+				}
+			} else if args[0] == "unmuteall" || args[0] == "ua" {
+				s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting all players!")
+				for id, _ := range VoiceStatusCache {
+					err := guildMemberMute(s, m.GuildID, id, false)
+					if err != nil {
+						log.Println(err)
+					}
+
+				}
 			}
 		}
 	}
@@ -272,6 +311,32 @@ func processAddUsersArgs(args []string) map[string]string {
 						nameIdx = user.userName + " (" + user.nick + ")"
 					}
 					responses[nameIdx] = "Added successfully!"
+				}
+			}
+		} else {
+			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
+		}
+	}
+	return responses
+}
+
+func processMarkDeadUsers(args []string) map[string]string {
+	responses := make(map[string]string)
+	for _, v := range args {
+		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
+			//strip the special characters off front and end
+			idLookup := v[3 : len(v)-1]
+			for id, user := range GuildMembersCache {
+				if id == idLookup {
+					temp := VoiceStatusCache[id]
+					temp.amongUsAlive = false
+					VoiceStatusCache[id] = temp
+
+					nameIdx := user.userName
+					if user.nick != "" {
+						nameIdx = user.userName + " (" + user.nick + ")"
+					}
+					responses[nameIdx] = "Marked Dead"
 				}
 			}
 		} else {

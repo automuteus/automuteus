@@ -16,6 +16,8 @@ import (
 const DEBUG_DONT_TRANSITION = false
 const TempImageFilename = "temp.png"
 
+var TESSERACT_PATH = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+
 const discussXStartScalar = 0.28
 const discussWidthScalar = 0.4
 const discussYStartScalar = 0.09
@@ -50,8 +52,9 @@ type CaptureSettings struct {
 
 func (cap *CaptureSettings) ToString() string {
 	buf := bytes.NewBuffer([]byte("Capture Settings:\n"))
+	buf.WriteString(fmt.Sprintf("  Tesseract Path: %s\n", TESSERACT_PATH))
 	buf.WriteString(fmt.Sprintf("  Fullscreen: %v\n", cap.fullScreen))
-	buf.WriteString(fmt.Sprintf("  Resolution: %dx%d\n", cap.xRes, cap.yRes))
+	buf.WriteString(fmt.Sprintf("  Resolution: %dx%d\n", int(cap.xRes), int(cap.yRes)))
 	disc := cap.discussBounds
 	buf.WriteString(fmt.Sprintf("  Discussion Bounds: [%d,%d]-[%d, %d]\n", disc.Min.X, disc.Min.Y, disc.Max.X, disc.Max.Y))
 	end := cap.endingBounds
@@ -69,6 +72,11 @@ func MakeSettingsFromEnv() CaptureSettings {
 	} else {
 		capSettings.fullScreen = true
 	}
+	tesseractPathStr := os.Getenv("TESSERACT_PATH")
+	if tesseractPathStr != "" {
+		TESSERACT_PATH = tesseractPathStr
+	}
+
 	if capSettings.fullScreen {
 		bounds := screenshot.GetDisplayBounds(0)
 		capSettings.xRes, capSettings.yRes = float64(bounds.Dx()), float64(bounds.Dy())
@@ -224,7 +232,7 @@ func genericCapture(bounds image.Rectangle, filename string) []string {
 	defer file.Close()
 	png.Encode(file, img)
 
-	cmd := exec.Command(`C:\Program Files\Tesseract-OCR\tesseract.exe`, filename, "stdout")
+	cmd := exec.Command(TESSERACT_PATH, filename, "stdout")
 	//cmd.Stdin = strings.NewReader("some input")
 	var out bytes.Buffer
 	cmd.Stdout = &out
