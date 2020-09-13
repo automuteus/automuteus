@@ -85,6 +85,15 @@ Theoretically, if there are 0 users on the discord server currently, then all pl
 ```
 FULLSCREEN = true # only fullscreen is supported for now (screen resolution is automatically detected)
 
+# Below is the default; leave commented out unless you installed tesseract elsewhere
+# TESSERACT_PATH = C:\Program Files\Tesseract-OCR\tesseract.exe
+
+# how many seconds before players are muted after the "Voting Results" text is displayed
+GAME_RESUME_DELAY = 5
+
+# how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed
+DISCUSS_START_DELAY = 2
+
 DEBUG_LOGS = false # print the OCR output for debugging
 
 # Replace these values with those obtained in the Preinstallation steps prior

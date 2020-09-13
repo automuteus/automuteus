@@ -38,13 +38,17 @@ type UserData struct {
 
 var VoiceStatusCache = make(map[string]UserData)
 
-var DelaySec = 1
+var GameResumeDelay = 0
+var DiscussStartDelay = 0
 
 var ExclusiveChannelId = ""
 
 var TrackingVoiceId = ""
 
-func MakeAndStartBot(token, guild, channel string, results chan capture.GameState) {
+func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameResumeDelay, discussStartDelay int) {
+	GameResumeDelay = gameResumeDelay
+	DiscussStartDelay = discussStartDelay
+
 	ExclusiveChannelId = channel
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -111,14 +115,15 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			muteAllTrackedMembers(dg, guild, false, false)
 		case capture.GAME:
 			if ExclusiveChannelId != "" {
-				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", DelaySec))
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", GameResumeDelay))
 			}
-			time.Sleep(time.Second * time.Duration(DelaySec))
+			time.Sleep(time.Second * time.Duration(GameResumeDelay))
 			muteAllTrackedMembers(dg, guild, true, false)
 		case capture.DISCUSS:
 			if ExclusiveChannelId != "" {
-				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players!"))
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
 			}
+			time.Sleep(time.Second * time.Duration(DiscussStartDelay))
 			muteAllTrackedMembers(dg, guild, false, true)
 		}
 	}
