@@ -196,10 +196,18 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 	//or the user has ENTERED this voice channel
 	if v, ok := VoiceStatusCache[m.UserID]; ok {
 		v.voiceState = *m.VoiceState
+
 		//only track if we have no tracked channel so far, or the user is in the tracked channel
 		v.tracking = TrackingVoiceId == "" || m.ChannelID == TrackingVoiceId
 		VoiceStatusCache[m.UserID] = v
-		log.Printf("Saw a cached user's voice status change, tracking: %v\n", v.tracking)
+		log.Printf("Saw a cached \"%s\" user's voice status change, tracking: %v\n", m.UserID, v.tracking)
+		//unmute the member if they left the chat while muted
+		if !v.tracking && m.Mute {
+			guildMemberMute(s, m.GuildID, m.UserID, false)
+			//if the user rejoins, only mute if the game is going, or if it's discussion and they're dead
+		} else if v.tracking && (GameState == capture.GAME || (GameState == capture.DISCUSS && !v.amongUsAlive)) {
+			guildMemberMute(s, m.GuildID, m.UserID, true)
+		}
 	} else {
 		user := DiscordUser{}
 		//if we know of the user from the more general cache (we should)
@@ -216,7 +224,7 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 		}
 		//only track if we have no tracked channel so far, or the user is in the tracked channel. Otherwise, don't track
 		tracking := TrackingVoiceId == "" || m.ChannelID == TrackingVoiceId
-		log.Printf("Saw a user's voice status change, tracking: %v\n", tracking)
+		log.Printf("Saw \"%s\" user's voice status change, tracking: %v\n", user.userName, tracking)
 		VoiceStatusCache[m.UserID] = UserData{
 			user:         user,
 			voiceState:   *m.VoiceState,
