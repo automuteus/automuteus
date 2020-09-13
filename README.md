@@ -59,34 +59,15 @@ and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_C
 4. Proceed to steps 2 and 3 of the `Easiest` install section above.
 
 # Sample Usage
-Assuming a bot that has just been started, you should type the following commands in Discord:
+Assuming a bot that has just been started, you can type the following commands to make sure it's running smooth:
 ```
-.au a @<player1> @<player2> ... 
-Adds all players so they are tracked
-
 .au l 
-(Optional) Ensure all the players you want tracked are in the list
+Ensure all the players you want tracked are in the list
 
 .au t <voice channel name> 
-(Optional) Specifically denote the channel you want users muted/unmuted within. Users in other voice channels will be ignored.
+(Optional) Specifically denote the channel you want users muted/un-muted within. Users in other voice channels will be ignored.
 ```
-Get Playing! You can continue to play game after game, and any users that enter or leave the tracked voice channel (or enter/leave ANY voice channel, if you didn't run the `.au t` command) will be muted/unmuted appropriately.
-
-Alternatively, you could run this one command -albeit with a limitation-:
-```
-.au t <voice channel name>
-EMPTY voice channel you intend to use.
-
-Then have all players join that voice channel.
-```
-The bot is incapable of fetching the full state of the server, so it either
-
-1. Needs to be provided a full list of all users to track, or
-2. Know the voice channel to track, and record users that enter/leave that voice channel.
-
-This is a limitation of the discordgo library I am using, but any of the 2 above approaches should work.
-
-Theoretically, if there are 0 users on the discord server currently, then all players will be automatically picked up as they enter the server voice channels. But assuming all users are already in voice, use the commands above.
+Get Playing! You can continue to play game after game, and any users that are in your tracked voice channel should be automuted (or all users in ALL voice channels if you didn't specify a tracked channel)
 
 # Configuration
 ```
@@ -100,11 +81,15 @@ FULLSCREEN = true # only fullscreen is supported for now (screen resolution is a
 # to use values 0,1,2, etc if you have issues
 # MONITOR = 0
 
-# how many seconds before players are muted after the "Voting Results" text is displayed
-GAME_RESUME_DELAY = 6
+# how many seconds before players are muted after the "Imposter" or "Crewmate" text is displayed at the start
+# of the game (default is 2)
+# GAME_START_DELAY = 2
 
-# how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed
-DISCUSS_START_DELAY = 0
+# how many seconds before players are muted after the "Voting Results" text is displayed (default is 6)
+# GAME_RESUME_DELAY = 6
+
+# how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed (default is 0)
+# DISCUSS_START_DELAY = 0
 
 DEBUG_LOGS = false # print the OCR output for debugging
 
