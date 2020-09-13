@@ -5,6 +5,8 @@ Implementation of [AmongUsBot](https://github.com/alpharaoh/AmongUsBot) but deve
 
 [![Demo Video](https://img.youtube.com/vi/c0-H6cY9RI8/0.jpg)](https://youtu.be/c0-H6cY9RI8)
 
+Have any questions, concerns, bug reports, or just want to chat! Join the discord at https://discord.gg/ZkqZSWF!
+
 # Motivation
 I'd like to extend a huge thank you to [alpharaoh](https://github.com/alpharaoh)! Without their original Python program
 with a lot of this OCR/Discord functionality, I never would have even thought of this idea; huge credit to them for the inspiration
