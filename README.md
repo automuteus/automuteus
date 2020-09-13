@@ -119,12 +119,13 @@ The Discord Bot uses the `.au` prefix for any commands
 
 |Command| Alias | Arguments | Description | Example |
 |---|---|---|---|---|
-|`.au list`|`.au l`|None|Print the currently tracked players, and their in-game status (Beta)||
-|`.au reset`|`.au r`|None|Reset the tracked player list manually (mainly for debug)||
 |`.au help`|`.au h`|None|Print help info and command usage||
+|`.au list`|`.au l`|None|Print the currently tracked players, and their in-game status (Beta)||
 |`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
-|`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
 |`.au dead`|`.au d`|@mentions|Mark a user as dead so they aren't unmuted during discussions|`.au d @DiscordUser1 @DiscordUser2`|
+|`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
+|`.au reset`|`.au r`|None|Reset the tracked player list manually (mainly for debug)||
+|`.au muteall`|`.au ma`|None|Forcibly mute ALL users (mainly for debug)||
 |`.au unmuteall`|`.au ua`|None|Forcibly unmute ALL users (mainly for debug)||
 # How it Works
 amongusdiscord uses Tesseract for OCR (Optical Character Recognition) to scan the Among Us game screen, and determine

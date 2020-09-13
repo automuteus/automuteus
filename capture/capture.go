@@ -242,7 +242,11 @@ func genericCapture(bounds image.Rectangle, filename string) []string {
 
 	file, _ := os.Create(filename)
 	defer file.Close()
-	png.Encode(file, img)
+	err = png.Encode(file, img)
+	if err != nil {
+		log.Println("Error in encoding temp.png!")
+		log.Println(err)
+	}
 
 	cmd := exec.Command(TESSERACT_PATH, filename, "stdout")
 	//cmd.Stdin = strings.NewReader("some input")
@@ -250,6 +254,7 @@ func genericCapture(bounds image.Rectangle, filename string) []string {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
+		log.Println("Tesseract could not be ran with error:")
 		log.Fatal(err)
 	}
 	finalString := strings.ReplaceAll(out.String(), "\r\n\f", "")

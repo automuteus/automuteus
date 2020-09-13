@@ -301,7 +301,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
 					} else {
-						responses := processMarkDeadUsers(args[1:])
+						responses := processMarkDeadUsers(s, m.GuildID, args[1:])
 						buf := bytes.NewBuffer([]byte("Results:\n"))
 						for name, msg := range responses {
 							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
@@ -311,18 +311,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					break
 				case "unmuteall":
 				case "ua":
-					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting all players!")
+					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
 					for id, _ := range VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, false)
 						if err != nil {
 							log.Println(err)
 						}
-
 					}
 					break
 				case "muteall":
 				case "ma":
-					s.ChannelMessageSend(m.ChannelID, "Forcibly muting all players!")
+					s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
 					for id, _ := range VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, true)
 						if err != nil {
@@ -367,7 +366,7 @@ func processAddUsersArgs(args []string) map[string]string {
 	return responses
 }
 
-func processMarkDeadUsers(args []string) map[string]string {
+func processMarkDeadUsers(dg *discordgo.Session, guildID string, args []string) map[string]string {
 	responses := make(map[string]string)
 	for _, v := range args {
 		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
@@ -384,6 +383,15 @@ func processMarkDeadUsers(args []string) map[string]string {
 						nameIdx = user.userName + " (" + user.nick + ")"
 					}
 					responses[nameIdx] = "Marked Dead"
+
+					//if we're in the discuss phase, mute the player as well
+					if GameState == capture.DISCUSS {
+						err := guildMemberMute(dg, guildID, id, true)
+						if err != nil {
+							log.Printf("Error muting %s: %s\n", user.userName, err)
+						}
+						responses[nameIdx] = "Marked Dead and Muted"
+					}
 				}
 			}
 		} else {
