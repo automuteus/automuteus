@@ -128,14 +128,17 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			muteAllTrackedMembers(dg, guild, false, false)
 			GameState = capture.PREGAME
 		case capture.GAME:
-			if ExclusiveChannelId != "" {
-				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", GameResumeDelay))
-			}
+			delay := 0
 			if GameState == capture.PREGAME {
-				time.Sleep(time.Second * time.Duration(GameStartDelay))
+				delay = GameStartDelay
 			} else if GameState == capture.DISCUSS {
-				time.Sleep(time.Second * time.Duration(GameResumeDelay))
+				delay = GameResumeDelay
 			}
+			if ExclusiveChannelId != "" {
+				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", delay))
+			}
+
+			time.Sleep(time.Second * time.Duration(delay))
 			muteAllTrackedMembers(dg, guild, true, false)
 			GameState = capture.GAME
 		case capture.DISCUSS:
@@ -168,7 +171,7 @@ func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, che
 					buf.WriteString("Unmuting ")
 				}
 			}
-			buf.WriteString(v.user.userName)
+			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
 			//buf.WriteString(v.User.Username)
 			//if v.Nick != "" {
 			//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
@@ -268,10 +271,15 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 	for _, state := range g.VoiceStates {
 		//add the user we haven't seen in our cache before
 		if _, ok := VoiceStatusCache[state.UserID]; !ok {
+			user := DiscordUser{
+				userID: state.UserID,
+			}
+			if v, okok := GuildMembersCache[state.UserID]; okok {
+				user = v
+			}
+
 			VoiceStatusCache[state.UserID] = UserData{
-				user: DiscordUser{
-					userID: state.UserID,
-				},
+				user:         user,
 				voiceState:   *state,
 				tracking:     TrackingVoiceId == "" || state.ChannelID == TrackingVoiceId,
 				amongUsColor: "Cyan",
@@ -357,7 +365,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
 					} else {
-						responses := processMarkDeadUsers(s, m.GuildID, args[1:])
+						responses := processMarkAliveUsers(s, m.GuildID, args[1:], false)
 						buf := bytes.NewBuffer([]byte("Results:\n"))
 						for name, msg := range responses {
 							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
@@ -370,7 +378,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
 					} else {
-						responses := processMarkDeadUsers(s, m.GuildID, args[1:])
+						responses := processMarkAliveUsers(s, m.GuildID, args[1:], true)
 						buf := bytes.NewBuffer([]byte("Results:\n"))
 						for name, msg := range responses {
 							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
@@ -482,7 +490,7 @@ func processAddUsersArgs(args []string) map[string]string {
 	return responses
 }
 
-func processMarkDeadUsers(dg *discordgo.Session, guildID string, args []string) map[string]string {
+func processMarkAliveUsers(dg *discordgo.Session, guildID string, args []string, markAlive bool) map[string]string {
 	responses := make(map[string]string)
 	for _, v := range args {
 		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
@@ -491,22 +499,30 @@ func processMarkDeadUsers(dg *discordgo.Session, guildID string, args []string) 
 			for id, user := range GuildMembersCache {
 				if id == idLookup {
 					temp := VoiceStatusCache[id]
-					temp.amongUsAlive = false
+					temp.amongUsAlive = markAlive
 					VoiceStatusCache[id] = temp
 
 					nameIdx := user.userName
 					if user.nick != "" {
 						nameIdx = user.userName + " (" + user.nick + ")"
 					}
-					responses[nameIdx] = "Marked Dead"
+					if markAlive {
+						responses[nameIdx] = "Marked Alive"
+					} else {
+						responses[nameIdx] = "Marked Dead"
+					}
 
-					//if we're in the discuss phase, mute the player as well
 					if GameState == capture.DISCUSS {
-						err := guildMemberMute(dg, guildID, id, true)
+						err := guildMemberMute(dg, guildID, id, !markAlive)
 						if err != nil {
-							log.Printf("Error muting %s: %s\n", user.userName, err)
+							log.Printf("Error muting/unmuting %s: %s\n", user.userName, err)
 						}
-						responses[nameIdx] = "Marked Dead and Muted"
+						if markAlive {
+							responses[nameIdx] = "Marked Alive and Unmuted"
+						} else {
+							responses[nameIdx] = "Marked Dead and Muted"
+						}
+
 					}
 				}
 			}
