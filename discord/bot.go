@@ -303,9 +303,13 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 	VoiceStatusCacheLock.Unlock()
 
 	for _, state := range g.VoiceStates {
-		//add the user we haven't seen in our cache before
 		VoiceStatusCacheLock.Lock()
-		if _, ok := VoiceStatusCache[state.UserID]; !ok {
+		//update the voicestatus of the user
+		if v, ok := VoiceStatusCache[state.UserID]; ok {
+			v.voiceState = *state
+			v.tracking = TrackingVoiceId == "" || state.ChannelID == TrackingVoiceId
+			VoiceStatusCache[state.UserID] = v
+		} else { //add the user we haven't seen in our cache before
 			user := DiscordUser{
 				userID: state.UserID,
 			}
