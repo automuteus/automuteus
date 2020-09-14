@@ -8,6 +8,7 @@ import (
 func helpResponse() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString("Among Us Bot command reference:\n")
+	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
 	buf.WriteString(fmt.Sprintf("`%s help` (`%s h`): Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s list` (`%s l`): Print the currently tracked players, and their in-game status (Beta).\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s dead` (`%s d`): Mark a user as dead so they aren't unmuted during discussions. Ex: `%s d @DiscordUser1 @DiscordUser2`\n", CommandPrefix, CommandPrefix, CommandPrefix))
