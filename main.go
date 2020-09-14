@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/denverquane/amongusdiscord/capture"
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
@@ -44,7 +43,7 @@ func main() {
 			if err != nil {
 				log.Fatal("Unrecognized test argument! Please use 1-10 to test discussion player positions")
 			}
-			testType = fmt.Sprintf("Player%dCapture", num)
+			//testType = fmt.Sprintf("Player%dCapture", num)
 			capture.TestNumberedDiscussCapture(capSettings, num-1)
 		}
 		if testType != "" {

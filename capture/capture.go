@@ -293,12 +293,13 @@ func genericCaptureAndOCR(bounds image.Rectangle, filename string) []string {
 	return strings.Split(finalString, " ")
 }
 
-func genericCaptureAndRGBA(bounds image.Rectangle, filename string) image.RGBA {
+func genericCaptureAndRGBA(bounds image.Rectangle, filename string) RGBColor {
 	img, err := screenshot.CaptureRect(bounds)
 	if err != nil {
 		panic(err)
 	}
 
+	//TODO wont need to write out to file once done calibrating
 	file, err := os.Create(filename)
 	if err != nil {
 		log.Println("Encountered an issue making temp.png file! Maybe a permissions problem?")
@@ -311,17 +312,26 @@ func genericCaptureAndRGBA(bounds image.Rectangle, filename string) image.RGBA {
 		log.Println(err)
 	}
 
+	bounds = img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
 
-	//var r, g, b, a uint32
+	var rSum, gSum, bSum uint64
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			log.Println(img.RGBAAt(x, y).RGBA())
-			//log.Printf("%v%v%v%v\n", r, g, b, a)
+			r, g, b, _ := img.At(x, y).RGBA()
+			rSum += uint64(r)
+			gSum += uint64(g)
+			bSum += uint64(b)
+			//log.Println(r,g,b)
 		}
 	}
-	return image.RGBA{}
+	totalPx := float64(width*height) * 257 //257 to convert back from a 32 bit value
+	return RGBColor{
+		r: uint32(float64(rSum) / totalPx),
+		g: uint32(float64(gSum) / totalPx),
+		b: uint32(float64(bSum) / totalPx),
+	}
 }
 
 func TestDiscussCapture(settings CaptureSettings) []string {
@@ -332,6 +342,7 @@ func TestEndingCapture(settings CaptureSettings) []string {
 	return genericCaptureAndOCR(settings.endingBounds, "ending.png")
 }
 
-func TestNumberedDiscussCapture(settings CaptureSettings, num int) image.RGBA {
-	return genericCaptureAndRGBA(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
+func TestNumberedDiscussCapture(settings CaptureSettings, num int) {
+	color := genericCaptureAndRGBA(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
+	log.Printf("R: %d, G: %d, B: %d\n", color.r, color.g, color.b)
 }
