@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -35,6 +36,10 @@ type UserData struct {
 }
 
 var VoiceStatusCache = make(map[string]UserData)
+var VoiceStatusCacheLock = sync.RWMutex{}
+
+var GameState capture.GameState
+var GameStateLock = sync.RWMutex{}
 
 var GameStartDelay = 0
 var GameResumeDelay = 0
@@ -79,6 +84,7 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
 	mems, err := dg.GuildMembers(guild, "", 1000)
+	VoiceStatusCacheLock.Lock()
 	for _, v := range mems {
 		VoiceStatusCache[v.User.ID] = UserData{
 			user: DiscordUser{
@@ -94,6 +100,7 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 			amongUsAlive: true,
 		}
 	}
+	VoiceStatusCacheLock.Unlock()
 
 	if channel != "" {
 		dg.ChannelMessageSend(channel, "Bot is Online!")
@@ -113,8 +120,6 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	dg.Close()
 }
 
-var GameState capture.GameState
-
 func discordListener(dg *discordgo.Session, guild string, res <-chan capture.GameState) {
 	for {
 		msg := <-res
@@ -126,14 +131,19 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 			}
 			//Loop through and reset players (game over = everyone alive again)
+			VoiceStatusCacheLock.Lock()
 			for i, v := range VoiceStatusCache {
 				v.amongUsAlive = true
 				VoiceStatusCache[i] = v
 			}
+			VoiceStatusCacheLock.Unlock()
 			muteAllTrackedMembers(dg, guild, false, false)
+			GameStateLock.Lock()
 			GameState = capture.PREGAME
+			GameStateLock.Unlock()
 		case capture.GAME:
 			delay := 0
+			GameStateLock.RLock()
 			if GameState == capture.PREGAME {
 				delay = GameStartDelay
 			} else if GameState == capture.DISCUSS {
@@ -142,16 +152,22 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", delay))
 			}
+			GameStateLock.RUnlock()
 
 			time.Sleep(time.Second * time.Duration(delay))
 			muteAllTrackedMembers(dg, guild, true, false)
+
+			GameStateLock.Lock()
 			GameState = capture.GAME
+			GameStateLock.Unlock()
 		case capture.DISCUSS:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
 			}
 			time.Sleep(time.Second * time.Duration(DiscussStartDelay))
+			GameStateLock.Lock()
 			GameState = capture.DISCUSS
+			GameStateLock.Unlock()
 			muteAllTrackedMembers(dg, guild, false, true)
 		}
 	}
@@ -160,6 +176,7 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, checkAlive bool) {
 	skipExec := false
 	rateLimit := 0
+	VoiceStatusCacheLock.RLock()
 	for user, v := range VoiceStatusCache {
 		if v.tracking {
 			buf := bytes.NewBuffer([]byte{})
@@ -197,6 +214,7 @@ func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, che
 			}
 		}
 	}
+	VoiceStatusCacheLock.RUnlock()
 }
 
 func guildMemberMute(session *discordgo.Session, guildID string, userID string, mute bool) (err error) {
@@ -216,6 +234,7 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 
 	//if the user is already in the voice status cache, only update if we don't know the voice channel to track,
 	//or the user has ENTERED this voice channel
+	VoiceStatusCacheLock.Lock()
 	if v, ok := VoiceStatusCache[m.UserID]; ok {
 		v.voiceState = *m.VoiceState
 
@@ -230,10 +249,14 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 			guildMemberMute(s, m.GuildID, m.UserID, false)
 
 			//if the user rejoins, only mute if the game is going, or if it's discussion and they're dead
-		} else if v.tracking && !m.Mute && (GameState == capture.GAME || (GameState == capture.DISCUSS && !v.amongUsAlive)) {
-			log.Println("Tracked mute")
-			log.Printf("Current game state: %d, alive: %v", GameState, v.amongUsAlive)
-			guildMemberMute(s, m.GuildID, m.UserID, true)
+		} else {
+			GameStateLock.RLock()
+			if v.tracking && !m.Mute && (GameState == capture.GAME || (GameState == capture.DISCUSS && !v.amongUsAlive)) {
+				log.Println("Tracked mute")
+				log.Printf("Current game state: %d, alive: %v", GameState, v.amongUsAlive)
+				guildMemberMute(s, m.GuildID, m.UserID, true)
+			}
+			GameStateLock.RUnlock()
 		}
 	} else {
 		user := DiscordUser{
@@ -254,6 +277,7 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 			amongUsAlive: true,
 		}
 	}
+	VoiceStatusCacheLock.Unlock()
 }
 
 func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
@@ -263,6 +287,7 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 	}
 
 	//make sure all the people in the voice status cache are still in voice
+	VoiceStatusCacheLock.Lock()
 	for id, v := range VoiceStatusCache {
 		foundUser := false
 		for _, state := range g.VoiceStates {
@@ -277,9 +302,11 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 			VoiceStatusCache[id] = v
 		}
 	}
+	VoiceStatusCacheLock.Unlock()
 
 	for _, state := range g.VoiceStates {
 		//add the user we haven't seen in our cache before
+		VoiceStatusCacheLock.Lock()
 		if _, ok := VoiceStatusCache[state.UserID]; !ok {
 			user := DiscordUser{
 				userID: state.UserID,
@@ -294,6 +321,7 @@ func updateVoiceStatusCache(s *discordgo.Session, guildID string) {
 				amongUsAlive: true,
 			}
 		}
+		VoiceStatusCacheLock.Unlock()
 	}
 }
 
@@ -360,11 +388,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					break
 				case "reset":
 				case "r":
+					VoiceStatusCacheLock.Lock()
 					for i, v := range VoiceStatusCache {
 						v.tracking = false
 						v.amongUsAlive = true
 						VoiceStatusCache[i] = v
 					}
+					VoiceStatusCacheLock.Unlock()
 					s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
 					break
 				case "dead":
@@ -396,16 +426,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				case "unmuteall":
 				case "ua":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
+					VoiceStatusCacheLock.RLock()
 					for id, _ := range VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, false)
 						if err != nil {
 							log.Println(err)
 						}
 					}
+					VoiceStatusCacheLock.RUnlock()
 					break
 				case "muteall":
 				case "ma":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
+					VoiceStatusCacheLock.RLock()
 					for id, _ := range VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, true)
 						if err != nil {
@@ -413,6 +446,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						}
 
 					}
+					VoiceStatusCacheLock.RUnlock()
 					break
 				case "broadcast":
 				case "bcast":
@@ -452,11 +486,13 @@ func processBroadcastArgs(args []string) (string, error) {
 			region = "Asia"
 		}
 	}
+	VoiceStatusCacheLock.RLock()
 	for _, player := range VoiceStatusCache {
 		if player.tracking {
 			buf.WriteString(fmt.Sprintf("<@!%s> ", player.user.userID))
 		}
 	}
+	VoiceStatusCacheLock.RUnlock()
 	buf.WriteString(fmt.Sprintf("\nThe Room Code is **%s**\n", code))
 
 	if region == "" {
@@ -473,6 +509,7 @@ func processAddUsersArgs(args []string) map[string]string {
 		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
 			//strip the special characters off front and end
 			idLookup := v[3 : len(v)-1]
+			VoiceStatusCacheLock.Lock()
 			for id, user := range VoiceStatusCache {
 				if id == idLookup {
 					VoiceStatusCache[id] = UserData{
@@ -490,6 +527,7 @@ func processAddUsersArgs(args []string) map[string]string {
 					responses[nameIdx] = "Added successfully!"
 				}
 			}
+			VoiceStatusCacheLock.Unlock()
 		} else {
 			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
 		}
@@ -503,6 +541,7 @@ func processMarkAliveUsers(dg *discordgo.Session, guildID string, args []string,
 		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
 			//strip the special characters off front and end
 			idLookup := v[3 : len(v)-1]
+			VoiceStatusCacheLock.Lock()
 			for id, user := range VoiceStatusCache {
 				if id == idLookup {
 					temp := VoiceStatusCache[id]
@@ -519,6 +558,7 @@ func processMarkAliveUsers(dg *discordgo.Session, guildID string, args []string,
 						responses[nameIdx] = "Marked Dead"
 					}
 
+					GameStateLock.RLock()
 					if GameState == capture.DISCUSS {
 						err := guildMemberMute(dg, guildID, id, !markAlive)
 						if err != nil {
@@ -531,8 +571,10 @@ func processMarkAliveUsers(dg *discordgo.Session, guildID string, args []string,
 						}
 
 					}
+					GameStateLock.RUnlock()
 				}
 			}
+			VoiceStatusCacheLock.Unlock()
 		} else {
 			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
 		}
@@ -560,6 +602,7 @@ func playerListResponse() string {
 	}
 
 	buf.WriteString("Player List:\n")
+	VoiceStatusCacheLock.RLock()
 	for _, player := range VoiceStatusCache {
 		if player.tracking {
 			emoji := ":heart:"
@@ -569,5 +612,6 @@ func playerListResponse() string {
 			buf.WriteString(fmt.Sprintf("<@!%s>: %s (%s) %s\n", player.user.userID, player.amongUsName, player.amongUsColor, emoji))
 		}
 	}
+	VoiceStatusCacheLock.RUnlock()
 	return buf.String()
 }
