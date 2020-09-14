@@ -87,10 +87,35 @@ func MakeSettingsFromEnv() CaptureSettings {
 			log.Printf("Running capture on display %d\n", num)
 		}
 	}
+	xRes, yRes := 0, 0
+	xResStr := os.Getenv("X_RESOLUTION")
+	if xResStr != "" {
+		x, err := strconv.Atoi(xResStr)
+		if err != nil {
+			log.Fatal("You provided a non-numerical value for the X resolution!")
+		}
+		xRes = x
+	}
+
+	yResStr := os.Getenv("Y_RESOLUTION")
+	if yResStr != "" {
+		y, err := strconv.Atoi(yResStr)
+		if err != nil {
+			log.Fatal("You provided a non-numerical value for the Y resolution!")
+		}
+		yRes = y
+	}
+	capSettings.xRes = float64(xRes)
+	capSettings.yRes = float64(yRes)
 
 	if capSettings.fullScreen {
 		bounds := screenshot.GetDisplayBounds(num)
-		capSettings.xRes, capSettings.yRes = float64(bounds.Dx()), float64(bounds.Dy())
+		if capSettings.xRes == 0 && capSettings.yRes == 0 {
+			capSettings.xRes, capSettings.yRes = float64(bounds.Dx()), float64(bounds.Dy())
+			log.Printf("Using auto-detected resolution: %dx%d\n", int(capSettings.xRes), int(capSettings.yRes))
+		} else {
+			log.Printf("Using .env-provided resolution: %dx%d\n", int(capSettings.xRes), int(capSettings.yRes))
+		}
 		capSettings.endingBounds = generateCaptureWindow(capSettings.xRes, capSettings.yRes, endingXStartScalar, endingWidthScalar, endingYStartScalar, endingHeightScalar)
 		capSettings.discussBounds = generateCaptureWindow(capSettings.xRes, capSettings.yRes, discussXStartScalar, discussWidthScalar, discussYStartScalar, discussHeightScalar)
 		capSettings.generatePlayerNameBounds()

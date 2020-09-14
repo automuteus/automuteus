@@ -66,8 +66,6 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 
-	//dg.AddHandler(guildMembers)
-
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
 
 	//Open a websocket connection to Discord and begin listening.

@@ -55,10 +55,14 @@ FULLSCREEN = true # only fullscreen is supported for now (screen resolution is a
 # Below is the default; leave commented out unless you installed tesseract elsewhere
 # TESSERACT_PATH = C:\Program Files\Tesseract-OCR\tesseract.exe
 
-# Only change this value if you run multiple monitors and also encounter an issue
+# Only change this value if you encounter an issue, and also run multiple monitors
 # 0 (the default) should be the primary display in a multi-monitor setup, but you may need
 # to use values 0,1,2, etc if you have issues
 # MONITOR = 0
+
+# Only change if you are experiencing capture issues. The bot should autodetect the resolution of your primary display
+# X_RESOLUTION = 1920
+# Y_RESOLUTION = 1080
 
 # how many seconds before players are muted after the "Imposter" or "Crewmate" text is displayed at the start
 # of the game (default is 2)
