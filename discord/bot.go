@@ -348,13 +348,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			} else {
 				switch args[0] {
 				case "help":
+					fallthrough
 				case "h":
 					s.ChannelMessageSend(m.ChannelID, helpResponse())
 					break
 				case "add":
+					fallthrough
 				case "a":
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
 						responses := processAddUsersArgs(args[1:])
 						buf := bytes.NewBuffer([]byte("Results:\n"))
@@ -365,9 +368,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 					break
 				case "track":
+					fallthrough
 				case "t":
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
 						channelName := strings.Join(args[1:], " ")
 
@@ -381,11 +386,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 					break
 				case "list":
+					fallthrough
 				case "l":
 					resp := playerListResponse()
 					s.ChannelMessageSend(m.ChannelID, resp)
 					break
 				case "reset":
+					fallthrough
 				case "r":
 					VoiceStatusCacheLock.Lock()
 					for i, v := range VoiceStatusCache {
@@ -397,9 +404,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
 					break
 				case "dead":
+					fallthrough
 				case "d":
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
 						responses := processMarkAliveUsers(s, m.GuildID, args[1:], false)
 						buf := bytes.NewBuffer([]byte("Results:\n"))
@@ -410,9 +419,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 					break
 				case "alive":
+					fallthrough
 				case "al":
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
 						responses := processMarkAliveUsers(s, m.GuildID, args[1:], true)
 						buf := bytes.NewBuffer([]byte("Results:\n"))
@@ -423,6 +434,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 					break
 				case "unmuteall":
+					fallthrough
 				case "ua":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
 					VoiceStatusCacheLock.RLock()
@@ -435,6 +447,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					VoiceStatusCacheLock.RUnlock()
 					break
 				case "muteall":
+					fallthrough
 				case "ma":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
 					VoiceStatusCacheLock.RLock()
@@ -448,10 +461,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					VoiceStatusCacheLock.RUnlock()
 					break
 				case "broadcast":
+					fallthrough
 				case "bcast":
+					fallthrough
 				case "b":
 					if len(args[1:]) == 0 {
 						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
 						str, err := processBroadcastArgs(args[1:])
 						if err != nil {
@@ -475,12 +491,15 @@ func processBroadcastArgs(args []string) (string, error) {
 		region = strings.ToLower(args[1])
 		switch region {
 		case "na":
+			fallthrough
 		case "north":
 			region = "North America"
 		case "eu":
+			fallthrough
 		case "europe":
 			region = "Europe"
 		case "as":
+			fallthrough
 		case "asia":
 			region = "Asia"
 		}
