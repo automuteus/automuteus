@@ -285,7 +285,10 @@ func genericCaptureAndOCR(bounds image.Rectangle, filename string) []string {
 	err = cmd.Run()
 	if err != nil {
 		log.Println("Tesseract could not be ran with error:")
-		log.Fatal(err)
+		log.Println(err)
+		log.Println("Terminating program in 30 seconds")
+		time.Sleep(30 * time.Second)
+		log.Fatal()
 	}
 	finalString := strings.ReplaceAll(out.String(), "\r\n\f", "")
 	finalString = strings.ReplaceAll(finalString, "\r\n", " ")
@@ -328,9 +331,9 @@ func genericCaptureAndRGBA(bounds image.Rectangle, filename string) RGBColor {
 	}
 	totalPx := float64(width*height) * 257 //257 to convert back from a 32 bit value
 	return RGBColor{
-		r: uint32(float64(rSum) / totalPx),
-		g: uint32(float64(gSum) / totalPx),
-		b: uint32(float64(bSum) / totalPx),
+		r: float64(rSum) / totalPx,
+		g: float64(gSum) / totalPx,
+		b: float64(bSum) / totalPx,
 	}
 }
 
@@ -344,5 +347,7 @@ func TestEndingCapture(settings CaptureSettings) []string {
 
 func TestNumberedDiscussCapture(settings CaptureSettings, num int) {
 	color := genericCaptureAndRGBA(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
-	log.Printf("R: %d, G: %d, B: %d\n", color.r, color.g, color.b)
+	log.Printf("R: %d, G: %d, B: %d\n", int(color.r), int(color.g), int(color.b))
+	match, bright := BestColorMatch(color)
+	log.Printf("Best Match: %d Bright: %v\n", match, bright)
 }

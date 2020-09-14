@@ -3,24 +3,46 @@ package capture
 type SpacemanColor int
 
 const (
-	RED    SpacemanColor = iota //DONE
-	BLUE   SpacemanColor = iota //DONE
-	GREEN  SpacemanColor = iota //NEED DIM
-	PINK   SpacemanColor = iota //NEED BOTH
-	ORANGE SpacemanColor = iota //NEED BRIGHT
-	YELLOW SpacemanColor = iota //NEED BRIGHT
-	BLACK  SpacemanColor = iota //NEED BRIGHT
-	WHITE  SpacemanColor = iota //NEED BRIGHT
-	PURPLE SpacemanColor = iota //NEED BRIGHT
-	BROWN  SpacemanColor = iota //NEED BRIGHT
-	CYAN   SpacemanColor = iota //NEED BRIGHT
-	LIME   SpacemanColor = iota //NEED BOTH
+	RED    SpacemanColor = iota //0
+	BLUE   SpacemanColor = iota //1
+	GREEN  SpacemanColor = iota //2
+	PINK   SpacemanColor = iota //3
+	ORANGE SpacemanColor = iota //4
+	YELLOW SpacemanColor = iota //5
+	BLACK  SpacemanColor = iota //6
+	WHITE  SpacemanColor = iota //7
+	PURPLE SpacemanColor = iota //8
+	BROWN  SpacemanColor = iota //9
+	CYAN   SpacemanColor = iota //10
+	LIME   SpacemanColor = iota //11
+	NULL   SpacemanColor = iota //12
 )
 
 type RGBColor struct {
-	r uint32
-	g uint32
-	b uint32
+	r float64
+	g float64
+	b float64
+}
+
+//if displays are darker or lighter, this approach (probably) WILL NOT WORK. Needs proper sorting by distance
+func WithinAcceptableRange(testColor, baseColor RGBColor, percentDiff float64) bool {
+	redInRange := testColor.r > baseColor.r-(baseColor.r*percentDiff)
+	blueInRange := testColor.b > baseColor.b-(baseColor.b*percentDiff)
+	greenInRange := testColor.g > baseColor.g-(baseColor.g*percentDiff)
+	return redInRange && greenInRange && blueInRange
+}
+
+const PercentDiff = 0.05
+
+func BestColorMatch(color RGBColor) (SpacemanColor, bool) {
+	for sc, v := range AllSpacemanColors {
+		if WithinAcceptableRange(color, v.bright, PercentDiff) {
+			return sc, true
+		} else if WithinAcceptableRange(color, v.dim, PercentDiff) {
+			return sc, false
+		}
+	}
+	return NULL, false
 }
 
 type ColorPair struct {
@@ -59,9 +81,9 @@ var AllSpacemanColors = SpacemanColors{
 	},
 	GREEN: ColorPair{
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 50,
+			g: 104,
+			b: 77,
 		},
 		RGBColor{
 			r: 60,
@@ -71,14 +93,14 @@ var AllSpacemanColors = SpacemanColors{
 	},
 	PINK: ColorPair{
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 141,
+			g: 85,
+			b: 135,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 219,
+			g: 114,
+			b: 196,
 		},
 	},
 	ORANGE: ColorPair{
@@ -88,9 +110,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 65,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 227,
+			g: 147,
+			b: 70,
 		},
 	},
 	YELLOW: ColorPair{
@@ -100,9 +122,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 95,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 231,
+			g: 237,
+			b: 125,
 		},
 	},
 	BLACK: ColorPair{
@@ -112,9 +134,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 92,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 92,
+			g: 105,
+			b: 117,
 		},
 	},
 	WHITE: ColorPair{
@@ -124,9 +146,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 156,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 208,
+			g: 222,
+			b: 241,
 		},
 	},
 	PURPLE: ColorPair{
@@ -136,9 +158,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 137,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 127,
+			g: 88,
+			b: 201,
 		},
 	},
 	BROWN: ColorPair{
@@ -148,9 +170,9 @@ var AllSpacemanColors = SpacemanColors{
 			b: 72,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 130,
+			g: 107,
+			b: 81,
 		},
 	},
 	CYAN: ColorPair{
@@ -160,21 +182,21 @@ var AllSpacemanColors = SpacemanColors{
 			b: 149,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 89,
+			g: 244,
+			b: 226,
 		},
 	},
 	LIME: ColorPair{
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 79,
+			g: 152,
+			b: 83,
 		},
 		RGBColor{
-			r: 0,
-			g: 0,
-			b: 0,
+			r: 105,
+			g: 232,
+			b: 102,
 		},
 	},
 }

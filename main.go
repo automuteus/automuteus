@@ -1,22 +1,35 @@
 package main
 
 import (
+	"errors"
 	"github.com/denverquane/amongusdiscord/capture"
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 func main() {
+	err := mainWrapper()
+	if err != nil {
+		log.Println("Program exited with the following error:")
+		log.Println(err)
+		log.Println("This window will automatically terminate in 30 seconds")
+		time.Sleep(30 * time.Second)
+		return
+	}
+}
+
+func mainWrapper() error {
 	err := godotenv.Load("final.env")
 	if err != nil {
 		err = godotenv.Load("final.txt")
 		if err != nil {
 			err = godotenv.Load("final.env.txt")
 			if err != nil {
-				log.Fatal("Error loading environment file; you need a file named final.env, final.txt, or final.env.txt")
+				return errors.New("error loading environment file; you need a file named final.env, final.txt, or final.env.txt")
 			}
 		}
 	}
@@ -41,7 +54,7 @@ func main() {
 		} else {
 			num, err := strconv.Atoi(os.Args[1])
 			if err != nil {
-				log.Fatal("Unrecognized test argument! Please use 1-10 to test discussion player positions")
+				return errors.New("unrecognized test argument! Please use 1-10 to test discussion player positions")
 			}
 			//testType = fmt.Sprintf("Player%dCapture", num)
 			capture.TestNumberedDiscussCapture(capSettings, num-1)
@@ -50,7 +63,7 @@ func main() {
 			log.Printf("Testing `%s` mode, saving capture window to `%s.png`\n", testType, testType)
 			log.Printf("OCR Results:\n%s\n", results)
 		}
-		return
+		return nil
 	}
 
 	captureResults := make(chan capture.GameState)
@@ -60,17 +73,17 @@ func main() {
 
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {
-		log.Fatal("No DISCORD_BOT_TOKEN provided! Exiting")
+		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
 	discordGuild := os.Getenv("DISCORD_GUILD_ID")
 	if discordGuild == "" {
-		log.Fatal("No DISCORD_GUILD_ID provided! Exiting")
+		return errors.New("no DISCORD_GUILD_ID provided")
 	}
 
 	discordChannel := os.Getenv("DISCORD_CHANNEL_ID")
 	if discordChannel == "" {
-		log.Fatal("No DISCORD_CHANNEL_ID provided! Exiting")
+		return errors.New("no DISCORD_CHANNEL_ID provided")
 	}
 
 	gameStartDelayStr := os.Getenv("GAME_START_DELAY")
@@ -115,4 +128,5 @@ func main() {
 
 	//start the discord bot
 	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs)
+	return nil
 }
