@@ -5,18 +5,7 @@ Implementation of [AmongUsBot](https://github.com/alpharaoh/AmongUsBot) but deve
 
 [![Demo Video](https://img.youtube.com/vi/c0-H6cY9RI8/0.jpg)](https://youtu.be/c0-H6cY9RI8)
 
-Have any questions, concerns, bug reports, or just want to chat! Join the discord at https://discord.gg/ZkqZSWF!
-
-# Motivation
-I'd like to extend a huge thank you to [alpharaoh](https://github.com/alpharaoh)! Without their original Python program
-with a lot of this OCR/Discord functionality, I never would have even thought of this idea; huge credit to them for the inspiration
-and template for a lot of this bot's functionality.
-
-I chose to write this program because I couldn't implement features as fast as I would like on the original repository
-(both because I'm not the biggest fan of Python, but also because it's not my repo), but primarily because I saw how writing
-this utility in Go would help both myself, and users of the app. Go compiles to a single binary, so with the exception of the
-Tesseract OCR utility, users only need a single release executable to run the bot (outside of all the Discord bot configuration
-necessary on your respective server).
+Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
 
 # Installation
 ## Installation Video
@@ -28,19 +17,8 @@ Usage/Commands sections below! If you prefer text instructions over videos, foll
 ## Pre-Installation Steps, Important!!!
 1. Install [Tesseract OCR](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-v5.0.0-alpha.20200328.exe).
 After installation, you should have a `tesseract.exe` in `C:\Program Files\Tesseract-OCR\` (this is required by the bot).
-2. Create an Application and Bot account for your Discord Server (requires Admin privileges on the Server in question). 
-
-    a. Navigate to https://discord.com/developers/applications and create New Application (top right). Name it whatever you like.
-
-    b. Click "Bot" on the left panel, then click the button on the right to Add Bot. Scroll down to the section titled `Privileged Gateway Intents`, and toggle the option for `Server Members Intent` to ensure it is enabled, then Save Changes.
-
-    c. Scroll up to where the Bot Icon is displayed. Change its Username to whatever you like (Such as Among Us). Optionally, you can replace the icon with one provided in this repo under the [images folder](https://github.com/denverquane/amongusdiscord/tree/master/images). **But make sure to Copy the `Token` on the right, and paste it to a safe location.** We will need it later in the installation steps; this is the `DISCORD_BOT_TOKEN` in the `sample.env` file.
-
-    d. On the left panel, click "OAuth2", and then check the box marked `bot` under `Scopes`. Then scroll down to `Bot Permissions`, and check the boxes marked `View Channels`, `Send Messages`, and `Mute Members` (or just `Administrator`, but be very careful doing this in general...).
-
-    e. Scroll back up to `Scopes`, and copy the URL in the field that begins with `https://discord.com/api/oauth2/authorize?`. Paste this in a new browser tab, and grant the App access to whatever server you wish it to access. Close this tab when Finalized.
-
-    f. Last step, almost there! Now we need to get the `DISCORD_GUILD_ID` and the `DISCORD_CHANNEL_ID`. Go to https://discord.com/app, and navigate to the Server you want the Bot to communicate in (Servers are also known as Guilds). Navigate to the text channel you will want the Bot to send messages and receive commands in, and look at the URL in your browser. It will have the format `https://discord.com/channels/<DISCORD_GUILD_ID>/<DISCORD_CHANNEL_ID>`. Use these ID fields to populate the `sample.env` in the installation steps below (or paste the IDs somewhere else for now, making sure to label them appropriately). If this text channel is private or limited to certain roles, you will need to manually grant access to the Bot.
+2. Create an Application and Bot account for your Discord Server (requires Admin privileges on the Server in question).
+    - Follow the instructions [HERE](https://github.com/denverquane/amongusdiscord/blob/master/BOT_README.md)
 
 Congrats, you've done the hardest part; setting up the Bot and Application within Discord!
 
@@ -48,6 +26,7 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 
 ## Easiest:
 1. [Download the latest release executable (`.exe`)](https://github.com/denverquane/amongusdiscord/releases) for this bot.
+    - If you download the `update.exe` in the releases, running that program will automatically pull the latest `amongusdiscord.exe` for you in the future!
 2. Make a text file in the same directory as the `amongusdiscord.exe` you just downloaded. Inside, paste the contents of [`sample.env`](https://github.com/denverquane/amongusdiscord/blob/master/sample.env) (or the values in the "Configuration" section down below)
 and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_CHANNEL_ID` that you got from the preinstallation steps. **Save the file as `final.env`**. If you're using Notepad, make sure it saves (using "Save As") as `final.env` with "All Types", and **not** `final.env` Text type ".txt".
 3. Run the executable from step 2, either by double-clicking or using `./amongusdiscord.exe` in a terminal window. The bot should now be running, and you should see a message from the Bot in the Text Channel you chose in the Pre-Installation!
@@ -99,6 +78,14 @@ DISCORD_GUILD_ID = 12341234
 DISCORD_CHANNEL_ID = 123432
 ```
 
+# Similar Projects
+
+- [AmongUsBot](https://github.com/alpharaoh/AmongUsBot). Without their original Python program
+with a lot of the OCR/Discord functionality, I never would have even thought of this idea!
+
+- [amongcord](https://github.com/pedrofracassi) great program for tracking player status and auto mute/unmute in Among Us.
+Their project works like a traditional Discord bot; very easy installation!
+
 # Bot Commands
 The Discord Bot uses the `.au` prefix for any commands
 
@@ -106,7 +93,8 @@ The Discord Bot uses the `.au` prefix for any commands
 |---|---|---|---|---|
 |`.au help`|`.au h`|None|Print help info and command usage||
 |`.au list`|`.au l`|None|Print the currently tracked players, and their in-game status (Beta)||
-|`.au dead`|`.au d`|@mentions|Mark a user as dead so they aren't unmuted during discussions|`.au d @DiscordUser1 @DiscordUser2`|
+|`.au dead`|`.au d`|@mentions|Mark a user as dead so they remain muted during discussions|`.au d @DiscordUser1 @DiscordUser2`|
+|`.au alive`|`.au al`|@mentions|Mark a user as alive so they are unmuted during discussions|`.au al @DiscordUser1 @DiscordUser2`|
 |`.au track`|`.au t`|Voice Channel Name|Tell Bot to use a single voice channel for mute/unmute, and ignore other players|`.au t Voice channel name`|
 |`.au bcast`|`.au b`|roomcode and region|Broadcast the room code and region to players|`.au b abcd asia`|
 |`.au add`|`.au a`|@mentions|Add players to the tracked list (muted/unmuted throughout the game)|`.au a @DiscordUser2 @DiscordUser1`|
