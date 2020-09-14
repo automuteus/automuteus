@@ -13,7 +13,10 @@ import (
 func main() {
 	err := godotenv.Load("final.env")
 	if err != nil {
-		log.Fatal("Error loading final.env file; did you forget to rename 'sample.env' to 'final.env'?")
+		err = godotenv.Load("final.txt")
+		if err != nil {
+			log.Fatal("Error loading final.env file; did you forget to rename 'sample.env' to 'final.env'?")
+		}
 	}
 
 	debugLogsStr := os.Getenv("DEBUG_LOGS")
@@ -39,7 +42,7 @@ func main() {
 				log.Fatal("Unrecognized test argument! Please use 1-10 to test discussion player positions")
 			}
 			testType = fmt.Sprintf("Player%dCapture", num)
-			results = capture.TestNumberedDiscussCapture(capSettings, num-1)
+			capture.TestNumberedDiscussCapture(capSettings, num-1)
 		}
 		if testType != "" {
 			log.Printf("Testing `%s` mode, saving capture window to `%s.png`\n", testType, testType)

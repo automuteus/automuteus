@@ -173,7 +173,6 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 
 func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, checkAlive bool) {
 	skipExec := false
-	rateLimit := 0
 	VoiceStatusCacheLock.RLock()
 	for user, v := range VoiceStatusCache {
 		if v.tracking {
@@ -199,16 +198,12 @@ func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, che
 			//}
 			log.Println(buf.String())
 			if !skipExec {
-				if rateLimit == 5 {
-					log.Println("Sleeping for 1 second to avoid being rate-limited by Discord")
-					time.Sleep(time.Second)
-					rateLimit = 0
-				}
-				rateLimit++
 				err := guildMemberMute(dg, guildId, user, mute)
 				if err != nil {
 					log.Println(err)
 				}
+				log.Println("Sleeping for 200 ms between mutes to avoid being rate-limited by Discord")
+				time.Sleep(200 * time.Millisecond)
 			}
 		}
 	}

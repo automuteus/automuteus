@@ -133,7 +133,7 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 		//we only need to scan for the game start text
 		case PREGAME:
 			log.Println("Waiting for Game to begin...")
-			gameStrings := genericCapture(settings.endingBounds, TempImageFilename)
+			gameStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
 			if debugLogs {
 				log.Printf("OCR Results using Ending bounds:\n%s", gameStrings)
 			}
@@ -146,7 +146,7 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 			}
 		case GAME:
 			log.Println("Waiting for Discussion or Game Over...")
-			discussStrings := genericCapture(settings.discussBounds, TempImageFilename)
+			discussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
 			if debugLogs {
 				log.Printf("OCR Results using Discuss bounds:\n%s", discussStrings)
 			}
@@ -158,7 +158,7 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 				}
 			} else {
 				//only check the end strings if we clearly havent begun a discussion
-				endStrings := genericCapture(settings.endingBounds, TempImageFilename)
+				endStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
 				if debugLogs {
 					log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
 				}
@@ -172,7 +172,7 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 			}
 		case DISCUSS:
 			log.Println("Waiting for discussion to end...")
-			endDiscussStrings := genericCapture(settings.discussBounds, TempImageFilename)
+			endDiscussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
 			if debugLogs {
 				log.Printf("OCR Results using Discuss bounds:\n%s", endDiscussStrings)
 			}
@@ -220,20 +220,20 @@ func intersects(a, b []string) bool {
 	return false
 }
 
-const xLeftStartScalar = 0.143
-const xRightStartScalar = 0.484
-const xWidthScalar = 0.0625
+const xLeftStartScalar = 0.1738
+const xRightStartScalar = 0.5144
+const xWidthScalar = 0.0066
 
 var yScalars = []float64{
-	0.203, //1st row
-	0.331, //2nd row
-	0.456, //3rd row
-	0.584, //4th row
-	0.710, //5th row
+	0.2187,  //1st row
+	0.3458,  //2nd row
+	0.47083, //3rd row
+	0.5975,  //4th row
+	0.7239,  //5th row
 }
 
 //height of the player image
-const yHeightScalar = 0.09
+const yHeightScalar = 0.00833
 
 func (settings *CaptureSettings) generatePlayerNameBounds() {
 	settings.playerNameBounds = make([]image.Rectangle, 10)
@@ -260,7 +260,7 @@ func generateCaptureWindow(xRes, yRes float64, xScalar, widthScalar, yScalar, he
 //any 1 or more spaces
 //var Spaces = regexp.MustCompile(`\s+`)
 
-func genericCapture(bounds image.Rectangle, filename string) []string {
+func genericCaptureAndOCR(bounds image.Rectangle, filename string) []string {
 	img, err := screenshot.CaptureRect(bounds)
 	if err != nil {
 		panic(err)
@@ -293,14 +293,45 @@ func genericCapture(bounds image.Rectangle, filename string) []string {
 	return strings.Split(finalString, " ")
 }
 
+func genericCaptureAndRGBA(bounds image.Rectangle, filename string) image.RGBA {
+	img, err := screenshot.CaptureRect(bounds)
+	if err != nil {
+		panic(err)
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Println("Encountered an issue making temp.png file! Maybe a permissions problem?")
+		log.Println(err)
+	}
+	defer file.Close()
+	err = png.Encode(file, img)
+	if err != nil {
+		log.Println("Error in encoding temp.png from png!")
+		log.Println(err)
+	}
+
+	width, height := bounds.Max.X, bounds.Max.Y
+
+	//var r, g, b, a uint32
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			log.Println(img.RGBAAt(x, y).RGBA())
+			//log.Printf("%v%v%v%v\n", r, g, b, a)
+		}
+	}
+	return image.RGBA{}
+}
+
 func TestDiscussCapture(settings CaptureSettings) []string {
-	return genericCapture(settings.discussBounds, "discuss.png")
+	return genericCaptureAndOCR(settings.discussBounds, "discuss.png")
 }
 
 func TestEndingCapture(settings CaptureSettings) []string {
-	return genericCapture(settings.endingBounds, "ending.png")
+	return genericCaptureAndOCR(settings.endingBounds, "ending.png")
 }
 
-func TestNumberedDiscussCapture(settings CaptureSettings, num int) []string {
-	return genericCapture(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
+func TestNumberedDiscussCapture(settings CaptureSettings, num int) image.RGBA {
+	return genericCaptureAndRGBA(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
 }
