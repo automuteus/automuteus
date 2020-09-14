@@ -28,7 +28,7 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 1. [Download the latest release executable (`.exe`)](https://github.com/denverquane/amongusdiscord/releases) for this bot.
     - If you download the `update.exe` in the releases, running that program will automatically pull the latest `amongusdiscord.exe` for you in the future!
 2. Make a text file in the same directory as the `amongusdiscord.exe` you just downloaded. Inside, paste the contents of [`sample.env`](https://github.com/denverquane/amongusdiscord/blob/master/sample.env) (or the values in the "Configuration" section down below)
-and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_CHANNEL_ID` that you got from the preinstallation steps. **Save the file as `final.env`**. If you're using Notepad, make sure it saves (using "Save As") as `final.env` with "All Types", and **not** `final.env` Text type ".txt".
+and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_CHANNEL_ID` that you got from the preinstallation steps. **Save the file as `final.txt` *or* `final.env`**.
 3. Run the executable from step 2, either by double-clicking or using `./amongusdiscord.exe` in a terminal window. The bot should now be running, and you should see a message from the Bot in the Text Channel you chose in the Pre-Installation!
 
 ## Install From Source:
@@ -50,7 +50,27 @@ Get Playing! You can continue to play game after game, and any users that are in
 
 # Configuration
 ```
-FULLSCREEN = true # only fullscreen is supported for now (screen resolution is automatically detected)
+FULLSCREEN = true # only fullscreen is supported for now
+
+# Fill in these fields (from the Pre-installation steps) or the bot will not work!
+DISCORD_BOT_TOKEN =
+DISCORD_GUILD_ID =
+DISCORD_CHANNEL_ID =
+
+# how many seconds before players are muted after the "Imposter" or "Crewmate" text is displayed at the start
+# of the game
+GAME_START_DELAY = 4
+
+# how many seconds before players are muted after the "Voting Results" text is displayed
+GAME_RESUME_DELAY = 7
+
+# how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed
+DISCUSS_START_DELAY = 0
+
+# how many milliseconds between mute commands (for multiple players) the bot should wait
+# leave as default (300ms) unless you see players not being muted/unmuted fully, especially in large games of
+# 7+ people. If playing with many players and inconsistent muting/unmuting is occurring, bump up to 350-400
+# DISCORD_API_MUTE_DELAY_MS = 300
 
 # Below is the default; leave commented out unless you installed tesseract elsewhere
 # TESSERACT_PATH = C:\Program Files\Tesseract-OCR\tesseract.exe
@@ -64,31 +84,8 @@ FULLSCREEN = true # only fullscreen is supported for now (screen resolution is a
 # X_RESOLUTION = 1920
 # Y_RESOLUTION = 1080
 
-# how many seconds before players are muted after the "Imposter" or "Crewmate" text is displayed at the start
-# of the game (default is 2)
-# GAME_START_DELAY = 2
-
-# how many seconds before players are muted after the "Voting Results" text is displayed (default is 6)
-# GAME_RESUME_DELAY = 6
-
-# how many seconds before players are unmuted after the "Who is the Imposter?" text is displayed (default is 0)
-# DISCUSS_START_DELAY = 0
-
-DEBUG_LOGS = false # print the OCR output for debugging
-
-# Replace these values with those obtained in the Preinstallation steps prior
-DISCORD_BOT_TOKEN = abcdefgh 
-DISCORD_GUILD_ID = 12341234
-DISCORD_CHANNEL_ID = 123432
+DEBUG_LOGS = false
 ```
-
-# Similar Projects
-
-- [AmongUsBot](https://github.com/alpharaoh/AmongUsBot). Without their original Python program
-with a lot of the OCR/Discord functionality, I never would have even thought of this idea!
-
-- [amongcord](https://github.com/pedrofracassi) great program for tracking player status and auto mute/unmute in Among Us.
-Their project works like a traditional Discord bot; very easy installation!
 
 # Bot Commands
 The Discord Bot uses the `.au` prefix for any commands
@@ -105,6 +102,7 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au reset`|`.au r`|None|Reset the tracked player list manually (mainly for debug)||
 |`.au muteall`|`.au ma`|None|Forcibly mute ALL users (mainly for debug)||
 |`.au unmuteall`|`.au ua`|None|Forcibly unmute ALL users (mainly for debug)||
+
 # How it Works
 amongusdiscord uses Tesseract for OCR (Optical Character Recognition) to scan the Among Us game screen, and determine
 if a discussion is occurring, a round is starting, etc., and if it should mute/unmute players in the Discord server automatically.
@@ -115,6 +113,14 @@ should work, but more testing is needed to say this for certain.
 Work is currently being done to also keep dead players muted, and potentially allow the the meeting caller to speak first
 for some amount of time, but these are much harder problems, particularly with Tesseract's limitations, and the additional
 processing required.
+
+# Similar Projects
+
+- [AmongUsBot](https://github.com/alpharaoh/AmongUsBot). Without their original Python program
+with a lot of the OCR/Discord functionality, I never would have even thought of this idea!
+
+- [amongcord](https://github.com/pedrofracassi) great program for tracking player status and auto mute/unmute in Among Us.
+Their project works like a traditional Discord bot; very easy installation!
 
 # Troubleshooting
 ## Running the executable does nothing, I don't see any window pop up!

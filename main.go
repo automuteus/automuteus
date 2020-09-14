@@ -15,7 +15,10 @@ func main() {
 	if err != nil {
 		err = godotenv.Load("final.txt")
 		if err != nil {
-			log.Fatal("Error loading final.env file; did you forget to rename 'sample.env' to 'final.env'?")
+			err = godotenv.Load("final.env.txt")
+			if err != nil {
+				log.Fatal("Error loading environment file; you need a file named final.env, final.txt, or final.env.txt")
+			}
 		}
 	}
 
@@ -68,27 +71,27 @@ func main() {
 
 	discordChannel := os.Getenv("DISCORD_CHANNEL_ID")
 	if discordChannel == "" {
-		log.Println("No DISCORD_CHANNEL_ID provided, assuming commands from any channel are equally valid")
+		log.Fatal("No DISCORD_CHANNEL_ID provided! Exiting")
 	}
 
 	gameStartDelayStr := os.Getenv("GAME_START_DELAY")
-	gameStartDelay := 2
+	gameStartDelay := 4
 	num, err := strconv.Atoi(gameStartDelayStr)
 	if err == nil {
 		log.Printf("Using GAME_START_DELAY of %d seconds\n", num)
 		gameStartDelay = num
 	} else {
-		log.Printf("Error parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameStartDelay)
+		log.Printf("Problem parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameStartDelay)
 	}
 
 	gameResumeDelayStr := os.Getenv("GAME_RESUME_DELAY")
-	gameResumeDelay := 6
+	gameResumeDelay := 7
 	num, err = strconv.Atoi(gameResumeDelayStr)
 	if err == nil {
 		log.Printf("Using GAME_RESUME_DELAY of %d seconds\n", num)
 		gameResumeDelay = num
 	} else {
-		log.Printf("Error parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameResumeDelay)
+		log.Printf("Problem parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameResumeDelay)
 	}
 
 	discussStartDelayStr := os.Getenv("DISCUSS_START_DELAY")
@@ -98,9 +101,19 @@ func main() {
 		log.Printf("Using DISCUSS_START_DELAY of %d seconds\n", num)
 		discussStartDelay = num
 	} else {
-		log.Printf("Error parsing DISCUSS_START_DELAY; using %d seconds as default\n", discussStartDelay)
+		log.Printf("Problem parsing DISCUSS_START_DELAY; using %d seconds as default\n", discussStartDelay)
+	}
+
+	discordMuteDelayMsStr := os.Getenv("DISCORD_API_MUTE_DELAY_MS")
+	discordMuteDelayMs := 300
+	num, err = strconv.Atoi(discordMuteDelayMsStr)
+	if err == nil {
+		log.Printf("Using DISCORD_API_MUTE_DELAY_MS of %dms\n", num)
+		discordMuteDelayMs = num
+	} else {
+		log.Printf("Problem parsing DISCORD_API_MUTE_DELAY_MS; using %dms as default\n", discordMuteDelayMs)
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay)
+	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs)
 }

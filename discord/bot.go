@@ -44,16 +44,18 @@ var GameStateLock = sync.RWMutex{}
 var GameStartDelay = 0
 var GameResumeDelay = 0
 var DiscussStartDelay = 0
+var DiscordMuteDelayMs = 0
 
 var ExclusiveChannelId = ""
 
 var TrackingVoiceId = ""
 var TrackingVoiceName = ""
 
-func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay int) {
+func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs int) {
 	GameStartDelay = gameStartDelay
 	GameResumeDelay = gameResumeDelay
 	DiscussStartDelay = discussStartDelay
+	DiscordMuteDelayMs = discordMuteDelayMs
 
 	ExclusiveChannelId = channel
 	dg, err := discordgo.New("Bot " + token)
@@ -202,8 +204,8 @@ func muteAllTrackedMembers(dg *discordgo.Session, guildId string, mute bool, che
 				if err != nil {
 					log.Println(err)
 				}
-				log.Println("Sleeping for 200 ms between mutes to avoid being rate-limited by Discord")
-				time.Sleep(200 * time.Millisecond)
+				log.Printf("Sleeping for %dms between mutes to avoid being rate-limited by Discord\n", DiscordMuteDelayMs)
+				time.Sleep(time.Duration(DiscordMuteDelayMs) * time.Millisecond)
 			}
 		}
 	}
