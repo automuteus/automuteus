@@ -89,7 +89,7 @@ func discordMainWrapper() error {
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs)
+	discord.MakeAndStartBot(discordToken)
 	return nil
 
 }

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func RunClientSocketBroadcast(states <-chan game.GameState, url string) {
+func RunClientSocketBroadcast(states chan game.GameState, url string) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
@@ -34,6 +34,21 @@ func RunClientSocketBroadcast(states <-chan game.GameState, url string) {
 		}
 	}()
 
+	generic := game.GenericWSMessage{
+		GuildID: "754465589958803548",
+		Payload: []byte("null"),
+	}
+	jsonBytesBytes, err := json.Marshal(generic)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = c.WriteMessage(websocket.TextMessage, jsonBytesBytes)
+	if err != nil {
+		log.Println("Client write:", err)
+		return
+	}
+
 	for {
 		select {
 		case <-done:
@@ -44,11 +59,21 @@ func RunClientSocketBroadcast(states <-chan game.GameState, url string) {
 				log.Println(err)
 				return
 			}
-			err = c.WriteMessage(websocket.TextMessage, jsonBytes)
+			generic := game.GenericWSMessage{
+				GuildID: "",
+				Payload: jsonBytes,
+			}
+			jsonBytesBytes, err := json.Marshal(generic)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			err = c.WriteMessage(websocket.TextMessage, jsonBytesBytes)
 			if err != nil {
 				log.Println("Client write:", err)
 				return
 			}
+			log.Printf("Wrote %s\n", jsonBytesBytes)
 		case <-interrupt:
 			log.Println("interrupt")
 
