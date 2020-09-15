@@ -3,6 +3,7 @@ package capture
 import (
 	"bytes"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/game"
 	"github.com/kbinani/screenshot"
 	"image"
 	"image/png"
@@ -28,15 +29,6 @@ const endingXStartScalar = 0.17
 const endingWidthScalar = 0.65
 const endingYStartScalar = 0.1
 const endingHeightScalar = 0.2
-
-type GameState int
-
-const (
-	PREGAME GameState = 0
-	GAME    GameState = 1
-	DISCUSS GameState = 2
-	KILL    GameState = 10
-)
 
 type CaptureSettings struct {
 	fullScreen bool
@@ -125,79 +117,112 @@ func MakeSettingsFromEnv() CaptureSettings {
 
 const CaptureLoopSleepMs = 500
 
-func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs bool) {
-	gameState := PREGAME
+//Once we have memory capture, this would be replaced with whatever
+func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <-chan os.Signal) {
+	gameState := game.GameState{
+		Phase: game.LOBBY,
+		Players: []game.Player{
+			{
+				Name:  "Toby",
+				Color: "CYAN",
+				Alive: true,
+			},
+			{
+				Name:  "Brad",
+				Color: "RED",
+				Alive: true,
+			},
+			{
+				Name:  "Kevin",
+				Color: "BLUE",
+				Alive: false,
+			},
+			{
+				Name:  "Keith",
+				Color: "LIME",
+				Alive: false,
+			},
+		},
+	}
+
 	for {
-		//start := time.Now()
-		switch gameState {
-		//we only need to scan for the game start text
-		case PREGAME:
-			log.Println("Waiting for Game to begin...")
-			gameStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
-			if debugLogs {
-				log.Printf("OCR Results using Ending bounds:\n%s", gameStrings)
-			}
-			if intersects(gameStrings, BeginningStrings) {
-				log.Println("Game has begun!")
-				if !DEBUG_DONT_TRANSITION {
-					res <- GAME
-					gameState = GAME
-				}
-			}
-		case GAME:
-			log.Println("Waiting for Discussion or Game Over...")
-			discussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
-			if debugLogs {
-				log.Printf("OCR Results using Discuss bounds:\n%s", discussStrings)
-			}
-			if intersects(discussStrings, DiscussionStrings) {
-				log.Println("Discussion phase has begun!")
-				if !DEBUG_DONT_TRANSITION {
-					res <- DISCUSS
-					gameState = DISCUSS
-				}
-			} else {
-				//only check the end strings if we clearly havent begun a discussion
-				endStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
+		select {
+		case <-sc:
+			return
+
+		default:
+			//start := time.Now()
+			switch gameState.Phase {
+			//we only need to scan for the game start text
+			case game.LOBBY:
+				log.Println("Waiting for Game to begin...")
+				gameStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
 				if debugLogs {
-					log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
+					log.Printf("OCR Results using Ending bounds:\n%s", gameStrings)
 				}
-				if intersects(endStrings, EndgameStrings) {
-					log.Println("Game is over!")
+				if intersects(gameStrings, BeginningStrings) {
+					log.Println("Game has begun!")
 					if !DEBUG_DONT_TRANSITION {
-						res <- PREGAME
-						gameState = PREGAME
+						gameState.Phase = game.GAME
+						res <- gameState
 					}
 				}
-			}
-		case DISCUSS:
-			log.Println("Waiting for discussion to end...")
-			endDiscussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
-			if debugLogs {
-				log.Printf("OCR Results using Discuss bounds:\n%s", endDiscussStrings)
-			}
-			if intersects(endDiscussStrings, EndDiscussionStrings) {
-				log.Println("Discussion is over!")
-				if !DEBUG_DONT_TRANSITION {
-					res <- GAME
-					gameState = GAME
+			case game.GAME:
+				log.Println("Waiting for Discussion or Game Over...")
+				discussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
+				if debugLogs {
+					log.Printf("OCR Results using Discuss bounds:\n%s", discussStrings)
 				}
+				if intersects(discussStrings, DiscussionStrings) {
+					log.Println("Discussion phase has begun!")
+					if !DEBUG_DONT_TRANSITION {
+						gameState.Phase = game.DISCUSS
+						res <- gameState
+					}
+				} else {
+					//only check the end strings if we clearly havent begun a discussion
+					endStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
+					if debugLogs {
+						log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
+					}
+					if intersects(endStrings, EndgameStrings) {
+						log.Println("Game is over!")
+						if !DEBUG_DONT_TRANSITION {
+							gameState.Phase = game.LOBBY
+							res <- gameState
+						}
+					}
+				}
+			case game.DISCUSS:
+				log.Println("Waiting for discussion to end...")
+				endDiscussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
+				if debugLogs {
+					log.Printf("OCR Results using Discuss bounds:\n%s", endDiscussStrings)
+				}
+				if intersects(endDiscussStrings, EndDiscussionStrings) {
+					log.Println("Discussion is over!")
+					if !DEBUG_DONT_TRANSITION {
+						gameState.Phase = game.GAME
+						res <- gameState
+					}
+				}
+				//else {
+				//	//this is an edge case, but the game can end if someone leaves during discussion
+				//	//only check the end strings if we clearly havent begun a discussion
+				//	endStrings := genericCapture(settings.endingBounds, TempImageFilename)
+				//	if debugLogs {
+				//		log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
+				//	}
+				//	if intersects(endStrings, EndgameStrings) {
+				//		log.Println("Game is over!")
+				//		if !DEBUG_DONT_TRANSITION {
+				//			res <- PREGAME
+				//			gameState = PREGAME
+				//		}
+				//	}
+				//}
 			}
-			//else {
-			//	//this is an edge case, but the game can end if someone leaves during discussion
-			//	//only check the end strings if we clearly havent begun a discussion
-			//	endStrings := genericCapture(settings.endingBounds, TempImageFilename)
-			//	if debugLogs {
-			//		log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
-			//	}
-			//	if intersects(endStrings, EndgameStrings) {
-			//		log.Println("Game is over!")
-			//		if !DEBUG_DONT_TRANSITION {
-			//			res <- PREGAME
-			//			gameState = PREGAME
-			//		}
-			//	}
-			//}
+			time.Sleep(time.Millisecond * CaptureLoopSleepMs)
 		}
 
 		//if debugLogs {
@@ -205,7 +230,6 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- GameState, debugLogs boo
 		//	log.Println(fmt.Sprintf("Sleeping for %dms", CaptureLoopSleepMs))
 		//}
 
-		time.Sleep(time.Millisecond * CaptureLoopSleepMs)
 	}
 }
 

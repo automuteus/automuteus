@@ -2,10 +2,14 @@ package discord
 
 import (
 	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/capture"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/gorilla/websocket"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -38,7 +42,7 @@ type UserData struct {
 var VoiceStatusCache = make(map[string]UserData)
 var VoiceStatusCacheLock = sync.RWMutex{}
 
-var GameState capture.GameState
+var GameState = game.GameState{Phase: game.LOBBY}
 var GameStateLock = sync.RWMutex{}
 
 var GameStartDelay = 0
@@ -51,7 +55,7 @@ var ExclusiveChannelId = ""
 var TrackingVoiceId = ""
 var TrackingVoiceName = ""
 
-func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs int) {
+func MakeAndStartBot(token, guild, channel string, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs int) {
 	GameStartDelay = gameStartDelay
 	GameResumeDelay = gameResumeDelay
 	DiscussStartDelay = discussStartDelay
@@ -106,7 +110,11 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 		dg.ChannelMessageSend(channel, "Bot is Online!")
 	}
 
-	go discordListener(dg, guild, results)
+	gameStateChannel := make(chan game.GameState)
+
+	go websocketServer(gameStateChannel)
+
+	go discordListener(dg, guild, gameStateChannel)
 
 	<-sc
 
@@ -114,19 +122,59 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 		dg.ChannelMessageSend(channel, "Bot is going Offline!")
 	}
 
-	//kill the worker before we terminate the worker forcibly
-	results <- capture.KILL
-
 	dg.Close()
 }
 
-func discordListener(dg *discordgo.Session, guild string, res <-chan capture.GameState) {
+var addr = flag.String("addr", "localhost:8080", "http service address")
+
+var upgrader = websocket.Upgrader{} // use default options
+
+type ChannelHttpWrapper struct {
+	gameStateChannel chan<- game.GameState
+}
+
+func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	defer c.Close()
 	for {
-		msg := <-res
-		switch msg {
-		case capture.KILL:
-			return
-		case capture.PREGAME:
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			break
+		}
+		log.Printf("Server recv: %s", message)
+		state := game.GameState{}
+		err = json.Unmarshal(message, &state)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		log.Println(state.ToString())
+		wrapper.gameStateChannel <- state
+		//err = c.WriteMessage(mt, message)
+		//if err != nil {
+		//	log.Println("write:", err)
+		//	break
+		//}
+	}
+}
+
+func websocketServer(gameStateChannel chan game.GameState) {
+	wrapper := ChannelHttpWrapper{gameStateChannel: gameStateChannel}
+
+	http.HandleFunc("/status", wrapper.handler)
+	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func discordListener(dg *discordgo.Session, guild string, newStateChannel <-chan game.GameState) {
+	for {
+		newState := <-newStateChannel
+		switch newState.Phase {
+		case game.GAMEOVER:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 			}
@@ -139,14 +187,14 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			VoiceStatusCacheLock.Unlock()
 			muteAllTrackedMembers(dg, guild, false, false)
 			GameStateLock.Lock()
-			GameState = capture.PREGAME
+			GameState = newState
 			GameStateLock.Unlock()
-		case capture.GAME:
+		case game.GAME:
 			delay := 0
 			GameStateLock.RLock()
-			if GameState == capture.PREGAME {
+			if GameState.Phase == game.LOBBY {
 				delay = GameStartDelay
-			} else if GameState == capture.DISCUSS {
+			} else if GameState.Phase == game.DISCUSS {
 				delay = GameResumeDelay
 			}
 			if ExclusiveChannelId != "" {
@@ -158,15 +206,15 @@ func discordListener(dg *discordgo.Session, guild string, res <-chan capture.Gam
 			muteAllTrackedMembers(dg, guild, true, false)
 
 			GameStateLock.Lock()
-			GameState = capture.GAME
+			GameState = newState
 			GameStateLock.Unlock()
-		case capture.DISCUSS:
+		case game.DISCUSS:
 			if ExclusiveChannelId != "" {
 				dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
 			}
 			time.Sleep(time.Second * time.Duration(DiscussStartDelay))
 			GameStateLock.Lock()
-			GameState = capture.DISCUSS
+			GameState = newState
 			GameStateLock.Unlock()
 			muteAllTrackedMembers(dg, guild, false, true)
 		}
@@ -246,7 +294,7 @@ func voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 			//if the user rejoins, only mute if the game is going, or if it's discussion and they're dead
 		} else {
 			GameStateLock.RLock()
-			if v.tracking && !m.Mute && (GameState == capture.GAME || (GameState == capture.DISCUSS && !v.amongUsAlive)) {
+			if v.tracking && !m.Mute && (GameState.Phase == game.GAME || (GameState.Phase == game.DISCUSS && !v.amongUsAlive)) {
 				log.Println("Tracked mute")
 				log.Printf("Current game state: %d, alive: %v", GameState, v.amongUsAlive)
 				guildMemberMute(s, m.GuildID, m.UserID, true)
@@ -577,7 +625,7 @@ func processMarkAliveUsers(dg *discordgo.Session, guildID string, args []string,
 					}
 
 					GameStateLock.RLock()
-					if GameState == capture.DISCUSS {
+					if GameState.Phase == game.DISCUSS {
 						err := guildMemberMute(dg, guildID, id, !markAlive)
 						if err != nil {
 							log.Printf("Error muting/unmuting %s: %s\n", user.user.userName, err)
