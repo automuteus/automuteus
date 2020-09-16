@@ -74,7 +74,7 @@ var AllGuilds map[string]*GuildState
 //var TrackingVoiceName = ""
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string) {
+func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
@@ -84,7 +84,7 @@ func MakeAndStartBot(token string) {
 	dg.AddHandler(voiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
-	dg.AddHandler(newGuild)
+	dg.AddHandler(newGuild(moveDeadPlayers))
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
 
@@ -282,16 +282,20 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
-	log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-	AllGuilds[m.ID] = &GuildState{
-		ID:                   m.ID,
-		delays:               GameDelays{},
-		VoiceStatusCache:     make(map[string]UserData),
-		voiceStatusCacheLock: sync.RWMutex{},
-		GameState:            game.GameState{Phase: game.UNINITIALIZED},
-		gameStateLock:        sync.RWMutex{},
-		Tracking:             make(map[string]Tracking),
-		TextChannelID:        "",
+func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
+	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
+		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
+		AllGuilds[m.ID] = &GuildState{
+			ID:                       m.ID,
+			delays:                   GameDelays{},
+			VoiceStatusCache:         make(map[string]UserData),
+			voiceStatusCacheLock:     sync.RWMutex{},
+			GameState:                game.GameState{Phase: game.UNINITIALIZED},
+			gameStateLock:            sync.RWMutex{},
+			Tracking:                 make(map[string]Tracking),
+			TextChannelID:            "",
+			MoveDeadPlayers:          moveDeadPlayers,
+			DeadPlayerVoiceChannelID: "",
+		}
 	}
 }
