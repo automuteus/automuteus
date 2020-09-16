@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"os"
@@ -14,22 +11,32 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/gorilla/websocket"
 )
 
+// AmongUsDefaultName const
 const AmongUsDefaultName = "Player"
+
+// AmongUsDefaultColor const
 const AmongUsDefaultColor = "Cyan"
 
+// CommandPrefix const
 const CommandPrefix = ".au"
 
-type DiscordUser struct {
+// User struct
+type User struct {
 	nick          string
 	userID        string
 	userName      string
 	discriminator string
 }
 
+// UserData struct
 type UserData struct {
-	user         DiscordUser
+	user         User
 	voiceState   discordgo.VoiceState
 	tracking     bool
 	amongUsColor string
@@ -37,12 +44,14 @@ type UserData struct {
 	amongUsAlive bool
 }
 
-//var VoiceStatusCache = make(map[string]UserData)
-//var VoiceStatusCacheLock = sync.RWMutex{}
+// var VoiceStatusCache = make(map[string]UserData)
+// var VoiceStatusCacheLock = sync.RWMutex{}
 //
-//var GameState = game.GameState{Phase: game.LOBBY}
-//var GameStateLock = sync.RWMutex{}
+// var GameState = game.GameState{Phase: game.LOBBY}
+// var GameStateLock = sync.RWMutex{}
 //
+
+// GameDelays struct
 type GameDelays struct {
 	GameStartDelay           int
 	GameResumeDelay          int
@@ -50,9 +59,10 @@ type GameDelays struct {
 	DiscordMuteDelayOffsetMs int
 }
 
-//all open websockets (might not be mapped to any guilds, yet)
+// AllConns all open websockets (might not be mapped to any guilds, yet)
 var AllConns map[*websocket.Conn]string
 
+// AllGuilds var
 var AllGuilds map[string]*GuildState
 
 //
@@ -63,6 +73,7 @@ var AllGuilds map[string]*GuildState
 //var TrackingVoiceId = ""
 //var TrackingVoiceName = ""
 
+// MakeAndStartBot does what it sounds like
 func MakeAndStartBot(token string) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -135,11 +146,12 @@ var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var upgrader = websocket.Upgrader{} // use default options
 
-type ChannelHttpWrapper struct {
+// ChannelHTTPWrapper struct
+type ChannelHTTPWrapper struct {
 	gameStateChannel chan<- game.GenericWSMessage
 }
 
-func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Request) {
+func (wrapper *ChannelHTTPWrapper) handler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade:", err)
@@ -160,15 +172,15 @@ func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Reques
 			break
 		}
 		if msg.GuildID != "" {
-			for gId, _ := range AllGuilds {
-				if msg.GuildID == gId {
-					AllConns[c] = gId
-					log.Printf("Associated %s guild id w/ a websocket connection\n", gId)
+			for gID := range AllGuilds {
+				if msg.GuildID == gID {
+					AllConns[c] = gID
+					log.Printf("Associated %s guild id w/ a websocket connection\n", gID)
 				}
 			}
 		} else {
-			if gId, ok := AllConns[c]; ok {
-				msg.GuildID = gId
+			if gID, ok := AllConns[c]; ok {
+				msg.GuildID = gID
 				wrapper.gameStateChannel <- msg
 			}
 		}
@@ -182,7 +194,7 @@ func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Reques
 }
 
 func websocketServer(gameStateChannel chan game.GenericWSMessage) {
-	wrapper := ChannelHttpWrapper{gameStateChannel: gameStateChannel}
+	wrapper := ChannelHTTPWrapper{gameStateChannel: gameStateChannel}
 
 	http.HandleFunc("/status", wrapper.handler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
@@ -280,6 +292,6 @@ func newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
 		GameState:            game.GameState{Phase: game.UNINITIALIZED},
 		gameStateLock:        sync.RWMutex{},
 		Tracking:             make(map[string]Tracking),
-		TextChannelId:        "",
+		TextChannelID:        "",
 	}
 }
