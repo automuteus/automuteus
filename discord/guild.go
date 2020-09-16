@@ -96,11 +96,10 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 	}
 
 	for user, v := range guild.VoiceStatusCache {
-		buf := bytes.NewBuffer([]byte{})
 		if v.tracking {
 			action := actions[inGame][inDiscussion][v.amongUsAlive]
-			buf.WriteString(fmt.Sprintf("%s Username: %s, Nickname: %s, ID: %s", action.message, v.user.userName, v.user.nick, user))
-			log.Println(buf.String())
+
+			log.Println(fmt.Sprintf("%s Username: %s, Nickname: %s, ID: %s", action.message, v.user.userName, v.user.nick, user))
 
 			if action.move {
 				moveErr := guildMemberMove(dg, guild.ID, user, &action.targetChannel.channelID)
@@ -109,6 +108,7 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 					continue
 				}
 			}
+
 			err := guildMemberMute(dg, guild.ID, user, action.mute)
 			if err != nil {
 				log.Println(err)
