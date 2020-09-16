@@ -39,6 +39,14 @@ type GuildState struct {
 	MoveDeadPlayers bool
 }
 
+// TrackedMemberAction struct
+type TrackedMemberAction struct {
+	mute          bool
+	move          bool
+	message       string
+	targetChannel Tracking
+}
+
 func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
 	// first we need to determine if we care about moving people at all
 	if guild.MoveDeadPlayers {
@@ -63,47 +71,45 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 		return
 	}
 
+	// inGame, inDiscussion, isAlive is the key order
+	actions := map[bool]map[bool]map[bool]TrackedMemberAction{
+		// inGame
+		true: map[bool]map[bool]TrackedMemberAction{
+			// not inDiscussion
+			false: map[bool]TrackedMemberAction{
+				// isAlive
+				true: {true, false, "Not moving, and muting ", gameChannel},
+				// not isAlive
+				false: {false, true, "Moving to dead channel, and unmuting ", deadUserChannel},
+			},
+		},
+		// not inGame
+		false: map[bool]map[bool]TrackedMemberAction{
+			// inDiscussion
+			true: map[bool]TrackedMemberAction{
+				// isAlive
+				true: {false, false, "Not moving, and unmuting ", gameChannel},
+				// not isAlive
+				false: {true, true, "Moving to game channel, and muting", gameChannel},
+			},
+		},
+	}
+
 	for user, v := range guild.VoiceStatusCache {
-		mute := false
-		move := false
-		moveChannel := deadUserChannel
 		buf := bytes.NewBuffer([]byte{})
 		if v.tracking {
-			if inGame {
-				if v.amongUsAlive {
-					buf.WriteString("Not moving, and muting ")
-					mute = true
-				} else {
-					buf.WriteString("Moving to dead channel, and unmuting ")
-					mute = false
-					move = true
-				}
-			} else if inDiscussion {
-				if v.amongUsAlive {
-					buf.WriteString("Not moving, and unmuting ")
-				} else {
-					buf.WriteString("Moving to game channel, and muting")
-					mute = true
-					move = true
-					moveChannel = gameChannel
-				}
-			} else {
-				buf.WriteString("Moving and unmuting ")
-				move = true
-				moveChannel = gameChannel
-			}
-
-			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
+			action := actions[inGame][inDiscussion][v.amongUsAlive]
+			buf.WriteString(fmt.Sprintf("%s Username: %s, Nickname: %s, ID: %s", action.message, v.user.userName, v.user.nick, user))
 			log.Println(buf.String())
 
-			if move {
-				moveErr := guildMemberMove(dg, guild.ID, user, &moveChannel.channelID)
+			if action.move {
+				moveErr := guildMemberMove(dg, guild.ID, user, &action.targetChannel.channelID)
 				if moveErr != nil {
 					log.Println(moveErr)
 					continue
 				}
 			}
-			err := guildMemberMute(dg, guild.ID, user, mute)
+			err := guildMemberMute(dg, guild.ID, user, action.mute)
 			if err != nil {
 				log.Println(err)
 			}
