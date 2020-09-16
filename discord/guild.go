@@ -198,7 +198,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			//if the user rejoins, only mute if the game is going, or if it's discussion and they're dead
 		} else {
 			guild.gameStateLock.RLock()
-			if v.tracking && !m.Mute && (guild.GameState.Phase == game.GAME || (guild.GameState.Phase == game.DISCUSS && !v.amongUsAlive)) {
+			if v.tracking && !m.Mute && (guild.GameState.Phase == game.TASKS || (guild.GameState.Phase == game.DISCUSS && !v.amongUsAlive)) {
 				log.Println("Tracked mute")
 				log.Printf("Current game state: %v, alive: %v", guild.GameState, v.amongUsAlive)
 				guildMemberMute(s, m.GuildID, m.UserID, true)

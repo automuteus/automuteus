@@ -11,7 +11,7 @@ const (
 	UNINITIALIZED GamePhase = iota
 	MENU          GamePhase = iota
 	LOBBY         GamePhase = iota
-	GAME          GamePhase = iota
+	TASKS         GamePhase = iota
 	DISCUSS       GamePhase = iota
 	VOTING        GamePhase = iota
 	GAMEOVER      GamePhase = iota
@@ -28,9 +28,9 @@ var PhaseStrings = []string{
 }
 
 type Player struct {
-	Name  string `json:"name"`
-	Color string `json:"color"`
-	Alive bool   `json:"alive"`
+	Name   string `json:"playerName"`
+	Color  string `json:"color"`
+	IsDead bool   `json:"isDead"`
 }
 
 type GameState struct {
@@ -42,7 +42,7 @@ func (state GameState) ToString() string {
 	buf := bytes.NewBuffer([]byte("Game State:\n"))
 	buf.WriteString(fmt.Sprintf("  Phase: %s\n", PhaseStrings[state.Phase]))
 	for i, v := range state.Players {
-		buf.WriteString(fmt.Sprintf("  Player %d: {Name: %s, Color: %s, Alive: %v}\n", i, v.Name, v.Color, v.Alive))
+		buf.WriteString(fmt.Sprintf("  Player %d: {Name: %s, Color: %s, IsDead: %v}\n", i, v.Name, v.Color, v.IsDead))
 	}
 	return buf.String()
 }
