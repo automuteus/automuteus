@@ -224,7 +224,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 					guild.VoiceStatusCache[i] = v
 				}
 				guild.voiceStatusCacheLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, false)
+				// false + false means force unmute all
+				guild.handleTrackedMembers(dg, false, false)
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
@@ -242,7 +243,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.gameStateLock.RUnlock()
 
 				time.Sleep(time.Second * time.Duration(delay))
-				guild.muteAllTrackedMembers(dg, true, false)
+				// true + false means force mute all
+				guild.handleTrackedMembers(dg, true, false)
 
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
@@ -255,7 +257,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, true)
+				// false + true means unmute only those alive
+				guild.handleTrackedMembers(dg, false, true)
 			}
 		}
 	}
@@ -286,16 +289,16 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		AllGuilds[m.ID] = &GuildState{
-			ID:                       m.ID,
-			delays:                   GameDelays{},
-			VoiceStatusCache:         make(map[string]UserData),
-			voiceStatusCacheLock:     sync.RWMutex{},
-			GameState:                game.GameState{Phase: game.UNINITIALIZED},
-			gameStateLock:            sync.RWMutex{},
-			Tracking:                 make(map[string]Tracking),
-			TextChannelID:            "",
-			MoveDeadPlayers:          moveDeadPlayers,
-			DeadPlayerVoiceChannelID: "",
+			ID:                     m.ID,
+			delays:                 GameDelays{},
+			VoiceStatusCache:       make(map[string]UserData),
+			voiceStatusCacheLock:   sync.RWMutex{},
+			GameState:              game.GameState{Phase: game.UNINITIALIZED},
+			gameStateLock:          sync.RWMutex{},
+			Tracking:               make(map[string]Tracking),
+			TextChannelID:          "",
+			MoveDeadPlayers:        moveDeadPlayers,
+			DeadPlayerVoiceChannel: Tracking{},
 		}
 	}
 }

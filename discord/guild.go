@@ -35,8 +35,78 @@ type GuildState struct {
 	TextChannelID string
 
 	// For voice channel movement
-	MoveDeadPlayers          bool
-	DeadPlayerVoiceChannelID string
+	MoveDeadPlayers        bool
+	DeadPlayerVoiceChannel Tracking
+}
+
+func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
+	// first we need to determine if we care about moving people at all
+	if guild.MoveDeadPlayers {
+		guild.moveAndMuteAllTrackedMembers(dg, inGame, inDiscussion)
+		return
+	}
+
+	guild.muteAllTrackedMembers(dg, inGame, inDiscussion)
+}
+
+func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
+	guild.voiceStatusCacheLock.RLock()
+	for user, v := range guild.VoiceStatusCache {
+		mute := false
+		move := false
+		moveChannel := guild.DeadPlayerVoiceChannel.channelID
+		buf := bytes.NewBuffer([]byte{})
+		if v.tracking {
+			// if we are inGame, move dead player to dead channel and unmute
+			// 	shouldn't need to move alive players
+			// 	mute alive players
+			// if we are inDiscussion, move dead players to game channel and mute
+			//	shouldn't need to move alive players
+			// 	unmute alive players
+			// if we are not inGame or inDiscussion, move all players to game channel and unmute
+			if inGame {
+				if v.amongUsAlive {
+					buf.WriteString("Not moving, and muting ")
+					mute = true
+				} else {
+					buf.WriteString("Moving to dead channel, and unmuting ")
+					mute = false
+					move = true
+				}
+			} else if inDiscussion {
+				if v.amongUsAlive {
+					buf.WriteString("Not moving, and unmuting ")
+				} else {
+					buf.WriteString("Moving to game channel, and muting")
+					mute = true
+					move = true
+					moveChannel = "GAME CHANNEL ID"
+				}
+			} else {
+				buf.WriteString("Moving and unmuting ")
+				move = true
+				moveChannel = "GAME CHANNEL ID"
+			}
+
+			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
+			log.Println(buf.String())
+
+			if move {
+				moveErr := guildMemberMove(dg, guild.ID, user, &moveChannel)
+				if moveErr != nil {
+					log.Println(moveErr)
+					continue
+				}
+			}
+			err := guildMemberMute(dg, guild.ID, user, mute)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
+			time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
+		}
+	}
+	guild.voiceStatusCacheLock.RUnlock()
 }
 
 func (guild *GuildState) muteAllTrackedMembers(dg *discordgo.Session, mute bool, checkAlive bool) {
@@ -60,31 +130,14 @@ func (guild *GuildState) muteAllTrackedMembers(dg *discordgo.Session, mute bool,
 				}
 			}
 			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
-			//buf.WriteString(v.User.Username)
-			//if v.Nick != "" {
-			//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
-			//}
 			log.Println(buf.String())
 			if !skipExec {
-				if guild.MoveDeadPlayers {
-					err := guildMemberMove(dg, guild.ID, user, &guild.DeadPlayerVoiceChannelID)
-					if err != nil {
-						log.Println(err)
-					}
-					muteErr := guildMemberMute(dg, guild.ID, user, false)
-					if muteErr != nil {
-						log.Println(muteErr)
-					}
-					log.Printf("Sleeping for %dms between channel moves to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
-					time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
-				} else {
-					err := guildMemberMute(dg, guild.ID, user, mute)
-					if err != nil {
-						log.Println(err)
-					}
-					log.Printf("Sleeping for %dms between mutes to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
-					time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
+				err := guildMemberMute(dg, guild.ID, user, mute)
+				if err != nil {
+					log.Println(err)
 				}
+				log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
+				time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
 			}
 		}
 	}
@@ -360,10 +413,43 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						}
 						s.ChannelMessageSend(m.ChannelID, str)
 					}
+					break
+				case "deadvoice":
+					fallthrough
+				case "dv":
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+					} else {
+						channelName := strings.Join(args[1:], " ")
+
+						channels, err := s.GuildChannels(m.GuildID)
+						if err != nil {
+							log.Println(err)
+						}
+
+						resp := guild.processDeadvoiceArgs(channelName, channels)
+						s.ChannelMessageSend(m.ChannelID, resp)
+					}
+					break
 				}
 			}
 		}
 	}
+}
+
+func (guild *GuildState) processDeadvoiceArgs(channelName string, allChannels []*discordgo.Channel) string {
+	for _, c := range allChannels {
+		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
+			//TODO check duplicates (for logging)
+			guild.DeadPlayerVoiceChannel = Tracking{
+				channelID:   c.ID,
+				channelName: c.Name,
+			}
+			return fmt.Sprintf("Now using \"%s\" Voice Channel for Dead Players!", c.Name)
+		}
+	}
+	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
 func (guild *GuildState) processBroadcastArgs(args []string) (string, error) {

@@ -1,0 +1,6 @@
+* Dead Player Voice Channel
+** DONE track dead player voice channel command
+** DONE move dead players to dead player channel during GAME phase
+** DONE move dead players to main channel during DISCUSS phase
+** TODO testing
+** TODO delete this file
