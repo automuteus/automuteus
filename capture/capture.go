@@ -125,22 +125,22 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLog
 			{
 				Name:  "Toby",
 				Color: "CYAN",
-				Alive: true,
+				IsDead: true,
 			},
 			{
 				Name:  "Brad",
 				Color: "RED",
-				Alive: true,
+				IsDead: true,
 			},
 			{
 				Name:  "Kevin",
 				Color: "BLUE",
-				Alive: false,
+				IsDead: false,
 			},
 			{
 				Name:  "Keith",
 				Color: "LIME",
-				Alive: false,
+				IsDead: false,
 			},
 		},
 	}
