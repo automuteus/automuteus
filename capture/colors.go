@@ -1,7 +1,9 @@
 package capture
 
+// SpacemanColor type
 type SpacemanColor int
 
+// Colors const
 const (
 	RED    SpacemanColor = iota //0
 	BLUE   SpacemanColor = iota //1
@@ -18,13 +20,14 @@ const (
 	NULL   SpacemanColor = iota //12
 )
 
+// RGBColor struct
 type RGBColor struct {
 	r float64
 	g float64
 	b float64
 }
 
-//if displays are darker or lighter, this approach (probably) WILL NOT WORK. Needs proper sorting by distance
+// WithinAcceptableRange displays are darker or lighter, this approach (probably) WILL NOT WORK. Needs proper sorting by distance
 func WithinAcceptableRange(testColor, baseColor RGBColor, percentDiff float64) bool {
 	redInRange := testColor.r > baseColor.r-(baseColor.r*percentDiff)
 	blueInRange := testColor.b > baseColor.b-(baseColor.b*percentDiff)
@@ -32,8 +35,10 @@ func WithinAcceptableRange(testColor, baseColor RGBColor, percentDiff float64) b
 	return redInRange && greenInRange && blueInRange
 }
 
+// PercentDiff const
 const PercentDiff = 0.05
 
+// BestColorMatch returns the best color match kekw
 func BestColorMatch(color RGBColor) (SpacemanColor, bool) {
 	for sc, v := range AllSpacemanColors {
 		if WithinAcceptableRange(color, v.bright, PercentDiff) {
@@ -45,15 +50,17 @@ func BestColorMatch(color RGBColor) (SpacemanColor, bool) {
 	return NULL, false
 }
 
+// ColorPair struct
 type ColorPair struct {
 	dim    RGBColor
 	bright RGBColor
 }
 
-//Map a single spaceman color to an array with 2 values within; the "dim" color, and the "bright" variant
+// SpacemanColors map a single spaceman color to an array with 2 values within; the "dim" color, and the "bright" variant
 //(dim is for discussion phase and dead players, and bright is for voting phase)
 type SpacemanColors map[SpacemanColor]ColorPair
 
+// AllSpacemanColors variable with all the juice
 var AllSpacemanColors = SpacemanColors{
 	RED: ColorPair{
 		RGBColor{

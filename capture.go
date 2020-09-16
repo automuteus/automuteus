@@ -3,15 +3,16 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/capture"
-	"github.com/denverquane/amongusdiscord/game"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/denverquane/amongusdiscord/capture"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -71,8 +72,8 @@ func captureMainWrapper() error {
 
 	gameStateChannel := make(chan game.GameState)
 
-	serverUrl := os.Getenv("SERVER_URL")
-	if serverUrl == "" {
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
 		return errors.New("empty SERVER_URL")
 	}
 
@@ -80,7 +81,7 @@ func captureMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	go capture.RunClientSocketBroadcast(gameStateChannel, serverUrl)
+	go capture.RunClientSocketBroadcast(gameStateChannel, serverURL)
 
 	//start the background worker that should be capturing the screen to monitor game state changes
 	capSettings.CaptureLoop(gameStateChannel, debugLogs, sc)

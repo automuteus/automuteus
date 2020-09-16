@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/denverquane/amongusdiscord/discord"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/denverquane/amongusdiscord/discord"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -46,6 +47,23 @@ func discordMainWrapper() error {
 	discordChannel := os.Getenv("DISCORD_CHANNEL_ID")
 	if discordChannel == "" {
 		return errors.New("no DISCORD_CHANNEL_ID provided")
+	}
+
+	discordDeadPlayerChannel := os.Getenv("DISCORD_DEAD_PLAYER_CHANNEL_ID")
+	discordMoveDeadPlayersStr := os.Getenv("DISCORD_MOVE_DEAD_PLAYERS")
+	discordMoveDeadPlayers := false
+	ret, err := strconv.ParseBool(discordMoveDeadPlayersStr)
+	if err == nil {
+		log.Printf("Using DISCORD_MOVE_DEAD_PLAYERS %t\n", ret)
+		discordMoveDeadPlayers = ret
+	} else {
+		log.Printf("Problem parsing DISCORD_MOVE_DEAD_PLAYERS; using %t as default\n", discordMoveDeadPlayers)
+	}
+
+	if discordMoveDeadPlayers {
+		if discordDeadPlayerChannel == "" {
+			return errors.New("no DISCORD_DEAD_PLAYER_CHANNEL_ID provided")
+		}
 	}
 
 	gameStartDelayStr := os.Getenv("GAME_START_DELAY")
