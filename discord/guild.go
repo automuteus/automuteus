@@ -36,8 +36,7 @@ type GuildState struct {
 	TextChannelID string
 
 	// For voice channel movement
-	MoveDeadPlayers        bool
-	DeadPlayerVoiceChannel Tracking
+	MoveDeadPlayers bool
 }
 
 func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
@@ -52,19 +51,24 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 
 func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
 	guild.voiceStatusCacheLock.RLock()
+
+	deadUserChannel, deadUserChannelError := guild.findVoiceChannel(true)
+	if deadUserChannelError != nil {
+		log.Printf("Missing a voice channel for dead users!")
+		return
+	}
+	gameChannel, gameChannelError := guild.findVoiceChannel(false)
+	if gameChannelError != nil {
+		log.Printf("Missing a voice channel for alive users!")
+		return
+	}
+
 	for user, v := range guild.VoiceStatusCache {
 		mute := false
 		move := false
-		moveChannel := guild.DeadPlayerVoiceChannel.channelID
+		moveChannel := deadUserChannel
 		buf := bytes.NewBuffer([]byte{})
 		if v.tracking {
-			// if we are inGame, move dead player to dead channel and unmute
-			// 	shouldn't need to move alive players
-			// 	mute alive players
-			// if we are inDiscussion, move dead players to game channel and mute
-			//	shouldn't need to move alive players
-			// 	unmute alive players
-			// if we are not inGame or inDiscussion, move all players to game channel and unmute
 			if inGame {
 				if v.amongUsAlive {
 					buf.WriteString("Not moving, and muting ")
@@ -81,19 +85,19 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 					buf.WriteString("Moving to game channel, and muting")
 					mute = true
 					move = true
-					moveChannel = "GAME CHANNEL ID"
+					moveChannel = gameChannel
 				}
 			} else {
 				buf.WriteString("Moving and unmuting ")
 				move = true
-				moveChannel = "GAME CHANNEL ID"
+				moveChannel = gameChannel
 			}
 
 			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
 			log.Println(buf.String())
 
 			if move {
-				moveErr := guildMemberMove(dg, guild.ID, user, &moveChannel)
+				moveErr := guildMemberMove(dg, guild.ID, user, &moveChannel.channelID)
 				if moveErr != nil {
 					log.Println(moveErr)
 					continue
@@ -417,42 +421,10 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						s.ChannelMessageSend(m.ChannelID, str)
 					}
 					break
-				case "deadvoice":
-					fallthrough
-				case "dv":
-					if len(args[1:]) == 0 {
-						//TODO print usage of this command specifically
-						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-					} else {
-						channelName := strings.Join(args[1:], " ")
-
-						channels, err := s.GuildChannels(m.GuildID)
-						if err != nil {
-							log.Println(err)
-						}
-
-						resp := guild.processDeadvoiceArgs(channelName, channels)
-						s.ChannelMessageSend(m.ChannelID, resp)
-					}
-					break
 				}
 			}
 		}
 	}
-}
-
-func (guild *GuildState) processDeadvoiceArgs(channelName string, allChannels []*discordgo.Channel) string {
-	for _, c := range allChannels {
-		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
-			//TODO check duplicates (for logging)
-			guild.DeadPlayerVoiceChannel = Tracking{
-				channelID:   c.ID,
-				channelName: c.Name,
-			}
-			return fmt.Sprintf("Now using \"%s\" Voice Channel for Dead Players!", c.Name)
-		}
-	}
-	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
 func (guild *GuildState) processBroadcastArgs(args []string) (string, error) {
@@ -624,4 +596,14 @@ func (guild *GuildState) isTracked(channelID string) bool {
 		}
 	}
 	return false
+}
+
+func (guild *GuildState) findVoiceChannel(forGhosts bool) (Tracking, error) {
+	for _, v := range guild.Tracking {
+		if v.forGhosts == forGhosts {
+			return v, nil
+		}
+	}
+
+	return Tracking{}, fmt.Errorf("No voice channel found forGhosts: %v", forGhosts)
 }

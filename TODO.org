@@ -1,4 +1,4 @@
 * Dead Player Voice Channel
-** TODO use forGhosts on Tracking struct to determine voice channels to move between
+** DONE use forGhosts on Tracking struct to determine voice channels to move between
 ** TODO testing
 ** TODO delete this file

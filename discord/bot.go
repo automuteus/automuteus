@@ -289,16 +289,15 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		AllGuilds[m.ID] = &GuildState{
-			ID:                     m.ID,
-			delays:                 GameDelays{},
-			VoiceStatusCache:       make(map[string]UserData),
-			voiceStatusCacheLock:   sync.RWMutex{},
-			GameState:              game.GameState{Phase: game.UNINITIALIZED},
-			gameStateLock:          sync.RWMutex{},
-			Tracking:               make(map[string]Tracking),
-			TextChannelID:          "",
-			MoveDeadPlayers:        moveDeadPlayers,
-			DeadPlayerVoiceChannel: Tracking{},
+			ID:                   m.ID,
+			delays:               GameDelays{},
+			VoiceStatusCache:     make(map[string]UserData),
+			voiceStatusCacheLock: sync.RWMutex{},
+			GameState:            game.GameState{Phase: game.UNINITIALIZED},
+			gameStateLock:        sync.RWMutex{},
+			Tracking:             make(map[string]Tracking),
+			TextChannelID:        "",
+			MoveDeadPlayers:      moveDeadPlayers,
 		}
 	}
 }
