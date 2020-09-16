@@ -16,6 +16,7 @@ import (
 type Tracking struct {
 	channelID   string
 	channelName string
+	forGhosts   bool
 }
 
 // GuildState struct
@@ -312,14 +313,16 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
-						channelName := strings.Join(args[1:], " ")
+						// if anything is given in the second slot then we consider that a true
+						forGhosts := len(args[2:]) >= 1
+						channelName := strings.Join(args[1:2], " ")
 
 						channels, err := s.GuildChannels(m.GuildID)
 						if err != nil {
 							log.Println(err)
 						}
 
-						resp := guild.processTrackChannelArg(channelName, channels)
+						resp := guild.processTrackChannelArg(channelName, channels, forGhosts)
 						s.ChannelMessageSend(m.ChannelID, resp)
 					}
 					break
@@ -492,15 +495,16 @@ func (guild *GuildState) processBroadcastArgs(args []string) (string, error) {
 	return buf.String(), nil
 }
 
-func (guild *GuildState) processTrackChannelArg(channelName string, allChannels []*discordgo.Channel) string {
+func (guild *GuildState) processTrackChannelArg(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 			//TODO check duplicates (for logging)
 			guild.Tracking[c.ID] = Tracking{
 				channelID:   c.ID,
 				channelName: c.Name,
+				forGhosts:   forGhosts,
 			}
-			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute!", c.Name)
+			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
 		}
 	}
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
