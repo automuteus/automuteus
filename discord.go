@@ -49,7 +49,6 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_CHANNEL_ID provided")
 	}
 
-	discordDeadPlayerChannel := os.Getenv("DISCORD_DEAD_PLAYER_CHANNEL_ID")
 	discordMoveDeadPlayersStr := os.Getenv("DISCORD_MOVE_DEAD_PLAYERS")
 	discordMoveDeadPlayers := false
 	ret, err := strconv.ParseBool(discordMoveDeadPlayersStr)
@@ -58,12 +57,6 @@ func discordMainWrapper() error {
 		discordMoveDeadPlayers = ret
 	} else {
 		log.Printf("Problem parsing DISCORD_MOVE_DEAD_PLAYERS; using %t as default\n", discordMoveDeadPlayers)
-	}
-
-	if discordMoveDeadPlayers {
-		if discordDeadPlayerChannel == "" {
-			return errors.New("no DISCORD_DEAD_PLAYER_CHANNEL_ID provided")
-		}
 	}
 
 	gameStartDelayStr := os.Getenv("GAME_START_DELAY")
