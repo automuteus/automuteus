@@ -11,7 +11,7 @@ const (
 	UNINITIALIZED GamePhase = iota
 	MENU          GamePhase = iota
 	LOBBY         GamePhase = iota
-	GAME          GamePhase = iota
+	TASKS         GamePhase = iota
 	DISCUSS       GamePhase = iota
 	VOTING        GamePhase = iota
 	GAMEOVER      GamePhase = iota
@@ -28,8 +28,8 @@ var PhaseStrings = []string{
 }
 
 type Player struct {
-	Name  string `json:"playerName"`
-	Color string `json:"color"`
+	Name   string `json:"playerName"`
+	Color  string `json:"color"`
 	IsDead bool   `json:"isDead"`
 }
 

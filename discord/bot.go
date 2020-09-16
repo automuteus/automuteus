@@ -119,7 +119,6 @@ func MakeAndStartBot(token string) {
 
 	go websocketServer(gameStateChannel)
 
-	//TODO need to have the guild ID associated with the websocket connection + messages
 	go discordListener(dg, gameStateChannel)
 
 	<-sc
@@ -152,7 +151,7 @@ func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Reques
 			log.Println("read:", err)
 			break
 		}
-		log.Printf("Server recv: %s", message)
+		//log.Printf("Server recv: %s", message)
 		msg := game.GenericWSMessage{}
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
@@ -199,9 +198,10 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				log.Println(err)
 				break
 			}
-			log.Printf("Unmarshalled state object: %s\n", newState.ToString())
+			//log.Printf("Unmarshalled state object: %s\n", newState.ToString())
 			switch newState.Phase {
-			case game.GAMEOVER:
+			case game.LOBBY:
+				log.Println("Detected transition to lobby")
 				//if ExclusiveChannelId != "" {
 				//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 				//}
@@ -216,7 +216,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
-			case game.GAME:
+			case game.TASKS:
+				log.Println("Detected transition to tasks")
 				delay := 0
 				guild.gameStateLock.RLock()
 				if guild.GameState.Phase == game.LOBBY {
@@ -236,6 +237,7 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
 			case game.DISCUSS:
+				log.Println("Detected transition to discussion")
 				//if ExclusiveChannelId != "" {
 				//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
 				//}
@@ -244,6 +246,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
 				guild.muteAllTrackedMembers(dg, false, true)
+			default:
+				log.Println("Undetected new state!")
 			}
 		}
 	}
