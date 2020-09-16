@@ -2,11 +2,10 @@ package discord
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/gorilla/websocket"
+	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -50,18 +49,10 @@ type GameDelays struct {
 	DiscordMuteDelayOffsetMs int
 }
 
-//all open websockets (might not be mapped to any guilds, yet)
-var AllConns map[*websocket.Conn]string
+//mapping of socket IDs to guild IDs
+var AllConns map[string]string
 
 var AllGuilds map[string]*GuildState
-
-//
-//var GlobalDelays GameDelays
-//
-//var ExclusiveChannelId = ""
-//
-//var TrackingVoiceId = ""
-//var TrackingVoiceName = ""
 
 func MakeAndStartBot(token string) {
 	dg, err := discordgo.New("Bot " + token)
@@ -113,11 +104,11 @@ func MakeAndStartBot(token string) {
 	//	dg.ChannelMessageSend(channel, "Bot is Online!")
 	//}
 	AllGuilds = make(map[string]*GuildState)
-	AllConns = make(map[*websocket.Conn]string)
+	AllConns = make(map[string]string)
 
 	gameStateChannel := make(chan game.GenericWSMessage)
 
-	go websocketServer(gameStateChannel)
+	go socketioServer(gameStateChannel)
 
 	go discordListener(dg, gameStateChannel)
 
@@ -130,61 +121,49 @@ func MakeAndStartBot(token string) {
 	dg.Close()
 }
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
-
-var upgrader = websocket.Upgrader{} // use default options
-
-type ChannelHttpWrapper struct {
-	gameStateChannel chan<- game.GenericWSMessage
-}
-
-func (wrapper *ChannelHttpWrapper) handler(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
+func socketioServer(gameStateChannel chan game.GenericWSMessage) {
+	server, err := socketio.NewServer(nil)
 	if err != nil {
-		log.Print("upgrade:", err)
-		return
+		log.Fatal(err)
 	}
-	defer c.Close()
-	for {
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			break
-		}
-		//log.Printf("Server recv: %s", message)
-		msg := game.GenericWSMessage{}
-		err = json.Unmarshal(message, &msg)
-		if err != nil {
-			log.Println(err)
-			break
-		}
-		if msg.GuildID != "" {
-			for gId, _ := range AllGuilds {
-				if msg.GuildID == gId {
-					AllConns[c] = gId
-					log.Printf("Associated %s guild id w/ a websocket connection\n", gId)
-				}
-			}
-		} else {
-			if gId, ok := AllConns[c]; ok {
-				msg.GuildID = gId
-				wrapper.gameStateChannel <- msg
+	server.OnConnect("/", func(s socketio.Conn) error {
+		s.SetContext("")
+		fmt.Println("connected:", s.ID())
+		AllConns[s.ID()] = ""
+		return nil
+	})
+	server.OnEvent("/", "guildID", func(s socketio.Conn, msg string) {
+		fmt.Println("set guildID:", msg)
+		for gid, _ := range AllGuilds {
+			if gid == msg {
+				AllConns[s.ID()] = gid //associate the socket with the guild
+				s.Emit("reply", "set guildID successfully")
 			}
 		}
+	})
+	server.OnEvent("/", "status", func(s socketio.Conn, msg string) {
+		fmt.Println("status: ", msg)
+		//s.SetContext(msg)
+		s.Emit("reply", "status "+msg)
+	})
+	//server.OnEvent("/", "bye", func(s socketio.Conn) string {
+	//	last := s.Context().(string)
+	//	s.Emit("bye", last)
+	//	s.Close()
+	//	return last
+	//})
+	server.OnError("/", func(s socketio.Conn, e error) {
+		fmt.Println("meet error:", e)
+	})
+	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Println("closed", reason)
+	})
+	go server.Serve()
+	defer server.Close()
 
-		//err = c.WriteMessage(mt, message)
-		//if err != nil {
-		//	log.Println("write:", err)
-		//	break
-		//}
-	}
-}
-
-func websocketServer(gameStateChannel chan game.GenericWSMessage) {
-	wrapper := ChannelHttpWrapper{gameStateChannel: gameStateChannel}
-
-	http.HandleFunc("/status", wrapper.handler)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	http.Handle("/socket.io/", server)
+	log.Println("Serving at localhost:8123...")
+	log.Fatal(http.ListenAndServe(":8123", nil))
 }
 
 func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericWSMessage) {
