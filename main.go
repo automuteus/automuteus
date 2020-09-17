@@ -126,7 +126,9 @@ func mainWrapper() error {
 		log.Printf("Problem parsing DISCORD_API_MUTE_DELAY_MS; using %dms as default\n", discordMuteDelayMs)
 	}
 
+	defaultChannel := os.Getenv("DEFAULT_CHANNEL_TO_TRACK")
+
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs)
+	discord.MakeAndStartBot(discordToken, discordGuild, discordChannel, captureResults, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs, defaultChannel)
 	return nil
 }
