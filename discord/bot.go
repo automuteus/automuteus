@@ -51,7 +51,7 @@ var ExclusiveChannelId = ""
 var TrackingVoiceId = ""
 var TrackingVoiceName = ""
 
-func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs int) {
+func MakeAndStartBot(token, guild, channel string, results chan capture.GameState, gameStartDelay, gameResumeDelay, discussStartDelay, discordMuteDelayMs int, defaultChannel string) {
 	GameStartDelay = gameStartDelay
 	GameResumeDelay = gameResumeDelay
 	DiscussStartDelay = discussStartDelay
@@ -107,6 +107,17 @@ func MakeAndStartBot(token, guild, channel string, results chan capture.GameStat
 	}
 
 	go discordListener(dg, guild, results)
+
+	if defaultChannel != ""{
+		channels, err := dg.GuildChannels(guild)
+		if err != nil {
+			log.Println(err)
+		}
+	
+		resp := processTrackChannelArg(defaultChannel, channels)
+		dg.ChannelMessageSend(channel, resp)
+	}
+	
 
 	<-sc
 
