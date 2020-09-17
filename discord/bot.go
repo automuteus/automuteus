@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -36,12 +37,6 @@ type UserData struct {
 	amongUsAlive bool
 }
 
-//var VoiceStatusCache = make(map[string]UserData)
-//var VoiceStatusCacheLock = sync.RWMutex{}
-//
-//var GameState = game.GameState{Phase: game.LOBBY}
-//var GameStateLock = sync.RWMutex{}
-//
 type GameDelays struct {
 	GameStartDelay           int
 	GameResumeDelay          int
@@ -81,36 +76,19 @@ func MakeAndStartBot(token string) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	//mems, err := dg.GuildMembers(guild, "", 1000)
-	//VoiceStatusCacheLock.Lock()
-	//for _, v := range mems {
-	//	VoiceStatusCache[v.User.ID] = UserData{
-	//		user: DiscordUser{
-	//			nick:          v.Nick,
-	//			userID:        v.User.ID,
-	//			userName:      v.User.Username,
-	//			discriminator: v.User.Discriminator,
-	//		},
-	//		voiceState:   discordgo.VoiceState{},
-	//		tracking:     false,
-	//		amongUsColor: "NoColor",
-	//		amongUsName:  "NoName",
-	//		amongUsAlive: true,
-	//	}
-	//}
-	//VoiceStatusCacheLock.Unlock()
-
 	//if channel != "" {
 	//	dg.ChannelMessageSend(channel, "Bot is Online!")
 	//}
 	AllGuilds = make(map[string]*GuildState)
 	AllConns = make(map[string]string)
 
-	gameStateChannel := make(chan game.GenericWSMessage)
+	gamePhaseUpdateChannel := make(chan game.GamePhaseUpdate)
 
-	go socketioServer(gameStateChannel)
+	playerUpdateChannel := make(chan game.PlayerUpdate)
 
-	go discordListener(dg, gameStateChannel)
+	go socketioServer(gamePhaseUpdateChannel, playerUpdateChannel)
+
+	go discordListener(dg, gamePhaseUpdateChannel, playerUpdateChannel)
 
 	<-sc
 
@@ -121,7 +99,7 @@ func MakeAndStartBot(token string) {
 	dg.Close()
 }
 
-func socketioServer(gameStateChannel chan game.GenericWSMessage) {
+func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUpdateChannel chan<- game.PlayerUpdate) {
 	server, err := socketio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -141,10 +119,42 @@ func socketioServer(gameStateChannel chan game.GenericWSMessage) {
 			}
 		}
 	})
-	server.OnEvent("/", "status", func(s socketio.Conn, msg string) {
-		fmt.Println("status: ", msg)
+	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
+		fmt.Println("phase: ", msg)
+		phase, err := strconv.Atoi(msg)
+		if err != nil {
+			log.Println(err)
+		} else {
+			if v, ok := AllConns[s.ID()]; ok {
+				gamePhaseUpdateChannel <- game.GamePhaseUpdate{
+					Phase: game.GamePhase(phase),
+					GuildID: v,
+				}
+			} else {
+				log.Println("This websocket is not associated with any guilds")
+			}
+		}
+
+
+	})
+	server.OnEvent("/", "player", func(s socketio.Conn, msg string) {
+		fmt.Println("player: ", msg)
+		player := game.Player{}
+		err := json.Unmarshal([]byte(msg), &player)
+		if err != nil {
+			log.Println(err)
+		} else {
+			if v, ok := AllConns[s.ID()]; ok {
+				playerUpdateChannel <- game.PlayerUpdate{
+					Player:  player,
+					GuildID: v,
+				}
+			} else {
+				log.Println("This websocket is not associated with any guilds")
+			}
+		}
 		//s.SetContext(msg)
-		s.Emit("reply", "status "+msg)
+		//s.Emit("hi", "status "+msg)
 	})
 	//server.OnEvent("/", "bye", func(s socketio.Conn) string {
 	//	last := s.Context().(string)
@@ -166,69 +176,74 @@ func socketioServer(gameStateChannel chan game.GenericWSMessage) {
 	log.Fatal(http.ListenAndServe(":8123", nil))
 }
 
-func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericWSMessage) {
+func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GamePhaseUpdate, playerUpdateChannel <-chan game.PlayerUpdate) {
 	for {
-		newStateMsg := <-newStateChannel
-		log.Printf("Received message for guild %s\n", newStateMsg.GuildID)
-		if guild, ok := AllGuilds[newStateMsg.GuildID]; ok {
-			newState := game.GameState{}
-			err := json.Unmarshal(newStateMsg.Payload, &newState)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			//log.Printf("Unmarshalled state object: %s\n", newState.ToString())
-			switch newState.Phase {
-			case game.LOBBY:
-				log.Println("Detected transition to lobby")
-				//if ExclusiveChannelId != "" {
-				//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
-				//}
-				//Loop through and reset players (game over = everyone alive again)
-				guild.voiceStatusCacheLock.Lock()
-				for i, v := range guild.VoiceStatusCache {
-					v.amongUsAlive = true
-					guild.VoiceStatusCache[i] = v
-				}
-				guild.voiceStatusCacheLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, false)
-				guild.gameStateLock.Lock()
-				guild.GameState = newState
-				guild.gameStateLock.Unlock()
-			case game.TASKS:
-				log.Println("Detected transition to tasks")
-				delay := 0
-				guild.gameStateLock.RLock()
-				if guild.GameState.Phase == game.LOBBY {
-					delay = guild.delays.GameStartDelay
-				} else if guild.GameState.Phase == game.DISCUSS {
-					delay = guild.delays.GameResumeDelay
-				}
-				//if ExclusiveChannelId != "" {
-				//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", delay))
-				//}
-				guild.gameStateLock.RUnlock()
+		select {
+			case phaseUpdate := <- phaseUpdateChannel:
+				log.Printf("Received message for guild %s\n", phaseUpdate.GuildID)
+				if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
 
-				time.Sleep(time.Second * time.Duration(delay))
-				guild.muteAllTrackedMembers(dg, true, false)
+					//log.Printf("Unmarshalled state object: %s\n", newState.ToString())
+					switch phaseUpdate.Phase {
+					case game.LOBBY:
+						log.Println("Detected transition to lobby")
+						//if ExclusiveChannelId != "" {
+						//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
+						//}
+						//Loop through and reset players (game over = everyone alive again)
+						guild.UserDataLock.Lock()
+						for i, v := range guild.UserData {
+							v.amongUsAlive = true
+							guild.UserData[i] = v
+						}
+						guild.UserDataLock.Unlock()
+						guild.muteAllTrackedMembers(dg, false, false)
+						guild.GamePhaseLock.Lock()
+						guild.GamePhase = phaseUpdate.Phase
+						guild.GamePhaseLock.Unlock()
+					case game.TASKS:
+						log.Println("Detected transition to tasks")
+						delay := 0
+						guild.GamePhaseLock.RLock()
+						if guild.GamePhase == game.LOBBY {
+							delay = guild.delays.GameStartDelay
+						} else if guild.GamePhase == game.DISCUSS {
+							delay = guild.delays.GameResumeDelay
+						}
+						//if ExclusiveChannelId != "" {
+						//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", delay))
+						//}
+						guild.GamePhaseLock.RUnlock()
 
-				guild.gameStateLock.Lock()
-				guild.GameState = newState
-				guild.gameStateLock.Unlock()
-			case game.DISCUSS:
-				log.Println("Detected transition to discussion")
-				//if ExclusiveChannelId != "" {
-				//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
-				//}
-				time.Sleep(time.Second * time.Duration(guild.delays.DiscussStartDelay))
-				guild.gameStateLock.Lock()
-				guild.GameState = newState
-				guild.gameStateLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, true)
-			default:
-				log.Println("Undetected new state!")
-			}
+						time.Sleep(time.Second * time.Duration(delay))
+						guild.muteAllTrackedMembers(dg, true, false)
+
+						guild.GamePhaseLock.Lock()
+						guild.GamePhase = phaseUpdate.Phase
+						guild.GamePhaseLock.Unlock()
+					case game.DISCUSS:
+						log.Println("Detected transition to discussion")
+						//if ExclusiveChannelId != "" {
+						//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
+						//}
+						time.Sleep(time.Second * time.Duration(guild.delays.DiscussStartDelay))
+						guild.GamePhaseLock.Lock()
+						guild.GamePhase = phaseUpdate.Phase
+						guild.GamePhaseLock.Unlock()
+						guild.muteAllTrackedMembers(dg, false, true)
+					default:
+						log.Printf("Undetected new state: %d\n", phaseUpdate.Phase)
+					}
+				}
+
+				case playerUpdate := <- playerUpdateChannel:
+					log.Printf("Received message for guild %s\n", playerUpdate.GuildID)
+
 		}
+
+
+
+
 	}
 }
 
@@ -256,13 +271,36 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 func newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
 	log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 	AllGuilds[m.ID] = &GuildState{
-		ID:                   m.ID,
-		delays:               GameDelays{},
-		VoiceStatusCache:     make(map[string]UserData),
-		voiceStatusCacheLock: sync.RWMutex{},
-		GameState:            game.GameState{Phase: game.UNINITIALIZED},
-		gameStateLock:        sync.RWMutex{},
-		Tracking:             make(map[string]Tracking),
-		TextChannelId:        "",
+		ID:            m.ID,
+		delays:        GameDelays{},
+		UserData:      make(map[string]UserData),
+		UserDataLock:  sync.RWMutex{},
+		GamePhase:     game.LOBBY,
+		GamePhaseLock: sync.RWMutex{},
+		Tracking:      make(map[string]Tracking),
+		TextChannelId: "",
 	}
+	mems, err := s.GuildMembers(m.Guild.ID, "", 1000)
+	if err != nil {
+		log.Println(err)
+	}
+	AllGuilds[m.ID].UserDataLock.Lock()
+	for _, v := range mems {
+		AllGuilds[m.ID].UserData[v.User.ID] = UserData{
+			user: DiscordUser{
+				nick:          v.Nick,
+				userID:        v.User.ID,
+				userName:      v.User.Username,
+				discriminator: v.User.Discriminator,
+			},
+			voiceState:   discordgo.VoiceState{},
+			tracking:     false,
+			amongUsColor: "NoColor",
+			amongUsName:  "NoName",
+			amongUsAlive: true,
+		}
+	}
+	AllGuilds[m.ID].UserDataLock.Unlock()
+	AllGuilds[m.ID].updateVoiceStatusCache(s)
+	log.Println("Updated members for guild " + m.Guild.ID)
 }
