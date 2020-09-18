@@ -2,16 +2,14 @@ package capture
 
 import (
 	"encoding/json"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/gorilla/websocket"
 	"log"
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/denverquane/amongusdiscord/game"
-	"github.com/gorilla/websocket"
 )
 
-// RunClientSocketBroadcast does cool stuff
 func RunClientSocketBroadcast(states chan game.GameState, url string) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
