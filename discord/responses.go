@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 func helpResponse() string {
@@ -127,7 +128,31 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 
 // TODO:
 func gameStateResponse(guild *GuildState) string {
-	return guild.ToString()
+	// we need to generate the messages based on the state of the game
+	messages := map[game.GamePhase]func(guild *GuildState) string{
+		game.LOBBY:   lobbyMessage,
+		game.TASKS:   gamePlayMessage,
+		game.DISCUSS: gamePlayMessage,
+	}
+	return messages[guild.GamePhase](guild)
+}
+
+func lobbyMessage(guild *GuildState) string {
+	return "hi"
+}
+
+func gamePlayMessage(guild *GuildState) string {
+	buf := bytes.NewBuffer([]byte{})
+
+	buf.WriteString("Game is running!\n")
+	// add the player list
+	guild.UserDataLock.RLock()
+	buf.WriteString(playerListResponse(guild.UserData))
+	guild.UserDataLock.RUnlock()
+
+	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase))
+
+	return buf.String()
 }
 
 func extractUserIDFromMention(mention string) (string, error) {
