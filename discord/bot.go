@@ -159,6 +159,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 		case phaseUpdate := <-phaseUpdateChannel:
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
+				handleGameStateMessage(guild, dg)
 				switch phaseUpdate.Phase {
 				case game.LOBBY:
 					log.Println("Detected transition to lobby")
@@ -336,11 +337,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "list":
 				fallthrough
 			case "ls":
-				resp := guild.playerListResponse()
-				_, err := s.ChannelMessageSend(m.ChannelID, resp)
-				if err != nil {
-					log.Println(err)
-				}
+				handlePlayerListMessage(guild, s, m)
 				break
 
 			case "link":
@@ -374,6 +371,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					}
 					s.ChannelMessageSend(m.ChannelID, str)
 				}
+				break
+			case "start":
+				fallthrough
+			case "s":
+				handleGameStartMessage(guild, s, m)
 				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")

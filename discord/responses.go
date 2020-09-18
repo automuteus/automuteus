@@ -68,12 +68,11 @@ func (guild *GuildState) broadcastResponse(args []string) (string, error) {
 //TODO update original message, not post new one
 //TODO delete player messages relating to this
 //TODO print the tracked again
-func (guild *GuildState) playerListResponse() string {
+func playerListResponse(users map[string]UserData) string {
 	buf := bytes.NewBuffer([]byte{})
 
 	buf.WriteString("Player List:\n")
-	guild.UserDataLock.RLock()
-	for _, player := range guild.UserData {
+	for _, player := range users {
 		if player.tracking {
 			if player.auData != nil {
 				emoji := AlivenessColoredEmojis[player.auData.IsAlive][player.auData.Color]
@@ -84,7 +83,6 @@ func (guild *GuildState) playerListResponse() string {
 
 		}
 	}
-	guild.UserDataLock.RUnlock()
 	return buf.String()
 }
 
@@ -128,10 +126,8 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 }
 
 // TODO:
-func (guild *GuildState) gameStateResponse() string {
-	buf := bytes.NewBuffer([]byte{})
-	// TODO: make a sweet message
-	return buf.String()
+func gameStateResponse(guild *GuildState) string {
+	return guild.ToString()
 }
 
 func extractUserIDFromMention(mention string) (string, error) {

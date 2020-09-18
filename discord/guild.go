@@ -40,6 +40,9 @@ type GuildState struct {
 
 	// For voice channel movement
 	MoveDeadPlayers bool
+
+	GameStateMessage     *discordgo.Message
+	GameStateMessageLock sync.RWMutex
 }
 
 // TrackedMemberAction struct
@@ -282,4 +285,9 @@ func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 	for i := range guild.AmongUsData {
 		guild.AmongUsData[i].IsAlive = alive
 	}
+}
+
+// ToString returns a string representation of the current state of the guild
+func (guild *GuildState) ToString() string {
+	return fmt.Sprintf("%v", guild)
 }
