@@ -1,3 +1,0 @@
-* Dead Player Voice Channel
-** TODO testing
-** TODO delete this file
