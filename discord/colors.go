@@ -42,6 +42,11 @@ func GetColorStringForInt(colorint int) string {
 	return ""
 }
 
+func IsColorString(test string) bool {
+	_, ok := ColorStrings[test]
+	return ok
+}
+
 // Emoji struct for discord
 type Emoji struct {
 	Name string
@@ -52,102 +57,102 @@ type Emoji struct {
 var AlivenessColoredEmojis = map[bool]map[int]Emoji{
 	true: map[int]Emoji{
 		Red: {
-			Name: "aured",
+			Name: "red",
 			ID:   "756202732301320325",
 		},
 		Blue: {
-			Name: "aublue",
+			Name: "blue",
 			ID:   "756201148154642642",
 		},
 		Green: {
-			Name: "augreen",
+			Name: "green",
 			ID:   "756202732099993753",
 		},
 		Pink: {
-			Name: "aupink",
+			Name: "pink",
 			ID:   "756200620049956864",
 		},
 		Orange: {
-			Name: "auorange",
+			Name: "orange",
 			ID:   "756202732523618435",
 		},
 		Yellow: {
-			Name: "auyellow",
+			Name: "yellow",
 			ID:   "756202732678938624",
 		},
 		Black: {
-			Name: "aublack",
+			Name: "black",
 			ID:   "756202732758761522",
 		},
 		White: {
-			Name: "auwhite",
+			Name: "white",
 			ID:   "756202732343394386",
 		},
 		Purple: {
-			Name: "aupurple",
+			Name: "purple",
 			ID:   "756202732624543770",
 		},
 		Brown: {
-			Name: "aubrown",
+			Name: "brown",
 			ID:   "756202732594921482",
 		},
 		Cyan: {
-			Name: "aucyan",
+			Name: "cyan",
 			ID:   "756202732511297556",
 		},
 		Lime: {
-			Name: "aulime",
+			Name: "lime",
 			ID:   "756202732360040569",
 		},
 	},
 	false: map[int]Emoji{
 		Red: {
-			Name: "audeadred",
+			Name: "reddead",
 			ID:   "756404218163888200",
 		},
 		Blue: {
-			Name: "audeadblue",
-			ID:   "756404218163888200",
+			Name: "bluedead",
+			ID:   "756552864309969057",
 		},
 		Green: {
-			Name: "audeadgreen",
-			ID:   "756404218163888200",
+			Name: "greendead",
+			ID:   "756552867275604008",
 		},
 		Pink: {
-			Name: "audeadpink",
-			ID:   "756404218163888200",
+			Name: "pinkdead",
+			ID:   "756552867413753906",
 		},
 		Orange: {
-			Name: "audeadorange",
+			Name: "orangedead",
 			ID:   "756404218436517888",
 		},
 		Yellow: {
-			Name: "audeadyellow",
+			Name: "yellowdead",
 			ID:   "756404218339786762",
 		},
 		Black: {
-			Name: "audeadblack",
-			ID:   "756404218339786762",
+			Name: "blackdead",
+			ID:   "756552864171557035",
 		},
 		White: {
-			Name: "audeadwhite",
-			ID:   "756404218339786762",
+			Name: "whitedead",
+			ID:   "756552867200106596",
 		},
 		Purple: {
-			Name: "audeadpurple",
-			ID:   "756404218339786762",
+			Name: "purpledead",
+			ID:   "756552866491138159",
 		},
 		Brown: {
-			Name: "audeadbrown",
-			ID:   "756404218339786762",
+			Name: "browndead",
+			ID:   "756552864620347422",
 		},
 		Cyan: {
-			Name: "audeadcyan",
+			Name: "cyandead",
 			ID:   "756204054698262559",
 		},
 		Lime: {
-			Name: "audeadlime",
-			ID:   "756204054698262559",
+			Name: "limedead",
+			ID:   "756552864847102042",
 		},
 	},
 }

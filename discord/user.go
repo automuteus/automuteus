@@ -52,16 +52,3 @@ func (auData *AmongUserData) ToString() string {
 func (auData *AmongUserData) isDifferent(player game.Player) bool {
 	return auData.IsAlive != !player.IsDead || auData.Color != player.Color || auData.Name != player.Name
 }
-
-// MakeAllEmptyAmongUsData does what it sounds like
-func MakeAllEmptyAmongUsData() []AmongUserData {
-	allData := make([]AmongUserData, 12)
-	for i := 0; i < 12; i++ {
-		allData[i] = AmongUserData{
-			Color:   i,
-			Name:    "",
-			IsAlive: true,
-		}
-	}
-	return allData
-}

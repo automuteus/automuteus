@@ -164,9 +164,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 					log.Println("Detected transition to lobby")
 
 					guild.AmongUsDataLock.Lock()
-					for i := range guild.AmongUsData {
-						guild.AmongUsData[i].IsAlive = true
-					}
+					guild.modifyCachedAmongUsDataAlive(true)
 					guild.AmongUsDataLock.Unlock()
 
 					guild.handleTrackedMembers(dg, false, false)
@@ -252,7 +250,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			UserDataLock:    sync.RWMutex{},
 			GamePhase:       game.LOBBY,
 			GamePhaseLock:   sync.RWMutex{},
-			AmongUsData:     MakeAllEmptyAmongUsData(),
+			AmongUsData:     map[string]*AmongUserData{},
 			AmongUsDataLock: sync.RWMutex{},
 			Tracking:        make(map[string]Tracking),
 			TrackingLock:    sync.RWMutex{},
@@ -344,13 +342,15 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				break
 
 			case "link":
+				fallthrough
+			case "l":
 				if len(args[1:]) < 2 {
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
 					guild.AmongUsDataLock.Lock()
 					guild.UserDataLock.Lock()
-					resp := guild.linkPlayerResponse(args[1:], &guild.AmongUsData)
+					resp := guild.linkPlayerResponse(args[1:], guild.AmongUsData)
 					guild.UserDataLock.Unlock()
 					guild.AmongUsDataLock.Unlock()
 					_, err := s.ChannelMessageSend(m.ChannelID, resp)

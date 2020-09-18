@@ -25,8 +25,8 @@ type GuildState struct {
 	UserData     map[string]UserData
 	UserDataLock sync.RWMutex
 
-	//indexed by color
-	AmongUsData     []AmongUserData
+	//indexed by amongusname
+	AmongUsData     map[string]*AmongUserData
 	AmongUsDataLock sync.RWMutex
 
 	GamePhase     game.GamePhase
@@ -265,21 +265,36 @@ func (guild *GuildState) findVoiceChannel(forGhosts bool) (Tracking, error) {
 
 func (guild *GuildState) updateCachedAmongUsData(update game.Player) bool {
 	guild.AmongUsDataLock.Lock()
-	isUpdate := guild.AmongUsData[update.Color].isDifferent(update)
-	if isUpdate {
-		guild.AmongUsData[update.Color] = AmongUserData{
+	defer guild.AmongUsDataLock.Unlock()
+
+	if _, ok := guild.AmongUsData[update.Name]; !ok {
+		guild.AmongUsData[update.Name] = &AmongUserData{
 			Color:   update.Color,
 			Name:    update.Name,
 			IsAlive: !update.IsDead,
 		}
-		log.Printf("Updated %s", guild.AmongUsData[update.Color].ToString())
+		log.Printf("Added new player instance for %s\n", update.Name)
+		return true
 	}
-	guild.AmongUsDataLock.Unlock()
+	guildDataTempPtr := guild.AmongUsData[update.Name]
+	isUpdate := guildDataTempPtr.isDifferent(update)
+	if isUpdate {
+		(*guild.AmongUsData[update.Name]).Color = update.Color
+		(*guild.AmongUsData[update.Name]).Name = update.Name
+		(*guild.AmongUsData[update.Name]).IsAlive = !update.IsDead
+
+		log.Printf("Updated %s", (*guild.AmongUsData[update.Name]).ToString())
+	}
+
 	return isUpdate
 }
 
 func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 	for i := range guild.AmongUsData {
-		guild.AmongUsData[i].IsAlive = alive
+		guildDataPtr := guild.AmongUsData[i]
+		guildDataPtr.IsAlive = alive
+
+		//TODO my pointer knowledge is failing me; this isn't needed, right?
+		guild.AmongUsData[i] = guildDataPtr
 	}
 }
