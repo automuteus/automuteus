@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -25,13 +26,6 @@ const AmongUsDefaultColor = "Cyan"
 
 // CommandPrefix const
 const CommandPrefix = ".au"
-
-// var VoiceStatusCache = make(map[string]UserData)
-// var VoiceStatusCacheLock = sync.RWMutex{}
-//
-// var GameState = game.GameState{Phase: game.LOBBY}
-// var GameStateLock = sync.RWMutex{}
-//
 
 // GameDelays struct
 type GameDelays struct {
@@ -75,9 +69,6 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	//if channel != "" {
-	//	dg.ChannelMessageSend(channel, "Bot is Online!")
-	//}
 	AllGuilds = make(map[string]*GuildState)
 	AllConns = make(map[string]string)
 
@@ -90,10 +81,6 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	go discordListener(dg, gamePhaseUpdateChannel, playerUpdateChannel)
 
 	<-sc
-
-	//if channel != "" {
-	//	dg.ChannelMessageSend(channel, "Bot is going Offline!")
-	//}
 
 	dg.Close()
 }
@@ -151,15 +138,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUp
 				log.Println("This websocket is not associated with any guilds")
 			}
 		}
-		//s.SetContext(msg)
-		//s.Emit("hi", "status "+msg)
 	})
-	//server.OnEvent("/", "bye", func(s socketio.Conn) string {
-	//	last := s.Context().(string)
-	//	s.Emit("bye", last)
-	//	s.Close()
-	//	return last
-	//})
 	server.OnError("/", func(s socketio.Conn, e error) {
 		fmt.Println("meet error:", e)
 	})
@@ -180,14 +159,9 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 		case phaseUpdate := <-phaseUpdateChannel:
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
-				//log.Printf("Unmarshalled state object: %s\n", newState.ToString())
 				switch phaseUpdate.Phase {
 				case game.LOBBY:
 					log.Println("Detected transition to lobby")
-					//if ExclusiveChannelId != "" {
-					//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
-					//}
-					//Loop through and reset players (game over = everyone alive again)
 
 					guild.AmongUsDataLock.Lock()
 					for i := range guild.AmongUsData {
@@ -208,9 +182,6 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 					} else if guild.GamePhase == game.DISCUSS {
 						delay = guild.delays.GameResumeDelay
 					}
-					//if ExclusiveChannelId != "" {
-					//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game starting; muting players in %d second(s)!", delay))
-					//}
 					guild.GamePhaseLock.RUnlock()
 
 					time.Sleep(time.Second * time.Duration(delay))
@@ -221,9 +192,6 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 					guild.GamePhaseLock.Unlock()
 				case game.DISCUSS:
 					log.Println("Detected transition to discussion")
-					//if ExclusiveChannelId != "" {
-					//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Starting discussion; unmuting alive players in %d second(s)!", DiscussStartDelay))
-					//}
 					time.Sleep(time.Second * time.Duration(guild.delays.DiscussStartDelay))
 					guild.GamePhaseLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
@@ -312,5 +280,104 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 		AllGuilds[m.ID].UserDataLock.Unlock()
 		AllGuilds[m.ID].updateVoiceStatusCache(s)
 		log.Println("Updated members for guild " + m.Guild.ID)
+	}
+}
+
+func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	guild.updateVoiceStatusCache(s)
+
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	//TODO This should check VOICE channels, not TEXT channels
+	contents := m.Content
+	if strings.HasPrefix(contents, CommandPrefix) {
+		args := strings.Split(contents, " ")[1:]
+		for i, v := range args {
+			args[i] = strings.ToLower(v)
+		}
+		if len(args) == 0 {
+			s.ChannelMessageSend(m.ChannelID, helpResponse())
+		} else {
+			switch args[0] {
+			case "help":
+				fallthrough
+			case "h":
+				s.ChannelMessageSend(m.ChannelID, helpResponse())
+				break
+			case "track":
+				fallthrough
+			case "t":
+				if len(args[1:]) == 0 {
+					//TODO print usage of this command specifically
+					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				} else {
+					// if anything is given in the second slot then we consider that a true
+					forGhosts := len(args[2:]) >= 1
+					channelName := strings.Join(args[1:2], " ")
+
+					channels, err := s.GuildChannels(m.GuildID)
+					if err != nil {
+						log.Println(err)
+					}
+
+					guild.TrackingLock.Lock()
+					resp := guild.trackChannelResponse(channelName, channels, forGhosts)
+					guild.TrackingLock.Unlock()
+					_, err = s.ChannelMessageSend(m.ChannelID, resp)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+				break
+			case "list":
+				fallthrough
+			case "ls":
+				resp := guild.playerListResponse()
+				_, err := s.ChannelMessageSend(m.ChannelID, resp)
+				if err != nil {
+					log.Println(err)
+				}
+				break
+
+			case "link":
+				if len(args[1:]) < 2 {
+					//TODO print usage of this command specifically
+					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				} else {
+					guild.AmongUsDataLock.Lock()
+					guild.UserDataLock.Lock()
+					resp := guild.linkPlayerResponse(args[1:], &guild.AmongUsData)
+					guild.UserDataLock.Unlock()
+					guild.AmongUsDataLock.Unlock()
+					_, err := s.ChannelMessageSend(m.ChannelID, resp)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+				break
+			case "broadcast":
+				fallthrough
+			case "bcast":
+				fallthrough
+			case "b":
+				if len(args[1:]) == 0 {
+					//TODO print usage of this command specifically
+					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				} else {
+					str, err := guild.broadcastResponse(args[1:])
+					if err != nil {
+						log.Println(err)
+					}
+					s.ChannelMessageSend(m.ChannelID, str)
+				}
+				break
+			default:
+				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
+			}
+		}
 	}
 }

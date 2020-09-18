@@ -3,7 +3,6 @@ package discord
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -238,121 +237,6 @@ func (guild *GuildState) updateVoiceStatusCache(s *discordgo.Session) {
 			}
 		}
 		guild.UserDataLock.Unlock()
-	}
-}
-func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild.updateVoiceStatusCache(s)
-
-	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
-	//TODO This should check VOICE channels, not TEXT channels
-	//if guild.isTracked(m.ChannelID) {
-	contents := m.Content
-	if strings.HasPrefix(contents, CommandPrefix) {
-		args := strings.Split(contents, " ")[1:]
-		for i, v := range args {
-			args[i] = strings.ToLower(v)
-		}
-		if len(args) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse())
-		} else {
-			switch args[0] {
-			case "help":
-				fallthrough
-			case "h":
-				s.ChannelMessageSend(m.ChannelID, helpResponse())
-				break
-			//case "add":
-			//	fallthrough
-			//case "a":
-			//	if len(args[1:]) == 0 {
-			//		//TODO print usage of this command specifically
-			//		s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-			//	} else {
-			//		responses := guild.processAddUsersArgs(args[1:])
-			//		buf := bytes.NewBuffer([]byte("Results:\n"))
-			//		for name, msg := range responses {
-			//			buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
-			//		}
-			//		s.ChannelMessageSend(m.ChannelID, buf.String())
-			//	}
-			//	break
-			case "track":
-				fallthrough
-			case "t":
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-				} else {
-					// if anything is given in the second slot then we consider that a true
-					forGhosts := len(args[2:]) >= 1
-					channelName := strings.Join(args[1:2], " ")
-
-					channels, err := s.GuildChannels(m.GuildID)
-					if err != nil {
-						log.Println(err)
-					}
-
-					guild.TrackingLock.Lock()
-					resp := guild.trackChannelResponse(channelName, channels, forGhosts)
-					guild.TrackingLock.Unlock()
-					_, err = s.ChannelMessageSend(m.ChannelID, resp)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-				break
-			case "list":
-				fallthrough
-			case "ls":
-				resp := guild.playerListResponse()
-				_, err := s.ChannelMessageSend(m.ChannelID, resp)
-				if err != nil {
-					log.Println(err)
-				}
-				break
-
-			case "link":
-				if len(args[1:]) < 2 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-				} else {
-					guild.AmongUsDataLock.Lock()
-					guild.UserDataLock.Lock()
-					resp := guild.linkPlayerResponse(args[1:], &guild.AmongUsData)
-					guild.UserDataLock.Unlock()
-					guild.AmongUsDataLock.Unlock()
-					_, err := s.ChannelMessageSend(m.ChannelID, resp)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-				break
-			case "broadcast":
-				fallthrough
-			case "bcast":
-				fallthrough
-			case "b":
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-				} else {
-					str, err := guild.broadcastResponse(args[1:])
-					if err != nil {
-						log.Println(err)
-					}
-					s.ChannelMessageSend(m.ChannelID, str)
-				}
-				break
-			default:
-				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
-			}
-		}
-		//}
 	}
 }
 

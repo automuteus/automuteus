@@ -16,13 +16,8 @@ func helpResponse() string {
 	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
 	buf.WriteString(fmt.Sprintf("`%s help` (`%s h`): Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s list` (`%s l`): Print the currently tracked players, and their in-game status (Beta).\n", CommandPrefix, CommandPrefix))
-	//buf.WriteString(fmt.Sprintf("`%s dead` (`%s d`): Mark a user as dead so they aren't unmuted during discussions. Ex: `%s d @DiscordUser1 @DiscordUser2`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` (`%s t`): Tell Bot to use a single voice channel for mute/unmute, and ignore other players. Ex: `%s t Voice channel name`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s bcast` (`%s b`): Tell Bot to broadcast the room code and region. Ex: `%s b ABCD asia` or `%s b ABCD na`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	//buf.WriteString(fmt.Sprintf("`%s add` (`%s a`): Manually add players to the tracked list (muted/unmuted throughout the game). Ex: `%s a @DiscordUser2 @DiscordUser1`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	//buf.WriteString(fmt.Sprintf("`%s reset` (`%s r`): Reset the tracked player list manually (mainly for debug)\n", CommandPrefix, CommandPrefix))
-	//buf.WriteString(fmt.Sprintf("`%s muteall` (`%s ma`): Forcibly mute ALL users (mainly for debug).\n", CommandPrefix, CommandPrefix))
-	//buf.WriteString(fmt.Sprintf("`%s unmuteall` (`%s ua`): Forcibly unmute ALL users (mainly for debug).\n", CommandPrefix, CommandPrefix))
 	return buf.String()
 }
 
@@ -72,14 +67,9 @@ func (guild *GuildState) broadcastResponse(args []string) (string, error) {
 
 //TODO update original message, not post new one
 //TODO delete player messages relating to this
+//TODO print the tracked again
 func (guild *GuildState) playerListResponse() string {
 	buf := bytes.NewBuffer([]byte{})
-	//TODO print the tracked again
-	//if TrackingVoiceId != "" {
-	//	buf.WriteString(fmt.Sprintf("Currently tracking \"%s\" Voice Channel:\n", TrackingVoiceName))
-	//} else {
-	//	buf.WriteString("Not tracking a Voice Channel; all players will be Automuted (use `.au t` to track)\n")
-	//}
 
 	buf.WriteString("Player List:\n")
 	guild.UserDataLock.RLock()
@@ -137,6 +127,13 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
 }
 
+// TODO:
+func (guild *GuildState) gameStateResponse() string {
+	buf := bytes.NewBuffer([]byte{})
+	// TODO: make a sweet message
+	return buf.String()
+}
+
 func extractUserIDFromMention(mention string) (string, error) {
 	//nickname format
 	if strings.HasPrefix(mention, "<@!") && strings.HasSuffix(mention, ">") {
@@ -148,84 +145,3 @@ func extractUserIDFromMention(mention string) (string, error) {
 		return "", errors.New("mention does not conform to the correct format")
 	}
 }
-
-//func (guild *GuildState) processMarkAliveUsers(dg *discordgo.Session, args []string, markAlive bool) map[string]string {
-//	responses := make(map[string]string)
-//	for _, v := range args {
-//		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
-//			//strip the special characters off front and end
-//			idLookup := v[3 : len(v)-1]
-//			guild.UserDataLock.Lock()
-//			for id, user := range guild.UserData {
-//				if id == idLookup {
-//					temp := guild.UserData[id]
-//					temp.auData.IsAlive = markAlive
-//					guild.UserData[id] = temp
-//
-//					nameIdx := user.user.userName
-//					if user.user.nick != "" {
-//						nameIdx = user.user.userName + " (" + user.user.nick + ")"
-//					}
-//					if markAlive {
-//						responses[nameIdx] = "Marked Alive"
-//					} else {
-//						responses[nameIdx] = "Marked Dead"
-//					}
-//
-//					guild.GamePhaseLock.RLock()
-//					if guild.GamePhase == game.DISCUSS {
-//						err := guildMemberMute(dg, guild.ID, id, !markAlive)
-//						if err != nil {
-//							log.Printf("Error muting/unmuting %s: %s\n", user.user.userName, err)
-//						}
-//						if markAlive {
-//							responses[nameIdx] = "Marked Alive and Unmuted"
-//						} else {
-//							responses[nameIdx] = "Marked Dead and Muted"
-//						}
-//
-//					}
-//					guild.GamePhaseLock.RUnlock()
-//				}
-//			}
-//			guild.UserDataLock.Unlock()
-//		} else {
-//			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
-//		}
-//	}
-//	return responses
-//}
-//
-//func (guild *GuildState) processAddUsersArgs(args []string) map[string]string {
-//	responses := make(map[string]string)
-//	for _, v := range args {
-//		if strings.HasPrefix(v, "<@!") && strings.HasSuffix(v, ">") {
-//			//strip the special characters off front and end
-//			idLookup := v[3 : len(v)-1]
-//			guild.UserDataLock.Lock()
-//			for id, user := range guild.UserData {
-//				if id == idLookup {
-//					guild.UserData[id] = UserData{
-//						user:         user.user,
-//						voiceState:   discordgo.VoiceState{},
-//						tracking:     true, //always assume true if we're adding users manually
-//						auData: &AmongUserData{
-//							Color: AmongUsDefaultColor,
-//							Name:  AmongUsDefaultName,
-//							IsAlive: true,
-//						},
-//					}
-//					nameIdx := user.user.userName
-//					if user.user.nick != "" {
-//						nameIdx = user.user.userName + " (" + user.user.nick + ")"
-//					}
-//					responses[nameIdx] = "Added successfully!"
-//				}
-//			}
-//			guild.UserDataLock.Unlock()
-//		} else {
-//			responses[v] = "Not currently supporting non-`@` direct mentions, sorry!"
-//		}
-//	}
-//	return responses
-//}
