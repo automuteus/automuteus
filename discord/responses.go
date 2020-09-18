@@ -137,8 +137,14 @@ func gameStateResponse(guild *GuildState) string {
 	return messages[guild.GamePhase](guild)
 }
 
-func lobbyMessage(guild *GuildState) string {
-	return "hi"
+func lobbyMessage(_ *GuildState) string {
+	buf := bytes.NewBuffer([]byte{})
+
+	buf.WriteString("Lobby is open!\n")
+	buf.WriteString("The Lobby Code is: %s and the Region is: %s") // maybe this is a toggle?
+	buf.WriteString("React to this message with your color once you join!")
+
+	return buf.String()
 }
 
 func gamePlayMessage(guild *GuildState) string {
@@ -150,7 +156,9 @@ func gamePlayMessage(guild *GuildState) string {
 	buf.WriteString(playerListResponse(guild.UserData))
 	guild.UserDataLock.RUnlock()
 
+	guild.GamePhaseLock.RLock()
 	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase))
+	guild.GamePhaseLock.RUnlock()
 
 	return buf.String()
 }
