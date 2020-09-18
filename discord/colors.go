@@ -1,5 +1,6 @@
 package discord
 
+// Color : Int constant mapping
 const (
 	Red    = 0
 	Blue   = 1
@@ -15,6 +16,7 @@ const (
 	Lime   = 11
 )
 
+// ColorStrings for lowercase, possibly for translation if needed
 var ColorStrings = map[string]int{
 	"red":    Red,
 	"blue":   Blue,
@@ -30,6 +32,7 @@ var ColorStrings = map[string]int{
 	"lime":   Lime,
 }
 
+// GetColorStringForInt does what it sounds like
 func GetColorStringForInt(colorint int) string {
 	for str, idx := range ColorStrings {
 		if idx == colorint {
@@ -39,12 +42,13 @@ func GetColorStringForInt(colorint int) string {
 	return ""
 }
 
+// Emoji struct for discord
 type Emoji struct {
 	Name string
 	ID   string
 }
 
-//keys are IsAlive, Color
+// AlivenessColoredEmojis keys are IsAlive, Color
 var AlivenessColoredEmojis = map[bool]map[int]Emoji{
 	true: map[int]Emoji{
 		Red: {
