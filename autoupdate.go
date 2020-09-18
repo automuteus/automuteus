@@ -9,10 +9,11 @@ import (
 	"strings"
 )
 
-const RELEASES_URL = "https://api.github.com/repos/denverquane/amongusdiscord/releases/latest"
+// ReleasesURL const
+const ReleasesURL = "https://api.github.com/repos/denverquane/amongusdiscord/releases/latest"
 
 func main() {
-	resp, err := http.Get(RELEASES_URL)
+	resp, err := http.Get(ReleasesURL)
 	if err != nil {
 		log.Fatal(err)
 	}

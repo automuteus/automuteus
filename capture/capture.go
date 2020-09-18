@@ -3,8 +3,6 @@ package capture
 import (
 	"bytes"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/game"
-	"github.com/kbinani/screenshot"
 	"image"
 	"image/png"
 	"log"
@@ -13,12 +11,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/kbinani/screenshot"
 )
 
-const DEBUG_DONT_TRANSITION = false
+// DebugDontTransition const
+const DebugDontTransition = false
+
+// TempImageFilename const
 const TempImageFilename = "temp.png"
 
-var TESSERACT_PATH = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+// TesseractPath var
+var TesseractPath = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
 
 const discussXStartScalar = 0.28
 const discussWidthScalar = 0.4
@@ -30,7 +35,8 @@ const endingWidthScalar = 0.65
 const endingYStartScalar = 0.1
 const endingHeightScalar = 0.2
 
-type CaptureSettings struct {
+// Settings struct
+type Settings struct {
 	fullScreen bool
 	//really an integer type, but the computations are cleaner if we store as float
 	xRes float64
@@ -43,9 +49,10 @@ type CaptureSettings struct {
 	playerNameBounds []image.Rectangle
 }
 
-func (cap *CaptureSettings) ToString() string {
+// ToString returns string value of Settings
+func (cap *Settings) ToString() string {
 	buf := bytes.NewBuffer([]byte("Capture Settings:\n"))
-	buf.WriteString(fmt.Sprintf("  Tesseract Path: %s\n", TESSERACT_PATH))
+	buf.WriteString(fmt.Sprintf("  Tesseract Path: %s\n", TesseractPath))
 	buf.WriteString(fmt.Sprintf("  Fullscreen: %v\n", cap.fullScreen))
 	buf.WriteString(fmt.Sprintf("  Resolution: %dx%d\n", int(cap.xRes), int(cap.yRes)))
 	disc := cap.discussBounds
@@ -55,8 +62,9 @@ func (cap *CaptureSettings) ToString() string {
 	return buf.String()
 }
 
-func MakeSettingsFromEnv() CaptureSettings {
-	capSettings := CaptureSettings{}
+// MakeSettingsFromEnv func
+func MakeSettingsFromEnv() Settings {
+	capSettings := Settings{}
 
 	fullscreenStr := os.Getenv("FULLSCREEN")
 	//explicitly default to fullscreen
@@ -65,9 +73,9 @@ func MakeSettingsFromEnv() CaptureSettings {
 	} else {
 		capSettings.fullScreen = true
 	}
-	tesseractPathStr := os.Getenv("TESSERACT_PATH")
+	tesseractPathStr := os.Getenv("TesseractPath")
 	if tesseractPathStr != "" {
-		TESSERACT_PATH = tesseractPathStr
+		TesseractPath = tesseractPathStr
 	}
 	monitorStr := os.Getenv("MONITOR")
 	num := 0
@@ -115,10 +123,11 @@ func MakeSettingsFromEnv() CaptureSettings {
 	return capSettings
 }
 
+// CaptureLoopSleepMs const
 const CaptureLoopSleepMs = 500
 
-//Once we have memory capture, this would be replaced with whatever
-func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <-chan os.Signal) {
+// CaptureLoop once we have memory capture, this would be replaced with whatever
+func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <-chan os.Signal) {
 	gameState := game.GameState{
 		Phase: game.LOBBY,
 		Players: []game.Player{
@@ -156,38 +165,38 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLog
 			//we only need to scan for the game start text
 			case game.LOBBY:
 				log.Println("Waiting for Game to begin...")
-				gameStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
+				gameStrings := genericCaptureAndOCR(cap.endingBounds, TempImageFilename)
 				if debugLogs {
 					log.Printf("OCR Results using Ending bounds:\n%s", gameStrings)
 				}
 				if intersects(gameStrings, BeginningStrings) {
 					log.Println("Game has begun!")
-					if !DEBUG_DONT_TRANSITION {
+					if !DebugDontTransition {
 						gameState.Phase = game.GAME
 						res <- gameState
 					}
 				}
 			case game.GAME:
 				log.Println("Waiting for Discussion or Game Over...")
-				discussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
+				discussStrings := genericCaptureAndOCR(cap.discussBounds, TempImageFilename)
 				if debugLogs {
 					log.Printf("OCR Results using Discuss bounds:\n%s", discussStrings)
 				}
 				if intersects(discussStrings, DiscussionStrings) {
 					log.Println("Discussion phase has begun!")
-					if !DEBUG_DONT_TRANSITION {
+					if !DebugDontTransition {
 						gameState.Phase = game.DISCUSS
 						res <- gameState
 					}
 				} else {
 					//only check the end strings if we clearly havent begun a discussion
-					endStrings := genericCaptureAndOCR(settings.endingBounds, TempImageFilename)
+					endStrings := genericCaptureAndOCR(cap.endingBounds, TempImageFilename)
 					if debugLogs {
 						log.Printf("OCR Results using Ending bounds:\n%s", endStrings)
 					}
 					if intersects(endStrings, EndgameStrings) {
 						log.Println("Game is over!")
-						if !DEBUG_DONT_TRANSITION {
+						if !DebugDontTransition {
 							gameState.Phase = game.LOBBY
 							res <- gameState
 						}
@@ -195,13 +204,13 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLog
 				}
 			case game.DISCUSS:
 				log.Println("Waiting for discussion to end...")
-				endDiscussStrings := genericCaptureAndOCR(settings.discussBounds, TempImageFilename)
+				endDiscussStrings := genericCaptureAndOCR(cap.discussBounds, TempImageFilename)
 				if debugLogs {
 					log.Printf("OCR Results using Discuss bounds:\n%s", endDiscussStrings)
 				}
 				if intersects(endDiscussStrings, EndDiscussionStrings) {
 					log.Println("Discussion is over!")
-					if !DEBUG_DONT_TRANSITION {
+					if !DebugDontTransition {
 						gameState.Phase = game.GAME
 						res <- gameState
 					}
@@ -215,7 +224,7 @@ func (settings *CaptureSettings) CaptureLoop(res chan<- game.GameState, debugLog
 				//	}
 				//	if intersects(endStrings, EndgameStrings) {
 				//		log.Println("Game is over!")
-				//		if !DEBUG_DONT_TRANSITION {
+				//		if !DebugDontTransition {
 				//			res <- PREGAME
 				//			gameState = PREGAME
 				//		}
@@ -256,14 +265,14 @@ var yScalars = []float64{
 	0.7239,  //5th row
 }
 
-//height of the player image
+// yHeightScalar height of the player image
 const yHeightScalar = 0.00833
 
-func (settings *CaptureSettings) generatePlayerNameBounds() {
-	settings.playerNameBounds = make([]image.Rectangle, 10)
+func (cap *Settings) generatePlayerNameBounds() {
+	cap.playerNameBounds = make([]image.Rectangle, 10)
 	for i := 0; i < 10; i += 2 {
-		settings.playerNameBounds[i] = generateCaptureWindow(settings.xRes, settings.yRes, xLeftStartScalar, xWidthScalar, yScalars[i/2], yHeightScalar)
-		settings.playerNameBounds[i+1] = generateCaptureWindow(settings.xRes, settings.yRes, xRightStartScalar, xWidthScalar, yScalars[i/2], yHeightScalar)
+		cap.playerNameBounds[i] = generateCaptureWindow(cap.xRes, cap.yRes, xLeftStartScalar, xWidthScalar, yScalars[i/2], yHeightScalar)
+		cap.playerNameBounds[i+1] = generateCaptureWindow(cap.xRes, cap.yRes, xRightStartScalar, xWidthScalar, yScalars[i/2], yHeightScalar)
 	}
 }
 
@@ -302,7 +311,7 @@ func genericCaptureAndOCR(bounds image.Rectangle, filename string) []string {
 		log.Println(err)
 	}
 
-	cmd := exec.Command(TESSERACT_PATH, filename, "stdout")
+	cmd := exec.Command(TesseractPath, filename, "stdout")
 	//cmd.Stdin = strings.NewReader("some input")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -361,15 +370,18 @@ func genericCaptureAndRGBA(bounds image.Rectangle, filename string) RGBColor {
 	}
 }
 
-func TestDiscussCapture(settings CaptureSettings) []string {
+// TestDiscussCapture func
+func TestDiscussCapture(settings Settings) []string {
 	return genericCaptureAndOCR(settings.discussBounds, "discuss.png")
 }
 
-func TestEndingCapture(settings CaptureSettings) []string {
+// TestEndingCapture func
+func TestEndingCapture(settings Settings) []string {
 	return genericCaptureAndOCR(settings.endingBounds, "ending.png")
 }
 
-func TestNumberedDiscussCapture(settings CaptureSettings, num int) {
+// TestNumberedDiscussCapture func
+func TestNumberedDiscussCapture(settings Settings, num int) {
 	color := genericCaptureAndRGBA(settings.playerNameBounds[num], fmt.Sprintf("Player%dCapture.png", num+1))
 	log.Printf("R: %d, G: %d, B: %d\n", int(color.r), int(color.g), int(color.b))
 	match, bright := BestColorMatch(color)

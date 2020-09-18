@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -13,22 +10,33 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	socketio "github.com/googollee/go-socket.io"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
+// AmongUsDefaultName const
 const AmongUsDefaultName = "Player"
+
+// AmongUsDefaultColor const
 const AmongUsDefaultColor = "Cyan"
 
+// CommandPrefix const
 const CommandPrefix = ".au"
 
-type DiscordUser struct {
+// User struct
+type User struct {
 	nick          string
 	userID        string
 	userName      string
 	discriminator string
 }
 
+// UserData struct
 type UserData struct {
-	user         DiscordUser
+	user         User
 	voiceState   discordgo.VoiceState
 	tracking     bool
 	amongUsColor string
@@ -36,12 +44,14 @@ type UserData struct {
 	amongUsAlive bool
 }
 
-//var VoiceStatusCache = make(map[string]UserData)
-//var VoiceStatusCacheLock = sync.RWMutex{}
+// var VoiceStatusCache = make(map[string]UserData)
+// var VoiceStatusCacheLock = sync.RWMutex{}
 //
-//var GameState = game.GameState{Phase: game.LOBBY}
-//var GameStateLock = sync.RWMutex{}
+// var GameState = game.GameState{Phase: game.LOBBY}
+// var GameStateLock = sync.RWMutex{}
 //
+
+// GameDelays struct
 type GameDelays struct {
 	GameStartDelay           int
 	GameResumeDelay          int
@@ -49,12 +59,14 @@ type GameDelays struct {
 	DiscordMuteDelayOffsetMs int
 }
 
-//mapping of socket IDs to guild IDs
+// AllConns mapping of socket IDs to guild IDs
 var AllConns map[string]string
 
+// AllGuilds var
 var AllGuilds map[string]*GuildState
 
-func MakeAndStartBot(token string) {
+// MakeAndStartBot does what it sounds like
+func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
@@ -64,7 +76,7 @@ func MakeAndStartBot(token string) {
 	dg.AddHandler(voiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
-	dg.AddHandler(newGuild)
+	dg.AddHandler(newGuild(moveDeadPlayers))
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
 
@@ -134,7 +146,7 @@ func socketioServer(gameStateChannel chan game.GenericWSMessage) {
 	})
 	server.OnEvent("/", "guildID", func(s socketio.Conn, msg string) {
 		fmt.Println("set guildID:", msg)
-		for gid, _ := range AllGuilds {
+		for gid := range AllGuilds {
 			if gid == msg {
 				AllConns[s.ID()] = gid //associate the socket with the guild
 				s.Emit("reply", "set guildID successfully")
@@ -191,7 +203,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 					guild.VoiceStatusCache[i] = v
 				}
 				guild.voiceStatusCacheLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, false)
+				// false + false means force unmute all
+				guild.handleTrackedMembers(dg, false, false)
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
@@ -210,7 +223,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.gameStateLock.RUnlock()
 
 				time.Sleep(time.Second * time.Duration(delay))
-				guild.muteAllTrackedMembers(dg, true, false)
+				// true + false means force mute all
+				guild.handleTrackedMembers(dg, true, false)
 
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
@@ -224,7 +238,8 @@ func discordListener(dg *discordgo.Session, newStateChannel <-chan game.GenericW
 				guild.gameStateLock.Lock()
 				guild.GameState = newState
 				guild.gameStateLock.Unlock()
-				guild.muteAllTrackedMembers(dg, false, true)
+				// false + true means unmute only those alive
+				guild.handleTrackedMembers(dg, false, true)
 			default:
 				log.Println("Undetected new state!")
 			}
@@ -253,16 +268,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
-	log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-	AllGuilds[m.ID] = &GuildState{
-		ID:                   m.ID,
-		delays:               GameDelays{},
-		VoiceStatusCache:     make(map[string]UserData),
-		voiceStatusCacheLock: sync.RWMutex{},
-		GameState:            game.GameState{Phase: game.UNINITIALIZED},
-		gameStateLock:        sync.RWMutex{},
-		Tracking:             make(map[string]Tracking),
-		TextChannelId:        "",
+func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
+	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
+		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
+		AllGuilds[m.ID] = &GuildState{
+			ID:                   m.ID,
+			delays:               GameDelays{},
+			VoiceStatusCache:     make(map[string]UserData),
+			voiceStatusCacheLock: sync.RWMutex{},
+			GameState:            game.GameState{Phase: game.UNINITIALIZED},
+			gameStateLock:        sync.RWMutex{},
+			Tracking:             make(map[string]Tracking),
+			TextChannelID:        "",
+			MoveDeadPlayers:      moveDeadPlayers,
+		}
 	}
 }

@@ -3,19 +3,23 @@ package discord
 import (
 	"bytes"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
+// Tracking struct
 type Tracking struct {
-	channelId   string
+	channelID   string
 	channelName string
+	forGhosts   bool
 }
 
+// GuildState struct
 type GuildState struct {
 	ID     string
 	delays GameDelays
@@ -29,7 +33,91 @@ type GuildState struct {
 	Tracking map[string]Tracking
 
 	//UNUSED right now
-	TextChannelId string
+	TextChannelID string
+
+	// For voice channel movement
+	MoveDeadPlayers bool
+}
+
+// TrackedMemberAction struct
+type TrackedMemberAction struct {
+	mute          bool
+	move          bool
+	message       string
+	targetChannel Tracking
+}
+
+func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
+	// first we need to determine if we care about moving people at all
+	if guild.MoveDeadPlayers {
+		guild.moveAndMuteAllTrackedMembers(dg, inGame, inDiscussion)
+		return
+	}
+
+	guild.muteAllTrackedMembers(dg, inGame, inDiscussion)
+}
+
+func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
+	guild.voiceStatusCacheLock.RLock()
+
+	deadUserChannel, deadUserChannelError := guild.findVoiceChannel(true)
+	if deadUserChannelError != nil {
+		log.Printf("Missing a voice channel for dead users!")
+		return
+	}
+	gameChannel, gameChannelError := guild.findVoiceChannel(false)
+	if gameChannelError != nil {
+		log.Printf("Missing a voice channel for alive users!")
+		return
+	}
+
+	// inGame, inDiscussion, isAlive is the key order
+	actions := map[bool]map[bool]map[bool]TrackedMemberAction{
+		// inGame
+		true: map[bool]map[bool]TrackedMemberAction{
+			// not inDiscussion
+			false: map[bool]TrackedMemberAction{
+				// isAlive
+				true: {true, false, "Not moving, and muting ", gameChannel},
+				// not isAlive
+				false: {false, true, "Moving to dead channel, and unmuting ", deadUserChannel},
+			},
+		},
+		// not inGame
+		false: map[bool]map[bool]TrackedMemberAction{
+			// inDiscussion
+			true: map[bool]TrackedMemberAction{
+				// isAlive
+				true: {false, false, "Not moving, and unmuting ", gameChannel},
+				// not isAlive
+				false: {true, true, "Moving to game channel, and muting", gameChannel},
+			},
+		},
+	}
+
+	for user, v := range guild.VoiceStatusCache {
+		if v.tracking {
+			action := actions[inGame][inDiscussion][v.amongUsAlive]
+
+			log.Println(fmt.Sprintf("%s Username: %s, Nickname: %s, ID: %s", action.message, v.user.userName, v.user.nick, user))
+
+			if action.move {
+				moveErr := guildMemberMove(dg, guild.ID, user, &action.targetChannel.channelID)
+				if moveErr != nil {
+					log.Println(moveErr)
+					continue
+				}
+			}
+
+			err := guildMemberMute(dg, guild.ID, user, action.mute)
+			if err != nil {
+				log.Println(err)
+			}
+			log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
+			time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
+		}
+	}
+	guild.voiceStatusCacheLock.RUnlock()
 }
 
 func (guild *GuildState) muteAllTrackedMembers(dg *discordgo.Session, mute bool, checkAlive bool) {
@@ -53,23 +141,30 @@ func (guild *GuildState) muteAllTrackedMembers(dg *discordgo.Session, mute bool,
 				}
 			}
 			buf.WriteString(fmt.Sprintf("Username: %s, Nickname: %s, ID: %s", v.user.userName, v.user.nick, user))
-			//buf.WriteString(v.User.Username)
-			//if v.Nick != "" {
-			//buf.WriteString(fmt.Sprintf(" (%s)", v.Nick))
-			//}
 			log.Println(buf.String())
 			if !skipExec {
 				err := guildMemberMute(dg, guild.ID, user, mute)
 				if err != nil {
 					log.Println(err)
 				}
-				log.Printf("Sleeping for %dms between mutes to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
+				log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
 				time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
 			}
 		}
 	}
 	guild.voiceStatusCacheLock.RUnlock()
 }
+
+func guildMemberMove(session *discordgo.Session, guildID string, userID string, channelID *string) (err error) {
+	log.Println("Issuing move channel request to discord")
+	data := struct {
+		ChannelID *string `json:"channel_id"`
+	}{channelID}
+
+	_, err = session.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
+	return
+}
+
 func guildMemberMute(session *discordgo.Session, guildID string, userID string, mute bool) (err error) {
 	log.Println("Issuing mute request to discord")
 	data := struct {
@@ -105,13 +200,13 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			guild.gameStateLock.RLock()
 			if v.tracking && !m.Mute && (guild.GameState.Phase == game.TASKS || (guild.GameState.Phase == game.DISCUSS && !v.amongUsAlive)) {
 				log.Println("Tracked mute")
-				log.Printf("Current game state: %d, alive: %v", guild.GameState, v.amongUsAlive)
+				log.Printf("Current game state: %v, alive: %v", guild.GameState, v.amongUsAlive)
 				guildMemberMute(s, m.GuildID, m.UserID, true)
 			}
 			guild.gameStateLock.RUnlock()
 		}
 	} else {
-		user := DiscordUser{
+		user := User{
 			nick:          "",
 			userID:        m.UserID,
 			userName:      "",
@@ -164,7 +259,7 @@ func (guild *GuildState) updateVoiceStatusCache(s *discordgo.Session) {
 			v.tracking = guild.isTracked(state.ChannelID)
 			guild.VoiceStatusCache[state.UserID] = v
 		} else { //add the user we haven't seen in our cache before
-			user := DiscordUser{
+			user := User{
 				userID: state.UserID,
 			}
 
@@ -228,14 +323,16 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 					} else {
-						channelName := strings.Join(args[1:], " ")
+						// if anything is given in the second slot then we consider that a true
+						forGhosts := len(args[2:]) >= 1
+						channelName := strings.Join(args[1:2], " ")
 
 						channels, err := s.GuildChannels(m.GuildID)
 						if err != nil {
 							log.Println(err)
 						}
 
-						resp := guild.processTrackChannelArg(channelName, channels)
+						resp := guild.processTrackChannelArg(channelName, channels, forGhosts)
 						s.ChannelMessageSend(m.ChannelID, resp)
 					}
 					break
@@ -292,7 +389,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				case "ua":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
 					guild.voiceStatusCacheLock.RLock()
-					for id, _ := range guild.VoiceStatusCache {
+					for id := range guild.VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, false)
 						if err != nil {
 							log.Println(err)
@@ -305,7 +402,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				case "ma":
 					s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
 					guild.voiceStatusCacheLock.RLock()
-					for id, _ := range guild.VoiceStatusCache {
+					for id := range guild.VoiceStatusCache {
 						err := guildMemberMute(s, m.GuildID, id, true)
 						if err != nil {
 							log.Println(err)
@@ -329,6 +426,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						}
 						s.ChannelMessageSend(m.ChannelID, str)
 					}
+					break
 				}
 			}
 		}
@@ -375,15 +473,16 @@ func (guild *GuildState) processBroadcastArgs(args []string) (string, error) {
 	return buf.String(), nil
 }
 
-func (guild *GuildState) processTrackChannelArg(channelName string, allChannels []*discordgo.Channel) string {
+func (guild *GuildState) processTrackChannelArg(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 			//TODO check duplicates (for logging)
 			guild.Tracking[c.ID] = Tracking{
-				channelId:   c.ID,
+				channelID:   c.ID,
 				channelName: c.Name,
+				forGhosts:   forGhosts,
 			}
-			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute!", c.Name)
+			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
 		}
 	}
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
@@ -495,12 +594,22 @@ func (guild *GuildState) processAddUsersArgs(args []string) map[string]string {
 func (guild *GuildState) isTracked(channelID string) bool {
 	if len(guild.Tracking) == 0 {
 		return true
-	} else {
-		for _, v := range guild.Tracking {
-			if v.channelId == channelID {
-				return true
-			}
+	}
+
+	for _, v := range guild.Tracking {
+		if v.channelID == channelID {
+			return true
 		}
 	}
 	return false
+}
+
+func (guild *GuildState) findVoiceChannel(forGhosts bool) (Tracking, error) {
+	for _, v := range guild.Tracking {
+		if v.forGhosts == forGhosts {
+			return v, nil
+		}
+	}
+
+	return Tracking{}, fmt.Errorf("No voice channel found forGhosts: %v", forGhosts)
 }
