@@ -25,24 +25,6 @@ const AmongUsDefaultColor = "Cyan"
 // CommandPrefix const
 const CommandPrefix = ".au"
 
-// User struct
-type User struct {
-	nick          string
-	userID        string
-	userName      string
-	discriminator string
-}
-
-// UserData struct
-type UserData struct {
-	user         User
-	voiceState   discordgo.VoiceState
-	tracking     bool
-	amongUsColor string
-	amongUsName  string
-	amongUsAlive bool
-}
-
 // var VoiceStatusCache = make(map[string]UserData)
 // var VoiceStatusCacheLock = sync.RWMutex{}
 //
@@ -123,7 +105,6 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUp
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
 		fmt.Println("connected:", s.ID())
-		AllConns[s.ID()] = ""
 		return nil
 	})
 	server.OnEvent("/", "guildID", func(s socketio.Conn, msg string) {
@@ -131,6 +112,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUp
 		for gid := range AllGuilds {
 			if gid == msg {
 				AllConns[s.ID()] = gid //associate the socket with the guild
+				log.Printf("Associated websocket id %s with guildID %s\n", s.ID(), gid)
 				s.Emit("reply", "set guildID successfully")
 			}
 		}
@@ -195,9 +177,8 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 	for {
 		select {
 		case phaseUpdate := <-phaseUpdateChannel:
-			log.Printf("Received message for guild %s\n", phaseUpdate.GuildID)
+			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
-
 				//log.Printf("Unmarshalled state object: %s\n", newState.ToString())
 				switch phaseUpdate.Phase {
 				case game.LOBBY:
@@ -206,12 +187,13 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 					//	dg.ChannelMessageSend(ExclusiveChannelId, fmt.Sprintf("Game over! Unmuting players!"))
 					//}
 					//Loop through and reset players (game over = everyone alive again)
-					guild.UserDataLock.Lock()
-					for i, v := range guild.UserData {
-						v.amongUsAlive = true
-						guild.UserData[i] = v
+
+					guild.AmongUsDataLock.Lock()
+					for i := range guild.AmongUsData {
+						guild.AmongUsData[i].IsAlive = true
 					}
-					guild.UserDataLock.Unlock()
+					guild.AmongUsDataLock.Unlock()
+
 					guild.handleTrackedMembers(dg, false, false)
 					guild.GamePhaseLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
@@ -251,9 +233,21 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GameP
 				}
 			}
 
+			//TODO prevent cases where 2 players are mapped to the same underlying in-game player data
 		case playerUpdate := <-playerUpdateChannel:
-			log.Printf("Received message for guild %s\n", playerUpdate.GuildID)
+			log.Printf("Received PlayerUpdate message for guild %s\n", playerUpdate.GuildID)
+			if guild, ok := AllGuilds[playerUpdate.GuildID]; ok {
 
+				//this updates the copies in memory
+				//(player's associations to amongus data are just pointers to these structs)
+				updated := guild.updateCachedAmongUsData(playerUpdate.Player)
+
+				if updated {
+					log.Println("Player update received caused an update in cached state")
+				} else {
+					log.Println("Player update received did not cause an update in cached state")
+				}
+			}
 		}
 	}
 }
@@ -289,7 +283,10 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			UserDataLock:    sync.RWMutex{},
 			GamePhase:       game.LOBBY,
 			GamePhaseLock:   sync.RWMutex{},
+			AmongUsData:     MakeAllEmptyAmongUsData(),
+			AmongUsDataLock: sync.RWMutex{},
 			Tracking:        make(map[string]Tracking),
+			TrackingLock:    sync.RWMutex{},
 			TextChannelID:   "",
 			MoveDeadPlayers: moveDeadPlayers,
 		}
@@ -306,11 +303,9 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 					userName:      v.User.Username,
 					discriminator: v.User.Discriminator,
 				},
-				voiceState:   discordgo.VoiceState{},
-				tracking:     false,
-				amongUsColor: "NoColor",
-				amongUsName:  "NoName",
-				amongUsAlive: true,
+				voiceState: discordgo.VoiceState{},
+				tracking:   false,
+				auData:     nil,
 			}
 		}
 		AllGuilds[m.ID].UserDataLock.Unlock()
