@@ -127,32 +127,8 @@ func MakeSettingsFromEnv() Settings {
 const CaptureLoopSleepMs = 500
 
 // CaptureLoop once we have memory capture, this would be replaced with whatever
-func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <-chan os.Signal) {
-	gameState := game.GameState{
-		Phase: game.LOBBY,
-		Players: []game.Player{
-			{
-				Name:  "Toby",
-				Color: "CYAN",
-				IsDead: true,
-			},
-			{
-				Name:  "Brad",
-				Color: "RED",
-				IsDead: true,
-			},
-			{
-				Name:  "Kevin",
-				Color: "BLUE",
-				IsDead: false,
-			},
-			{
-				Name:  "Keith",
-				Color: "LIME",
-				IsDead: false,
-			},
-		},
-	}
+func (cap *Settings) CaptureLoop(res chan<- game.GamePhase, debugLogs bool, sc <-chan os.Signal) {
+	gameState := game.LOBBY
 
 	for {
 		select {
@@ -161,7 +137,7 @@ func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <
 
 		default:
 			//start := time.Now()
-			switch gameState.Phase {
+			switch gameState {
 			//we only need to scan for the game start text
 			case game.LOBBY:
 				log.Println("Waiting for Game to begin...")
@@ -172,11 +148,11 @@ func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <
 				if intersects(gameStrings, BeginningStrings) {
 					log.Println("Game has begun!")
 					if !DebugDontTransition {
-						gameState.Phase = game.GAME
+						gameState = game.TASKS
 						res <- gameState
 					}
 				}
-			case game.GAME:
+			case game.TASKS:
 				log.Println("Waiting for Discussion or Game Over...")
 				discussStrings := genericCaptureAndOCR(cap.discussBounds, TempImageFilename)
 				if debugLogs {
@@ -185,7 +161,7 @@ func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <
 				if intersects(discussStrings, DiscussionStrings) {
 					log.Println("Discussion phase has begun!")
 					if !DebugDontTransition {
-						gameState.Phase = game.DISCUSS
+						gameState = game.DISCUSS
 						res <- gameState
 					}
 				} else {
@@ -197,7 +173,7 @@ func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <
 					if intersects(endStrings, EndgameStrings) {
 						log.Println("Game is over!")
 						if !DebugDontTransition {
-							gameState.Phase = game.LOBBY
+							gameState = game.LOBBY
 							res <- gameState
 						}
 					}
@@ -211,7 +187,7 @@ func (cap *Settings) CaptureLoop(res chan<- game.GameState, debugLogs bool, sc <
 				if intersects(endDiscussStrings, EndDiscussionStrings) {
 					log.Println("Discussion is over!")
 					if !DebugDontTransition {
-						gameState.Phase = game.GAME
+						gameState = game.TASKS
 						res <- gameState
 					}
 				}

@@ -58,7 +58,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 }
 
 func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
-	guild.voiceStatusCacheLock.RLock()
+	guild.UserDataLock.RLock()
 
 	deadUserChannel, deadUserChannelError := guild.findVoiceChannel(true)
 	if deadUserChannelError != nil {
@@ -95,7 +95,7 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 		},
 	}
 
-	for user, v := range guild.VoiceStatusCache {
+	for user, v := range guild.UserData {
 		if v.tracking {
 			action := actions[inGame][inDiscussion][v.amongUsAlive]
 
@@ -117,7 +117,7 @@ func (guild *GuildState) moveAndMuteAllTrackedMembers(dg *discordgo.Session, inG
 			time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
 		}
 	}
-	guild.voiceStatusCacheLock.RUnlock()
+	guild.UserDataLock.RUnlock()
 }
 
 func (guild *GuildState) muteAllTrackedMembers(dg *discordgo.Session, mute bool, checkAlive bool) {
@@ -301,21 +301,21 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				case "h":
 					s.ChannelMessageSend(m.ChannelID, helpResponse())
 					break
-				case "add":
-					fallthrough
-				case "a":
-					if len(args[1:]) == 0 {
-						//TODO print usage of this command specifically
-						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-					} else {
-						responses := guild.processAddUsersArgs(args[1:])
-						buf := bytes.NewBuffer([]byte("Results:\n"))
-						for name, msg := range responses {
-							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
-						}
-						s.ChannelMessageSend(m.ChannelID, buf.String())
-					}
-					break
+				//case "add":
+				//	fallthrough
+				//case "a":
+				//	if len(args[1:]) == 0 {
+				//		//TODO print usage of this command specifically
+				//		s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				//	} else {
+				//		responses := guild.processAddUsersArgs(args[1:])
+				//		buf := bytes.NewBuffer([]byte("Results:\n"))
+				//		for name, msg := range responses {
+				//			buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+				//		}
+				//		s.ChannelMessageSend(m.ChannelID, buf.String())
+				//	}
+				//	break
 				case "track":
 					fallthrough
 				case "t":
@@ -342,75 +342,75 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					resp := guild.playerListResponse()
 					s.ChannelMessageSend(m.ChannelID, resp)
 					break
-				case "reset":
-					fallthrough
-				case "r":
-					guild.UserDataLock.Lock()
-					for i, v := range guild.UserData {
-						v.tracking = false
-						v.amongUsAlive = true
-						guild.UserData[i] = v
-					}
-					guild.UserDataLock.Unlock()
-					s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
-					break
-				case "dead":
-					fallthrough
-				case "d":
-					if len(args[1:]) == 0 {
-						//TODO print usage of this command specifically
-						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-					} else {
-						responses := guild.processMarkAliveUsers(s, args[1:], false)
-						buf := bytes.NewBuffer([]byte("Results:\n"))
-						for name, msg := range responses {
-							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
-						}
-						s.ChannelMessageSend(m.ChannelID, buf.String())
-					}
-					break
-				case "alive":
-					fallthrough
-				case "al":
-					if len(args[1:]) == 0 {
-						//TODO print usage of this command specifically
-						s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-					} else {
-						responses := guild.processMarkAliveUsers(s, args[1:], true)
-						buf := bytes.NewBuffer([]byte("Results:\n"))
-						for name, msg := range responses {
-							buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
-						}
-						s.ChannelMessageSend(m.ChannelID, buf.String())
-					}
-					break
-				case "unmuteall":
-					fallthrough
-				case "ua":
-					s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
-					guild.UserDataLock.RLock()
-					for id, _ := range guild.UserData {
-						err := guildMemberMute(s, m.GuildID, id, false)
-						if err != nil {
-							log.Println(err)
-						}
-					}
-					guild.UserDataLock.RUnlock()
-					break
-				case "muteall":
-					fallthrough
-				case "ma":
-					s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
-					guild.UserDataLock.RLock()
-					for id, _ := range guild.UserData {
-						err := guildMemberMute(s, m.GuildID, id, true)
-						if err != nil {
-							log.Println(err)
-						}
-
-					}
-					guild.UserDataLock.RUnlock()
-					break
+				//case "reset":
+				//	fallthrough
+				//case "r":
+				//	guild.UserDataLock.Lock()
+				//	for i, v := range guild.UserData {
+				//		v.tracking = false
+				//		v.amongUsAlive = true
+				//		guild.UserData[i] = v
+				//	}
+				//	guild.UserDataLock.Unlock()
+				//	s.ChannelMessageSend(m.ChannelID, "Reset Player List!")
+				//	break
+				//case "dead":
+				//	fallthrough
+				//case "d":
+				//	if len(args[1:]) == 0 {
+				//		//TODO print usage of this command specifically
+				//		s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				//	} else {
+				//		responses := guild.processMarkAliveUsers(s, args[1:], false)
+				//		buf := bytes.NewBuffer([]byte("Results:\n"))
+				//		for name, msg := range responses {
+				//			buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+				//		}
+				//		s.ChannelMessageSend(m.ChannelID, buf.String())
+				//	}
+				//	break
+				//case "alive":
+				//	fallthrough
+				//case "al":
+				//	if len(args[1:]) == 0 {
+				//		//TODO print usage of this command specifically
+				//		s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				//	} else {
+				//		responses := guild.processMarkAliveUsers(s, args[1:], true)
+				//		buf := bytes.NewBuffer([]byte("Results:\n"))
+				//		for name, msg := range responses {
+				//			buf.WriteString(fmt.Sprintf("`%s`: %s\n", name, msg))
+				//		}
+				//		s.ChannelMessageSend(m.ChannelID, buf.String())
+				//	}
+				//	break
+				//case "unmuteall":
+				//	fallthrough
+				//case "ua":
+				//	s.ChannelMessageSend(m.ChannelID, "Forcibly unmuting ALL players!")
+				//	guild.UserDataLock.RLock()
+				//	for id, _ := range guild.UserData {
+				//		err := guildMemberMute(s, m.GuildID, id, false)
+				//		if err != nil {
+				//			log.Println(err)
+				//		}
+				//	}
+				//	guild.UserDataLock.RUnlock()
+				//	break
+				//case "muteall":
+				//	fallthrough
+				//case "ma":
+				//	s.ChannelMessageSend(m.ChannelID, "Forcibly muting ALL players!")
+				//	guild.UserDataLock.RLock()
+				//	for id, _ := range guild.UserData {
+				//		err := guildMemberMute(s, m.GuildID, id, true)
+				//		if err != nil {
+				//			log.Println(err)
+				//		}
+				//
+				//	}
+				//	guild.UserDataLock.RUnlock()
+				//	break
 				case "broadcast":
 					fallthrough
 				case "bcast":
@@ -443,6 +443,10 @@ func (guild *GuildState) processBroadcastArgs(args []string) (string, error) {
 		region = strings.ToLower(args[1])
 		switch region {
 		case "na":
+			fallthrough
+		case "us":
+			fallthrough
+		case "usa":
 			fallthrough
 		case "north":
 			region = "North America"
