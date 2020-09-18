@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func helpResponse() string {
@@ -115,7 +116,7 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 //TODO implement a separate way to link by color (color is more volatile)
 //TODO implement a way to match in-game names to discord ones WITHOUT the link command
 func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUserData) string {
-	err, userID := extractUserIDFromMention(args[0])
+	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
 	}
@@ -129,23 +130,22 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 				guild.UserData[userID] = user
 				log.Printf("Linked %s to %s", args[0], user.auData.ToString())
 				return fmt.Sprintf("Successfully linked player to existing game data!")
-			} else {
-				return fmt.Sprintf("No user found with userID %s", userID)
 			}
+			return fmt.Sprintf("No user found with userID %s", userID)
 		}
 	}
 	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
 }
 
-func extractUserIDFromMention(mention string) (error, string) {
+func extractUserIDFromMention(mention string) (string, error) {
 	//nickname format
 	if strings.HasPrefix(mention, "<@!") && strings.HasSuffix(mention, ">") {
-		return nil, mention[3 : len(mention)-1]
+		return mention[3 : len(mention)-1], nil
 		//non-nickname format
 	} else if strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">") {
-		return nil, mention[2 : len(mention)-1]
+		return mention[2 : len(mention)-1], nil
 	} else {
-		return errors.New("mention does not conform to the correct format"), ""
+		return "", errors.New("mention does not conform to the correct format")
 	}
 }
 
