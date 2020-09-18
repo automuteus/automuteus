@@ -287,7 +287,7 @@ func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 	}
 }
 
-// ToString returns a string representation of the current state of the guild
+// ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
 }

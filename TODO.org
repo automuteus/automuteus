@@ -1,0 +1,9 @@
+* Game State Message
+** make it more detailed
+*** TODO output each player and their correct emoji
+*** TODO output current phase of the Game
+*** TODO output lobby code / region (maybe?)
+*** TODO have the ability to change the message based on the game state
+** lobby message
+*** TODO during the lobby open up for reactions with player color
+*** TODO load player reactions into UserData for tracking

@@ -18,7 +18,7 @@ func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordg
 	// another toy example of how rw locking could look
 	guild.GameStateMessageLock.Lock()
 	if guild.GameStateMessage == nil {
-		guild.GameStateMessage = sendMessage(s, m.ChannelID, guild.ToString())
+		guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
 	}
 	guild.GameStateMessageLock.Unlock()
 }
@@ -30,7 +30,7 @@ func handleGameStateMessage(guild *GuildState, s *discordgo.Session) {
 		log.Println("Game State Message is scuffed, try .au start again!")
 		return
 	}
-	editMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, guild.ToString())
+	editMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
