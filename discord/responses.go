@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 func helpResponse() string {
@@ -68,12 +69,11 @@ func (guild *GuildState) broadcastResponse(args []string) (string, error) {
 //TODO update original message, not post new one
 //TODO delete player messages relating to this
 //TODO print the tracked again
-func (guild *GuildState) playerListResponse() string {
+func playerListResponse(users map[string]UserData) string {
 	buf := bytes.NewBuffer([]byte{})
 
 	buf.WriteString("Player List:\n")
-	guild.UserDataLock.RLock()
-	for _, player := range guild.UserData {
+	for _, player := range users {
 		if player.tracking {
 			if player.auData != nil {
 				emoji := AlivenessColoredEmojis[player.auData.IsAlive][player.auData.Color]
@@ -84,7 +84,6 @@ func (guild *GuildState) playerListResponse() string {
 
 		}
 	}
-	guild.UserDataLock.RUnlock()
 	return buf.String()
 }
 
@@ -128,9 +127,39 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 }
 
 // TODO:
-func (guild *GuildState) gameStateResponse() string {
+func gameStateResponse(guild *GuildState) string {
+	// we need to generate the messages based on the state of the game
+	messages := map[game.GamePhase]func(guild *GuildState) string{
+		game.LOBBY:   lobbyMessage,
+		game.TASKS:   gamePlayMessage,
+		game.DISCUSS: gamePlayMessage,
+	}
+	return messages[guild.GamePhase](guild)
+}
+
+func lobbyMessage(_ *GuildState) string {
 	buf := bytes.NewBuffer([]byte{})
-	// TODO: make a sweet message
+
+	buf.WriteString("Lobby is open!\n")
+	buf.WriteString("The Lobby Code is: %s and the Region is: %s") // maybe this is a toggle?
+	buf.WriteString("React to this message with your color once you join!")
+
+	return buf.String()
+}
+
+func gamePlayMessage(guild *GuildState) string {
+	buf := bytes.NewBuffer([]byte{})
+
+	buf.WriteString("Game is running!\n")
+	// add the player list
+	guild.UserDataLock.RLock()
+	buf.WriteString(playerListResponse(guild.UserData))
+	guild.UserDataLock.RUnlock()
+
+	guild.GamePhaseLock.RLock()
+	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase))
+	guild.GamePhaseLock.RUnlock()
+
 	return buf.String()
 }
 
