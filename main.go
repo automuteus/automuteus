@@ -1,3 +1,5 @@
+// +build !updater
+
 package main
 
 import (
