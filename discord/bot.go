@@ -43,6 +43,9 @@ var AllGuilds map[string]*GuildState
 
 // MakeAndStartBot does what it sounds like
 func MakeAndStartBot(token string, moveDeadPlayers bool) {
+	red := AlivenessColoredEmojis[true][0]
+	log.Println(red.DownloadAndBase64Encode())
+
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
@@ -52,9 +55,10 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	dg.AddHandler(voiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
+	dg.AddHandler(reactionCreate)
 	dg.AddHandler(newGuild(moveDeadPlayers))
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -172,11 +176,16 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.GamePhaseLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
 					guild.GamePhaseLock.Unlock()
+
+					handleGameStateMessage(guild, dg)
 				case game.TASKS:
 					log.Println("Detected transition to tasks")
 					delay := 0
 					guild.GamePhaseLock.RLock()
 					if guild.GamePhase == game.LOBBY {
+						//if we went from lobby to tasks, remove all the emojis from the game start message
+						guild.handleReactionsGameStartRemoveAll(dg)
+
 						delay = guild.delays.GameStartDelay
 					} else if guild.GamePhase == game.DISCUSS {
 						delay = guild.delays.GameResumeDelay
@@ -189,6 +198,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.GamePhaseLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
 					guild.GamePhaseLock.Unlock()
+					handleGameStateMessage(guild, dg)
 				case game.DISCUSS:
 					log.Println("Detected transition to discussion")
 					time.Sleep(time.Second * time.Duration(guild.delays.DiscussStartDelay))
@@ -196,6 +206,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.GamePhase = phaseUpdate.Phase
 					guild.GamePhaseLock.Unlock()
 					guild.handleTrackedMembers(dg, false, true)
+					handleGameStateMessage(guild, dg)
 				default:
 					log.Printf("Undetected new state: %d\n", phaseUpdate.Phase)
 				}
@@ -215,6 +226,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 				} else {
 					log.Println("Player update received did not cause an update in cached state")
 				}
+				handleGameStateMessage(guild, dg)
 			}
 		}
 	}
@@ -236,6 +248,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for id, socketGuild := range AllGuilds {
 		if id == m.GuildID {
 			socketGuild.handleMessageCreate(s, m)
+			break
+		}
+	}
+}
+
+func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	for id, socketGuild := range AllGuilds {
+		if id == m.GuildID {
+			socketGuild.handleReactionGameStartAdd(s, m)
 			break
 		}
 	}
@@ -313,9 +334,15 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
-					// if anything is given in the second slot then we consider that a true
-					forGhosts := len(args[2:]) >= 1
-					channelName := strings.Join(args[1:2], " ")
+					// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
+					forGhosts := false
+					endIdx := len(args)
+					if args[len(args)-1] == "true" || args[len(args)-1] == "t" {
+						forGhosts = true
+						endIdx -= 1
+					}
+
+					channelName := strings.Join(args[1:endIdx], " ")
 
 					channels, err := s.GuildChannels(m.GuildID)
 					if err != nil {
@@ -355,37 +382,57 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					}
 				}
 				break
-			case "broadcast":
-				fallthrough
-			case "bcast":
-				fallthrough
-			case "b":
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
-				} else {
-					str, err := guild.broadcastResponse(args[1:])
-					if err != nil {
-						log.Println(err)
-					}
-					s.ChannelMessageSend(m.ChannelID, str)
-				}
-				break
 			case "start":
 				fallthrough
 			case "s":
+				room, region := GetRoomAndRegionFromArgs(args[1:])
+				//TODO lock, or don't access directly...
+				guild.Room = room
+				guild.Region = region
+
 				handleGameStartMessage(guild, s, m)
 				break
 			case "exclude":
 				fallthrough
 			case "e":
-				handleGameStartMessage(guild, s, m)
+				//handleGameStartMessage(guild, s, m)
 				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
 
 			}
-			deleteMessage(s, m.ChannelID, m.Message.ID)
+			//TODO in alpha/beta, don't delete the player's message
+			//deleteMessage(s, m.ChannelID, m.Message.ID)
 		}
 	}
+}
+
+func GetRoomAndRegionFromArgs(args []string) (string, string) {
+	if len(args) == 0 {
+		return "Unprovided", "Unprovided"
+	}
+	room := strings.ToUpper(args[0])
+	if len(args) == 1 {
+		return room, "Unprovided"
+	}
+	region := strings.ToLower(args[1])
+	switch region {
+	case "na":
+		fallthrough
+	case "us":
+		fallthrough
+	case "usa":
+		fallthrough
+	case "north":
+		region = "North America"
+	case "eu":
+		fallthrough
+	case "europe":
+		region = "Europe"
+	case "as":
+		fallthrough
+	case "asia":
+		region = "Asia"
+	}
+	return room, region
 }

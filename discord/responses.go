@@ -15,56 +15,12 @@ func helpResponse() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
-	buf.WriteString(fmt.Sprintf("`%s help` (`%s h`): Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s list` (`%s ls`): Print the currently tracked players, and their in-game status.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s track` (`%s t`): Tell Bot to use a single voice channel for mute/unmute, and ignore other players. Ex: `%s t Voice channel name`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s bcast` (`%s b`): Tell Bot to broadcast the room code and region. Ex: `%s b ABCD asia` or `%s b ABCD na`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s link` (`%s l`): Link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s start` or `%s s`: Start the game in this text channel. Accepts Room code and Region as arguments.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s list` or `%s ls`: Print the currently tracked players, and their in-game status.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Accepts true as a final argument if the channel is for dead players. Ex: `%s t <vc_name>` or `%s t <vc_name> true`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 	return buf.String()
-}
-
-func (guild *GuildState) broadcastResponse(args []string) (string, error) {
-	buf := bytes.NewBuffer([]byte{})
-	code, region := "", ""
-	//just the room code
-	code = strings.ToUpper(args[0])
-
-	if len(args) > 1 {
-		region = strings.ToLower(args[1])
-		switch region {
-		case "na":
-			fallthrough
-		case "us":
-			fallthrough
-		case "usa":
-			fallthrough
-		case "north":
-			region = "North America"
-		case "eu":
-			fallthrough
-		case "europe":
-			region = "Europe"
-		case "as":
-			fallthrough
-		case "asia":
-			region = "Asia"
-		}
-	}
-	guild.UserDataLock.RLock()
-	for _, player := range guild.UserData {
-		if player.tracking {
-			buf.WriteString(fmt.Sprintf("<@!%s> ", player.user.userID))
-		}
-	}
-	guild.UserDataLock.RUnlock()
-	buf.WriteString(fmt.Sprintf("\nThe Room Code is **%s**\n", code))
-
-	if region == "" {
-		buf.WriteString("I wasn't told the Region, though :cry:")
-	} else {
-		buf.WriteString(fmt.Sprintf("The Region is **%s**\n", region))
-	}
-	return buf.String(), nil
 }
 
 //TODO update original message, not post new one
@@ -129,7 +85,8 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
 
 	if IsColorString(combinedArgs) {
-		return guild.matchByColor(userID, combinedArgs, allAuData)
+		str, _ := guild.matchByColor(userID, combinedArgs, allAuData)
+		return str
 	}
 
 	inGameName := combinedArgs
@@ -149,19 +106,19 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
 }
 
-func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) string {
+func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
 	for _, auData := range allAuData {
 		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
 			if user, ok := guild.UserData[userID]; ok {
 				user.auData = auData //point to the single copy in memory
 				guild.UserData[userID] = user
 				log.Printf("Linked %s to %s", userID, user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player via Color!")
+				return fmt.Sprintf("Successfully linked player via Color!"), true
 			}
-			return fmt.Sprintf("No user found with userID %s", userID)
+			return fmt.Sprintf("No user found with userID %s", userID), false
 		}
 	}
-	return fmt.Sprintf(":x: No in-game player data was found matching that color!\n")
+	return fmt.Sprintf(":x: No in-game player data was found matching that color!\n"), false
 }
 
 // TODO:
@@ -175,12 +132,13 @@ func gameStateResponse(guild *GuildState) string {
 	return messages[guild.GamePhase](guild)
 }
 
-func lobbyMessage(_ *GuildState) string {
+func lobbyMessage(g *GuildState) string {
 	buf := bytes.NewBuffer([]byte{})
 
 	buf.WriteString("Lobby is open!\n")
-	buf.WriteString("The Lobby Code is: %s and the Region is: %s") // maybe this is a toggle?
-	buf.WriteString("React to this message with your color once you join!")
+	buf.WriteString(fmt.Sprintf("The Lobby Code is: **%s** and the Region is: **%s**\n", g.Room, g.Region)) // maybe this is a toggle?
+	buf.WriteString(playerListResponse(g.UserData))
+	buf.WriteString("React to this message with your in-game color once you join the game!")
 
 	return buf.String()
 }
@@ -195,7 +153,7 @@ func gamePlayMessage(guild *GuildState) string {
 	guild.UserDataLock.RUnlock()
 
 	guild.GamePhaseLock.RLock()
-	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase))
+	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase.ToString()))
 	guild.GamePhaseLock.RUnlock()
 
 	return buf.String()

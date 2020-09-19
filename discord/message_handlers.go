@@ -6,13 +6,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func handlePlayerListMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
-	// if we want to keep locking we can do something like this in the handlers
-	guild.UserDataLock.RLock()
-	handleGameStateMessage(guild, s)
-	guild.UserDataLock.RUnlock()
-	//sendMessage(s, m.ChannelID, message)
-}
+//func handlePlayerListMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
+//	// if we want to keep locking we can do something like this in the handlers
+//	guild.UserDataLock.RLock()
+//	handleGameStateMessage(guild, s)
+//	guild.UserDataLock.RUnlock()
+//	//sendMessage(s, m.ChannelID, message)
+//}
 
 func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
 	// another toy example of how rw locking could look
@@ -21,6 +21,10 @@ func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordg
 		guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
 	}
 	guild.GameStateMessageLock.Unlock()
+
+	for _, e := range AlivenessColoredEmojis[true] {
+		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
+	}
 }
 
 // this will be called every game phase update
@@ -53,6 +57,20 @@ func editMessage(s *discordgo.Session, channelID string, messageID string, messa
 
 func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
 	err := s.ChannelMessageDelete(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
+	err := s.MessageReactionAdd(channelID, messageID, emojiID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
+	err := s.MessageReactionsRemoveAll(channelID, messageID)
 	if err != nil {
 		log.Println(err)
 	}

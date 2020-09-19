@@ -1,5 +1,12 @@
 package discord
 
+import (
+	"encoding/base64"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
 // Color : Int constant mapping
 const (
 	Red    = 0
@@ -51,6 +58,29 @@ func IsColorString(test string) bool {
 type Emoji struct {
 	Name string
 	ID   string
+}
+
+func (e *Emoji) FormatForReaction() string {
+	return "<:" + e.Name + ":" + e.ID
+}
+
+func (e *Emoji) GetDiscordCDNUrl() string {
+	return "https://cdn.discordapp.com/emojis/" + e.ID + ".png"
+}
+
+func (e *Emoji) DownloadAndBase64Encode() string {
+	url := e.GetDiscordCDNUrl()
+	response, err := http.Get(url)
+	if err != nil {
+		log.Println(err)
+	}
+	defer response.Body.Close()
+	bytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err)
+	}
+	encodedStr := base64.StdEncoding.EncodeToString(bytes)
+	return encodedStr
 }
 
 // AlivenessColoredEmojis keys are IsAlive, Color

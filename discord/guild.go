@@ -2,12 +2,10 @@ package discord
 
 import (
 	"fmt"
-	"log"
-	"sync"
-	"time"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"log"
+	"sync"
 )
 
 // Tracking struct
@@ -29,6 +27,7 @@ type GuildState struct {
 	AmongUsData     map[string]*AmongUserData
 	AmongUsDataLock sync.RWMutex
 
+	//what current phase the game is in (lobby, tasks, discussion)
 	GamePhase     game.Phase
 	GamePhaseLock sync.RWMutex
 
@@ -41,6 +40,9 @@ type GuildState struct {
 	//use this to refer to the same state message and update it on ls
 	GameStateMessage     *discordgo.Message
 	GameStateMessageLock sync.RWMutex
+
+	Room   string
+	Region string
 }
 
 // TrackedMemberAction struct
@@ -113,12 +115,21 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 				}
 			}
 
-			err := guildMemberMute(dg, guild.ID, user, action.mute)
-			if err != nil {
-				log.Println(err)
+			if v.voiceState.Mute != action.mute {
+				err := guildMemberMute(dg, guild.ID, user, action.mute)
+				if err != nil {
+					log.Println(err)
+				}
+			} else {
+				if action.mute {
+					log.Printf("Not muting %s because they're already muted\n", v.user.userName)
+				} else {
+					log.Printf("Not unmuting %s because they're already unmuted\n", v.user.userName)
+				}
 			}
-			log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
-			time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
+
+			//log.Printf("Sleeping for %dms between actions to avoid being rate-limited by Discord\n", guild.delays.DiscordMuteDelayOffsetMs)
+			//time.Sleep(time.Duration(guild.delays.DiscordMuteDelayOffsetMs) * time.Millisecond)
 		}
 	}
 	guild.UserDataLock.RUnlock()
@@ -192,6 +203,53 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 		}
 	}
 	guild.UserDataLock.Unlock()
+}
+
+func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	if guild.GameStateMessage != nil {
+
+		if IsUserReactionToStateMsg(m, guild.GameStateMessage) {
+			for color, e := range AlivenessColoredEmojis[true] {
+				if e.ID == m.Emoji.ID {
+					log.Printf("Player %s reacted with color %s", m.UserID, GetColorStringForInt(color))
+					_, matched := guild.matchByColor(m.UserID, GetColorStringForInt(color), guild.AmongUsData)
+					if !matched {
+						//remove the user's reaction; couldn't be matched to an in-game color
+						err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+						if err != nil {
+							log.Println(err)
+						}
+					} else {
+						//remove the bot's reaction
+						err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), guild.GameStateMessage.Author.ID)
+						if err != nil {
+							log.Println(err)
+						}
+						//then remove the player's reaction
+						err = s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+						if err != nil {
+							log.Println(err)
+						}
+
+						handleGameStateMessage(guild, s)
+					}
+					//TODO if we can't associate the user with the in-game data, then escalate an error to the
+					//singular master game state (we should report an error with an individual user with a @mention,
+					//perhaps?)
+				}
+			}
+		}
+	}
+}
+
+func IsUserReactionToStateMsg(m *discordgo.MessageReactionAdd, sm *discordgo.Message) bool {
+	return m.ChannelID == sm.ChannelID && m.MessageID == sm.ID && m.UserID != sm.Author.ID
+}
+
+func (guild *GuildState) handleReactionsGameStartRemoveAll(s *discordgo.Session) {
+	if guild.GameStateMessage != nil {
+		removeAllReactions(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
+	}
 }
 
 func (guild *GuildState) updateVoiceStatusCache(s *discordgo.Session) {
