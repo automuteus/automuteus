@@ -16,9 +16,10 @@ func helpResponse() string {
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
 	buf.WriteString(fmt.Sprintf("`%s help` (`%s h`): Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s list` (`%s l`): Print the currently tracked players, and their in-game status (Beta).\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s list` (`%s ls`): Print the currently tracked players, and their in-game status.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` (`%s t`): Tell Bot to use a single voice channel for mute/unmute, and ignore other players. Ex: `%s t Voice channel name`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s bcast` (`%s b`): Tell Bot to broadcast the room code and region. Ex: `%s b ABCD asia` or `%s b ABCD na`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s link` (`%s l`): Link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 	return buf.String()
 }
 
@@ -79,7 +80,7 @@ func playerListResponse(users map[string]UserData) string {
 				emoji := AlivenessColoredEmojis[player.auData.IsAlive][player.auData.Color]
 				buf.WriteString(fmt.Sprintf("<:%s:%s> <@!%s>: %s\n", emoji.Name, emoji.ID, player.user.userID, player.auData.Name))
 			} else {
-				buf.WriteString(fmt.Sprintf(":x: <@!%s>: Use `.au link @%s <in-game name>`\n", player.user.userID, player.user.userName))
+				buf.WriteString(fmt.Sprintf(":x: <@!%s>: Use `.au link @%s <Au name OR color>`\n", player.user.userID, player.user.userName))
 			}
 
 		}
@@ -102,23 +103,45 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-//TODO implement a separate way to link by color (color is more volatile)
-//TODO implement a way to match in-game names to discord ones WITHOUT the link command
-func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUserData) string {
+func (guild *GuildState) excludePlayerResponse(args []string, allUserData map[string]UserData) string {
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
 	}
 
-	inGameName := strings.ToLower(args[1])
-	for color, auData := range *allAuData {
-		log.Println(strings.ToLower(auData.Name))
-		if strings.ToLower(auData.Name) == inGameName {
+	for name, userData := range allUserData {
+		if userData.user.userID == userID {
+			userData.excluding = true
+			allUserData[name] = userData
+		}
+	}
+	return ""
+}
+
+//TODO implement a separate way to link by color (color is more volatile)
+//TODO implement a way to match in-game names to discord ones WITHOUT the link command
+func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]*AmongUserData) string {
+	userID, err := extractUserIDFromMention(args[0])
+	if err != nil {
+		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
+	}
+
+	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
+
+	if IsColorString(combinedArgs) {
+		return guild.matchByColor(userID, combinedArgs, allAuData)
+	}
+
+	inGameName := combinedArgs
+	for name, auData := range allAuData {
+		name = strings.ToLower(strings.ReplaceAll(name, " ", ""))
+		log.Println(name)
+		if name == inGameName {
 			if user, ok := guild.UserData[userID]; ok {
-				user.auData = &(*allAuData)[color] //point to the single copy in memory
+				user.auData = auData //point to the single copy in memory
 				guild.UserData[userID] = user
 				log.Printf("Linked %s to %s", args[0], user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player to existing game data!")
+				return fmt.Sprintf("Successfully linked player via Name!")
 			}
 			return fmt.Sprintf("No user found with userID %s", userID)
 		}
@@ -126,10 +149,25 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData *[]AmongUse
 	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
 }
 
+func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) string {
+	for _, auData := range allAuData {
+		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
+			if user, ok := guild.UserData[userID]; ok {
+				user.auData = auData //point to the single copy in memory
+				guild.UserData[userID] = user
+				log.Printf("Linked %s to %s", userID, user.auData.ToString())
+				return fmt.Sprintf("Successfully linked player via Color!")
+			}
+			return fmt.Sprintf("No user found with userID %s", userID)
+		}
+	}
+	return fmt.Sprintf(":x: No in-game player data was found matching that color!\n")
+}
+
 // TODO:
 func gameStateResponse(guild *GuildState) string {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.GamePhase]func(guild *GuildState) string{
+	messages := map[game.Phase]func(guild *GuildState) string{
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,

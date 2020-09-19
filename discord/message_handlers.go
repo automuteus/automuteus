@@ -9,9 +9,9 @@ import (
 func handlePlayerListMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
 	// if we want to keep locking we can do something like this in the handlers
 	guild.UserDataLock.RLock()
-	message := playerListResponse(guild.UserData)
+	handleGameStateMessage(guild, s)
 	guild.UserDataLock.RUnlock()
-	sendMessage(s, m.ChannelID, message)
+	//sendMessage(s, m.ChannelID, message)
 }
 
 func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -49,4 +49,11 @@ func editMessage(s *discordgo.Session, channelID string, messageID string, messa
 		log.Println(err)
 	}
 	return msg
+}
+
+func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
+	err := s.ChannelMessageDelete(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
 }

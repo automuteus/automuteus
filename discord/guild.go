@@ -29,18 +29,16 @@ type GuildState struct {
 	AmongUsData     map[string]*AmongUserData
 	AmongUsDataLock sync.RWMutex
 
-	GamePhase     game.GamePhase
+	GamePhase     game.Phase
 	GamePhaseLock sync.RWMutex
 
 	Tracking     map[string]Tracking
 	TrackingLock sync.RWMutex
 
-	//UNUSED right now
-	TextChannelID string
-
 	// For voice channel movement
 	MoveDeadPlayers bool
 
+	//use this to refer to the same state message and update it on ls
 	GameStateMessage     *discordgo.Message
 	GameStateMessageLock sync.RWMutex
 }
@@ -294,11 +292,7 @@ func (guild *GuildState) updateCachedAmongUsData(update game.Player) bool {
 
 func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 	for i := range guild.AmongUsData {
-		guildDataPtr := guild.AmongUsData[i]
-		guildDataPtr.IsAlive = alive
-
-		//TODO my pointer knowledge is failing me; this isn't needed, right?
-		guild.AmongUsData[i] = guildDataPtr
+		(*guild.AmongUsData[i]).IsAlive = alive
 	}
 }
 

@@ -72,7 +72,7 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	AllGuilds = make(map[string]*GuildState)
 	AllConns = make(map[string]string)
 
-	gamePhaseUpdateChannel := make(chan game.GamePhaseUpdate)
+	gamePhaseUpdateChannel := make(chan game.PhaseUpdate)
 
 	playerUpdateChannel := make(chan game.PlayerUpdate)
 
@@ -85,7 +85,7 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	dg.Close()
 }
 
-func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUpdateChannel chan<- game.PlayerUpdate) {
+func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdateChannel chan<- game.PlayerUpdate) {
 	server, err := socketio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -112,8 +112,8 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUp
 			log.Println(err)
 		} else {
 			if v, ok := AllConns[s.ID()]; ok {
-				gamePhaseUpdateChannel <- game.GamePhaseUpdate{
-					Phase:   game.GamePhase(phase),
+				gamePhaseUpdateChannel <- game.PhaseUpdate{
+					Phase:   game.Phase(phase),
 					GuildID: v,
 				}
 			} else {
@@ -153,7 +153,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.GamePhaseUpdate, playerUp
 	log.Fatal(http.ListenAndServe(":8123", nil))
 }
 
-func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.GamePhaseUpdate, playerUpdateChannel <-chan game.PlayerUpdate) {
+func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.PhaseUpdate, playerUpdateChannel <-chan game.PlayerUpdate) {
 	for {
 		select {
 		case phaseUpdate := <-phaseUpdateChannel:
@@ -255,7 +255,6 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			AmongUsDataLock: sync.RWMutex{},
 			Tracking:        make(map[string]Tracking),
 			TrackingLock:    sync.RWMutex{},
-			TextChannelID:   "",
 			MoveDeadPlayers: moveDeadPlayers,
 		}
 		mems, err := s.GuildMembers(m.Guild.ID, "", 1000)
@@ -335,7 +334,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "list":
 				fallthrough
 			case "ls":
-				handlePlayerListMessage(guild, s, m)
+				handleGameStateMessage(guild, s)
 				break
 
 			case "link":
@@ -377,9 +376,16 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "s":
 				handleGameStartMessage(guild, s, m)
 				break
+			case "exclude":
+				fallthrough
+			case "e":
+				handleGameStartMessage(guild, s, m)
+				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
+
 			}
+			deleteMessage(s, m.ChannelID, m.Message.ID)
 		}
 	}
 }
