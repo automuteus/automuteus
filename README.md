@@ -34,7 +34,7 @@ and make sure to add the `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, and `DISCORD_C
 ## Install From Source:
 1. [Install Go 1.15.2](https://golang.org/dl/go1.15.2.windows-amd64.msi), but any version of Go 1.12+ should work (currently developing with Go 1.13).
 2. Clone the repository using `git clone https://github.com/denverquane/amongusdiscord`.
-3. Navigate to the directory with `cd amongusdiscord`, and then build the executable using `go build -o amongusdiscord.exe main.go`.
+3. Navigate to the directory with `cd amongusdiscord`, and then build the executable using `go build && go build -o update.exe -tags updater`.
 4. Proceed to steps 2 and 3 of the `Easiest` install section above.
 
 # Sample Usage
