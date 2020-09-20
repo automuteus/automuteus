@@ -1,6 +1,6 @@
 # amongusdiscord
 
-## We are aware of many of the issues with this branch! We have many, many changes that were are hoping to merge from the `decouple` branch very shortly! ##
+## We are aware of many of the issues with this branch! We have many, many changes that we are hoping to merge from the `decouple` branch very shortly! ##
 
 Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
 
