@@ -3,8 +3,6 @@ FROM golang:1.14
 
 WORKDIR /go/src/app
 COPY . .
-RUN rm *.exe
-RUN rm autoupdate.go
 
 RUN go build -o amongusdiscord main.go
 
