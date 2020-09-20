@@ -1,4 +1,7 @@
 # amongusdiscord
+
+## We are aware of many of the issues with this branch! We have many, many changes that were are hoping to merge from the `decouple` branch very shortly! ##
+
 Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
 
 Implementation of [AmongUsBot](https://github.com/alpharaoh/AmongUsBot) but developed in Go, and with additional features and capabilities.
