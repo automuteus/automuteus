@@ -119,15 +119,15 @@ func gameStateResponse(guild *GuildState) string {
 func lobbyMessage(g *GuildState) string {
 	buf := bytes.NewBuffer([]byte{})
 
-	buf.WriteString("Lobby is open!\n")
+	//buf.WriteString("Lobby is open!\n")
 	if g.LinkCode != "" {
 		alarmFormatted := AlarmEmoji.FormatForInline()
 		buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
 	}
-	buf.WriteString(fmt.Sprintf("\nThe Lobby Code is: **%s** and the Region is: **%s**\n\n", g.Room, g.Region)) // maybe this is a toggle?
-	buf.WriteString("I don't track players that aren't connected to **")
+	buf.WriteString(fmt.Sprintf("\nLobby Code: **%s** Region: **%s**\n", g.Room, g.Region)) // maybe this is a toggle?
+	buf.WriteString("Tracking: **")
 	if len(g.Tracking) == 0 {
-		buf.WriteString(fmt.Sprintf("any Voice channel!**\n"))
+		buf.WriteString(fmt.Sprintf("Any Voice channel!**\n"))
 	} else {
 		i := 0
 		for _, v := range g.Tracking {
@@ -140,16 +140,16 @@ func lobbyMessage(g *GuildState) string {
 			}
 			i++
 		}
-		buf.WriteString("!**\n")
+		buf.WriteString("**\n")
 	}
 
 	listResp := playerListResponse(g.UserData)
 	if len(listResp) > 0 {
-		buf.WriteString(fmt.Sprintf("Tracked Player List:\n"))
+		buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
 		buf.WriteString(listResp)
 	}
 
-	buf.WriteString("React to this message with your in-game color once you join the game!")
+	buf.WriteString("\nReact to this message with your in-game color once you join the game!")
 
 	return buf.String()
 }

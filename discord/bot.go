@@ -16,8 +16,6 @@ import (
 	"syscall"
 )
 
-const DefaultPort = "8123"
-
 // AllConns mapping of socket IDs to guild IDs
 var AllConns map[string]string
 
@@ -25,7 +23,7 @@ var AllConns map[string]string
 var AllGuilds map[string]*GuildState
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, moveDeadPlayers bool) {
+func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 
 	//red := AlivenessColoredEmojis[true][0]
 	//log.Println(red.DownloadAndBase64Encode())
@@ -34,13 +32,6 @@ func MakeAndStartBot(token string, moveDeadPlayers bool) {
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
 		return
-	}
-
-	port := os.Getenv("SERVER_PORT")
-	num, err := strconv.Atoi(port)
-	if err != nil || num < 1000 || num > 9999 {
-		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
-		port = DefaultPort
 	}
 
 	dg.AddHandler(voiceStateChange)
@@ -172,7 +163,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 		case phaseUpdate := <-phaseUpdateChannel:
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
-				//guild.handleGameStateMessage(dg)
+
 				switch phaseUpdate.Phase {
 				case game.LOBBY:
 					log.Println("Detected transition to lobby")
@@ -186,7 +177,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.GamePhase = phaseUpdate.Phase
 					guild.AmongUsDataLock.Unlock()
 
-					//add back the emojis
+					//add back the emojis AFTER we do any mute/unmutes
 					for _, e := range AlivenessColoredEmojis[true] {
 						if guild.GameStateMessage != nil {
 							addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
@@ -276,6 +267,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+//this function is called whenever a reaction is created in a guild
 func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	for id, socketGuild := range AllGuilds {
 		if id == m.GuildID {
@@ -320,13 +312,12 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 					userName:      v.User.Username,
 					discriminator: v.User.Discriminator,
 				},
-				voiceState: discordgo.VoiceState{},
-				tracking:   false,
-				auData:     nil,
+				tracking: false,
+				auData:   nil,
 			}
 		}
 		AllGuilds[m.ID].UserDataLock.Unlock()
-		AllGuilds[m.ID].updateVoiceStatusCache(s)
+		//AllGuilds[m.ID].updateVoiceStatusCache(s)
 		log.Println("Updated members for guild " + m.Guild.ID)
 
 		allEmojis, err := s.GuildEmojis(m.Guild.ID)
@@ -368,15 +359,11 @@ func addAllEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis
 }
 
 func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild.updateVoiceStatusCache(s)
-
 	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	//TODO This should check VOICE channels, not TEXT channels
 	contents := m.Content
 	if strings.HasPrefix(contents, guild.CommandPrefix) {
 		args := strings.Split(contents, " ")[1:]
@@ -419,10 +406,6 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.UserDataLock.Unlock()
 
 					guild.handleGameStateMessage(s)
-					//_, err = s.ChannelMessageSend(m.ChannelID, resp)
-					//if err != nil {
-					//	log.Println(err)
-					//}
 				}
 				break
 
@@ -469,8 +452,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			//TODO allow a "less strict" mode that only deletes .au commands, not all messages
 		}
 	}
-	//Delete ALL messages while a game is happening
-	deleteMessage(s, m.ChannelID, m.Message.ID)
+
+	//Delete ALL messages posted while a game is happening, only for this channel
+	if guild.GameStateMessage != nil {
+		if guild.GameStateMessage.ChannelID == m.ChannelID {
+			deleteMessage(s, m.ChannelID, m.Message.ID)
+		}
+	}
 }
 
 func GetRoomAndRegionFromArgs(args []string) (string, string) {

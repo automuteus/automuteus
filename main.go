@@ -11,6 +11,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const DefaultPort = "8123"
+
 func main() {
 	err := discordMainWrapper()
 	if err != nil {
@@ -39,16 +41,6 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
-	// discordGuild := os.Getenv("DISCORD_GUILD_ID")
-	// if discordGuild == "" {
-	// 	return errors.New("no DISCORD_GUILD_ID provided")
-	// }
-
-	// discordChannel := os.Getenv("DISCORD_CHANNEL_ID")
-	// if discordChannel == "" {
-	// 	return errors.New("no DISCORD_CHANNEL_ID provided")
-	// }
-
 	discordMoveDeadPlayersStr := os.Getenv("DISCORD_MOVE_DEAD_PLAYERS")
 	discordMoveDeadPlayers := false
 	ret, err := strconv.ParseBool(discordMoveDeadPlayersStr)
@@ -59,47 +51,14 @@ func discordMainWrapper() error {
 		log.Printf("Problem parsing DISCORD_MOVE_DEAD_PLAYERS; using %t as default\n", discordMoveDeadPlayers)
 	}
 
-	// gameStartDelayStr := os.Getenv("GAME_START_DELAY")
-	// gameStartDelay := 4
-	// num, err := strconv.Atoi(gameStartDelayStr)
-	// if err == nil {
-	// 	log.Printf("Using GAME_START_DELAY of %d seconds\n", num)
-	// 	gameStartDelay = num
-	// } else {
-	// 	log.Printf("Problem parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameStartDelay)
-	// }
-
-	// gameResumeDelayStr := os.Getenv("GAME_RESUME_DELAY")
-	// gameResumeDelay := 7
-	// num, err = strconv.Atoi(gameResumeDelayStr)
-	// if err == nil {
-	// 	log.Printf("Using GAME_RESUME_DELAY of %d seconds\n", num)
-	// 	gameResumeDelay = num
-	// } else {
-	// 	log.Printf("Problem parsing GAME_RESUME_DELAY; using %d seconds as default\n", gameResumeDelay)
-	// }
-
-	// discussStartDelayStr := os.Getenv("DISCUSS_START_DELAY")
-	// discussStartDelay := 0
-	// num, err = strconv.Atoi(discussStartDelayStr)
-	// if err == nil {
-	// 	log.Printf("Using DISCUSS_START_DELAY of %d seconds\n", num)
-	// 	discussStartDelay = num
-	// } else {
-	// 	log.Printf("Problem parsing DISCUSS_START_DELAY; using %d seconds as default\n", discussStartDelay)
-	// }
-
-	// discordMuteDelayMsStr := os.Getenv("DISCORD_API_MUTE_DELAY_MS")
-	// discordMuteDelayMs := 300
-	// num, err = strconv.Atoi(discordMuteDelayMsStr)
-	// if err == nil {
-	// 	log.Printf("Using DISCORD_API_MUTE_DELAY_MS of %dms\n", num)
-	// 	discordMuteDelayMs = num
-	// } else {
-	// 	log.Printf("Problem parsing DISCORD_API_MUTE_DELAY_MS; using %dms as default\n", discordMuteDelayMs)
-	// }
+	port := os.Getenv("SERVER_PORT")
+	num, err := strconv.Atoi(port)
+	if err != nil || num < 1000 || num > 9999 {
+		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
+		port = DefaultPort
+	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordMoveDeadPlayers)
+	discord.MakeAndStartBot(discordToken, discordMoveDeadPlayers, port)
 	return nil
 }

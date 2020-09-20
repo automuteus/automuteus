@@ -3,7 +3,6 @@ package discord
 import (
 	"fmt"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 )
 
@@ -17,10 +16,10 @@ type User struct {
 
 // UserData struct
 type UserData struct {
-	user       User
-	voiceState discordgo.VoiceState
-	tracking   bool
-	auData     *AmongUserData //we want to point to player data that isn't necessarily correlated with a player yet...
+	user               User
+	pendingVoiceUpdate bool
+	tracking           bool
+	auData             *AmongUserData //we want to point to player data that isn't necessarily correlated with a player yet...
 }
 
 // IsAlive for a user

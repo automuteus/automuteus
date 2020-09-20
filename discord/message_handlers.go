@@ -79,3 +79,23 @@ func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
 		log.Println(err)
 	}
 }
+
+func guildMemberMove(session *discordgo.Session, guildID, userID string, channelID *string) (err error) {
+	log.Println("Issuing move channel request to discord")
+	data := struct {
+		ChannelID *string `json:"channel_id"`
+	}{channelID}
+
+	_, err = session.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
+	return
+}
+
+func guildMemberMute(session *discordgo.Session, guildID, userID string, mute bool) (err error) {
+	log.Printf("Issuing mute=%v request to discord\n", mute)
+	data := struct {
+		Mute bool `json:"mute"`
+	}{mute}
+
+	_, err = session.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
+	return
+}
