@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"log"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 )
 
-func helpResponse() string {
+func helpResponse(CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
@@ -23,18 +23,16 @@ func helpResponse() string {
 	return buf.String()
 }
 
-//TODO update original message, not post new one
-//TODO delete player messages relating to this
-//TODO print the tracked again
+//TODO Kaividian mentioned this format might be weird? How to properly @mention a player? <!@ vs <@ for ex...
 func playerListResponse(users map[string]UserData) string {
 	buf := bytes.NewBuffer([]byte{})
 
-	buf.WriteString("Player List:\n")
+	//buf.WriteString("Player List:\n")
 	for _, player := range users {
 		if player.tracking {
 			if player.auData != nil {
 				emoji := AlivenessColoredEmojis[player.auData.IsAlive][player.auData.Color]
-				buf.WriteString(fmt.Sprintf("<:%s:%s> <@!%s>: %s\n", emoji.Name, emoji.ID, player.user.userID, player.auData.Name))
+				buf.WriteString(fmt.Sprintf("%s <@!%s>: %s\n", emoji.FormatForInline(), player.user.userID, player.auData.Name))
 			} else {
 				buf.WriteString(fmt.Sprintf(":x: <@!%s>: Use `.au link @%s <Au name OR color>`\n", player.user.userID, player.user.userName))
 			}
@@ -53,25 +51,11 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 				channelName: c.Name,
 				forGhosts:   forGhosts,
 			}
+			log.Println(fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts))
 			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
 		}
 	}
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
-}
-
-func (guild *GuildState) excludePlayerResponse(args []string, allUserData map[string]UserData) string {
-	userID, err := extractUserIDFromMention(args[0])
-	if err != nil {
-		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
-	}
-
-	for name, userData := range allUserData {
-		if userData.user.userID == userID {
-			userData.excluding = true
-			allUserData[name] = userData
-		}
-	}
-	return ""
 }
 
 //TODO implement a separate way to link by color (color is more volatile)
@@ -107,6 +91,9 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 }
 
 func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
+	guild.AmongUsDataLock.Lock()
+	defer guild.AmongUsDataLock.Unlock()
+
 	for _, auData := range allAuData {
 		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
 			if user, ok := guild.UserData[userID]; ok {
@@ -136,10 +123,41 @@ func lobbyMessage(g *GuildState) string {
 	buf := bytes.NewBuffer([]byte{})
 
 	buf.WriteString("Lobby is open!\n")
-	buf.WriteString(fmt.Sprintf("The Lobby Code is: **%s** and the Region is: **%s**\n", g.Room, g.Region)) // maybe this is a toggle?
-	buf.WriteString(playerListResponse(g.UserData))
+	if g.LinkCode != "" {
+		alarmFormatted := AlarmEmoji.FormatForInline()
+		buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
+	}
+	buf.WriteString(fmt.Sprintf("The Lobby Code is: **%s** and the Region is: **%s**\n", spacedFormatting(g.Room), g.Region)) // maybe this is a toggle?
+	buf.WriteString("**I don't track players that aren't connected to ")
+	if len(g.Tracking) == 0 {
+		buf.WriteString(fmt.Sprintf("Voice!**\n"))
+	} else {
+		i := 0
+		for _, v := range g.Tracking {
+			buf.WriteString(fmt.Sprintf("%s", v.channelName))
+			if i < len(g.Tracking)-1 {
+				buf.WriteString(" or ")
+			}
+			i++
+		}
+		buf.WriteString("!**\n")
+	}
+
+	listResp := playerListResponse(g.UserData)
+	if len(listResp) > 0 {
+		buf.WriteString(fmt.Sprintf("Tracked Player List:\n"))
+		buf.WriteString(listResp)
+	}
+
 	buf.WriteString("React to this message with your in-game color once you join the game!")
 
+	return buf.String()
+}
+func spacedFormatting(room string) string {
+	buf := bytes.NewBuffer([]byte{})
+	for _, c := range room {
+		buf.WriteString(string(c) + " ")
+	}
 	return buf.String()
 }
 
@@ -148,13 +166,13 @@ func gamePlayMessage(guild *GuildState) string {
 
 	buf.WriteString("Game is running!\n")
 	// add the player list
-	guild.UserDataLock.RLock()
+	guild.UserDataLock.Lock()
 	buf.WriteString(playerListResponse(guild.UserData))
-	guild.UserDataLock.RUnlock()
+	guild.UserDataLock.Unlock()
 
-	guild.GamePhaseLock.RLock()
+	guild.AmongUsDataLock.RLock()
 	buf.WriteString(fmt.Sprintf("Current Phase: %s\n", guild.GamePhase.ToString()))
-	guild.GamePhaseLock.RUnlock()
+	guild.AmongUsDataLock.RUnlock()
 
 	return buf.String()
 }

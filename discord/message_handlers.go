@@ -14,13 +14,14 @@ import (
 //	//sendMessage(s, m.ChannelID, message)
 //}
 
-func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
+func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// another toy example of how rw locking could look
-	guild.GameStateMessageLock.Lock()
+	guild.UserDataLock.Lock()
 	if guild.GameStateMessage == nil {
 		guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
+		log.Println("Added self game state message")
 	}
-	guild.GameStateMessageLock.Unlock()
+	guild.UserDataLock.Unlock()
 
 	for _, e := range AlivenessColoredEmojis[true] {
 		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
@@ -29,7 +30,10 @@ func handleGameStartMessage(guild *GuildState, s *discordgo.Session, m *discordg
 
 // this will be called every game phase update
 // i don't think we will have `m` where we need it, so potentially rethink it...?
-func handleGameStateMessage(guild *GuildState, s *discordgo.Session) {
+func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
+	//guild.UserDataLock.Lock()
+	//defer guild.UserDataLock.Unlock()
+
 	if guild.GameStateMessage == nil {
 		log.Println("Game State Message is scuffed, try .au start again!")
 		return
