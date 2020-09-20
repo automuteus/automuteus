@@ -59,6 +59,8 @@ func discordMainWrapper() error {
 		port = DefaultPort
 	}
 
+	defaultChannel := os.Getenv("DEFAULT_CHANNEL_TO_TRACK")
+
 	//start the discord bot
 	discord.MakeAndStartBot(discordToken, discordMoveDeadPlayers, port)
 	return nil
