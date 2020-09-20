@@ -182,17 +182,24 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 
 		guild.UserData[m.UserID] = v
 		log.Printf("Saw a cached \"%s\" user's voice status change, tracking: %v\n", v.user.userName, v.tracking)
+
 		//unmute the member if they left the chat while muted
 		if !v.tracking && m.Mute {
 			log.Println("Untracked unmute of a muted player")
-			guildMemberMute(s, m.GuildID, m.UserID, false)
+			err := guildMemberMute(s, m.GuildID, m.UserID, false)
+			if err != nil {
+				log.Println(err)
+			}
 
 			//if the user rejoins, only mute if the game is going, or if it's discussion and they're dead
 		} else {
 			if v.tracking && !m.Mute && (guild.GamePhase == game.TASKS || (guild.GamePhase == game.DISCUSS && !v.IsAlive())) {
 				log.Println("Tracked mute of an unmuted player")
 				log.Printf("Current game state: %d, alive: %v", guild.GamePhase, v.IsAlive())
-				guildMemberMute(s, m.GuildID, m.UserID, true)
+				err := guildMemberMute(s, m.GuildID, m.UserID, true)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	} else {
@@ -301,30 +308,24 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 					//make sure the player's "tracked" status is updated when applying ANY emoji, valid or not
 					guild.updateTrackedStatus(g.VoiceStates, m.UserID, "")
 
-					if !matched {
-						//remove the user's reaction; couldn't be matched to an in-game color
-						err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
-						if err != nil {
-							log.Println(err)
-						}
-					} else {
-						//remove the bot's reaction
-						err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), guild.GameStateMessage.Author.ID)
-						if err != nil {
-							log.Println(err)
-						}
-						//then remove the player's reaction
-						err = s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
-						if err != nil {
-							log.Println(err)
-						}
-
-						guild.handleGameStateMessage(s)
+					//then remove the player's reaction if we matched, or if we didn't
+					err = s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+					if err != nil {
+						log.Println(err)
 					}
 
-					//TODO if we can't associate the user with the in-game data, then escalate an error to the
-					//singular master game state (we should report an error with an individual user with a @mention,
-					//perhaps?)
+					if matched {
+						guild.handleGameStateMessage(s)
+
+						//Don't remove the bot's reaction; more likely to misclick when the emojis move, and it doesn't
+						//allow users to change their color pairing if they messed up
+
+						//remove the bot's reaction
+						//err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), guild.GameStateMessage.Author.ID)
+						//if err != nil {
+						//	log.Println(err)
+						//}
+					}
 				}
 			}
 		}

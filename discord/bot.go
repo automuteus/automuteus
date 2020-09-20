@@ -186,6 +186,13 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.GamePhase = phaseUpdate.Phase
 					guild.AmongUsDataLock.Unlock()
 
+					//add back the emojis
+					for _, e := range AlivenessColoredEmojis[true] {
+						if guild.GameStateMessage != nil {
+							addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
+						}
+					}
+
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
 					log.Println("Detected transition to tasks")
@@ -426,15 +433,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
-					guild.AmongUsDataLock.Lock()
 					guild.UserDataLock.Lock()
-					resp := guild.linkPlayerResponse(args[1:], guild.AmongUsData)
+					guild.linkPlayerResponse(args[1:], guild.AmongUsData)
 					guild.UserDataLock.Unlock()
-					guild.AmongUsDataLock.Unlock()
-					_, err := s.ChannelMessageSend(m.ChannelID, resp)
-					if err != nil {
-						log.Println(err)
-					}
+
+					guild.handleGameStateMessage(s)
 				}
 				break
 			case "start":
@@ -445,10 +448,17 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				guild.Room = room
 				guild.Region = region
 
-				//TODO if the game is already started, we should re-issue the message and COMPLETELY reset game state?
-				//How do we do a fresh purge of all data haha
-				//Don't need to purge the AmongUs data, but all the associations/discord links to the data need to be reset,
-				//and we need to un-track all the users
+				//if the game is already started, then properly reset it
+				guild.UserDataLock.Lock()
+				if guild.GameStateMessage != nil {
+					for i, v := range guild.UserData {
+						v.auData = nil
+						guild.UserData[i] = v
+					}
+					deleteMessage(s, m.ChannelID, guild.GameStateMessage.ID)
+					guild.GameStateMessage = nil
+				}
+				guild.UserDataLock.Unlock()
 
 				guild.handleGameStartMessage(s, m)
 				break
@@ -456,10 +466,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
 
 			}
-			//TODO in alpha/beta, don't delete the player's message
-			deleteMessage(s, m.ChannelID, m.Message.ID)
+			//TODO allow a "less strict" mode that only deletes .au commands, not all messages
 		}
 	}
+	//Delete ALL messages while a game is happening
+	deleteMessage(s, m.ChannelID, m.Message.ID)
 }
 
 func GetRoomAndRegionFromArgs(args []string) (string, string) {

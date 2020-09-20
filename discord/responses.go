@@ -16,10 +16,9 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s start` or `%s s`: Start the game in this text channel. Accepts Room code and Region as arguments.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s list` or `%s ls`: Print the currently tracked players, and their in-game status.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s start` or `%s s`: Start the game in this text channel. Accepts Room code and Region as arguments. Ex: `.au start CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Accepts true as a final argument if the channel is for dead players. Ex: `%s t <vc_name>` or `%s t <vc_name> true`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 	return buf.String()
 }
 
@@ -58,8 +57,6 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-//TODO implement a separate way to link by color (color is more volatile)
-//TODO implement a way to match in-game names to discord ones WITHOUT the link command
 func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]*AmongUserData) string {
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
@@ -127,14 +124,17 @@ func lobbyMessage(g *GuildState) string {
 		alarmFormatted := AlarmEmoji.FormatForInline()
 		buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
 	}
-	buf.WriteString(fmt.Sprintf("The Lobby Code is: **%s** and the Region is: **%s**\n", spacedFormatting(g.Room), g.Region)) // maybe this is a toggle?
-	buf.WriteString("**I don't track players that aren't connected to ")
+	buf.WriteString(fmt.Sprintf("\nThe Lobby Code is: **%s** and the Region is: **%s**\n\n", g.Room, g.Region)) // maybe this is a toggle?
+	buf.WriteString("I don't track players that aren't connected to **")
 	if len(g.Tracking) == 0 {
-		buf.WriteString(fmt.Sprintf("Voice!**\n"))
+		buf.WriteString(fmt.Sprintf("any Voice channel!**\n"))
 	} else {
 		i := 0
 		for _, v := range g.Tracking {
 			buf.WriteString(fmt.Sprintf("%s", v.channelName))
+			if v.forGhosts {
+				buf.WriteString("(ghosts)")
+			}
 			if i < len(g.Tracking)-1 {
 				buf.WriteString(" or ")
 			}
@@ -151,13 +151,6 @@ func lobbyMessage(g *GuildState) string {
 
 	buf.WriteString("React to this message with your in-game color once you join the game!")
 
-	return buf.String()
-}
-func spacedFormatting(room string) string {
-	buf := bytes.NewBuffer([]byte{})
-	for _, c := range room {
-		buf.WriteString(string(c) + " ")
-	}
 	return buf.String()
 }
 
