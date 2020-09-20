@@ -1,5 +1,7 @@
 package game
 
+import "strings"
+
 // Phase type
 type Phase int
 
@@ -32,7 +34,7 @@ func getPhaseNameForInt(phase *Phase) string {
 
 // ToString for a phase
 func (phase *Phase) ToString() string {
-	return getPhaseNameForInt(phase)
+	return strings.ToUpper(getPhaseNameForInt(phase))
 }
 
 // Player struct

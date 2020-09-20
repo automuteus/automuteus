@@ -16,14 +16,12 @@ import (
 
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// another toy example of how rw locking could look
-	guild.UserDataLock.Lock()
 	if guild.GameStateMessage == nil {
 		guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
 		log.Println("Added self game state message")
 	}
-	guild.UserDataLock.Unlock()
 
-	for _, e := range AlivenessColoredEmojis[true] {
+	for _, e := range guild.StatusEmojis[true] {
 		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
 	}
 }
@@ -35,7 +33,7 @@ func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
 	//defer guild.UserDataLock.Unlock()
 
 	if guild.GameStateMessage == nil {
-		log.Println("Game State Message is scuffed, try .au start again!")
+		//log.Println("Game State Message is scuffed, try .au start again!")
 		return
 	}
 	editMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))

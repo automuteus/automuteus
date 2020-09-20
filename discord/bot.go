@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 )
 
@@ -86,9 +85,9 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		for gid, guild := range AllGuilds {
 			if gid == msg {
 				AllConns[s.ID()] = gid //associate the socket with the guild
-				guild.UserDataLock.Lock()
+				//guild.UserDataLock.Lock()
 				guild.LinkCode = ""
-				guild.UserDataLock.Unlock()
+				//guild.UserDataLock.Unlock()
 
 				log.Printf("Associated websocket id %s with guildID %s\n", s.ID(), gid)
 				s.Emit("reply", "set guildID successfully")
@@ -141,9 +140,9 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 
 		for gid, guild := range AllGuilds {
 			if gid == previousGid {
-				guild.UserDataLock.Lock()
+				//guild.UserDataLock.Lock()
 				guild.LinkCode = gid //set back to the ID; this is unlinked
-				guild.UserDataLock.Unlock()
+				//guild.UserDataLock.Unlock()
 
 				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
 			}
@@ -163,22 +162,17 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 		case phaseUpdate := <-phaseUpdateChannel:
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
-
 				switch phaseUpdate.Phase {
 				case game.LOBBY:
 					log.Println("Detected transition to lobby")
 
-					guild.AmongUsDataLock.Lock()
 					guild.modifyCachedAmongUsDataAlive(true)
-					guild.AmongUsDataLock.Unlock()
+					guild.GamePhase = phaseUpdate.Phase
 
 					guild.handleTrackedMembers(dg, false, false)
-					guild.AmongUsDataLock.Lock()
-					guild.GamePhase = phaseUpdate.Phase
-					guild.AmongUsDataLock.Unlock()
 
 					//add back the emojis AFTER we do any mute/unmutes
-					for _, e := range AlivenessColoredEmojis[true] {
+					for _, e := range guild.StatusEmojis[true] {
 						if guild.GameStateMessage != nil {
 							addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
 						}
@@ -187,33 +181,25 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
 					log.Println("Detected transition to tasks")
-					//delay := 0
-					guild.AmongUsDataLock.RLock()
+
 					if guild.GamePhase == game.LOBBY {
 						//if we went from lobby to tasks, remove all the emojis from the game start message
 						guild.handleReactionsGameStartRemoveAll(dg)
-
-						//delay = guild.delays.GameStartDelay
 					} else if guild.GamePhase == game.DISCUSS {
-						//delay = guild.delays.GameResumeDelay
+
 					}
-					guild.AmongUsDataLock.RUnlock()
 
-					//time.Sleep(time.Second * time.Duration(delay))
-					guild.handleTrackedMembers(dg, true, false)
-
-					guild.AmongUsDataLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
-					guild.AmongUsDataLock.Unlock()
+
+					guild.handleTrackedMembers(dg, true, false)
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
 					log.Println("Detected transition to discussion")
-					//time.Sleep(time.Second * time.Duration(guild.delays.DiscussStartDelay))
-					guild.AmongUsDataLock.Lock()
 					guild.GamePhase = phaseUpdate.Phase
-					guild.AmongUsDataLock.Unlock()
+
 					guild.handleTrackedMembers(dg, false, true)
+
 					guild.handleGameStateMessage(dg)
 				default:
 					log.Printf("Undetected new state: %d\n", phaseUpdate.Phase)
@@ -288,14 +274,16 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			UserData:         make(map[string]UserData),
 			Tracking:         make(map[string]Tracking),
 			GameStateMessage: nil,
-			delays:           GameDelays{},
-			UserDataLock:     sync.RWMutex{},
+			Delays:           GameDelays{},
+			StatusEmojis:     emptyStatusEmojis(),
+			SpecialEmojis:    map[string]Emoji{},
+			//UserDataLock:     sync.RWMutex{},
 
-			AmongUsData:     map[string]*AmongUserData{},
-			GamePhase:       game.LOBBY,
-			Room:            "",
-			Region:          "",
-			AmongUsDataLock: sync.RWMutex{},
+			AmongUsData: map[string]*AmongUserData{},
+			GamePhase:   game.LOBBY,
+			Room:        "",
+			Region:      "",
+			//AmongUsDataLock: sync.RWMutex{},
 
 			MoveDeadPlayers: moveDeadPlayers,
 		}
@@ -303,7 +291,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 		if err != nil {
 			log.Println(err)
 		}
-		AllGuilds[m.ID].UserDataLock.Lock()
+		//AllGuilds[m.ID].UserDataLock.Lock()
 		for _, v := range mems {
 			AllGuilds[m.ID].UserData[v.User.ID] = UserData{
 				user: User{
@@ -312,11 +300,10 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 					userName:      v.User.Username,
 					discriminator: v.User.Discriminator,
 				},
-				tracking: false,
-				auData:   nil,
+				auData: nil,
 			}
 		}
-		AllGuilds[m.ID].UserDataLock.Unlock()
+		//AllGuilds[m.ID].UserDataLock.Unlock()
 		//AllGuilds[m.ID].updateVoiceStatusCache(s)
 		log.Println("Updated members for guild " + m.Guild.ID)
 
@@ -324,36 +311,13 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 		if err != nil {
 			log.Println(err)
 		} else {
-			addAllEmojis(s, m.Guild.ID, true, allEmojis)
+			AllGuilds[m.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 
-			addAllEmojis(s, m.Guild.ID, false, allEmojis)
+			AllGuilds[m.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+
+			AllGuilds[m.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
 
 			//addAllEmojis(s, m.Guild.ID, map[int]Emoji{0:AlarmEmoji}, allEmojis)
-		}
-	}
-}
-
-func addAllEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
-	for colorInt, emoji := range AlivenessColoredEmojis[alive] {
-		alreadyExists := false
-		for _, v := range serverEmojis {
-			if v.Name == emoji.Name {
-				emoji.ID = v.ID
-				AlivenessColoredEmojis[alive][colorInt] = emoji
-				alreadyExists = true
-				break
-			}
-		}
-		if !alreadyExists {
-			b64 := emoji.DownloadAndBase64Encode()
-			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
-			if err != nil {
-				log.Println(err)
-			} else {
-				log.Printf("Added emoji %s successfully!\n", emoji.Name)
-				emoji.ID = em.ID
-				AlivenessColoredEmojis[alive][colorInt] = emoji
-			}
 		}
 	}
 }
@@ -401,9 +365,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						log.Println(err)
 					}
 
-					guild.UserDataLock.Lock()
+					//guild.UserDataLock.Lock()
 					guild.trackChannelResponse(channelName, channels, forGhosts)
-					guild.UserDataLock.Unlock()
+					//guild.UserDataLock.Unlock()
 
 					guild.handleGameStateMessage(s)
 				}
@@ -416,9 +380,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
-					guild.UserDataLock.Lock()
+					//guild.UserDataLock.Lock()
 					guild.linkPlayerResponse(args[1:], guild.AmongUsData)
-					guild.UserDataLock.Unlock()
+					//guild.UserDataLock.Unlock()
 
 					guild.handleGameStateMessage(s)
 				}
@@ -426,22 +390,27 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "start":
 				fallthrough
 			case "s":
+				fallthrough
+			case "new":
+				fallthrough
+			case "newgame":
+				fallthrough
+			case "n":
 				room, region := GetRoomAndRegionFromArgs(args[1:])
 				//TODO lock, or don't access directly...
 				guild.Room = room
 				guild.Region = region
 
-				//if the game is already started, then properly reset it
-				guild.UserDataLock.Lock()
 				if guild.GameStateMessage != nil {
 					for i, v := range guild.UserData {
 						v.auData = nil
 						guild.UserData[i] = v
 					}
+					//reset all the tracking channels
+					guild.Tracking = map[string]Tracking{}
 					deleteMessage(s, m.ChannelID, guild.GameStateMessage.ID)
 					guild.GameStateMessage = nil
 				}
-				guild.UserDataLock.Unlock()
 
 				guild.handleGameStartMessage(s, m)
 				break

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/base64"
+	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -40,14 +41,75 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 	return "data:image/png;base64," + encodedStr
 }
 
-var AlarmEmoji = Emoji{
-	Name: "aualarm",
-	ID:   "756595863048159323",
+func emptyStatusEmojis() AlivenessEmojis {
+	topMap := make(AlivenessEmojis)
+	topMap[true] = make([]Emoji, 12) //12 colors for alive/dead
+	topMap[false] = make([]Emoji, 12)
+	return topMap
 }
 
+func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, serverEmojis []*discordgo.Emoji) {
+	for _, emoji := range GlobalSpecialEmojis {
+		alreadyExists := false
+		for _, v := range serverEmojis {
+			if v.Name == emoji.Name {
+				emoji.ID = v.ID
+				guild.SpecialEmojis[v.Name] = emoji
+				alreadyExists = true
+				break
+			}
+		}
+		if !alreadyExists {
+			b64 := emoji.DownloadAndBase64Encode()
+			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Printf("Added emoji %s successfully!\n", emoji.Name)
+				emoji.ID = em.ID
+				guild.SpecialEmojis[em.Name] = emoji
+			}
+		}
+	}
+}
+
+func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
+	for i, emoji := range GlobalAlivenessEmojis[alive] {
+		alreadyExists := false
+		for _, v := range serverEmojis {
+			if v.Name == emoji.Name {
+				emoji.ID = v.ID
+				guild.StatusEmojis[alive][i] = emoji
+				alreadyExists = true
+				break
+			}
+		}
+		if !alreadyExists {
+			b64 := emoji.DownloadAndBase64Encode()
+			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Printf("Added emoji %s successfully!\n", emoji.Name)
+				emoji.ID = em.ID
+				guild.StatusEmojis[alive][i] = emoji
+			}
+		}
+	}
+}
+
+var GlobalSpecialEmojis = map[string]Emoji{
+	"alarm": {
+		Name: "aualarm",
+		ID:   "756595863048159323",
+	},
+}
+
+type AlivenessEmojis map[bool][]Emoji
+
 // AlivenessColoredEmojis keys are IsAlive, Color
-var AlivenessColoredEmojis = map[bool]map[int]Emoji{
-	true: map[int]Emoji{
+var GlobalAlivenessEmojis = AlivenessEmojis{
+	true: []Emoji{
 		Red: {
 			Name: "aured",
 			ID:   "756202732301320325",
@@ -97,7 +159,7 @@ var AlivenessColoredEmojis = map[bool]map[int]Emoji{
 			ID:   "756202732360040569",
 		},
 	},
-	false: map[int]Emoji{
+	false: []Emoji{
 		Red: {
 			Name: "aureddead",
 			ID:   "756404218163888200",
