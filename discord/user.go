@@ -20,7 +20,6 @@ type UserData struct {
 	user       User
 	voiceState discordgo.VoiceState
 	tracking   bool
-	excluding  bool
 	auData     *AmongUserData //we want to point to player data that isn't necessarily correlated with a player yet...
 }
 

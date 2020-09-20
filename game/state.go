@@ -16,9 +16,9 @@ const (
 
 // PhaseNames for lowercase, possibly for translation if needed
 var PhaseNames = map[string]Phase{
-	"red":   LOBBY,
-	"blue":  TASKS,
-	"green": DISCUSS,
+	"lobby":      LOBBY,
+	"tasks":      TASKS,
+	"discussion": DISCUSS,
 }
 
 func getPhaseNameForInt(phase *Phase) string {

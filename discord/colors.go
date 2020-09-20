@@ -1,5 +1,12 @@
 package discord
 
+import (
+	"encoding/base64"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
 // Color : Int constant mapping
 const (
 	Red    = 0
@@ -53,105 +60,137 @@ type Emoji struct {
 	ID   string
 }
 
+func (e *Emoji) FormatForReaction() string {
+	return "<:" + e.Name + ":" + e.ID
+}
+
+func (e *Emoji) FormatForInline() string {
+	return "<:" + e.Name + ":" + e.ID + ">"
+}
+
+func (e *Emoji) GetDiscordCDNUrl() string {
+	return "https://cdn.discordapp.com/emojis/" + e.ID + ".png"
+}
+
+func (e *Emoji) DownloadAndBase64Encode() string {
+	url := e.GetDiscordCDNUrl()
+	response, err := http.Get(url)
+	if err != nil {
+		log.Println(err)
+	}
+	defer response.Body.Close()
+	bytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err)
+	}
+	encodedStr := base64.StdEncoding.EncodeToString(bytes)
+	return "data:image/png;base64," + encodedStr
+}
+
+var AlarmEmoji = Emoji{
+	Name: "aualarm",
+	ID:   "756595863048159323",
+}
+
 // AlivenessColoredEmojis keys are IsAlive, Color
 var AlivenessColoredEmojis = map[bool]map[int]Emoji{
 	true: map[int]Emoji{
 		Red: {
-			Name: "red",
+			Name: "aured",
 			ID:   "756202732301320325",
 		},
 		Blue: {
-			Name: "blue",
+			Name: "aublue",
 			ID:   "756201148154642642",
 		},
 		Green: {
-			Name: "green",
+			Name: "augreen",
 			ID:   "756202732099993753",
 		},
 		Pink: {
-			Name: "pink",
+			Name: "aupink",
 			ID:   "756200620049956864",
 		},
 		Orange: {
-			Name: "orange",
+			Name: "auorange",
 			ID:   "756202732523618435",
 		},
 		Yellow: {
-			Name: "yellow",
+			Name: "auyellow",
 			ID:   "756202732678938624",
 		},
 		Black: {
-			Name: "black",
+			Name: "aublack",
 			ID:   "756202732758761522",
 		},
 		White: {
-			Name: "white",
+			Name: "auwhite",
 			ID:   "756202732343394386",
 		},
 		Purple: {
-			Name: "purple",
+			Name: "aupurple",
 			ID:   "756202732624543770",
 		},
 		Brown: {
-			Name: "brown",
+			Name: "aubrown",
 			ID:   "756202732594921482",
 		},
 		Cyan: {
-			Name: "cyan",
+			Name: "aucyan",
 			ID:   "756202732511297556",
 		},
 		Lime: {
-			Name: "lime",
+			Name: "aulime",
 			ID:   "756202732360040569",
 		},
 	},
 	false: map[int]Emoji{
 		Red: {
-			Name: "reddead",
+			Name: "aureddead",
 			ID:   "756404218163888200",
 		},
 		Blue: {
-			Name: "bluedead",
+			Name: "aubluedead",
 			ID:   "756552864309969057",
 		},
 		Green: {
-			Name: "greendead",
+			Name: "augreendead",
 			ID:   "756552867275604008",
 		},
 		Pink: {
-			Name: "pinkdead",
+			Name: "aupinkdead",
 			ID:   "756552867413753906",
 		},
 		Orange: {
-			Name: "orangedead",
+			Name: "auorangedead",
 			ID:   "756404218436517888",
 		},
 		Yellow: {
-			Name: "yellowdead",
+			Name: "auyellowdead",
 			ID:   "756404218339786762",
 		},
 		Black: {
-			Name: "blackdead",
+			Name: "aublackdead",
 			ID:   "756552864171557035",
 		},
 		White: {
-			Name: "whitedead",
+			Name: "auwhitedead",
 			ID:   "756552867200106596",
 		},
 		Purple: {
-			Name: "purpledead",
+			Name: "aupurpledead",
 			ID:   "756552866491138159",
 		},
 		Brown: {
-			Name: "browndead",
+			Name: "aubrowndead",
 			ID:   "756552864620347422",
 		},
 		Cyan: {
-			Name: "cyandead",
+			Name: "aucyandead",
 			ID:   "756204054698262559",
 		},
 		Lime: {
-			Name: "limedead",
+			Name: "aulimedead",
 			ID:   "756552864847102042",
 		},
 	},
