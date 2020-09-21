@@ -17,9 +17,11 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 [![Demo Video](https://img.youtube.com/vi/ASPZ6DcKpCo/0.jpg)](https://youtu.be/ASPZ6DcKpCo)
 
 # Installation
+There is now a beta installer you can use to install the bot!
 
 If you followed all the steps in the video above, you're done with the installation and can start using the bot, or see the
 Usage/Commands sections below! If you prefer text instructions over videos, follow all the instructions below instead.
+
 
 ## Pre-Installation Steps, Important!!!
 1. Create an Application and Bot account for your Discord Server (requires Admin privileges on the Server in question).
