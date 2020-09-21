@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 // AllConns mapping of socket IDs to guild IDs
@@ -355,7 +356,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					endIdx := len(args)
 					if args[len(args)-1] == "true" || args[len(args)-1] == "t" {
 						forGhosts = true
-						endIdx -= 1
+						endIdx--
 					}
 
 					channelName := strings.Join(args[1:endIdx], " ")
@@ -397,22 +398,15 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "n":
 				room, region := GetRoomAndRegionFromArgs(args[1:])
-				//TODO lock, or don't access directly...
-				guild.Room = room
-				guild.Region = region
 
-				if guild.GameStateMessage != nil {
-					for i, v := range guild.UserData {
-						v.auData = nil
-						guild.UserData[i] = v
-					}
-					//reset all the tracking channels
-					guild.Tracking = map[string]Tracking{}
-					deleteMessage(s, m.ChannelID, guild.GameStateMessage.ID)
-					guild.GameStateMessage = nil
-				}
-
-				guild.handleGameStartMessage(s, m)
+				guild.handleGameStartMessage(s, m, room, region)
+				break
+			case "end":
+				fallthrough
+			case "e":
+				fallthrough
+			case "endgame":
+				guild.handleGameEndMessage(s, m)
 				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
@@ -430,6 +424,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 	}
 }
 
+// GetRoomAndRegionFromArgs does what it sounds like
 func GetRoomAndRegionFromArgs(args []string) (string, string) {
 	if len(args) == 0 {
 		return "Unprovided", "Unprovided"

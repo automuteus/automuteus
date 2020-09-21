@@ -2,9 +2,10 @@ package discord
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"log"
 )
 
 // Tracking struct
@@ -234,6 +235,7 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 	}
 }
 
+// IsUserReactionToStateMsg func
 func IsUserReactionToStateMsg(m *discordgo.MessageReactionAdd, sm *discordgo.Message) bool {
 	return m.ChannelID == sm.ChannelID && m.MessageID == sm.ID && m.UserID != sm.Author.ID
 }
@@ -306,4 +308,18 @@ func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 // ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
+}
+
+func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
+	for i, v := range guild.UserData {
+		v.auData = nil
+		guild.UserData[i] = v
+	}
+	//reset all the tracking channels
+	guild.Tracking = map[string]Tracking{}
+	if guild.GameStateMessage != nil {
+		deleteMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
+	}
+	guild.GameStateMessage = nil
+	guild.GamePhase = game.LOBBY
 }
