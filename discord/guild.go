@@ -321,4 +321,5 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 		deleteMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
 	}
 	guild.GameStateMessage = nil
+	guild.GamePhase = game.LOBBY
 }
