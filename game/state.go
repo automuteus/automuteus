@@ -10,10 +10,10 @@ const (
 	LOBBY   Phase = iota
 	TASKS   Phase = iota
 	DISCUSS Phase = iota
+	MENU    Phase = iota
 	//VOTING        Phase = iota
 	//GAMEOVER      Phase = iota
 	//UNINITIALIZED Phase = iota
-	//MENU          Phase = iota
 )
 
 // PhaseNames for lowercase, possibly for translation if needed
@@ -21,6 +21,7 @@ var PhaseNames = map[string]Phase{
 	"lobby":      LOBBY,
 	"tasks":      TASKS,
 	"discussion": DISCUSS,
+	"menu":       MENU,
 }
 
 func getPhaseNameForInt(phase *Phase) string {

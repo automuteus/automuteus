@@ -159,8 +159,10 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
 				switch phaseUpdate.Phase {
+				case game.MENU:
+					log.Println("Detected transition to Menu; not doing anything about it yet")
 				case game.LOBBY:
-					log.Println("Detected transition to lobby")
+					log.Println("Detected transition to Lobby")
 
 					guild.modifyCachedAmongUsDataAlive(true)
 					guild.GamePhase = phaseUpdate.Phase
@@ -176,7 +178,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
-					log.Println("Detected transition to tasks")
+					log.Println("Detected transition to Tasks")
 
 					if guild.GamePhase == game.LOBBY {
 						//if we went from lobby to tasks, remove all the emojis from the game start message
@@ -191,7 +193,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
-					log.Println("Detected transition to discussion")
+					log.Println("Detected transition to Discussion")
 					guild.GamePhase = phaseUpdate.Phase
 
 					guild.handleTrackedMembers(dg, false, true)
@@ -213,14 +215,14 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					updated, isAliveUpdated := guild.updateCachedAmongUsData(playerUpdate.Player)
 
 					if updated {
-						log.Println("Player update received caused an update in cached state")
+						//log.Println("Player update received caused an update in cached state")
 						if isAliveUpdated && guild.GamePhase == game.TASKS {
 							log.Println("NOT updating the discord status message; would leak info")
 						} else {
 							guild.handleGameStateMessage(dg)
 						}
 					} else {
-						log.Println("Player update received did not cause an update in cached state")
+						//log.Println("Player update received did not cause an update in cached state")
 					}
 				}
 			}
