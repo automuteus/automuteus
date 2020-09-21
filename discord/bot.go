@@ -23,10 +23,6 @@ var AllGuilds map[string]*GuildState
 
 // MakeAndStartBot does what it sounds like
 func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
-
-	//red := AlivenessColoredEmojis[true][0]
-	//log.Println(red.DownloadAndBase64Encode())
-
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
@@ -316,8 +312,6 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			AllGuilds[m.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 
 			AllGuilds[m.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
-
-			//addAllEmojis(s, m.Guild.ID, map[int]Emoji{0:AlarmEmoji}, allEmojis)
 		}
 	}
 }

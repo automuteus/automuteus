@@ -45,6 +45,8 @@ Congrats, if you followed the instructions correctly, the bot should now be runn
 
 ## Docker
 You can also run the discord portion using docker if you prefer, it simply needs the port `8123` exposed, and you should provide your `DISCORD_BOT_TOKEN` as an env variable.
+Example:
+`docker run -p 8123:8123 -e DISCORD_BOT_TOKEN=<YourTokenHere> denverquane/amongusdiscord`
 
 # Sample Usage
 To start the bot in the current channel, type the following `.au` commands in Discord:
