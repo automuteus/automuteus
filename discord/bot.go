@@ -398,7 +398,6 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "n":
 				room, region := GetRoomAndRegionFromArgs(args[1:])
-				//TODO lock, or don't access directly...
 
 				guild.handleGameStartMessage(s, m, room, region)
 				break
@@ -407,7 +406,6 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "e":
 				fallthrough
 			case "endgame":
-				// TODO clear the current game message and tracking info
 				guild.handleGameEndMessage(s, m)
 				break
 			default:
