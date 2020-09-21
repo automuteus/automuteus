@@ -2,9 +2,10 @@ package discord
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"log"
 )
 
 // Tracking struct
@@ -234,6 +235,7 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 	}
 }
 
+// IsUserReactionToStateMsg func
 func IsUserReactionToStateMsg(m *discordgo.MessageReactionAdd, sm *discordgo.Message) bool {
 	return m.ChannelID == sm.ChannelID && m.MessageID == sm.ID && m.UserID != sm.Author.ID
 }
