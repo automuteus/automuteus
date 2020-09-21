@@ -14,7 +14,7 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time, and on the same PC (for now).
 
 # Demo + Installation Video (click the image):
-[![Demo Video](https://img.youtube.com/vi/vo_qcwZzNzw/0.jpg)](https://youtu.be/vo_qcwZzNzw)
+[![Demo Video](https://img.youtube.com/vi/ASPZ6DcKpCo/0.jpg)](https://youtu.be/ASPZ6DcKpCo)
 
 # Installation
 
@@ -42,6 +42,9 @@ Congrats, if you followed the instructions correctly, the bot should now be runn
 2. Clone the repository using `git clone https://github.com/denverquane/amongusdiscord`.
 3. Navigate to the directory with `cd amongusdiscord`, and then build the executable using `go build -o amongusdiscord.exe main.go`.
 4. Proceed to steps 2-3 of the `Easiest` install section above.
+
+## Docker
+You can also run the discord portion using docker if you prefer, it simply needs the port `8123` exposed, and you should provide your `DISCORD_BOT_TOKEN` as an env variable.
 
 # Sample Usage
 To start the bot in the current channel, type the following `.au` commands in Discord:
