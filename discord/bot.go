@@ -399,21 +399,16 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "n":
 				room, region := GetRoomAndRegionFromArgs(args[1:])
 				//TODO lock, or don't access directly...
-				guild.Room = room
-				guild.Region = region
 
-				if guild.GameStateMessage != nil {
-					for i, v := range guild.UserData {
-						v.auData = nil
-						guild.UserData[i] = v
-					}
-					//reset all the tracking channels
-					guild.Tracking = map[string]Tracking{}
-					deleteMessage(s, m.ChannelID, guild.GameStateMessage.ID)
-					guild.GameStateMessage = nil
-				}
-
-				guild.handleGameStartMessage(s, m)
+				guild.handleGameStartMessage(s, m, room, region)
+				break
+			case "end":
+				fallthrough
+			case "e":
+				fallthrough
+			case "endgame":
+				// TODO clear the current game message and tracking info
+				guild.handleGameEndMessage(s, m)
 				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")

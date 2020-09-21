@@ -309,3 +309,16 @@ func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
 }
+
+func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
+	for i, v := range guild.UserData {
+		v.auData = nil
+		guild.UserData[i] = v
+	}
+	//reset all the tracking channels
+	guild.Tracking = map[string]Tracking{}
+	if guild.GameStateMessage != nil {
+		deleteMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
+	}
+	guild.GameStateMessage = nil
+}
