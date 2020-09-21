@@ -51,35 +51,35 @@ func (auData *AmongUserData) isDifferent(player game.Player) bool {
 	return auData.IsAlive != !player.IsDead || auData.Color != player.Color || auData.Name != player.Name
 }
 
-func shouldBeMuted(phase game.Phase, user UserData, channelID string, trackedChannels map[string]Tracking) bool {
-	//don't mute users who aren't linked to in-game data
-	if user.auData == nil {
-		return false
+// return value is mute, deaf
+func getVoiceStateChanges(guild *GuildState, user UserData, voiceChannelID string) (bool, bool) {
+	if user.auData == nil || len(guild.Tracking) == 0 || voiceChannelID == "" {
+		return false, false
 	}
 
-	if len(trackedChannels) == 0 || channelID == "" {
-		//do nothing; we are tracked/ we count
-	} else {
-		tracked := false
-		for _, v := range trackedChannels {
-			if v.channelID == channelID {
-				tracked = true
-				break
+	if isVoiceChannelTracked(voiceChannelID, guild.Tracking) {
+		playerMuteStates := map[game.Phase]bool{
+			game.LOBBY:   false,
+			game.TASKS:   true,
+			game.DISCUSS: !user.IsAlive(),
+		}
+		if guild.MoveDeadPlayers {
+			// isAlive -> gamePhase => mute
+			playerMuteStates = map[game.Phase]bool{
+				game.LOBBY:   false,
+				game.TASKS:   user.IsAlive(),
+				game.DISCUSS: !user.IsAlive(),
 			}
+			playerDeafStates := map[game.Phase]bool{
+				game.LOBBY:   false,
+				game.TASKS:   user.IsAlive(),
+				game.DISCUSS: false,
+			}
+			return playerMuteStates[guild.GamePhase], playerDeafStates[guild.GamePhase]
 		}
-		if !tracked {
-			return false //if not tracking the channel this person is in, default to unmuted
-		}
+
+		return playerMuteStates[guild.GamePhase], false
 	}
 
-	switch phase {
-	case game.LOBBY:
-		return false //unmute all players in lobby
-	case game.DISCUSS:
-		return !user.IsAlive() //if we're in discussion, then mute the player if they're dead
-	case game.TASKS:
-		return true //mute all players in tasks
-	default:
-		return false
-	}
+	return false, false
 }
