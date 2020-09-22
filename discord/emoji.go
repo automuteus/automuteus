@@ -2,10 +2,11 @@ package discord
 
 import (
 	"encoding/base64"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // Emoji struct for discord
@@ -14,18 +15,22 @@ type Emoji struct {
 	ID   string
 }
 
+// FormatForReaction does what it sounds like
 func (e *Emoji) FormatForReaction() string {
 	return "<:" + e.Name + ":" + e.ID
 }
 
+// FormatForInline does what it sounds like
 func (e *Emoji) FormatForInline() string {
 	return "<:" + e.Name + ":" + e.ID + ">"
 }
 
+// GetDiscordCDNUrl does what it sounds like
 func (e *Emoji) GetDiscordCDNUrl() string {
 	return "https://cdn.discordapp.com/emojis/" + e.ID + ".png"
 }
 
+// DownloadAndBase64Encode does what it sounds like
 func (e *Emoji) DownloadAndBase64Encode() string {
 	url := e.GetDiscordCDNUrl()
 	response, err := http.Get(url)
@@ -98,6 +103,7 @@ func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID strin
 	}
 }
 
+// GlobalSpecialEmojis map
 var GlobalSpecialEmojis = map[string]Emoji{
 	"alarm": {
 		Name: "aualarm",
@@ -105,9 +111,10 @@ var GlobalSpecialEmojis = map[string]Emoji{
 	},
 }
 
+// AlivenessEmojis map
 type AlivenessEmojis map[bool][]Emoji
 
-// AlivenessColoredEmojis keys are IsAlive, Color
+// GlobalAlivenessEmojis keys are IsAlive, Color
 var GlobalAlivenessEmojis = AlivenessEmojis{
 	true: []Emoji{
 		Red: {
