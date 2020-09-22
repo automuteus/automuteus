@@ -23,12 +23,13 @@ func helpResponse(CommandPrefix string) string {
 }
 
 //TODO Kaividian mentioned this format might be weird? How to properly @mention a player? <!@ vs <@ for ex...
-func (guild *GuildState) playerListResponse(users map[string]UserData) []*discordgo.MessageEmbedField {
+func (guild *GuildState) playerListResponse() []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 12)
 
 	num := 0
 	//buf.WriteString("Player List:\n")
-	for _, player := range users {
+	guild.UserDataLock.RLock()
+	for _, player := range guild.UserData {
 		if player.auData != nil {
 			emoji := guild.StatusEmojis[player.auData.IsAlive][player.auData.Color]
 			unsorted[player.auData.Color] = &discordgo.MessageEmbedField{
@@ -39,6 +40,7 @@ func (guild *GuildState) playerListResponse(users map[string]UserData) []*discor
 			num++
 		}
 	}
+	guild.UserDataLock.RUnlock()
 	sorted := make([]*discordgo.MessageEmbedField, num)
 	num = 0
 	for i := 0; i < 12; i++ {
@@ -53,6 +55,7 @@ func (guild *GuildState) playerListResponse(users map[string]UserData) []*discor
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
+
 			//TODO check duplicates (for logging)
 			guild.Tracking[c.ID] = Tracking{
 				channelID:   c.ID,
@@ -67,6 +70,7 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 }
 
 func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]*AmongUserData) string {
+
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
@@ -76,8 +80,12 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 
 	if IsColorString(combinedArgs) {
 		str, _ := guild.matchByColor(userID, combinedArgs, allAuData)
+		log.Println(str)
 		return str
 	}
+
+	guild.UserDataLock.Lock()
+	defer guild.UserDataLock.Unlock()
 
 	inGameName := combinedArgs
 	for name, auData := range allAuData {
@@ -97,8 +105,8 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 }
 
 func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
-	//guild.AmongUsDataLock.Lock()
-	//defer guild.AmongUsDataLock.Unlock()
+	guild.UserDataLock.Lock()
+	defer guild.UserDataLock.Unlock()
 
 	for _, auData := range allAuData {
 		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
@@ -199,7 +207,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//}
 	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, g.Room, g.Region)
 
-	listResp := g.playerListResponse(g.UserData)
+	listResp := g.playerListResponse()
 	listResp = append(gameInfoFields, listResp...)
 	//if len(listResp) > 0 {
 	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
@@ -232,10 +240,11 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
 	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, guild.Room, guild.Region)
-	listResp := guild.playerListResponse(guild.UserData)
+	listResp := guild.playerListResponse()
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
+
 	switch guild.GamePhase {
 	case game.TASKS:
 		color = 3447003 //BLUE

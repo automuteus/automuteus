@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -279,13 +280,13 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			Delays:           GameDelays{},
 			StatusEmojis:     emptyStatusEmojis(),
 			SpecialEmojis:    map[string]Emoji{},
-			//UserDataLock:     sync.RWMutex{},
+			UserDataLock:     sync.RWMutex{},
 
-			AmongUsData: map[string]*AmongUserData{},
-			GamePhase:   game.LOBBY,
-			Room:        "",
-			Region:      "",
-			//AmongUsDataLock: sync.RWMutex{},
+			AmongUsData:     map[string]*AmongUserData{},
+			GamePhase:       game.LOBBY,
+			Room:            "",
+			Region:          "",
+			AmongUsDataLock: sync.RWMutex{},
 
 			MoveDeadPlayers: moveDeadPlayers,
 		}
@@ -420,7 +421,6 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						GuildID: m.GuildID,
 					}
 				}
-
 
 				break
 			default:

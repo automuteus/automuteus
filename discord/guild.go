@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
@@ -36,15 +37,15 @@ type GuildState struct {
 	Delays           GameDelays
 	StatusEmojis     AlivenessEmojis
 	SpecialEmojis    map[string]Emoji
-	//UserDataLock     sync.RWMutex
+	UserDataLock     sync.RWMutex
 
 	//indexed by amongusname
 	AmongUsData map[string]*AmongUserData
 	//what current phase the game is in (lobby, tasks, discussion)
-	GamePhase game.Phase
-	Room      string
-	Region    string
-	//AmongUsDataLock sync.RWMutex
+	GamePhase       game.Phase
+	Room            string
+	Region          string
+	AmongUsDataLock sync.RWMutex
 
 	// For voice channel movement
 	MoveDeadPlayers bool
@@ -71,7 +72,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 
 	updateMade := false
 	for _, voiceState := range g.VoiceStates {
-		//guild.UserDataLock.Lock()
+		guild.UserDataLock.Lock()
 		if userData, ok := guild.UserData[voiceState.UserID]; ok {
 			shouldMute, shouldDeaf := getVoiceStateChanges(guild, userData, voiceState.ChannelID)
 
@@ -98,7 +99,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 				}
 			}
 		}
-		//guild.UserDataLock.Unlock()
+		guild.UserDataLock.Unlock()
 	}
 	if updateMade {
 		log.Println("Updating state message")
@@ -107,6 +108,9 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) {
+	guild.UserDataLock.Lock()
+	defer guild.UserDataLock.Unlock()
+
 	g, err := s.State.Guild(guild.ID)
 	if err != nil {
 		log.Println(err)
@@ -129,6 +133,8 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) {
 func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 	guild.verifyVoiceStateChanges(s)
 
+	guild.UserDataLock.Lock()
+
 	updateMade := false
 	//fetch the user from our user data cache
 	if user, ok := guild.UserData[m.UserID]; ok {
@@ -147,6 +153,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			updateMade = true
 		}
 	}
+	guild.UserDataLock.Unlock()
 
 	if updateMade {
 		log.Println("Updating state message")
@@ -171,7 +178,8 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 					log.Printf("Player %s reacted with color %s", m.UserID, GetColorStringForInt(color))
 
 					//pair up the discord user with the relevant in-game data, matching by the color
-					_, matched := guild.matchByColor(m.UserID, GetColorStringForInt(color), guild.AmongUsData)
+					str, matched := guild.matchByColor(m.UserID, GetColorStringForInt(color), guild.AmongUsData)
+					log.Println(str)
 
 					//then remove the player's reaction if we matched, or if we didn't
 					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
@@ -237,8 +245,8 @@ func (guild *GuildState) findVoiceChannel(forGhosts bool) (Tracking, error) {
 
 //first bool is whether the update is truly an update, 2nd bool is if the update is "sensitive" (leaks info to players)
 func (guild *GuildState) updateCachedAmongUsData(update game.Player) (bool, bool) {
-	//guild.AmongUsDataLock.Lock()
-	//defer guild.AmongUsDataLock.Unlock()
+	guild.AmongUsDataLock.Lock()
+	defer guild.AmongUsDataLock.Unlock()
 
 	if _, ok := guild.AmongUsData[update.Name]; !ok {
 		guild.AmongUsData[update.Name] = &AmongUserData{
@@ -264,6 +272,9 @@ func (guild *GuildState) updateCachedAmongUsData(update game.Player) (bool, bool
 }
 
 func (guild *GuildState) modifyCachedAmongUsDataAlive(alive bool) {
+	guild.AmongUsDataLock.Lock()
+	defer guild.AmongUsDataLock.Unlock()
+
 	for i := range guild.AmongUsData {
 		(*guild.AmongUsData[i]).IsAlive = alive
 	}
@@ -275,6 +286,9 @@ func (guild *GuildState) ToString() string {
 }
 
 func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
+	guild.UserDataLock.Lock()
+	defer guild.UserDataLock.Unlock()
+
 	for i, v := range guild.UserData {
 		v.auData = nil
 		guild.UserData[i] = v
