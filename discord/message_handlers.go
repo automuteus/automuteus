@@ -14,12 +14,23 @@ import (
 //	//sendMessage(s, m.ChannelID, message)
 //}
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// another toy example of how rw locking could look
-	if guild.GameStateMessage == nil {
-		guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
-		log.Println("Added self game state message")
-	}
+func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// unmute all players
+	guild.handleTrackedMembers(s, false, false)
+	// clear any existing game state message
+	guild.Room = ""
+	guild.Region = ""
+	guild.clearGameTracking(s)
+}
+
+func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
+	guild.Room = room
+	guild.Region = region
+
+	guild.clearGameTracking(s)
+
+	guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
+	log.Println("Added self game state message")
 
 	for _, e := range guild.StatusEmojis[true] {
 		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
@@ -76,24 +87,4 @@ func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func guildMemberMove(session *discordgo.Session, guildID, userID string, channelID *string) (err error) {
-	log.Println("Issuing move channel request to discord")
-	data := struct {
-		ChannelID *string `json:"channel_id"`
-	}{channelID}
-
-	_, err = session.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
-	return
-}
-
-func guildMemberMute(session *discordgo.Session, guildID, userID string, mute bool) (err error) {
-	log.Printf("Issuing mute=%v request to discord\n", mute)
-	data := struct {
-		Mute bool `json:"mute"`
-	}{mute}
-
-	_, err = session.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
-	return
 }

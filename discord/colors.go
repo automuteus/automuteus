@@ -42,6 +42,7 @@ func GetColorStringForInt(colorint int) string {
 	return ""
 }
 
+// IsColorString determines if a string is actually one of our colors
 func IsColorString(test string) bool {
 	_, ok := ColorStrings[test]
 	return ok
