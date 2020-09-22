@@ -219,7 +219,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 		},
 		Color:     3066993, //GREEN
 		Image:     nil,
-		Thumbnail: &Thumbnail,
+		Thumbnail: nil,
 		Video:     nil,
 		Provider:  nil,
 		Author:    nil,
@@ -254,7 +254,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 		Color:       color,
 		Footer:      nil,
 		Image:       nil,
-		Thumbnail:   &Thumbnail,
+		Thumbnail:   nil,
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,

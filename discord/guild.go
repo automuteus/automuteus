@@ -83,7 +83,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool
 					//wait until it goes through
 					userData.pendingVoiceUpdate = true
 					guild.UserData[voiceState.UserID] = userData
-					err := guildMemberDeafenAndMute(dg, guild.ID, voiceState.UserID, shouldMute, shouldDeaf)
+					err := guildMemberMuteAndDeafen(dg, guild.ID, voiceState.UserID, shouldMute, shouldDeaf)
 					if err != nil {
 						log.Println(err)
 					}
@@ -134,11 +134,11 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	if user, ok := guild.UserData[m.UserID]; ok {
 
 		shouldMute, shouldDeaf := getVoiceStateChanges(guild, user, m.ChannelID)
-		if !user.pendingVoiceUpdate && shouldMute != m.Mute && shouldDeaf != m.Deaf {
+		if !user.pendingVoiceUpdate && (shouldMute != m.Mute || shouldDeaf != m.Deaf) {
 			user.pendingVoiceUpdate = true
 			guild.UserData[m.UserID] = user
 
-			err := guildMemberDeafenAndMute(s, m.GuildID, m.UserID, shouldMute, shouldDeaf)
+			err := guildMemberMuteAndDeafen(s, m.GuildID, m.UserID, shouldMute, shouldDeaf)
 			if err != nil {
 				log.Println(err)
 			}

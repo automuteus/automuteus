@@ -13,7 +13,7 @@ const (
 	MENU    Phase = iota
 	//VOTING        Phase = iota
 	//GAMEOVER      Phase = iota
-	//UNINITIALIZED Phase = iota
+	UNINITIALIZED Phase = iota
 )
 
 // PhaseNames for lowercase, possibly for translation if needed
