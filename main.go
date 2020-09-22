@@ -18,8 +18,8 @@ func main() {
 	if err != nil {
 		log.Println("Program exited with the following error:")
 		log.Println(err)
-		log.Println("This window will automatically terminate in 30 seconds")
-		time.Sleep(30 * time.Second)
+		log.Println("This window will automatically terminate in 10 seconds")
+		time.Sleep(10 * time.Second)
 		return
 	}
 }
@@ -29,10 +29,7 @@ func discordMainWrapper() error {
 	if err != nil {
 		err = godotenv.Load("final.txt")
 		if err != nil {
-			err = godotenv.Load("final.env.txt")
-			if err != nil {
-				return errors.New("error loading environment file; you need a file named final.env, final.txt, or final.env.txt")
-			}
+			log.Println("Can't open env file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
 		}
 	}
 
