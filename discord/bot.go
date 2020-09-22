@@ -22,6 +22,9 @@ var AllConns map[string]string
 // AllGuilds mapping of guild IDs to GuildState references
 var AllGuilds map[string]*GuildState
 
+// this should not be global
+var GamePhaseUpdateChannel chan game.PhaseUpdate
+
 // MakeAndStartBot does what it sounds like
 func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	dg, err := discordgo.New("Bot " + token)
@@ -54,13 +57,13 @@ func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	AllGuilds = make(map[string]*GuildState)
 	AllConns = make(map[string]string)
 
-	gamePhaseUpdateChannel := make(chan game.PhaseUpdate)
+	GamePhaseUpdateChannel = make(chan game.PhaseUpdate)
 
 	playerUpdateChannel := make(chan game.PlayerUpdate)
 
-	go socketioServer(gamePhaseUpdateChannel, playerUpdateChannel, port)
+	go socketioServer(GamePhaseUpdateChannel, playerUpdateChannel, port)
 
-	go discordListener(dg, gamePhaseUpdateChannel, playerUpdateChannel)
+	go discordListener(dg, GamePhaseUpdateChannel, playerUpdateChannel)
 
 	<-sc
 
@@ -160,8 +163,10 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
 			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
 				switch phaseUpdate.Phase {
+				case game.MENU:
+					log.Println("Detected transition to Menu; not doing anything about it yet")
 				case game.LOBBY:
-					log.Println("Detected transition to lobby")
+					log.Println("Detected transition to Lobby")
 
 					guild.modifyCachedAmongUsDataAlive(true)
 					guild.GamePhase = phaseUpdate.Phase
@@ -169,19 +174,19 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.handleTrackedMembers(dg, false, false)
 
 					//add back the emojis AFTER we do any mute/unmutes
-					for _, e := range guild.StatusEmojis[true] {
-						if guild.GameStateMessage != nil {
-							addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
-						}
-					}
+					//for _, e := range guild.StatusEmojis[true] {
+					//	if guild.GameStateMessage != nil {
+					//		addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
+					//	}
+					//}
 
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
-					log.Println("Detected transition to tasks")
+					log.Println("Detected transition to Tasks")
 
 					if guild.GamePhase == game.LOBBY {
 						//if we went from lobby to tasks, remove all the emojis from the game start message
-						guild.handleReactionsGameStartRemoveAll(dg)
+						//guild.handleReactionsGameStartRemoveAll(dg)
 					} else if guild.GamePhase == game.DISCUSS {
 
 					}
@@ -192,7 +197,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
-					log.Println("Detected transition to discussion")
+					log.Println("Detected transition to Discussion")
 					guild.GamePhase = phaseUpdate.Phase
 
 					guild.handleTrackedMembers(dg, false, true)
@@ -214,14 +219,14 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					updated, isAliveUpdated := guild.updateCachedAmongUsData(playerUpdate.Player)
 
 					if updated {
-						log.Println("Player update received caused an update in cached state")
+						//log.Println("Player update received caused an update in cached state")
 						if isAliveUpdated && guild.GamePhase == game.TASKS {
 							log.Println("NOT updating the discord status message; would leak info")
 						} else {
 							guild.handleGameStateMessage(dg)
 						}
 					} else {
-						log.Println("Player update received did not cause an update in cached state")
+						//log.Println("Player update received did not cause an update in cached state")
 					}
 				}
 			}
@@ -391,7 +396,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "newgame":
 				fallthrough
 			case "n":
-				room, region := GetRoomAndRegionFromArgs(args[1:])
+				room, region := getRoomAndRegionFromArgs(args[1:])
 
 				guild.handleGameStartMessage(s, m, room, region)
 				break
@@ -401,6 +406,22 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "endgame":
 				guild.handleGameEndMessage(s, m)
+				break
+			case "force":
+				fallthrough
+			case "f":
+				phase := getPhaseFromArgs(args[1:])
+				if phase == game.UNINITIALIZED {
+					s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
+				} else {
+					//TODO this is ugly, but only for debug
+					GamePhaseUpdateChannel <- game.PhaseUpdate{
+						Phase:   phase,
+						GuildID: m.GuildID,
+					}
+				}
+
+
 				break
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
@@ -418,8 +439,43 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 	}
 }
 
+func getPhaseFromArgs(args []string) game.Phase {
+	if len(args) == 0 {
+		return game.UNINITIALIZED
+	}
+
+	phase := strings.ToLower(args[0])
+	switch phase {
+	case "lobby":
+		fallthrough
+	case "l":
+		return game.LOBBY
+	case "task":
+		fallthrough
+	case "t":
+		fallthrough
+	case "tasks":
+		fallthrough
+	case "game":
+		fallthrough
+	case "g":
+		return game.TASKS
+	case "discuss":
+		fallthrough
+	case "disc":
+		fallthrough
+	case "d":
+		fallthrough
+	case "discussion":
+		return game.DISCUSS
+	default:
+		return game.UNINITIALIZED
+
+	}
+}
+
 // GetRoomAndRegionFromArgs does what it sounds like
-func GetRoomAndRegionFromArgs(args []string) (string, string) {
+func getRoomAndRegionFromArgs(args []string) (string, string) {
 	if len(args) == 0 {
 		return "Unprovided", "Unprovided"
 	}

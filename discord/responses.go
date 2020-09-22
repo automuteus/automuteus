@@ -23,25 +23,31 @@ func helpResponse(CommandPrefix string) string {
 }
 
 //TODO Kaividian mentioned this format might be weird? How to properly @mention a player? <!@ vs <@ for ex...
-func (guild *GuildState) playerListResponse(users map[string]UserData) string {
-	buf := bytes.NewBuffer([]byte{})
+func (guild *GuildState) playerListResponse(users map[string]UserData) []*discordgo.MessageEmbedField {
+	unsorted := make([]*discordgo.MessageEmbedField, 12)
 
-	sorted := make([]string, 12)
-
+	num := 0
 	//buf.WriteString("Player List:\n")
 	for _, player := range users {
 		if player.auData != nil {
 			emoji := guild.StatusEmojis[player.auData.IsAlive][player.auData.Color]
-			sorted[player.auData.Color] = fmt.Sprintf("%s <@!%s>: %s\n", emoji.FormatForInline(), player.user.userID, player.auData.Name)
+			unsorted[player.auData.Color] = &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("%s", player.auData.Name),
+				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.user.userID),
+				Inline: true,
+			}
+			num++
 		}
-
 	}
+	sorted := make([]*discordgo.MessageEmbedField, num)
+	num = 0
 	for i := 0; i < 12; i++ {
-		if sorted[i] != "" {
-			buf.WriteString(sorted[i])
+		if unsorted[i] != nil {
+			sorted[num] = unsorted[i]
+			num++
 		}
 	}
-	return buf.String()
+	return sorted
 }
 
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
@@ -110,9 +116,9 @@ func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]
 }
 
 // TODO:
-func gameStateResponse(guild *GuildState) string {
+func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(guild *GuildState) string{
+	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
@@ -120,62 +126,142 @@ func gameStateResponse(guild *GuildState) string {
 	return messages[guild.GamePhase](guild)
 }
 
-func lobbyMessage(g *GuildState) string {
-	buf := bytes.NewBuffer([]byte{})
+//func padToLength(input string, length int) string {
+//	diff := length - len(input)
+//	if diff > 0 {
+//		return input + strings.Repeat("  ", diff)
+//	}
+//	return input
+//}
+//
+//const PaddedLen = 20
 
-	//buf.WriteString("Lobby is open!\n")
-	if g.LinkCode != "" {
-		alarmFormatted := ":x:"
-		if v, ok := g.SpecialEmojis["alarm"]; ok {
-			alarmFormatted = v.FormatForInline()
-		}
-
-		buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
-	}
-	buf.WriteString(fmt.Sprintf("\nLobby Code: **%s** Region: **%s**\n", g.Room, g.Region)) // maybe this is a toggle?
-	buf.WriteString("Tracking: **")
-	if len(g.Tracking) == 0 {
-		buf.WriteString(fmt.Sprintf("Any Voice channel!**\n"))
+func lobbyMetaEmbedFields(tracking map[string]Tracking, room, region string) []*discordgo.MessageEmbedField {
+	buf := bytes.NewBuffer([]byte(""))
+	if len(tracking) == 0 {
+		buf.WriteString(fmt.Sprintf("Any Voice Channel"))
 	} else {
 		i := 0
-		for _, v := range g.Tracking {
+		for _, v := range tracking {
 			buf.WriteString(fmt.Sprintf("%s", v.channelName))
 			if v.forGhosts {
 				buf.WriteString("(ghosts)")
 			}
-			if i < len(g.Tracking)-1 {
+			if i < len(tracking)-1 {
 				buf.WriteString(" or ")
 			}
 			i++
 		}
-		buf.WriteString("**\n")
 	}
-
-	listResp := g.playerListResponse(g.UserData)
-	if len(listResp) > 0 {
-		buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
-		buf.WriteString(listResp)
+	gameInfoFields := make([]*discordgo.MessageEmbedField, 3)
+	gameInfoFields[0] = &discordgo.MessageEmbedField{
+		Name:   "Room Code",
+		Value:  fmt.Sprintf("%s", room),
+		Inline: true,
 	}
-
-	buf.WriteString("\nReact to this message with your in-game color once you join the game!")
-
-	return buf.String()
+	gameInfoFields[1] = &discordgo.MessageEmbedField{
+		Name:   "Region",
+		Value:  fmt.Sprintf("%s", region),
+		Inline: true,
+	}
+	gameInfoFields[2] = &discordgo.MessageEmbedField{
+		Name:   "Tracking",
+		Value:  buf.String(),
+		Inline: false,
+	}
+	return gameInfoFields
 }
 
-func gamePlayMessage(guild *GuildState) string {
-	buf := bytes.NewBuffer([]byte{})
+var Thumbnail = discordgo.MessageEmbedThumbnail{
+	URL:      "https://github.com/denverquane/amongusdiscord/blob/master/assets/botProfilePicture.jpg?raw=true",
+	ProxyURL: "",
+	Width:    200,
+	Height:   200,
+}
 
-	buf.WriteString("Game is running!\n\n")
+func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
+	//buf.WriteString("Lobby is open!\n")
+	//if g.LinkCode != "" {
+	//	alarmFormatted := ":x:"
+	//	if v, ok := g.SpecialEmojis["alarm"]; ok {
+	//		alarmFormatted = v.FormatForInline()
+	//	}
+	//
+	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
+	//}
+	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("Room Code", PaddedLen), padToLength("Region", PaddedLen))) // maybe this is a toggle?
+	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.Room, PaddedLen), padToLength(g.Region, PaddedLen)))
+
+	//gameInfoFields[2] = &discordgo.MessageEmbedField{
+	//	Name:   "\u200B",
+	//	Value:  "\u200B",
+	//	Inline: false,
+	//}
+	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, g.Room, g.Region)
+
+	listResp := g.playerListResponse(g.UserData)
+	listResp = append(gameInfoFields, listResp...)
+	//if len(listResp) > 0 {
+	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
+	//	buf.WriteString(listResp)
+	//}
+
+	msg := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Lobby is Open!",
+		Description: "",
+		Timestamp:   "",
+		Footer: &discordgo.MessageEmbedFooter{
+			Text:         "React to this message with your in-game color once you join the game!",
+			IconURL:      "",
+			ProxyIconURL: "",
+		},
+		Color:     3066993, //GREEN
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
+		Fields:    listResp,
+	}
+	return &msg
+}
+
+func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	buf.WriteString(guild.playerListResponse(guild.UserData))
+	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, guild.Room, guild.Region)
+	listResp := guild.playerListResponse(guild.UserData)
+	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
+	var color int
+	switch guild.GamePhase {
+	case game.TASKS:
+		color = 3447003 //BLUE
+	case game.DISCUSS:
+		color = 10181046 //PURPLE
+	default:
+		color = 15158332 //RED
+	}
 
-	//guild.AmongUsDataLock.RLock()
-	buf.WriteString(fmt.Sprintf("\nCurrent Phase: **%s**\n", guild.GamePhase.ToString()))
-	//guild.AmongUsDataLock.RUnlock()
+	msg := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Game is Running",
+		Description: fmt.Sprintf("Current Phase: %s", guild.GamePhase.ToString()),
+		Timestamp:   "",
+		Color:       color,
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      listResp,
+	}
 
-	return buf.String()
+	return &msg
 }
 
 func extractUserIDFromMention(mention string) (string, error) {

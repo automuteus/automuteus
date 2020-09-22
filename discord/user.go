@@ -53,7 +53,7 @@ func (auData *AmongUserData) isDifferent(player game.Player) bool {
 
 // return value is mute, deaf
 func getVoiceStateChanges(guild *GuildState, user UserData, voiceChannelID string) (bool, bool) {
-	if user.auData == nil || len(guild.Tracking) == 0 || voiceChannelID == "" {
+	if user.auData == nil {
 		return false, false
 	}
 
@@ -63,7 +63,8 @@ func getVoiceStateChanges(guild *GuildState, user UserData, voiceChannelID strin
 			game.TASKS:   true,
 			game.DISCUSS: !user.IsAlive(),
 		}
-		if guild.MoveDeadPlayers {
+		//only worry about deafens if we DON'T move players
+		if !guild.MoveDeadPlayers {
 			// isAlive -> gamePhase => mute
 			playerMuteStates = map[game.Phase]bool{
 				game.LOBBY:   false,

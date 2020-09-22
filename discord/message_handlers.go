@@ -14,6 +14,7 @@ import (
 //	//sendMessage(s, m.ChannelID, message)
 //}
 
+
 func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// unmute all players
 	guild.handleTrackedMembers(s, false, false)
@@ -29,7 +30,7 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 
 	guild.clearGameTracking(s)
 
-	guild.GameStateMessage = sendMessage(s, m.ChannelID, gameStateResponse(guild))
+	guild.GameStateMessage = sendMessageEmbed(s, m.ChannelID, gameStateResponse(guild))
 	log.Println("Added self game state message")
 
 	for _, e := range guild.StatusEmojis[true] {
@@ -47,7 +48,7 @@ func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
 		//log.Println("Game State Message is scuffed, try .au start again!")
 		return
 	}
-	editMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
+	editMessageEmbed(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
@@ -59,9 +60,25 @@ func sendMessage(s *discordgo.Session, channelID string, message string) *discor
 	return msg
 }
 
+func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageSendEmbed(channelID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
 // editMessage provides a single interface to edit a message in a channel via discord
 func editMessage(s *discordgo.Session, channelID string, messageID string, message string) *discordgo.Message {
 	msg, err := s.ChannelMessageEdit(channelID, messageID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
 	if err != nil {
 		log.Println(err)
 	}
