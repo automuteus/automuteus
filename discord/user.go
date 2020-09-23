@@ -12,6 +12,7 @@ type User struct {
 	userID        string
 	userName      string
 	discriminator string
+	originalNick  string
 }
 
 // UserData struct

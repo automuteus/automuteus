@@ -25,11 +25,13 @@ var AllConns = map[string]string{}
 // AllGuilds mapping of guild IDs to GuildState references
 var AllGuilds = map[string]*GuildState{}
 
-//maps the code to the guildID
+// LinkCodes maps the code to the guildID
 var LinkCodes = map[string]string{}
+
+// LinkCodeLock mutex for above
 var LinkCodeLock = sync.RWMutex{}
 
-// this should not be global
+// GamePhaseUpdateChannel this should not be global
 var GamePhaseUpdateChannel chan game.PhaseUpdate
 
 // MakeAndStartBot does what it sounds like
@@ -324,6 +326,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 					userID:        v.User.ID,
 					userName:      v.User.Username,
 					discriminator: v.User.Discriminator,
+					originalNick:  v.Nick,
 				},
 				auData: nil,
 			}

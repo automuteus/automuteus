@@ -10,8 +10,9 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo
 	//clear the tracking and make sure all users are unlinked (means always unmute/undeafen)
 	guild.clearGameTracking(s)
 
-	// actually unmute/undeafen all based on the state assigned above
-	guild.handleTrackedMembers(s)
+	// actually unmute/undeafen/un-nick all based on the state assigned above
+	guild.resetTrackedMembers(s)
+
 	// clear any existing game state message
 	guild.Room = ""
 	guild.Region = ""
