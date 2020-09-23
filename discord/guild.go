@@ -128,7 +128,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session) {
 
 					go guild.updateUserInMap(voiceState.UserID, userData)
 
-					go guildMemberUpdate(dg, guild.ID, voiceState.UserID, shouldMute, shouldDeaf, userData.user.nick)
+					go guildMemberUpdate(dg, guild.ID, voiceState.UserID, shouldMute, shouldDeaf, userData.auData.Name)
 
 					updateMade = true
 					guild.UserDataLock.RLock()
@@ -208,7 +208,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 
 			go guild.updateUserInMap(m.UserID, user)
 
-			go guildMemberUpdate(s, m.GuildID, m.UserID, shouldMute, shouldDeaf, user.user.nick)
+			go guildMemberUpdate(s, m.GuildID, m.UserID, shouldMute, shouldDeaf, user.auData.Name)
 
 			log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
 
