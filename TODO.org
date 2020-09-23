@@ -1,0 +1,5 @@
+* dead user voice channel part deux
+** DONE deafen + mute alive players during TASKS
+** DONE mute dead players during DISCUSS
+** DONE unmute, undeaf all players during LOBBY
+** TODO test
