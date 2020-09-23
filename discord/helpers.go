@@ -28,7 +28,6 @@ func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
 
 					go guildMemberReset(dg, guild.ID, userData.user)
 
-					updateMade = true
 					guild.UserDataLock.RLock()
 				}
 
