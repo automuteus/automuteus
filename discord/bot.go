@@ -546,5 +546,5 @@ func generateConnectCode(guildID string) string {
 	h.Write([]byte(time.Now().String()))
 	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:6])
 	//TODO replace common problematic characters?
-	return strings.ReplaceAll(hashed, "I", "1")
+	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
 }

@@ -217,11 +217,22 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	buf.WriteString(listResp)
 	//}
 
+	alarmFormatted := ":x:"
+	if v, ok := g.SpecialEmojis["alarm"]; ok {
+		alarmFormatted = v.FormatForInline()
+	}
+	desc := ""
+	if g.LinkCode == "" {
+		desc = "Successfully linked to capture!"
+	} else {
+		desc = alarmFormatted + " **No capture linked! Use code " + g.LinkCode + " to connect!** " + alarmFormatted
+	}
+
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       "Lobby is Open!",
-		Description: "",
+		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
 			Text:         "React to this message with your in-game color once you join the game!",
