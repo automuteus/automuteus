@@ -20,6 +20,7 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s unlink` or `%s u`: Manually unlink a player. Ex: `%s u @player`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s force` or `%s f`: Force a transition to a stage if you encounter a problem in the state. Ex: `%s f task` or `%s f d`(discuss)\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 
 	return buf.String()
@@ -87,20 +88,21 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 		return str
 	}
 
-	guild.UserDataLock.Lock()
-	defer guild.UserDataLock.Unlock()
-
 	inGameName := combinedArgs
 	for name, auData := range allAuData {
 		name = strings.ToLower(strings.ReplaceAll(name, " ", ""))
 		log.Println(name)
 		if name == inGameName {
+			guild.UserDataLock.RLock()
 			if user, ok := guild.UserData[userID]; ok {
 				user.auData = auData //point to the single copy in memory
-				guild.UserData[userID] = user
+				guild.UserDataLock.RUnlock()
+
+				guild.updateUserInMap(userID, user)
 				log.Printf("Linked %s to %s", args[0], user.auData.ToString())
 				return fmt.Sprintf("Successfully linked player via Name!")
 			}
+			guild.UserDataLock.RUnlock()
 			return fmt.Sprintf("No user found with userID %s", userID)
 		}
 	}
@@ -108,18 +110,20 @@ func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]
 }
 
 func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
-	guild.UserDataLock.Lock()
-	defer guild.UserDataLock.Unlock()
 
 	for _, auData := range allAuData {
 		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
+			guild.UserDataLock.RLock()
 			if user, ok := guild.UserData[userID]; ok {
 				user.auData = auData //point to the single copy in memory
 				//user.visualTrack = true
-				guild.UserData[userID] = user
+				guild.UserDataLock.RUnlock()
+				guild.updateUserInMap(userID, user)
+
 				log.Printf("Linked %s to %s", userID, user.auData.ToString())
 				return fmt.Sprintf("Successfully linked player via Color!"), true
 			}
+			guild.UserDataLock.RUnlock()
 			return fmt.Sprintf("No user found with userID %s", userID), false
 		}
 	}
@@ -225,7 +229,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	if g.LinkCode == "" {
 		desc = "Successfully linked to capture!"
 	} else {
-		desc = alarmFormatted + " **No capture linked! Type `connect " + g.LinkCode + "` in your capture to connect!** " + alarmFormatted
+		desc = alarmFormatted + " **No capture linked! Type the text below in your capture to connect!** " + alarmFormatted + "\n`connect " + g.LinkCode + "`"
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -235,7 +239,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
-			Text:         "React to this message with your in-game color once you join the game!",
+			Text:         "React to this message with your in-game color! (or ❌ to leave)",
 			IconURL:      "",
 			ProxyIconURL: "",
 		},

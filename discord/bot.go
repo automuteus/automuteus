@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ var GamePhaseUpdateChannel chan game.PhaseUpdate
 func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
-		fmt.Println("error creating Discord session,", err)
+		log.Println("error creating Discord session,", err)
 		return
 	}
 
@@ -58,7 +57,7 @@ func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
@@ -82,11 +81,11 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 	}
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
-		fmt.Println("connected:", s.ID())
+		log.Println("connected:", s.ID())
 		return nil
 	})
 	server.OnEvent("/", "connect", func(s socketio.Conn, msg string) {
-		fmt.Println("set connect code:", msg)
+		log.Println("set connect code:", msg)
 		guildID := ""
 		LinkCodeLock.RLock()
 		for code, gid := range LinkCodes {
@@ -110,7 +109,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		s.Emit("reply", "set guildID successfully")
 	})
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
-		fmt.Println("phase: ", msg)
+		log.Println("phase received from capture: ", msg)
 		phase, err := strconv.Atoi(msg)
 		if err != nil {
 			log.Println(err)
@@ -128,7 +127,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 
 	})
 	server.OnEvent("/", "player", func(s socketio.Conn, msg string) {
-		fmt.Println("player: ", msg)
+		log.Println("player received from capture: ", msg)
 		player := game.Player{}
 		err := json.Unmarshal([]byte(msg), &player)
 		if err != nil {
@@ -145,10 +144,10 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		}
 	})
 	server.OnError("/", func(s socketio.Conn, e error) {
-		fmt.Println("meet error:", e)
+		log.Println("meet error:", e)
 	})
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		fmt.Println("Client connection closed: ", reason)
+		log.Println("Client connection closed: ", reason)
 
 		previousGid := AllConns[s.ID()]
 		AllConns[s.ID()] = "" //deassociate the link
@@ -156,7 +155,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		for gid, guild := range AllGuilds {
 			if gid == previousGid {
 				//guild.UserDataLock.Lock()
-				guild.LinkCode = gid //set back to the ID; this is unlinked
+				guild.LinkCode = generateConnectCode(gid) //this is unlinked
 				//guild.UserDataLock.Unlock()
 
 				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
@@ -181,6 +180,9 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 				case game.MENU:
 					log.Println("Detected transition to Menu; not doing anything about it yet")
 				case game.LOBBY:
+					if guild.GamePhase == game.LOBBY {
+						break
+					}
 					log.Println("Detected transition to Lobby")
 
 					guild.modifyCachedAmongUsDataAlive(true)
@@ -197,6 +199,9 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
+					if guild.GamePhase == game.TASKS {
+						break
+					}
 					log.Println("Detected transition to Tasks")
 
 					if guild.GamePhase == game.LOBBY {
@@ -212,6 +217,9 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
+					if guild.GamePhase == game.DISCUSS {
+						break
+					}
 					log.Println("Detected transition to Discussion")
 					guild.GamePhase = phaseUpdate.Phase
 
@@ -397,6 +405,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				} else {
 					//guild.UserDataLock.Lock()
 					guild.linkPlayerResponse(args[1:], guild.AmongUsData)
+
 					//guild.UserDataLock.Unlock()
 
 					guild.handleGameStateMessage(s)
@@ -407,10 +416,24 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "ul":
 				fallthrough
 			case "u":
-				userID := args[1]
-				//TODO pull out the userid
+				if len(args[1:]) == 0 {
+					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+				} else {
 
-				guild.handlePlayerRemove(s, userID)
+				}
+				userID, err := extractUserIDFromMention(args[1])
+				if err != nil {
+					log.Println(err)
+				} else {
+
+					guild.handlePlayerRemove(s, userID)
+
+					//make sure that any players we remove/unlink get auto-unmuted/undeafened
+					guild.verifyVoiceStateChanges(s)
+
+					//update the state message to reflect the player leaving
+					guild.handleGameStateMessage(s)
+				}
 			case "start":
 				fallthrough
 			case "s":
@@ -436,11 +459,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "e":
 				fallthrough
 			case "endgame":
-				guild.handleGameEndMessage(s, m)
 				//delete the player's message as well
 				if guild.GameStateMessage.ChannelID == m.ChannelID {
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 				}
+
+				guild.handleGameEndMessage(s, m)
+
 				break
 			case "force":
 				fallthrough
@@ -449,7 +474,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				if phase == game.UNINITIALIZED {
 					s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 				} else {
-					//TODO this is ugly, but only for debug
+					//TODO this is ugly, but only for debug really
 					GamePhaseUpdateChannel <- game.PhaseUpdate{
 						Phase:   phase,
 						GuildID: m.GuildID,
@@ -461,14 +486,12 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
 
 			}
-			//TODO allow a "less strict" mode that only deletes .au commands, not all messages
 		}
-	}
-
-	//Delete ALL messages posted while a game is happening, only for this channel
-	if guild.GameStateMessage != nil {
-		if guild.GameStateMessage.ChannelID == m.ChannelID {
-			deleteMessage(s, m.ChannelID, m.Message.ID)
+		//Just deletes messages starting with .au
+		if guild.GameStateMessage != nil {
+			if guild.GameStateMessage.ChannelID == m.ChannelID {
+				deleteMessage(s, m.ChannelID, m.Message.ID)
+			}
 		}
 	}
 }

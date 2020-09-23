@@ -6,15 +6,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func guildMemberMuteAndDeafen(s *discordgo.Session, guildID string, userID string, mute bool, deaf bool) (err error) {
-	log.Printf("Issuing mute=%v deaf=%v request to discord\n", mute, deaf)
+func guildMemberMuteAndDeafen(s *discordgo.Session, guildID string, userID string, mute bool, deaf bool) {
+	log.Printf("Issuing mute=%v deaf=%v request to discord for userID %s\n", mute, deaf, userID)
 	data := struct {
 		Deaf bool `json:"deaf"`
 		Mute bool `json:"mute"`
 	}{deaf, mute}
 
-	_, err = s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
-	return
+	_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func guildMemberMute(session *discordgo.Session, guildID, userID string, mute bool) (err error) {

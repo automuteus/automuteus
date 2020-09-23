@@ -3,6 +3,8 @@
 # AmongUsAutoMute (BETA)
 Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
 
+Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
+
 **This program is in Beta. While we are confident about the basic functionality, there will still be issues or peecularities with how the program functions! We are actively working to resolve these issues!**
 
 Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
@@ -70,6 +72,9 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au new`|`.au n`|None|Start a new game in the current text channel. Optionally accepts the room code and region|`.au n CODE eu`|
 |`.au track`|`.au t`|VC Name|Tell Bot to use a single voice channel for mute/unmute, and ignore any other channels|`.au t Test Voice`|
 |`.au link`|`.au l`|@name color|Manually link a discord user to their in-game color|`.au l @Soup cyan`|
+|`.au end`|`.au e`|None|End the game entirely, and stop tracking players. Unmutes all and resets state||
+|`.au unlink`|`.au u`|@name|Manually unlink a player|`.au u @player`|
+|`.au force`|`.au f`|stage|Force a transition to a stage if you encounter a problem in the state|`.au f task` or `.au f d`(discuss)|
 
 # Similar Projects
 

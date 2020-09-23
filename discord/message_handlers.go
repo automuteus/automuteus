@@ -6,33 +6,27 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-//func handlePlayerListMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {
-//	// if we want to keep locking we can do something like this in the handlers
-//	guild.UserDataLock.RLock()
-//	handleGameStateMessage(guild, s)
-//	guild.UserDataLock.RUnlock()
-//	//sendMessage(s, m.ChannelID, message)
-//}
-
 func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// unmute all players
+	//clear the tracking and make sure all users are unlinked (means always unmute/undeafen)
+	guild.clearGameTracking(s)
+
+	// actually unmute/undeafen all based on the state assigned above
 	guild.handleTrackedMembers(s)
 	// clear any existing game state message
 	guild.Room = ""
 	guild.Region = ""
-	guild.clearGameTracking(s)
 }
 
 func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string) {
-	guild.UserDataLock.Lock()
-	defer guild.UserDataLock.Unlock()
-
+	log.Printf("Removing player %s", userID)
+	guild.UserDataLock.RLock()
 	if v, ok := guild.UserData[userID]; ok {
+		guild.UserDataLock.RUnlock()
 		v.auData = nil
-		guild.UserData[userID] = v
+		guild.updateUserInMap(userID, v)
+	} else {
+		guild.UserDataLock.RUnlock()
 	}
-
-	guild.verifyVoiceStateChanges(s)
 }
 
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
@@ -47,6 +41,7 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 	for _, e := range guild.StatusEmojis[true] {
 		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
 	}
+	addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, "❌")
 }
 
 // this will be called every game phase update
