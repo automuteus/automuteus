@@ -118,7 +118,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session) {
 			shouldMute, shouldDeaf := getVoiceStateChanges(guild, userData, voiceState.ChannelID)
 
 			//only issue a change if the user isn't in the right state already
-			if shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf {
+			if shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || userData.user.nick != userData.auData.Name {
 
 				//only issue the req to discord if we're not waiting on another one
 				if !userData.pendingVoiceUpdate {
