@@ -326,6 +326,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 					userID:        v.User.ID,
 					userName:      v.User.Username,
 					discriminator: v.User.Discriminator,
+					originalNick:  v.Nick,
 				},
 				auData: nil,
 			}
