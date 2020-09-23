@@ -16,6 +16,18 @@ const (
 	UNINITIALIZED Phase = iota
 )
 
+type PlayerAction int
+
+const (
+	JOINED       PlayerAction = iota
+	LEFT         PlayerAction = iota
+	DIED         PlayerAction = iota
+	CHANGECOLOR  PlayerAction = iota
+	FORCEUPDATED PlayerAction = iota
+	DISCONNECTED PlayerAction = iota
+	EXILED       PlayerAction = iota
+)
+
 // PhaseNames for lowercase, possibly for translation if needed
 var PhaseNames = map[string]Phase{
 	"lobby":      LOBBY,
@@ -40,11 +52,11 @@ func (phase *Phase) ToString() string {
 
 // Player struct
 type Player struct {
-	Action       int    `json:"Action"`
-	Name         string `json:"Name"`
-	Color        int    `json:"Color"`
-	IsDead       bool   `json:"IsDead"`
-	Disconnected bool   `json:"Disconnected"`
+	Action       PlayerAction `json:"Action"`
+	Name         string       `json:"Name"`
+	Color        int          `json:"Color"`
+	IsDead       bool         `json:"IsDead"`
+	Disconnected bool         `json:"Disconnected"`
 }
 
 // PlayerUpdate struct

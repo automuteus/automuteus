@@ -207,6 +207,9 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					log.Println("Detected transition to Tasks")
 
 					if guild.GamePhase == game.LOBBY {
+
+						//when we go from lobby to tasks, mark all users as alive to be sure
+						guild.modifyCachedAmongUsDataAlive(true)
 						//if we went from lobby to tasks, remove all the emojis from the game start message
 						//guild.handleReactionsGameStartRemoveAll(dg)
 					} else if guild.GamePhase == game.DISCUSS {
@@ -241,6 +244,15 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 				//this updates the copies in memory
 				//(player's associations to amongus data are just pointers to these structs)
 				if playerUpdate.Player.Name != "" {
+					if playerUpdate.Player.Action == game.EXILED {
+						log.Println("Detected player EXILE event, marking as dead")
+						playerUpdate.Player.IsDead = true
+					}
+					if playerUpdate.Player.IsDead == true && guild.GamePhase == game.LOBBY {
+						log.Println("Received a dead event, but we're in the Lobby, so I'm ignoring it")
+						playerUpdate.Player.IsDead = false
+					}
+
 					updated, isAliveUpdated := guild.updateCachedAmongUsData(playerUpdate.Player)
 
 					if updated {

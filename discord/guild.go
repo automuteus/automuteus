@@ -333,9 +333,11 @@ func (guild *GuildState) updateCachedAmongUsData(update game.Player) (bool, bool
 	isUpdate := guildDataTempPtr.isDifferent(update)
 	isAliveUpdate := (*guild.AmongUsData[update.Name]).IsAlive != !update.IsDead
 	if isUpdate {
+		guild.AmongUsDataLock.Lock()
 		(*guild.AmongUsData[update.Name]).Color = update.Color
 		(*guild.AmongUsData[update.Name]).Name = update.Name
 		(*guild.AmongUsData[update.Name]).IsAlive = !update.IsDead
+		guild.AmongUsDataLock.Unlock()
 
 		log.Printf("Updated %s", (*guild.AmongUsData[update.Name]).ToString())
 	}
