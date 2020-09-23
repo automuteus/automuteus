@@ -6,6 +6,20 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func guildMemberUpdate(s *discordgo.Session, guildID string, userID string, mute bool, deaf bool, nick string) {
+	log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v nick=%s\n", userID, mute, deaf, nick)
+	data := struct {
+		Deaf bool   `json:"deaf"`
+		Mute bool   `json:"mute"`
+		Nick string `json:"nick"`
+	}{deaf, mute, nick}
+
+	_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(guildID, userID), data, discordgo.EndpointGuildMember(guildID, ""))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func guildMemberMuteAndDeafen(s *discordgo.Session, guildID string, userID string, mute bool, deaf bool) {
 	log.Printf("Issuing mute=%v deaf=%v request to discord for userID %s\n", mute, deaf, userID)
 	data := struct {

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 
 	"github.com/denverquane/amongusdiscord/game"
 )
@@ -187,6 +188,7 @@ func lobbyMetaEmbedFields(tracking map[string]Tracking, room, region string) []*
 	return gameInfoFields
 }
 
+// Thumbnail for the bot
 var Thumbnail = discordgo.MessageEmbedThumbnail{
 	URL:      "https://github.com/denverquane/amongusdiscord/blob/master/assets/botProfilePicture.jpg?raw=true",
 	ProxyURL: "",
