@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
@@ -18,10 +21,14 @@ import (
 )
 
 // AllConns mapping of socket IDs to guild IDs
-var AllConns map[string]string
+var AllConns = map[string]string{}
 
 // AllGuilds mapping of guild IDs to GuildState references
-var AllGuilds map[string]*GuildState
+var AllGuilds = map[string]*GuildState{}
+
+//maps the code to the guildID
+var LinkCodes = map[string]string{}
+var LinkCodeLock = sync.RWMutex{}
 
 // this should not be global
 var GamePhaseUpdateChannel chan game.PhaseUpdate
@@ -55,9 +62,6 @@ func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	AllGuilds = make(map[string]*GuildState)
-	AllConns = make(map[string]string)
-
 	GamePhaseUpdateChannel = make(chan game.PhaseUpdate)
 
 	playerUpdateChannel := make(chan game.PlayerUpdate)
@@ -81,19 +85,29 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		fmt.Println("connected:", s.ID())
 		return nil
 	})
-	server.OnEvent("/", "guildID", func(s socketio.Conn, msg string) {
-		fmt.Println("set guildID:", msg)
-		for gid, guild := range AllGuilds {
-			if gid == msg {
-				AllConns[s.ID()] = gid //associate the socket with the guild
-				//guild.UserDataLock.Lock()
-				guild.LinkCode = ""
-				//guild.UserDataLock.Unlock()
-
-				log.Printf("Associated websocket id %s with guildID %s\n", s.ID(), gid)
-				s.Emit("reply", "set guildID successfully")
+	server.OnEvent("/", "connect", func(s socketio.Conn, msg string) {
+		fmt.Println("set connect code:", msg)
+		guildID := ""
+		LinkCodeLock.RLock()
+		for code, gid := range LinkCodes {
+			if code == msg {
+				guildID = gid
+				break
 			}
 		}
+		LinkCodeLock.RUnlock()
+		if guildID == "" {
+			log.Printf("No guild has the current connect code of %s\n", msg)
+		}
+		for gid, guild := range AllGuilds {
+			if gid == guildID {
+				AllConns[s.ID()] = gid
+				guild.LinkCode = ""
+			}
+		}
+
+		log.Printf("Associated websocket id %s with guildID %s using code %s\n", s.ID(), guildID, msg)
+		s.Emit("reply", "set guildID successfully")
 	})
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		fmt.Println("phase: ", msg)
@@ -172,7 +186,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					guild.modifyCachedAmongUsDataAlive(true)
 					guild.GamePhase = phaseUpdate.Phase
 
-					guild.handleTrackedMembers(dg, false, false)
+					guild.handleTrackedMembers(dg)
 
 					//add back the emojis AFTER we do any mute/unmutes
 					//for _, e := range guild.StatusEmojis[true] {
@@ -194,14 +208,14 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.GamePhase = phaseUpdate.Phase
 
-					guild.handleTrackedMembers(dg, true, false)
+					guild.handleTrackedMembers(dg)
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
 					log.Println("Detected transition to Discussion")
 					guild.GamePhase = phaseUpdate.Phase
 
-					guild.handleTrackedMembers(dg, false, true)
+					guild.handleTrackedMembers(dg)
 
 					guild.handleGameStateMessage(dg)
 				default:
@@ -388,6 +402,15 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.handleGameStateMessage(s)
 				}
 				break
+			case "unlink":
+				fallthrough
+			case "ul":
+				fallthrough
+			case "u":
+				userID := args[1]
+				//TODO pull out the userid
+
+				guild.handlePlayerRemove(s, userID)
 			case "start":
 				fallthrough
 			case "s":
@@ -399,6 +422,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "n":
 				room, region := getRoomAndRegionFromArgs(args[1:])
 
+				connectCode := generateConnectCode(guild.ID)
+				log.Println(connectCode)
+				LinkCodeLock.Lock()
+				LinkCodes[connectCode] = guild.ID
+				guild.LinkCode = connectCode
+				LinkCodeLock.Unlock()
+
 				guild.handleGameStartMessage(s, m, room, region)
 				break
 			case "end":
@@ -407,6 +437,10 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "endgame":
 				guild.handleGameEndMessage(s, m)
+				//delete the player's message as well
+				if guild.GameStateMessage.ChannelID == m.ChannelID {
+					deleteMessage(s, m.ChannelID, m.Message.ID)
+				}
 				break
 			case "force":
 				fallthrough
@@ -503,4 +537,14 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 		region = "Asia"
 	}
 	return room, region
+}
+
+func generateConnectCode(guildID string) string {
+	h := sha256.New()
+	h.Write([]byte(guildID))
+	//add some "randomness" with the current time
+	h.Write([]byte(time.Now().String()))
+	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:6])
+	//TODO replace common problematic characters?
+	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
 }

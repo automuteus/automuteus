@@ -14,7 +14,7 @@ import (
 func helpResponse(CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString("Among Us Bot command reference:\n")
-	buf.WriteString("Having issues or have suggestions? Join the discord at https://discord.gg/ZkqZSWF !\n")
+	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts Room code and Region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
@@ -217,11 +217,22 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	buf.WriteString(listResp)
 	//}
 
+	alarmFormatted := ":x:"
+	if v, ok := g.SpecialEmojis["alarm"]; ok {
+		alarmFormatted = v.FormatForInline()
+	}
+	desc := ""
+	if g.LinkCode == "" {
+		desc = "Successfully linked to capture!"
+	} else {
+		desc = alarmFormatted + " **No capture linked! Type `connect " + g.LinkCode + "` in your capture to connect!** " + alarmFormatted
+	}
+
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       "Lobby is Open!",
-		Description: "",
+		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
 			Text:         "React to this message with your in-game color once you join the game!",

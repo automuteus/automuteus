@@ -61,7 +61,7 @@ type TrackedMemberAction struct {
 
 //TODO with some cleverness, this could probably be combined with the voicestateupdate function?
 //handleTrackedMembers moves/mutes players according to the current game state
-func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, inGame bool, inDiscussion bool) {
+func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session) {
 
 	guild.verifyVoiceStateChanges(dg)
 

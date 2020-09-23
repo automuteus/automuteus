@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -10,6 +11,8 @@ import (
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
 )
+
+const VERSION = "2.0.3-Prerelease"
 
 const DefaultPort = "8123"
 
@@ -32,6 +35,18 @@ func discordMainWrapper() error {
 			log.Println("Can't open env file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
 		}
 	}
+
+	logEntry := os.Getenv("DISABLE_LOG_FILE")
+	if logEntry == "" {
+		file, err := os.Create("logs.txt")
+		if err != nil {
+			return err
+		}
+		mw := io.MultiWriter(os.Stdout, file)
+		log.SetOutput(mw)
+	}
+
+	log.Println(VERSION)
 
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {

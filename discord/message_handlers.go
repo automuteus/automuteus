@@ -14,14 +14,25 @@ import (
 //	//sendMessage(s, m.ChannelID, message)
 //}
 
-
 func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// unmute all players
-	guild.handleTrackedMembers(s, false, false)
+	guild.handleTrackedMembers(s)
 	// clear any existing game state message
 	guild.Room = ""
 	guild.Region = ""
 	guild.clearGameTracking(s)
+}
+
+func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string) {
+	guild.UserDataLock.Lock()
+	defer guild.UserDataLock.Unlock()
+
+	if v, ok := guild.UserData[userID]; ok {
+		v.auData = nil
+		guild.UserData[userID] = v
+	}
+
+	guild.verifyVoiceStateChanges(s)
 }
 
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
