@@ -311,10 +311,9 @@ func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 			CommandPrefix: ".au",
 			LinkCode:      m.Guild.ID,
 
-			UserData:             make(map[string]game.UserData),
-			Tracking:             MakeTracking(),
-			GameStateMessage:     nil,
-			GameStateMessageLock: sync.RWMutex{},
+			UserData:     make(map[string]game.UserData),
+			Tracking:     MakeTracking(),
+			GameStateMsg: MakeGameStateMessage(),
 
 			Delays:        GameDelays{},
 			StatusEmojis:  emptyStatusEmojis(),
@@ -467,7 +466,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "endgame":
 				//delete the player's message as well
-				if guild.GameStateMessage != nil && guild.GameStateMessage.ChannelID == m.ChannelID {
+				if guild.GameStateMsg.SameChannel(m.ChannelID) {
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 				}
 
@@ -495,11 +494,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			}
 		}
 		//Just deletes messages starting with .au
-		if guild.GameStateMessage != nil {
-			if guild.GameStateMessage.ChannelID == m.ChannelID {
-				deleteMessage(s, m.ChannelID, m.Message.ID)
-			}
+
+		if guild.GameStateMsg.SameChannel(m.ChannelID) {
+			deleteMessage(s, m.ChannelID, m.Message.ID)
 		}
+
 	}
 }
 

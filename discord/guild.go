@@ -25,8 +25,7 @@ type GuildState struct {
 	UserData map[string]game.UserData
 	Tracking Tracking
 	//use this to refer to the same state message and update it on ls
-	GameStateMessage     *discordgo.Message
-	GameStateMessageLock sync.RWMutex
+	GameStateMsg GameStateMessage
 
 	Delays        GameDelays
 	StatusEmojis  AlivenessEmojis
@@ -227,10 +226,10 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 	//	log.Println(err)
 	//}
 
-	if guild.GameStateMessage != nil {
+	if guild.GameStateMsg.Exists() {
 
 		//verify that the user is reacting to the state/status message
-		if IsUserReactionToStateMsg(m, guild.GameStateMessage) {
+		if guild.GameStateMsg.IsReactionTo(m) {
 			idMatched := false
 			for color, e := range guild.StatusEmojis[true] {
 				if e.ID == m.Emoji.ID {
@@ -274,17 +273,6 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 
 }
 
-// IsUserReactionToStateMsg func
-func IsUserReactionToStateMsg(m *discordgo.MessageReactionAdd, sm *discordgo.Message) bool {
-	return m.ChannelID == sm.ChannelID && m.MessageID == sm.ID && m.UserID != sm.Author.ID
-}
-
-func (guild *GuildState) handleReactionsGameStartRemoveAll(s *discordgo.Session) {
-	if guild.GameStateMessage != nil {
-		removeAllReactions(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
-	}
-}
-
 // ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
@@ -300,9 +288,8 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 	}
 	//reset all the tracking channels
 	guild.Tracking.Reset()
-	if guild.GameStateMessage != nil {
-		deleteMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
-	}
-	guild.GameStateMessage = nil
+
+	guild.GameStateMsg.Delete(s)
+
 	guild.AmongUsData.SetPhase(game.LOBBY)
 }

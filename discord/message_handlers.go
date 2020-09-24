@@ -34,31 +34,20 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 
 	guild.clearGameTracking(s)
 
-	guild.GameStateMessageLock.Lock()
-	guild.GameStateMessage = sendMessageEmbed(s, m.ChannelID, gameStateResponse(guild))
-	guild.GameStateMessageLock.Unlock()
+	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild))
 
 	log.Println("Added self game state message")
 
 	for _, e := range guild.StatusEmojis[true] {
-		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
+		guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 	}
-	addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, "❌")
+	guild.GameStateMsg.AddReaction(s, "❌")
 }
 
 // this will be called every game phase update
 // i don't think we will have `m` where we need it, so potentially rethink it...?
 func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
-	//guild.UserDataLock.Lock()
-	//defer guild.UserDataLock.Unlock()
-
-	if guild.GameStateMessage == nil {
-		//log.Println("Game State Message is scuffed, try .au start again!")
-		return
-	}
-	guild.GameStateMessageLock.Lock()
-	editMessageEmbed(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
-	guild.GameStateMessageLock.Unlock()
+	guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
