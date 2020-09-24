@@ -1,4 +1,4 @@
-package discord
+package game
 
 // Color : Int constant mapping
 const (

@@ -35,11 +35,11 @@ func (guild *GuildState) playerListResponse() []*discordgo.MessageEmbedField {
 	//buf.WriteString("Player List:\n")
 	guild.UserDataLock.RLock()
 	for _, player := range guild.UserData {
-		if player.auData != nil {
-			emoji := guild.StatusEmojis[player.auData.IsAlive][player.auData.Color]
-			unsorted[player.auData.Color] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.auData.Name),
-				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.user.userID),
+		if player.IsLinked() {
+			emoji := guild.StatusEmojis[player.IsAlive()][player.GetColor()]
+			unsorted[player.GetColor()] = &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("%s", player.GetPlayerName()),
+				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.GetID()),
 				Inline: true,
 			}
 			num++
@@ -74,61 +74,37 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]*AmongUserData) string {
+func (guild *GuildState) linkPlayerResponse(args []string) {
 
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
-		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
+		log.Printf("Invalid mention format for \"%s\"", args[0])
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
 
-	if IsColorString(combinedArgs) {
-		str, _ := guild.matchByColor(userID, combinedArgs, allAuData)
-		log.Println(str)
-		return str
-	}
-
-	inGameName := combinedArgs
-	for name, auData := range allAuData {
-		name = strings.ToLower(strings.ReplaceAll(name, " ", ""))
-		log.Println(name)
-		if name == inGameName {
-			guild.UserDataLock.RLock()
-			if user, ok := guild.UserData[userID]; ok {
-				user.auData = auData //point to the single copy in memory
-				guild.UserDataLock.RUnlock()
-
-				guild.updateUserInMap(userID, user)
-				log.Printf("Linked %s to %s", args[0], user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player via Name!")
+	if game.IsColorString(combinedArgs) {
+		playerData := guild.AmongUsData.GetByColor(combinedArgs)
+		if playerData != nil {
+			if v, ok := guild.UserData[userID]; ok {
+				v.SetPlayerData(playerData)
+				guild.UserData[userID] = v
+				log.Println("Correlated and linked user by color")
 			}
-			guild.UserDataLock.RUnlock()
-			return fmt.Sprintf("No user found with userID %s", userID)
+			log.Printf("No player was found with id %s\n", userID)
+		}
+		return
+	} else {
+		playerData := guild.AmongUsData.GetByName(combinedArgs)
+		if playerData != nil {
+			if v, ok := guild.UserData[userID]; ok {
+				v.SetPlayerData(playerData)
+				guild.UserData[userID] = v
+				log.Println("Correlated and linked user by name")
+			}
+			log.Printf("No player was found with id %s\n", userID)
 		}
 	}
-	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
-}
-
-func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
-
-	for _, auData := range allAuData {
-		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
-			guild.UserDataLock.RLock()
-			if user, ok := guild.UserData[userID]; ok {
-				user.auData = auData //point to the single copy in memory
-				//user.visualTrack = true
-				guild.UserDataLock.RUnlock()
-				guild.updateUserInMap(userID, user)
-
-				log.Printf("Linked %s to %s", userID, user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player via Color!"), true
-			}
-			guild.UserDataLock.RUnlock()
-			return fmt.Sprintf("No user found with userID %s", userID), false
-		}
-	}
-	return fmt.Sprintf(":x: No in-game player data was found matching that color!\n"), false
 }
 
 // TODO:
@@ -139,7 +115,7 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
-	return messages[guild.GamePhase](guild)
+	return messages[guild.AmongUsData.GetPhase()](guild)
 }
 
 //func padToLength(input string, length int) string {
@@ -214,7 +190,8 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, g.Room, g.Region)
+	room, region := g.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, room, region)
 
 	listResp := g.playerListResponse()
 	listResp = append(gameInfoFields, listResp...)
@@ -231,7 +208,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	if g.LinkCode == "" {
 		desc = "Successfully linked to capture!"
 	} else {
-		desc = alarmFormatted + " **No capture linked! Type the text below in your capture to connect!** " + alarmFormatted + "\n`connect " + g.LinkCode + "`"
+		desc = fmt.Sprintf("%s**No capture linked! Enter the code `%s` in your capture to connect!**%s", alarmFormatted, g.LinkCode, alarmFormatted)
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -259,13 +236,16 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, guild.Room, guild.Region)
+	room, region := guild.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, room, region)
 	listResp := guild.playerListResponse()
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	switch guild.GamePhase {
+	phase := guild.AmongUsData.GetPhase()
+
+	switch phase {
 	case game.TASKS:
 		color = 3447003 //BLUE
 	case game.DISCUSS:
@@ -278,7 +258,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 		URL:         "",
 		Type:        "",
 		Title:       "Game is Running",
-		Description: fmt.Sprintf("Current Phase: %s", guild.GamePhase.ToString()),
+		Description: fmt.Sprintf("Current Phase: %s", phase.ToString()),
 		Timestamp:   "",
 		Color:       color,
 		Footer:      nil,

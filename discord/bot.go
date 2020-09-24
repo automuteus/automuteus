@@ -182,13 +182,13 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 				case game.MENU:
 					log.Println("Detected transition to Menu; not doing anything about it yet")
 				case game.LOBBY:
-					if guild.GamePhase == game.LOBBY {
+					if guild.AmongUsData.GetPhase() == game.LOBBY {
 						break
 					}
 					log.Println("Detected transition to Lobby")
 
-					guild.modifyCachedAmongUsDataAlive(true)
-					guild.GamePhase = phaseUpdate.Phase
+					guild.AmongUsData.SetAllAlive()
+					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
 					guild.handleTrackedMembers(dg)
 
@@ -201,32 +201,33 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 
 					guild.handleGameStateMessage(dg)
 				case game.TASKS:
-					if guild.GamePhase == game.TASKS {
+					if guild.AmongUsData.GetPhase() == game.TASKS {
 						break
 					}
 					log.Println("Detected transition to Tasks")
+					oldPhase := guild.AmongUsData.GetPhase()
 
-					if guild.GamePhase == game.LOBBY {
+					if oldPhase == game.LOBBY {
 
 						//when we go from lobby to tasks, mark all users as alive to be sure
-						guild.modifyCachedAmongUsDataAlive(true)
+						guild.AmongUsData.SetAllAlive()
 						//if we went from lobby to tasks, remove all the emojis from the game start message
 						//guild.handleReactionsGameStartRemoveAll(dg)
-					} else if guild.GamePhase == game.DISCUSS {
+					} else if oldPhase == game.DISCUSS {
 
 					}
 
-					guild.GamePhase = phaseUpdate.Phase
+					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
 					guild.handleTrackedMembers(dg)
 
 					guild.handleGameStateMessage(dg)
 				case game.DISCUSS:
-					if guild.GamePhase == game.DISCUSS {
+					if guild.AmongUsData.GetPhase() == game.DISCUSS {
 						break
 					}
 					log.Println("Detected transition to Discussion")
-					guild.GamePhase = phaseUpdate.Phase
+					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
 					guild.handleTrackedMembers(dg)
 
@@ -248,16 +249,16 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 						log.Println("Detected player EXILE event, marking as dead")
 						playerUpdate.Player.IsDead = true
 					}
-					if playerUpdate.Player.IsDead == true && guild.GamePhase == game.LOBBY {
+					if playerUpdate.Player.IsDead == true && guild.AmongUsData.GetPhase() == game.LOBBY {
 						log.Println("Received a dead event, but we're in the Lobby, so I'm ignoring it")
 						playerUpdate.Player.IsDead = false
 					}
 
-					updated, isAliveUpdated := guild.updateCachedAmongUsData(playerUpdate.Player)
+					updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(playerUpdate.Player)
 
 					if updated {
 						//log.Println("Player update received caused an update in cached state")
-						if isAliveUpdated && guild.GamePhase == game.TASKS {
+						if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
 							log.Println("NOT updating the discord status message; would leak info")
 						} else {
 							guild.handleGameStateMessage(dg)
@@ -310,21 +311,21 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			CommandPrefix: ".au",
 			LinkCode:      m.Guild.ID,
 
-			UserData:         make(map[string]UserData),
-			Tracking:         make(map[string]Tracking),
-			GameStateMessage: nil,
-			Delays:           GameDelays{},
-			StatusEmojis:     emptyStatusEmojis(),
-			SpecialEmojis:    map[string]Emoji{},
-			UserDataLock:     sync.RWMutex{},
+			UserData:             make(map[string]game.UserData),
+			Tracking:             make(map[string]Tracking),
+			GameStateMessage:     nil,
+			GameStateMessageLock: sync.RWMutex{},
 
-			AmongUsData:     map[string]*AmongUserData{},
-			GamePhase:       game.LOBBY,
-			Room:            "",
-			Region:          "",
-			AmongUsDataLock: sync.RWMutex{},
+			Delays:        GameDelays{},
+			StatusEmojis:  emptyStatusEmojis(),
+			SpecialEmojis: map[string]Emoji{},
+			UserDataLock:  sync.RWMutex{},
 
-			MoveDeadPlayers: moveDeadPlayers,
+			AmongUsData: game.NewAmongUsData(),
+
+			//MoveDeadPlayers: moveDeadPlayers,
+			VoiceRules:     MakeMuteAndDeafenRules(), //TODO swap with other rules
+			ApplyNicknames: false,
 		}
 		mems, err := s.GuildMembers(m.Guild.ID, "", 1000)
 		if err != nil {
@@ -332,16 +333,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 		}
 		//AllGuilds[m.ID].UserDataLock.Lock()
 		for _, v := range mems {
-			AllGuilds[m.ID].UserData[v.User.ID] = UserData{
-				user: User{
-					nick:          v.Nick,
-					userID:        v.User.ID,
-					userName:      v.User.Username,
-					discriminator: v.User.Discriminator,
-					originalNick:  v.Nick,
-				},
-				auData: nil,
-			}
+			AllGuilds[m.ID].UserData[v.User.ID] = game.MakeUserDataFromDiscordUser(v.User, v.Nick)
 		}
 		//AllGuilds[m.ID].UserDataLock.Unlock()
 		//AllGuilds[m.ID].updateVoiceStatusCache(s)
@@ -419,7 +411,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
 					//guild.UserDataLock.Lock()
-					guild.linkPlayerResponse(args[1:], guild.AmongUsData)
+					guild.linkPlayerResponse(args[1:])
 
 					//guild.UserDataLock.Unlock()
 
@@ -475,7 +467,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "endgame":
 				//delete the player's message as well
-				if guild.GameStateMessage.ChannelID == m.ChannelID {
+				if guild.GameStateMessage != nil && guild.GameStateMessage.ChannelID == m.ChannelID {
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 				}
 

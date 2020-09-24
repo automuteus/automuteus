@@ -14,8 +14,7 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo
 	guild.resetTrackedMembers(s)
 
 	// clear any existing game state message
-	guild.Room = ""
-	guild.Region = ""
+	guild.AmongUsData.SetRoomRegion("", "")
 }
 
 func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string) {
@@ -23,7 +22,7 @@ func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string)
 	guild.UserDataLock.RLock()
 	if v, ok := guild.UserData[userID]; ok {
 		guild.UserDataLock.RUnlock()
-		v.auData = nil
+		v.SetPlayerData(nil)
 		guild.updateUserInMap(userID, v)
 	} else {
 		guild.UserDataLock.RUnlock()
@@ -31,12 +30,14 @@ func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string)
 }
 
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
-	guild.Room = room
-	guild.Region = region
+	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
 
+	guild.GameStateMessageLock.Lock()
 	guild.GameStateMessage = sendMessageEmbed(s, m.ChannelID, gameStateResponse(guild))
+	guild.GameStateMessageLock.Unlock()
+
 	log.Println("Added self game state message")
 
 	for _, e := range guild.StatusEmojis[true] {
@@ -55,7 +56,9 @@ func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
 		//log.Println("Game State Message is scuffed, try .au start again!")
 		return
 	}
+	guild.GameStateMessageLock.Lock()
 	editMessageEmbed(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
+	guild.GameStateMessageLock.Unlock()
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
