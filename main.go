@@ -53,17 +53,6 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
-	//TODO disabled move dead players for pre-release for a solid baseline of features
-	//discordMoveDeadPlayersStr := os.Getenv("DISCORD_MOVE_DEAD_PLAYERS")
-	discordMoveDeadPlayers := false
-	//ret, err := strconv.ParseBool(discordMoveDeadPlayersStr)
-	//if err == nil {
-	//	log.Printf("Using DISCORD_MOVE_DEAD_PLAYERS %t\n", ret)
-	//	discordMoveDeadPlayers = ret
-	//} else {
-	//	log.Printf("Problem parsing DISCORD_MOVE_DEAD_PLAYERS; using %t as default\n", discordMoveDeadPlayers)
-	//}
-
 	port := os.Getenv("SERVER_PORT")
 	num, err := strconv.Atoi(port)
 	if err != nil || num < 1000 || num > 9999 {
@@ -72,6 +61,6 @@ func discordMainWrapper() error {
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, discordMoveDeadPlayers, port)
+	discord.MakeAndStartBot(discordToken, port)
 	return nil
 }

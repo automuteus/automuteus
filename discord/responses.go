@@ -17,7 +17,7 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts Room code and Region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
@@ -61,12 +61,8 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 
-			//TODO check duplicates (for logging)
-			guild.Tracking[c.ID] = Tracking{
-				channelID:   c.ID,
-				channelName: c.Name,
-				forGhosts:   forGhosts,
-			}
+			guild.Tracking.AddTrackedChannel(c.ID, c.Name, forGhosts)
+
 			log.Println(fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts))
 			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
 		}
@@ -128,37 +124,22 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 //
 //const PaddedLen = 20
 
-func lobbyMetaEmbedFields(tracking map[string]Tracking, room, region string) []*discordgo.MessageEmbedField {
-	buf := bytes.NewBuffer([]byte(""))
-	if len(tracking) == 0 {
-		buf.WriteString(fmt.Sprintf("Any Voice Channel"))
-	} else {
-		i := 0
-		for _, v := range tracking {
-			buf.WriteString(fmt.Sprintf("%s", v.channelName))
-			if v.forGhosts {
-				buf.WriteString("(ghosts)")
-			}
-			if i < len(tracking)-1 {
-				buf.WriteString(" or ")
-			}
-			i++
-		}
-	}
+func lobbyMetaEmbedFields(tracking Tracking, room, region string) []*discordgo.MessageEmbedField {
+	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 3)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   "Room Code",
+		Name:   "room Code",
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   "Region",
+		Name:   "region",
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
 		Name:   "Tracking",
-		Value:  buf.String(),
+		Value:  str,
 		Inline: false,
 	}
 	return gameInfoFields
@@ -182,8 +163,8 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//
 	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
 	//}
-	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("Room Code", PaddedLen), padToLength("Region", PaddedLen))) // maybe this is a toggle?
-	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.Room, PaddedLen), padToLength(g.Region, PaddedLen)))
+	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("room Code", PaddedLen), padToLength("region", PaddedLen))) // maybe this is a toggle?
+	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.room, PaddedLen), padToLength(g.region, PaddedLen)))
 
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",

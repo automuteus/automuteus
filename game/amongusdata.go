@@ -26,31 +26,29 @@ func (auData *PlayerData) isDifferent(player Player) bool {
 
 type AmongUsData struct {
 	//indexed by amongusname
-	PlayerData map[string]*PlayerData
+	playerData map[string]*PlayerData
 	//what current phase the game is in (lobby, tasks, discussion)
-	GamePhase       Phase
-	Room            string
-	Region          string
-	AmongUsDataLock sync.RWMutex
+	phase  Phase
+	room   string
+	region string
 
 	lock sync.RWMutex
 }
 
 func NewAmongUsData() AmongUsData {
 	return AmongUsData{
-		PlayerData:      map[string]*PlayerData{},
-		GamePhase:       LOBBY,
-		Room:            "",
-		Region:          "",
-		AmongUsDataLock: sync.RWMutex{},
-		lock:            sync.RWMutex{},
+		playerData: map[string]*PlayerData{},
+		phase:      LOBBY,
+		room:       "",
+		region:     "",
+		lock:       sync.RWMutex{},
 	}
 }
 
 func (auData *AmongUsData) SetRoomRegion(room, region string) {
 	auData.lock.Lock()
-	auData.Room = room
-	auData.Region = region
+	auData.room = room
+	auData.region = region
 	auData.lock.Unlock()
 }
 
@@ -58,35 +56,35 @@ func (auData *AmongUsData) GetRoomRegion() (string, string) {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
 
-	return auData.Room, auData.Region
+	return auData.room, auData.region
 }
 
 func (auData *AmongUsData) SetAllAlive() {
 	auData.lock.Lock()
-	for i, v := range auData.PlayerData {
+	for i, v := range auData.playerData {
 		v.IsAlive = true
-		auData.PlayerData[i] = v
+		auData.playerData[i] = v
 	}
 	auData.lock.Unlock()
 }
 
 func (auData *AmongUsData) SetPhase(phase Phase) {
 	auData.lock.Lock()
-	auData.GamePhase = phase
+	auData.phase = phase
 	auData.lock.Unlock()
 }
 func (auData *AmongUsData) GetPhase() Phase {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
-	return auData.GamePhase
+	return auData.phase
 }
 
 func (auData *AmongUsData) ApplyPlayerUpdate(update Player) (bool, bool) {
 	auData.lock.Lock()
 	defer auData.lock.Unlock()
 
-	if _, ok := auData.PlayerData[update.Name]; !ok {
-		auData.PlayerData[update.Name] = &PlayerData{
+	if _, ok := auData.playerData[update.Name]; !ok {
+		auData.playerData[update.Name] = &PlayerData{
 			Color:   update.Color,
 			Name:    update.Name,
 			IsAlive: !update.IsDead,
@@ -94,15 +92,15 @@ func (auData *AmongUsData) ApplyPlayerUpdate(update Player) (bool, bool) {
 		log.Printf("Added new player instance for %s\n", update.Name)
 		return true, false
 	}
-	guildDataTempPtr := auData.PlayerData[update.Name]
+	guildDataTempPtr := auData.playerData[update.Name]
 	isUpdate := guildDataTempPtr.isDifferent(update)
-	isAliveUpdate := (*auData.PlayerData[update.Name]).IsAlive != !update.IsDead
+	isAliveUpdate := (*auData.playerData[update.Name]).IsAlive != !update.IsDead
 	if isUpdate {
-		(*auData.PlayerData[update.Name]).Color = update.Color
-		(*auData.PlayerData[update.Name]).Name = update.Name
-		(*auData.PlayerData[update.Name]).IsAlive = !update.IsDead
+		(*auData.playerData[update.Name]).Color = update.Color
+		(*auData.playerData[update.Name]).Name = update.Name
+		(*auData.playerData[update.Name]).IsAlive = !update.IsDead
 
-		log.Printf("Updated %s", (*auData.PlayerData[update.Name]).ToString())
+		log.Printf("Updated %s", (*auData.playerData[update.Name]).ToString())
 	}
 
 	return isUpdate, isAliveUpdate
@@ -113,7 +111,7 @@ func (auData *AmongUsData) GetByColor(text string) *PlayerData {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
 
-	for _, playerData := range auData.PlayerData {
+	for _, playerData := range auData.playerData {
 		if GetColorStringForInt(playerData.Color) == text {
 			return playerData
 		}
@@ -126,7 +124,7 @@ func (auData *AmongUsData) GetByName(text string) *PlayerData {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
 
-	for _, playerData := range auData.PlayerData {
+	for _, playerData := range auData.playerData {
 		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == text {
 			return playerData
 		}

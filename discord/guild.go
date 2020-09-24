@@ -9,13 +9,6 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 )
 
-// Tracking struct
-type Tracking struct {
-	channelID   string
-	channelName string
-	forGhosts   bool
-}
-
 // GameDelays struct
 type GameDelays struct {
 	GameStartDelay    int
@@ -30,7 +23,7 @@ type GuildState struct {
 	LinkCode      string
 
 	UserData map[string]game.UserData
-	Tracking map[string]Tracking
+	Tracking Tracking
 	//use this to refer to the same state message and update it on ls
 	GameStateMessage     *discordgo.Message
 	GameStateMessageLock sync.RWMutex
@@ -95,7 +88,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session) {
 
 		guild.UserDataLock.RLock()
 		if userData, ok := guild.UserData[voiceState.UserID]; ok {
-			tracked := isVoiceChannelTracked(voiceState.ChannelID, guild.Tracking)
+			tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 			//only actually tracked if we're in a tracked channel AND linked to a player
 			tracked = tracked && userData.IsLinked()
 			shouldMute, shouldDeaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
@@ -155,7 +148,7 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 	for _, voiceState := range g.VoiceStates {
 		guild.UserDataLock.RLock()
 		if userData, ok := guild.UserData[voiceState.UserID]; ok {
-			tracked := isVoiceChannelTracked(voiceState.ChannelID, guild.Tracking)
+			tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 			//only actually tracked if we're in a tracked channel AND linked to a player
 			tracked = tracked && userData.IsLinked()
 			mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
@@ -192,7 +185,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	guild.UserDataLock.RLock()
 	//fetch the userData from our userData data cache
 	if userData, ok := guild.UserData[m.UserID]; ok {
-		tracked := isVoiceChannelTracked(m.ChannelID, guild.Tracking)
+		tracked := guild.Tracking.IsTracked(m.ChannelID)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
 		mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
@@ -292,31 +285,6 @@ func (guild *GuildState) handleReactionsGameStartRemoveAll(s *discordgo.Session)
 	}
 }
 
-func (guild *GuildState) isTracked(channelID string) bool {
-
-	//not tracking, or we weren't provided a channel to explicitly check
-	if len(guild.Tracking) == 0 || channelID == "" {
-		return true
-	}
-
-	for _, v := range guild.Tracking {
-		if v.channelID == channelID {
-			return true
-		}
-	}
-	return false
-}
-
-func (guild *GuildState) findVoiceChannel(forGhosts bool) (Tracking, error) {
-	for _, v := range guild.Tracking {
-		if v.forGhosts == forGhosts {
-			return v, nil
-		}
-	}
-
-	return Tracking{}, fmt.Errorf("No voice channel found forGhosts: %v", forGhosts)
-}
-
 // ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
@@ -331,7 +299,7 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 		guild.UserData[i] = v
 	}
 	//reset all the tracking channels
-	guild.Tracking = map[string]Tracking{}
+	guild.Tracking.Reset()
 	if guild.GameStateMessage != nil {
 		deleteMessage(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID)
 	}

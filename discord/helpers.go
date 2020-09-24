@@ -86,16 +86,3 @@ func guildMemberUpdateNoNick(s *discordgo.Session, guildID string, userID string
 		log.Println(err)
 	}
 }
-
-func isVoiceChannelTracked(channelID string, trackedChannels map[string]Tracking) bool {
-	//if we aren't tracking ANY channels, we should default to true (the most predictable behavior for lazy users ;) )
-	if channelID == "" || len(trackedChannels) == 0 {
-		return true
-	}
-	for _, v := range trackedChannels {
-		if v.channelID == channelID {
-			return true
-		}
-	}
-	return false
-}

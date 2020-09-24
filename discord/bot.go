@@ -35,7 +35,7 @@ var LinkCodeLock = sync.RWMutex{}
 var GamePhaseUpdateChannel chan game.PhaseUpdate
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
+func MakeAndStartBot(token string, port string) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -46,7 +46,7 @@ func MakeAndStartBot(token string, moveDeadPlayers bool, port string) {
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(reactionCreate)
-	dg.AddHandler(newGuild(moveDeadPlayers))
+	dg.AddHandler(newGuild())
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -303,7 +303,7 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	}
 }
 
-func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
+func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		AllGuilds[m.ID] = &GuildState{
@@ -312,7 +312,7 @@ func newGuild(moveDeadPlayers bool) func(s *discordgo.Session, m *discordgo.Guil
 			LinkCode:      m.Guild.ID,
 
 			UserData:             make(map[string]game.UserData),
-			Tracking:             make(map[string]Tracking),
+			Tracking:             MakeTracking(),
 			GameStateMessage:     nil,
 			GameStateMessageLock: sync.RWMutex{},
 
