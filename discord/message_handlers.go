@@ -6,7 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	//clear the tracking and make sure all users are unlinked (means always unmute/undeafen)
 	guild.clearGameTracking(s)
 
@@ -14,48 +14,22 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo
 	guild.resetTrackedMembers(s)
 
 	// clear any existing game state message
-	guild.Room = ""
-	guild.Region = ""
-}
-
-func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string) {
-	log.Printf("Removing player %s", userID)
-	guild.UserDataLock.RLock()
-	if v, ok := guild.UserData[userID]; ok {
-		guild.UserDataLock.RUnlock()
-		v.auData = nil
-		guild.updateUserInMap(userID, v)
-	} else {
-		guild.UserDataLock.RUnlock()
-	}
+	guild.AmongUsData.SetRoomRegion("", "")
 }
 
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
-	guild.Room = room
-	guild.Region = region
+	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
 
-	guild.GameStateMessage = sendMessageEmbed(s, m.ChannelID, gameStateResponse(guild))
+	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+
 	log.Println("Added self game state message")
 
 	for _, e := range guild.StatusEmojis[true] {
-		addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
+		guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 	}
-	addReaction(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, "❌")
-}
-
-// this will be called every game phase update
-// i don't think we will have `m` where we need it, so potentially rethink it...?
-func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
-	//guild.UserDataLock.Lock()
-	//defer guild.UserDataLock.Unlock()
-
-	if guild.GameStateMessage == nil {
-		//log.Println("Game State Message is scuffed, try .au start again!")
-		return
-	}
-	editMessageEmbed(s, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, gameStateResponse(guild))
+	guild.GameStateMsg.AddReaction(s, "❌")
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord

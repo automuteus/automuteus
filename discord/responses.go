@@ -17,7 +17,7 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts Room code and Region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
@@ -27,46 +27,12 @@ func helpResponse(CommandPrefix string) string {
 	return buf.String()
 }
 
-//TODO Kaividian mentioned this format might be weird? How to properly @mention a player? <!@ vs <@ for ex...
-func (guild *GuildState) playerListResponse() []*discordgo.MessageEmbedField {
-	unsorted := make([]*discordgo.MessageEmbedField, 12)
-
-	num := 0
-	//buf.WriteString("Player List:\n")
-	guild.UserDataLock.RLock()
-	for _, player := range guild.UserData {
-		if player.auData != nil {
-			emoji := guild.StatusEmojis[player.auData.IsAlive][player.auData.Color]
-			unsorted[player.auData.Color] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.auData.Name),
-				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.user.userID),
-				Inline: true,
-			}
-			num++
-		}
-	}
-	guild.UserDataLock.RUnlock()
-	sorted := make([]*discordgo.MessageEmbedField, num)
-	num = 0
-	for i := 0; i < 12; i++ {
-		if unsorted[i] != nil {
-			sorted[num] = unsorted[i]
-			num++
-		}
-	}
-	return sorted
-}
-
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 
-			//TODO check duplicates (for logging)
-			guild.Tracking[c.ID] = Tracking{
-				channelID:   c.ID,
-				channelName: c.Name,
-				forGhosts:   forGhosts,
-			}
+			guild.Tracking.AddTrackedChannel(c.ID, c.Name, forGhosts)
+
 			log.Println(fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts))
 			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
 		}
@@ -74,61 +40,37 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string, allAuData map[string]*AmongUserData) string {
+func (guild *GuildState) linkPlayerResponse(args []string) {
 
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
-		return fmt.Sprintf("Invalid mention format for \"%s\"", args[0])
+		log.Printf("Invalid mention format for \"%s\"", args[0])
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
 
-	if IsColorString(combinedArgs) {
-		str, _ := guild.matchByColor(userID, combinedArgs, allAuData)
-		log.Println(str)
-		return str
-	}
-
-	inGameName := combinedArgs
-	for name, auData := range allAuData {
-		name = strings.ToLower(strings.ReplaceAll(name, " ", ""))
-		log.Println(name)
-		if name == inGameName {
-			guild.UserDataLock.RLock()
-			if user, ok := guild.UserData[userID]; ok {
-				user.auData = auData //point to the single copy in memory
-				guild.UserDataLock.RUnlock()
-
-				guild.updateUserInMap(userID, user)
-				log.Printf("Linked %s to %s", args[0], user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player via Name!")
+	if game.IsColorString(combinedArgs) {
+		playerData := guild.AmongUsData.GetByColor(combinedArgs)
+		if playerData != nil {
+			found := guild.UserData.UpdatePlayerData(userID, playerData)
+			if found {
+				log.Printf("Successfully linked %s to a color\n", userID)
+			} else {
+				log.Printf("No player was found with id %s\n", userID)
 			}
-			guild.UserDataLock.RUnlock()
-			return fmt.Sprintf("No user found with userID %s", userID)
+		}
+		return
+	} else {
+		playerData := guild.AmongUsData.GetByName(combinedArgs)
+		if playerData != nil {
+			found := guild.UserData.UpdatePlayerData(userID, playerData)
+			if found {
+				log.Printf("Successfully linked %s by name\n", userID)
+			} else {
+				log.Printf("No player was found with id %s\n", userID)
+			}
 		}
 	}
-	return fmt.Sprintf(":x: No in-game name was found matching %s!\n", inGameName)
-}
-
-func (guild *GuildState) matchByColor(userID, text string, allAuData map[string]*AmongUserData) (string, bool) {
-
-	for _, auData := range allAuData {
-		if GetColorStringForInt(auData.Color) == strings.ToLower(text) {
-			guild.UserDataLock.RLock()
-			if user, ok := guild.UserData[userID]; ok {
-				user.auData = auData //point to the single copy in memory
-				//user.visualTrack = true
-				guild.UserDataLock.RUnlock()
-				guild.updateUserInMap(userID, user)
-
-				log.Printf("Linked %s to %s", userID, user.auData.ToString())
-				return fmt.Sprintf("Successfully linked player via Color!"), true
-			}
-			guild.UserDataLock.RUnlock()
-			return fmt.Sprintf("No user found with userID %s", userID), false
-		}
-	}
-	return fmt.Sprintf(":x: No in-game player data was found matching that color!\n"), false
 }
 
 // TODO:
@@ -139,7 +81,7 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
-	return messages[guild.GamePhase](guild)
+	return messages[guild.AmongUsData.GetPhase()](guild)
 }
 
 //func padToLength(input string, length int) string {
@@ -152,37 +94,22 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 //
 //const PaddedLen = 20
 
-func lobbyMetaEmbedFields(tracking map[string]Tracking, room, region string) []*discordgo.MessageEmbedField {
-	buf := bytes.NewBuffer([]byte(""))
-	if len(tracking) == 0 {
-		buf.WriteString(fmt.Sprintf("Any Voice Channel"))
-	} else {
-		i := 0
-		for _, v := range tracking {
-			buf.WriteString(fmt.Sprintf("%s", v.channelName))
-			if v.forGhosts {
-				buf.WriteString("(ghosts)")
-			}
-			if i < len(tracking)-1 {
-				buf.WriteString(" or ")
-			}
-			i++
-		}
-	}
+func lobbyMetaEmbedFields(tracking *Tracking, room, region string) []*discordgo.MessageEmbedField {
+	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 3)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   "Room Code",
+		Name:   "room Code",
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   "Region",
+		Name:   "region",
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
 		Name:   "Tracking",
-		Value:  buf.String(),
+		Value:  str,
 		Inline: false,
 	}
 	return gameInfoFields
@@ -206,17 +133,18 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//
 	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
 	//}
-	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("Room Code", PaddedLen), padToLength("Region", PaddedLen))) // maybe this is a toggle?
-	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.Room, PaddedLen), padToLength(g.Region, PaddedLen)))
+	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("room Code", PaddedLen), padToLength("region", PaddedLen))) // maybe this is a toggle?
+	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.room, PaddedLen), padToLength(g.region, PaddedLen)))
 
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, g.Room, g.Region)
+	room, region := g.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region)
 
-	listResp := g.playerListResponse()
+	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//if len(listResp) > 0 {
 	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
@@ -231,7 +159,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	if g.LinkCode == "" {
 		desc = "Successfully linked to capture!"
 	} else {
-		desc = alarmFormatted + " **No capture linked! Type the text below in your capture to connect!** " + alarmFormatted + "\n`connect " + g.LinkCode + "`"
+		desc = fmt.Sprintf("%s**No capture linked! Enter the code `%s` in your capture to connect!**%s", alarmFormatted, g.LinkCode, alarmFormatted)
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -259,13 +187,16 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, guild.Room, guild.Region)
-	listResp := guild.playerListResponse()
+	room, region := guild.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region)
+	listResp := guild.UserData.ToEmojiEmbedFields(guild.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	switch guild.GamePhase {
+	phase := guild.AmongUsData.GetPhase()
+
+	switch phase {
 	case game.TASKS:
 		color = 3447003 //BLUE
 	case game.DISCUSS:
@@ -278,7 +209,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 		URL:         "",
 		Type:        "",
 		Title:       "Game is Running",
-		Description: fmt.Sprintf("Current Phase: %s", guild.GamePhase.ToString()),
+		Description: fmt.Sprintf("Current Phase: %s", phase.ToString()),
 		Timestamp:   "",
 		Color:       color,
 		Footer:      nil,
