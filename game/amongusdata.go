@@ -79,6 +79,12 @@ func (auData *AmongUsData) GetPhase() Phase {
 	return auData.phase
 }
 
+func (auData *AmongUsData) ClearPlayerData() {
+	auData.lock.Lock()
+	auData.playerData = map[string]*PlayerData{}
+	auData.lock.Unlock()
+}
+
 func (auData *AmongUsData) ApplyPlayerUpdate(update Player) (bool, bool) {
 	auData.lock.Lock()
 	defer auData.lock.Unlock()
@@ -99,7 +105,6 @@ func (auData *AmongUsData) ApplyPlayerUpdate(update Player) (bool, bool) {
 		(*auData.playerData[update.Name]).Color = update.Color
 		(*auData.playerData[update.Name]).Name = update.Name
 		(*auData.playerData[update.Name]).IsAlive = !update.IsDead
-
 		log.Printf("Updated %s", (*auData.playerData[update.Name]).ToString())
 	}
 

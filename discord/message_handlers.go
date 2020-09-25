@@ -6,7 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	//clear the tracking and make sure all users are unlinked (means always unmute/undeafen)
 	guild.clearGameTracking(s)
 
@@ -17,24 +17,12 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session, m *discordgo
 	guild.AmongUsData.SetRoomRegion("", "")
 }
 
-func (guild *GuildState) handlePlayerRemove(s *discordgo.Session, userID string) {
-	log.Printf("Removing player %s", userID)
-	guild.UserDataLock.RLock()
-	if v, ok := guild.UserData[userID]; ok {
-		guild.UserDataLock.RUnlock()
-		v.SetPlayerData(nil)
-		guild.updateUserInMap(userID, v)
-	} else {
-		guild.UserDataLock.RUnlock()
-	}
-}
-
 func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
 	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
 
-	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild))
+	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
 
 	log.Println("Added self game state message")
 
@@ -42,12 +30,6 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 		guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 	}
 	guild.GameStateMsg.AddReaction(s, "❌")
-}
-
-// this will be called every game phase update
-// i don't think we will have `m` where we need it, so potentially rethink it...?
-func (guild *GuildState) handleGameStateMessage(s *discordgo.Session) {
-	guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord

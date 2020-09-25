@@ -48,9 +48,9 @@ func (gsm *GameStateMessage) Edit(s *discordgo.Session, me *discordgo.MessageEmb
 	gsm.lock.Unlock()
 }
 
-func (gsm *GameStateMessage) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed) {
+func (gsm *GameStateMessage) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string) {
 	gsm.lock.Lock()
-	gsm.message = sendMessageEmbed(s, gsm.message.ChannelID, me)
+	gsm.message = sendMessageEmbed(s, channelID, me)
 	gsm.lock.Unlock()
 }
 

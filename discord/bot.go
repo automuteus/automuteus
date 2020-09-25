@@ -187,10 +187,15 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					}
 					log.Println("Detected transition to Lobby")
 
+					delay := guild.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
+					if delay > 0 {
+						log.Printf("Sleeping for %d secs before changes\n", delay)
+					}
+
 					guild.AmongUsData.SetAllAlive()
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
-					guild.handleTrackedMembers(dg)
+					guild.handleTrackedMembers(dg, delay)
 
 					//add back the emojis AFTER we do any mute/unmutes
 					//for _, e := range guild.StatusEmojis[true] {
@@ -199,39 +204,46 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					//	}
 					//}
 
-					guild.handleGameStateMessage(dg)
+					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				case game.TASKS:
 					if guild.AmongUsData.GetPhase() == game.TASKS {
 						break
 					}
 					log.Println("Detected transition to Tasks")
 					oldPhase := guild.AmongUsData.GetPhase()
+					delay := guild.Delays.GetDelay(oldPhase, game.TASKS)
+					if delay > 0 {
+						log.Printf("Sleeping for %d secs before changes\n", delay)
+					}
 
 					if oldPhase == game.LOBBY {
-
 						//when we go from lobby to tasks, mark all users as alive to be sure
 						guild.AmongUsData.SetAllAlive()
 						//if we went from lobby to tasks, remove all the emojis from the game start message
 						//guild.handleReactionsGameStartRemoveAll(dg)
-					} else if oldPhase == game.DISCUSS {
-
 					}
 
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
-					guild.handleTrackedMembers(dg)
+					guild.handleTrackedMembers(dg, delay)
 
-					guild.handleGameStateMessage(dg)
+					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				case game.DISCUSS:
 					if guild.AmongUsData.GetPhase() == game.DISCUSS {
 						break
 					}
 					log.Println("Detected transition to Discussion")
+
+					delay := guild.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
+					if delay > 0 {
+						log.Printf("Sleeping for %d secs before changes\n", delay)
+					}
+
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
-					guild.handleTrackedMembers(dg)
+					guild.handleTrackedMembers(dg, delay)
 
-					guild.handleGameStateMessage(dg)
+					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				default:
 					log.Printf("Undetected new state: %d\n", phaseUpdate.Phase)
 				}
@@ -261,7 +273,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 						if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
 							log.Println("NOT updating the discord status message; would leak info")
 						} else {
-							guild.handleGameStateMessage(dg)
+							guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 						}
 					} else {
 						//log.Println("Player update received did not cause an update in cached state")
@@ -311,18 +323,16 @@ func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 			CommandPrefix: ".au",
 			LinkCode:      m.Guild.ID,
 
-			UserData:     make(map[string]game.UserData),
+			UserData:     MakeUserDataSet(),
 			Tracking:     MakeTracking(),
 			GameStateMsg: MakeGameStateMessage(),
 
-			Delays:        GameDelays{},
+			Delays:        MakeDefaultDelays(),
 			StatusEmojis:  emptyStatusEmojis(),
 			SpecialEmojis: map[string]Emoji{},
-			UserDataLock:  sync.RWMutex{},
 
 			AmongUsData: game.NewAmongUsData(),
 
-			//MoveDeadPlayers: moveDeadPlayers,
 			VoiceRules:     MakeMuteAndDeafenRules(), //TODO swap with other rules
 			ApplyNicknames: false,
 		}
@@ -330,12 +340,13 @@ func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		if err != nil {
 			log.Println(err)
 		}
-		//AllGuilds[m.ID].UserDataLock.Lock()
+
+		//TODO probably don't need all the users? Just a subset in voice?
+		//add all the users we detect by just calling GuildMembers
 		for _, v := range mems {
-			AllGuilds[m.ID].UserData[v.User.ID] = game.MakeUserDataFromDiscordUser(v.User, v.Nick)
+			AllGuilds[m.ID].UserData.AddFullUser(game.MakeUserDataFromDiscordUser(v.User, v.Nick))
 		}
-		//AllGuilds[m.ID].UserDataLock.Unlock()
-		//AllGuilds[m.ID].updateVoiceStatusCache(s)
+
 		log.Println("Updated members for guild " + m.Guild.ID)
 
 		allEmojis, err := s.GuildEmojis(m.Guild.ID)
@@ -394,11 +405,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						log.Println(err)
 					}
 
-					//guild.UserDataLock.Lock()
 					guild.trackChannelResponse(channelName, channels, forGhosts)
-					//guild.UserDataLock.Unlock()
 
-					guild.handleGameStateMessage(s)
+					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
 				break
 
@@ -409,12 +418,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
 				} else {
-					//guild.UserDataLock.Lock()
 					guild.linkPlayerResponse(args[1:])
 
-					//guild.UserDataLock.Unlock()
-
-					guild.handleGameStateMessage(s)
+					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
 				break
 			case "unlink":
@@ -432,21 +438,20 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					log.Println(err)
 				} else {
 
-					guild.handlePlayerRemove(s, userID)
+					log.Printf("Removing player %s", userID)
+					guild.UserData.ClearPlayerData(userID)
 
 					//make sure that any players we remove/unlink get auto-unmuted/undeafened
 					guild.verifyVoiceStateChanges(s)
 
 					//update the state message to reflect the player leaving
-					guild.handleGameStateMessage(s)
+					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
 			case "start":
 				fallthrough
 			case "s":
 				fallthrough
 			case "new":
-				fallthrough
-			case "newgame":
 				fallthrough
 			case "n":
 				room, region := getRoomAndRegionFromArgs(args[1:])
@@ -470,7 +475,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 				}
 
-				guild.handleGameEndMessage(s, m)
+				guild.handleGameEndMessage(s)
 
 				break
 			case "force":

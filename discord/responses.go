@@ -27,36 +27,6 @@ func helpResponse(CommandPrefix string) string {
 	return buf.String()
 }
 
-//TODO Kaividian mentioned this format might be weird? How to properly @mention a player? <!@ vs <@ for ex...
-func (guild *GuildState) playerListResponse() []*discordgo.MessageEmbedField {
-	unsorted := make([]*discordgo.MessageEmbedField, 12)
-
-	num := 0
-	//buf.WriteString("Player List:\n")
-	guild.UserDataLock.RLock()
-	for _, player := range guild.UserData {
-		if player.IsLinked() {
-			emoji := guild.StatusEmojis[player.IsAlive()][player.GetColor()]
-			unsorted[player.GetColor()] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.GetPlayerName()),
-				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.GetID()),
-				Inline: true,
-			}
-			num++
-		}
-	}
-	guild.UserDataLock.RUnlock()
-	sorted := make([]*discordgo.MessageEmbedField, num)
-	num = 0
-	for i := 0; i < 12; i++ {
-		if unsorted[i] != nil {
-			sorted[num] = unsorted[i]
-			num++
-		}
-	}
-	return sorted
-}
-
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
@@ -82,23 +52,23 @@ func (guild *GuildState) linkPlayerResponse(args []string) {
 	if game.IsColorString(combinedArgs) {
 		playerData := guild.AmongUsData.GetByColor(combinedArgs)
 		if playerData != nil {
-			if v, ok := guild.UserData[userID]; ok {
-				v.SetPlayerData(playerData)
-				guild.UserData[userID] = v
-				log.Println("Correlated and linked user by color")
+			found := guild.UserData.UpdatePlayerData(userID, playerData)
+			if found {
+				log.Printf("Successfully linked %s to a color\n", userID)
+			} else {
+				log.Printf("No player was found with id %s\n", userID)
 			}
-			log.Printf("No player was found with id %s\n", userID)
 		}
 		return
 	} else {
 		playerData := guild.AmongUsData.GetByName(combinedArgs)
 		if playerData != nil {
-			if v, ok := guild.UserData[userID]; ok {
-				v.SetPlayerData(playerData)
-				guild.UserData[userID] = v
-				log.Println("Correlated and linked user by name")
+			found := guild.UserData.UpdatePlayerData(userID, playerData)
+			if found {
+				log.Printf("Successfully linked %s by name\n", userID)
+			} else {
+				log.Printf("No player was found with id %s\n", userID)
 			}
-			log.Printf("No player was found with id %s\n", userID)
 		}
 	}
 }
@@ -124,7 +94,7 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 //
 //const PaddedLen = 20
 
-func lobbyMetaEmbedFields(tracking Tracking, room, region string) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(tracking *Tracking, room, region string) []*discordgo.MessageEmbedField {
 	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 3)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
@@ -172,9 +142,9 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	Inline: false,
 	//}
 	room, region := g.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(g.Tracking, room, region)
+	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region)
 
-	listResp := g.playerListResponse()
+	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//if len(listResp) > 0 {
 	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
@@ -218,8 +188,8 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
 	room, region := guild.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(guild.Tracking, room, region)
-	listResp := guild.playerListResponse()
+	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region)
+	listResp := guild.UserData.ToEmojiEmbedFields(guild.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int

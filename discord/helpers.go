@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"log"
+	"time"
 )
 
 func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
@@ -12,40 +13,30 @@ func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
 
 	for _, voiceState := range g.VoiceStates {
 
-		guild.UserDataLock.RLock()
-		if userData, ok := guild.UserData[voiceState.UserID]; ok {
-
+		userData, err := guild.UserData.GetUser(voiceState.UserID)
+		if err == nil {
 			//only issue a change if the user isn't in the right state already
 			if !voiceState.Mute || !voiceState.Deaf || !userData.NicknamesMatch() {
 
 				//only issue the req to discord if we're not waiting on another one
 				if !userData.IsPendingVoiceUpdate() {
-					guild.UserDataLock.RUnlock()
+
 					//wait until it goes through
 					userData.SetPendingVoiceUpdate(true)
 
-					go guild.updateUserInMap(voiceState.UserID, userData)
+					guild.UserData.UpdateUserData(voiceState.UserID, userData)
 
 					go guildMemberReset(dg, guild.ID, userData)
-
-					guild.UserDataLock.RLock()
 				}
-
 			}
 		} else { //the user doesn't exist in our userdata cache; add them
-			guild.UserDataLock.RUnlock()
-
 			guild.addFullUserToMap(g, voiceState.UserID)
-
-			guild.UserDataLock.RLock()
-
 		}
-		guild.UserDataLock.RUnlock()
 	}
 }
 
 func guildMemberReset(s *discordgo.Session, guildID string, userData game.UserData) {
-	guildMemberUpdate(s, guildID, userData.GetID(), UserPatchParameters{false, false, userData.GetOriginalNickName()})
+	guildMemberUpdate(s, guildID, userData.GetID(), UserPatchParameters{false, false, userData.GetOriginalNickName()}, 0)
 }
 
 type UserPatchParameters struct {
@@ -54,10 +45,14 @@ type UserPatchParameters struct {
 	Nick string `json:"nick"`
 }
 
-func guildMemberUpdate(s *discordgo.Session, guildID string, userID string, params UserPatchParameters) {
+func guildMemberUpdate(s *discordgo.Session, guildID string, userID string, params UserPatchParameters, delay int) {
 	g, err := s.Guild(guildID)
 	if err != nil {
 		log.Println(err)
+	}
+
+	if delay > 0 {
+		time.Sleep(time.Duration(delay) * time.Second)
 	}
 
 	//we can't nickname the owner, and we shouldn't nickname with an empty string...
