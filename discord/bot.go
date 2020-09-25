@@ -368,6 +368,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		return
 	}
 
+	g, err := s.State.Guild(guild.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
 	contents := m.Content
 	if strings.HasPrefix(contents, guild.CommandPrefix) {
 		args := strings.Split(contents, " ")[1:]
@@ -463,7 +468,25 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				guild.LinkCode = connectCode
 				LinkCodeLock.Unlock()
 
-				guild.handleGameStartMessage(s, m, room, region)
+				initialTracking := TrackingChannel{}
+				for _, v := range g.VoiceStates {
+					//if the user is detected in a voice channel
+					if v.UserID == m.Author.ID {
+						for _, channel := range g.Channels {
+							//once we find the channel by ID
+							if channel.ID == v.ChannelID {
+								initialTracking = TrackingChannel{
+									channelID:   channel.ID,
+									channelName: channel.Name,
+									forGhosts:   false,
+								}
+								log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
+							}
+						}
+					}
+				}
+
+				guild.handleGameStartMessage(s, m, room, region, initialTracking)
 				break
 			case "end":
 				fallthrough

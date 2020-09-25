@@ -17,10 +17,14 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	guild.AmongUsData.SetRoomRegion("", "")
 }
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string) {
+func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channel TrackingChannel) {
 	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
+
+	if channel.channelID != "" {
+		guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+	}
 
 	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
 
