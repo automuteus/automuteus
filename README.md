@@ -5,7 +5,7 @@ Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute pla
 
 Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
 
-**This program is in Beta. While we are confident about the basic functionality, there will still be issues or peecularities with how the program functions! We are actively working to resolve these issues!**
+**This program is in Beta. While we are confident about the basic functionality, there will still be issues or pecularities with how the program functions! We are actively working to resolve these issues!**
 
 Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
 
@@ -16,6 +16,8 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time, and on the same PC (for now).
 
 # Installation Video (click the image):
+Made by Wolfhound905 for the pre-release! :)
+
 [![Installation](https://img.youtube.com/vi/gRxKRqefzp4/0.jpg)](https://youtu.be/gRxKRqefzp4)
 
 # Installation
