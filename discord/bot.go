@@ -497,13 +497,10 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "e":
 				fallthrough
 			case "endgame":
-				//delete the player's message as well
-				if guild.GameStateMsg.SameChannel(m.ChannelID) {
-					deleteMessage(s, m.ChannelID, m.Message.ID)
-				}
-
 				guild.handleGameEndMessage(s)
-
+				//have to explicitly delete here, because if we use the default delete below, the channelID
+				//for the game state message doesn't exist anymore...
+				deleteMessage(s, m.ChannelID, m.Message.ID)
 				break
 			case "force":
 				fallthrough
@@ -520,6 +517,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				}
 
 				break
+			case "refresh":
+				fallthrough
+			case "r":
+				guild.GameStateMsg.Delete(s) //delete the old message
+
+				//create a new instance of the new one
+				guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
 			default:
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
 
