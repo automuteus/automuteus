@@ -17,6 +17,7 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 
 # Installation Video (click the image):
 Made by Wolfhound905 for the pre-release! :)
+
 [![Installation](https://img.youtube.com/vi/gRxKRqefzp4/0.jpg)](https://youtu.be/gRxKRqefzp4)
 
 # Installation
