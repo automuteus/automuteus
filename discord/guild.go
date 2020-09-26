@@ -1,87 +1,59 @@
 package discord
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"log"
-	"os"
-	"sync"
 )
 
 // GameDelays struct
 type GameDelays struct {
 	//maps from origin->new phases, with the integer number of seconds for the delay
-	Delays map[game.Phase]map[game.Phase]int `json:"delays"`
-	lock   sync.RWMutex
+	Delays map[game.PhaseNameString]map[game.PhaseNameString]int `json:"delays"`
 }
 
 func MakeDefaultDelays() GameDelays {
 	return GameDelays{
-		Delays: map[game.Phase]map[game.Phase]int{
-			game.LOBBY: {
-				game.LOBBY:   0,
-				game.TASKS:   7,
-				game.DISCUSS: 0,
+		Delays: map[game.PhaseNameString]map[game.PhaseNameString]int{
+			game.PhaseNames[game.LOBBY]: {
+				game.PhaseNames[game.LOBBY]:   0,
+				game.PhaseNames[game.TASKS]:   7,
+				game.PhaseNames[game.DISCUSS]: 0,
 			},
-			game.TASKS: {
-				game.LOBBY:   1,
-				game.TASKS:   0,
-				game.DISCUSS: 0,
+			game.PhaseNames[game.TASKS]: {
+				game.PhaseNames[game.LOBBY]:   1,
+				game.PhaseNames[game.TASKS]:   0,
+				game.PhaseNames[game.DISCUSS]: 0,
 			},
-			game.DISCUSS: {
-				game.LOBBY:   6,
-				game.TASKS:   7,
-				game.DISCUSS: 0,
+			game.PhaseNames[game.DISCUSS]: {
+				game.PhaseNames[game.LOBBY]:   6,
+				game.PhaseNames[game.TASKS]:   7,
+				game.PhaseNames[game.DISCUSS]: 0,
 			},
 		},
-		lock: sync.RWMutex{},
 	}
 }
 
 func (gd *GameDelays) GetDelay(origin, dest game.Phase) int {
-	gd.lock.RLock()
-	defer gd.lock.RUnlock()
-	return gd.Delays[origin][dest]
-}
-
-func (gd *GameDelays) ToFile(filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	jsonBytes, err := json.Marshal(gd)
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(jsonBytes)
-	return err
+	return gd.Delays[game.PhaseNames[origin]][game.PhaseNames[dest]]
 }
 
 // GuildState struct
 type GuildState struct {
-	ID string
+	PersistentGuildData *PersistentGuildData
 
 	LinkCode string
 
 	UserData UserDataSet
 	Tracking Tracking
-	//use this to refer to the same state message and update it on ls
+
 	GameStateMsg GameStateMessage
 
-	Delays        GameDelays
 	StatusEmojis  AlivenessEmojis
 	SpecialEmojis map[string]Emoji
 
 	AmongUsData game.AmongUsData
-
-	VoiceRules VoiceRules
-
-	//if the users should be nick-named using the in-game names
-	ApplyNicknames bool
-	CommandPrefix  string
 }
 
 // TrackedMemberAction struct
@@ -105,7 +77,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, userID string)
 }
 
 func (guild *GuildState) fetchAndAddUser(dg *discordgo.Session, userID string) game.UserData {
-	mem, err := dg.GuildMember(guild.ID, userID)
+	mem, err := dg.GuildMember(guild.PersistentGuildData.GuildID, userID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -135,16 +107,17 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
-		shouldMute, shouldDeaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		shouldMute, shouldDeaf := guild.PersistentGuildData.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
 
 		nick := userData.GetPlayerName()
-		if !guild.ApplyNicknames {
+		if !guild.PersistentGuildData.ApplyNicknames {
 			nick = ""
 		}
 
 		//only issue a change if the user isn't in the right state already
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
-		if shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
+		//check the userdata is linked here to not accidentally undeafen music bots, for example
+		if userData.IsLinked() && shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
 
 			//only issue the req to discord if we're not waiting on another one
 			if !userData.IsPendingVoiceUpdate() {
@@ -153,7 +126,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 
 				guild.UserData.UpdateUserData(voiceState.UserID, userData)
 
-				go guildMemberUpdate(dg, guild.ID, voiceState.UserID, UserPatchParameters{shouldDeaf, shouldMute, nick}, delay)
+				go guildMemberUpdate(dg, guild.PersistentGuildData.GuildID, voiceState.UserID, UserPatchParameters{shouldDeaf, shouldMute, nick}, delay)
 
 				updateMade = true
 			}
@@ -173,7 +146,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
-	g, err := s.State.Guild(guild.ID)
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -193,7 +166,7 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
-		mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		mute, deaf := guild.PersistentGuildData.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
 		if userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
 			userData.SetPendingVoiceUpdate(false)
 
@@ -228,14 +201,15 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	tracked := guild.Tracking.IsTracked(m.ChannelID)
 	//only actually tracked if we're in a tracked channel AND linked to a player
 	tracked = tracked && userData.IsLinked()
-	mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
-	if !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
+	mute, deaf := guild.PersistentGuildData.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+	//check the userdata is linked here to not accidentally undeafen music bots, for example
+	if userData.IsLinked() && !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
 		userData.SetPendingVoiceUpdate(true)
 
 		guild.UserData.UpdateUserData(m.UserID, userData)
 
 		nick := userData.GetPlayerName()
-		if !guild.ApplyNicknames {
+		if !guild.PersistentGuildData.ApplyNicknames {
 			nick = ""
 		}
 

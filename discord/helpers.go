@@ -26,7 +26,7 @@ func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
 
 					guild.UserData.UpdateUserData(voiceState.UserID, userData)
 
-					go guildMemberReset(dg, guild.ID, userData)
+					go guildMemberReset(dg, guild.PersistentGuildData.GuildID, userData)
 				}
 			}
 		} else { //the user doesn't exist in our userdata cache; add them

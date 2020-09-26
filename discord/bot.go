@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -168,7 +169,7 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 
 				code := generateConnectCode(gid) //this is unlinked
 				LinkCodeLock.Lock()
-				LinkCodes[code] = guild.ID
+				LinkCodes[code] = guild.PersistentGuildData.GuildID
 				guild.LinkCode = code
 				LinkCodeLock.Unlock()
 
@@ -199,7 +200,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					}
 					log.Println("Detected transition to Lobby")
 
-					delay := guild.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
+					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
 					if delay > 0 {
 						log.Printf("Sleeping for %d secs before changes\n", delay)
 					}
@@ -223,7 +224,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					}
 					log.Println("Detected transition to Tasks")
 					oldPhase := guild.AmongUsData.GetPhase()
-					delay := guild.Delays.GetDelay(oldPhase, game.TASKS)
+					delay := guild.PersistentGuildData.Delays.GetDelay(oldPhase, game.TASKS)
 					if delay > 0 {
 						log.Printf("Sleeping for %d secs before changes\n", delay)
 					}
@@ -246,7 +247,7 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 					}
 					log.Println("Detected transition to Discussion")
 
-					delay := guild.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
+					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
 					if delay > 0 {
 						log.Printf("Sleeping for %d secs before changes\n", delay)
 					}
@@ -328,40 +329,46 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 }
 
 func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
+
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
+		filename := fmt.Sprintf("%s_config.json", m.Guild.ID)
+		pgd, err := LoadPGDFromFile(filename)
+		if err != nil {
+			log.Printf("Couldn't load config from %s; using default config instead", filename)
+			log.Printf("Exact error: %s", err)
+			pgd = PGDDefault(m.Guild.ID)
+			err := pgd.ToFile(filename)
+			if err != nil {
+				log.Println("Using default config, but could not write that default to " + filename + " with error:")
+				log.Println(err)
+			}
+		}
+
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		AllGuilds[m.ID] = &GuildState{
-			ID:            m.ID,
-			CommandPrefix: ".au",
-			LinkCode:      m.Guild.ID,
+			PersistentGuildData: pgd,
+
+			LinkCode: m.Guild.ID,
 
 			UserData:     MakeUserDataSet(),
 			Tracking:     MakeTracking(),
 			GameStateMsg: MakeGameStateMessage(),
 
-			Delays:        MakeDefaultDelays(),
 			StatusEmojis:  emptyStatusEmojis(),
 			SpecialEmojis: map[string]Emoji{},
 
 			AmongUsData: game.NewAmongUsData(),
-
-			VoiceRules:     MakeMuteAndDeafenRules(), //TODO swap with other rules
-			ApplyNicknames: false,
-		}
-		err := AllGuilds[m.ID].Delays.ToFile(m.ID + ".json")
-		if err != nil {
-			log.Println(err)
 		}
 
 		allEmojis, err := s.GuildEmojis(m.Guild.ID)
 		if err != nil {
 			log.Println(err)
 		} else {
-			AllGuilds[m.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 
-			AllGuilds[m.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 
-			AllGuilds[m.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
+			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
 		}
 	}
 }
@@ -372,32 +379,32 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		return
 	}
 
-	g, err := s.State.Guild(guild.ID)
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
 	}
 
 	contents := m.Content
-	if strings.HasPrefix(contents, guild.CommandPrefix) {
+	if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
 		args := strings.Split(contents, " ")[1:]
 		for i, v := range args {
 			args[i] = strings.ToLower(v)
 		}
 		if len(args) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse(guild.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
 		} else {
 			switch args[0] {
 			case "help":
 				fallthrough
 			case "h":
-				s.ChannelMessageSend(m.ChannelID, helpResponse(guild.CommandPrefix))
+				s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
 				break
 			case "track":
 				fallthrough
 			case "t":
 				if len(args[1:]) == 0 {
 					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 				} else {
 					// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
 					forGhosts := false
@@ -425,7 +432,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "l":
 				if len(args[1:]) < 2 {
 					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 				} else {
 					guild.linkPlayerResponse(args[1:])
 
@@ -438,7 +445,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "u":
 				if len(args[1:]) == 0 {
-					s.ChannelMessageSend(m.ChannelID, "You used this command incorrectly! Please refer to `.au help` for proper command usage")
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 				} else {
 
 				}
@@ -465,26 +472,30 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "n":
 				room, region := getRoomAndRegionFromArgs(args[1:])
 
-				connectCode := generateConnectCode(guild.ID)
-				log.Println(connectCode)
-				LinkCodeLock.Lock()
-				LinkCodes[connectCode] = guild.ID
-				guild.LinkCode = connectCode
-				LinkCodeLock.Unlock()
-
 				initialTracking := TrackingChannel{}
-				for _, v := range g.VoiceStates {
-					//if the user is detected in a voice channel
-					if v.UserID == m.Author.ID {
-						for _, channel := range g.Channels {
-							//once we find the channel by ID
-							if channel.ID == v.ChannelID {
-								initialTracking = TrackingChannel{
-									channelID:   channel.ID,
-									channelName: channel.Name,
-									forGhosts:   false,
+
+				//only completely remake the link code and
+				if !guild.GameStateMsg.Exists() {
+					connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
+					log.Println(connectCode)
+					LinkCodeLock.Lock()
+					LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
+					guild.LinkCode = connectCode
+					LinkCodeLock.Unlock()
+
+					for _, v := range g.VoiceStates {
+						//if the user is detected in a voice channel
+						if v.UserID == m.Author.ID {
+							for _, channel := range g.Channels {
+								//once we find the channel by ID
+								if channel.ID == v.ChannelID {
+									initialTracking = TrackingChannel{
+										channelID:   channel.ID,
+										channelName: channel.Name,
+										forGhosts:   false,
+									}
+									log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 								}
-								log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 							}
 						}
 					}
@@ -525,7 +536,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				//create a new instance of the new one
 				guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
 			default:
-				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand that command! Please see `.au help` for commands")
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 
 			}
 		}

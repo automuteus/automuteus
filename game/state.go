@@ -1,7 +1,5 @@
 package game
 
-import "strings"
-
 // Phase type
 type Phase int
 
@@ -28,26 +26,19 @@ const (
 	EXILED       PlayerAction = iota
 )
 
-// PhaseNames for lowercase, possibly for translation if needed
-var PhaseNames = map[string]Phase{
-	"lobby":      LOBBY,
-	"tasks":      TASKS,
-	"discussion": DISCUSS,
-	"menu":       MENU,
-}
+type PhaseNameString string
 
-func getPhaseNameForInt(phase *Phase) string {
-	for str, idx := range PhaseNames {
-		if idx == *phase {
-			return str
-		}
-	}
-	return ""
+// PhaseNames for lowercase, possibly for translation if needed
+var PhaseNames = map[Phase]PhaseNameString{
+	LOBBY:   "LOBBY",
+	TASKS:   "TASKS",
+	DISCUSS: "DISCUSSION",
+	MENU:    "MENU",
 }
 
 // ToString for a phase
-func (phase *Phase) ToString() string {
-	return strings.ToUpper(getPhaseNameForInt(phase))
+func (phase *Phase) ToString() PhaseNameString {
+	return PhaseNames[*phase]
 }
 
 // Player struct

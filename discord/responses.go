@@ -17,7 +17,7 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString("Among Us Bot command reference:\n")
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `.au new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
