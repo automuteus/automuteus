@@ -1,4 +1,0 @@
-2020/09/25 17:27:48 2.0.5-Prerelease
-2020/09/25 17:27:48 Program exited with the following error:
-2020/09/25 17:27:48 no DISCORD_BOT_TOKEN provided
-2020/09/25 17:27:48 This window will automatically terminate in 10 seconds
