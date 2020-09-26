@@ -30,7 +30,7 @@ func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
 				}
 			}
 		} else { //the user doesn't exist in our userdata cache; add them
-			guild.addFullUserToMap(g, voiceState.UserID)
+			guild.checkCacheAndAddUser(g, voiceState.UserID)
 		}
 	}
 }

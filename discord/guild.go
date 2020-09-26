@@ -1,23 +1,25 @@
 package discord
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"log"
+	"os"
 	"sync"
 )
 
 // GameDelays struct
 type GameDelays struct {
 	//maps from origin->new phases, with the integer number of seconds for the delay
-	delays map[game.Phase]map[game.Phase]int
+	Delays map[game.Phase]map[game.Phase]int `json:"delays"`
 	lock   sync.RWMutex
 }
 
 func MakeDefaultDelays() GameDelays {
 	return GameDelays{
-		delays: map[game.Phase]map[game.Phase]int{
+		Delays: map[game.Phase]map[game.Phase]int{
 			game.LOBBY: {
 				game.LOBBY:   0,
 				game.TASKS:   7,
@@ -41,7 +43,21 @@ func MakeDefaultDelays() GameDelays {
 func (gd *GameDelays) GetDelay(origin, dest game.Phase) int {
 	gd.lock.RLock()
 	defer gd.lock.RUnlock()
-	return gd.delays[origin][dest]
+	return gd.Delays[origin][dest]
+}
+
+func (gd *GameDelays) ToFile(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	jsonBytes, err := json.Marshal(gd)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(jsonBytes)
+	return err
 }
 
 // GuildState struct
@@ -76,14 +92,26 @@ type TrackedMemberAction struct {
 	targetChannel Tracking
 }
 
-func (guild *GuildState) addFullUserToMap(g *discordgo.Guild, userID string) {
+func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, userID string) (game.UserData, bool) {
+	//check and see if they're cached first
 	for _, v := range g.Members {
 		if v.User.ID == userID {
-			guild.UserData.AddFullUser(game.MakeUserDataFromDiscordUser(v.User, v.Nick))
-			return
+			user := game.MakeUserDataFromDiscordUser(v.User, v.Nick)
+			guild.UserData.AddFullUser(user)
+			return user, true
 		}
 	}
-	guild.UserData.AddFullUser(game.MakeMinimalUserData(userID))
+	return game.UserData{}, false
+}
+
+func (guild *GuildState) fetchAndAddUser(dg *discordgo.Session, userID string) game.UserData {
+	mem, err := dg.GuildMember(guild.ID, userID)
+	if err != nil {
+		log.Println(err)
+	}
+	user := game.MakeUserDataFromDiscordUser(mem.User, mem.Nick)
+	guild.UserData.AddFullUser(user)
+	return user
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
@@ -95,42 +123,47 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 	for _, voiceState := range g.VoiceStates {
 
 		userData, err := guild.UserData.GetUser(voiceState.UserID)
-		if err == nil {
-			tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
-			//only actually tracked if we're in a tracked channel AND linked to a player
-			tracked = tracked && userData.IsLinked()
-			shouldMute, shouldDeaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		if err != nil {
+			//the user doesn't exist in our userdata cache; add them
+			added := false
+			userData, added = guild.checkCacheAndAddUser(g, voiceState.UserID)
+			if !added {
+				userData = guild.fetchAndAddUser(dg, voiceState.UserID)
+			}
+		}
 
-			nick := userData.GetPlayerName()
-			if !guild.ApplyNicknames {
-				nick = ""
+		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
+		//only actually tracked if we're in a tracked channel AND linked to a player
+		tracked = tracked && userData.IsLinked()
+		shouldMute, shouldDeaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+
+		nick := userData.GetPlayerName()
+		if !guild.ApplyNicknames {
+			nick = ""
+		}
+
+		//only issue a change if the user isn't in the right state already
+		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
+		if shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
+
+			//only issue the req to discord if we're not waiting on another one
+			if !userData.IsPendingVoiceUpdate() {
+				//wait until it goes through
+				userData.SetPendingVoiceUpdate(true)
+
+				guild.UserData.UpdateUserData(voiceState.UserID, userData)
+
+				go guildMemberUpdate(dg, guild.ID, voiceState.UserID, UserPatchParameters{shouldDeaf, shouldMute, nick}, delay)
+
+				updateMade = true
 			}
 
-			//only issue a change if the user isn't in the right state already
-			//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
-			if shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
-
-				//only issue the req to discord if we're not waiting on another one
-				if !userData.IsPendingVoiceUpdate() {
-					//wait until it goes through
-					userData.SetPendingVoiceUpdate(true)
-
-					guild.UserData.UpdateUserData(voiceState.UserID, userData)
-
-					go guildMemberUpdate(dg, guild.ID, voiceState.UserID, UserPatchParameters{shouldDeaf, shouldMute, nick}, delay)
-
-					updateMade = true
-				}
-
+		} else {
+			if shouldMute {
+				log.Printf("Not muting %s because they're already muted\n", userData.GetUserName())
 			} else {
-				if shouldMute {
-					log.Printf("Not muting %s because they're already muted\n", userData.GetUserName())
-				} else {
-					log.Printf("Not unmuting %s because they're already unmuted\n", userData.GetUserName())
-				}
+				log.Printf("Not unmuting %s because they're already unmuted\n", userData.GetUserName())
 			}
-		} else { //the user doesn't exist in our userdata cache; add them
-			guild.addFullUserToMap(g, voiceState.UserID)
 		}
 	}
 	if updateMade {
@@ -147,21 +180,28 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 
 	for _, voiceState := range g.VoiceStates {
 		userData, err := guild.UserData.GetUser(voiceState.UserID)
-		if err == nil {
-			tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
-			//only actually tracked if we're in a tracked channel AND linked to a player
-			tracked = tracked && userData.IsLinked()
-			mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
-			if userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
-				userData.SetPendingVoiceUpdate(false)
 
-				guild.UserData.UpdateUserData(voiceState.UserID, userData)
-
-				//log.Println("Successfully updated pendingVoice")
+		if err != nil {
+			//the user doesn't exist in our userdata cache; add them
+			added := false
+			userData, added = guild.checkCacheAndAddUser(g, voiceState.UserID)
+			if !added {
+				userData = guild.fetchAndAddUser(s, voiceState.UserID)
 			}
-		} else { //the user doesn't exist in our userdata cache; add them
-			guild.addFullUserToMap(g, voiceState.UserID)
 		}
+
+		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
+		//only actually tracked if we're in a tracked channel AND linked to a player
+		tracked = tracked && userData.IsLinked()
+		mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		if userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
+			userData.SetPendingVoiceUpdate(false)
+
+			guild.UserData.UpdateUserData(voiceState.UserID, userData)
+
+			//log.Println("Successfully updated pendingVoice")
+		}
+
 	}
 	return g
 
@@ -177,29 +217,33 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 
 	//fetch the userData from our userData data cache
 	userData, err := guild.UserData.GetUser(m.UserID)
-	if err == nil {
-		tracked := guild.Tracking.IsTracked(m.ChannelID)
-		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && userData.IsLinked()
-		mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
-		if !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
-			userData.SetPendingVoiceUpdate(true)
-
-			guild.UserData.UpdateUserData(m.UserID, userData)
-
-			nick := userData.GetPlayerName()
-			if !guild.ApplyNicknames {
-				nick = ""
-			}
-
-			go guildMemberUpdate(s, m.GuildID, m.UserID, UserPatchParameters{deaf, mute, nick}, 0)
-
-			log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
-
-			updateMade = true
+	if err != nil {
+		//the user doesn't exist in our userdata cache; add them
+		added := false
+		userData, added = guild.checkCacheAndAddUser(g, m.UserID)
+		if !added {
+			userData = guild.fetchAndAddUser(s, m.UserID)
 		}
-	} else { //the userData doesn't exist in our userdata cache; add them
-		guild.addFullUserToMap(g, m.UserID)
+	}
+	tracked := guild.Tracking.IsTracked(m.ChannelID)
+	//only actually tracked if we're in a tracked channel AND linked to a player
+	tracked = tracked && userData.IsLinked()
+	mute, deaf := guild.VoiceRules.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+	if !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
+		userData.SetPendingVoiceUpdate(true)
+
+		guild.UserData.UpdateUserData(m.UserID, userData)
+
+		nick := userData.GetPlayerName()
+		if !guild.ApplyNicknames {
+			nick = ""
+		}
+
+		go guildMemberUpdate(s, m.GuildID, m.UserID, UserPatchParameters{deaf, mute, nick}, 0)
+
+		log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
+
+		updateMade = true
 	}
 
 	if updateMade {

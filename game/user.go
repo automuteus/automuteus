@@ -34,20 +34,6 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 	}
 }
 
-func MakeMinimalUserData(id string) UserData {
-	return UserData{
-		user: User{
-			nick:          "",
-			userID:        id,
-			userName:      "",
-			discriminator: "",
-			originalNick:  "",
-		},
-		pendingVoiceUpdate: false,
-		auData:             nil,
-	}
-}
-
 // IsAlive for a user
 func (user *UserData) IsAlive() bool {
 	if user.auData != nil {

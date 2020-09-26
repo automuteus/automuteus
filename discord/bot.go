@@ -152,13 +152,25 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 		log.Println("Client connection closed: ", reason)
 
 		previousGid := AllConns[s.ID()]
-		AllConns[s.ID()] = "" //deassociate the link
+		AllConns[s.ID()] = "" //deassociate the link between guild and WS
+		LinkCodeLock.Lock()
+		for i, v := range LinkCodes {
+			//delete the association between the link code and the guild
+			if v == previousGid {
+				delete(LinkCodes, i)
+				break
+			}
+		}
+		LinkCodeLock.Unlock()
 
 		for gid, guild := range AllGuilds {
 			if gid == previousGid {
-				//guild.UserDataLock.Lock()
-				guild.LinkCode = generateConnectCode(gid) //this is unlinked
-				//guild.UserDataLock.Unlock()
+
+				code := generateConnectCode(gid) //this is unlinked
+				LinkCodeLock.Lock()
+				LinkCodes[code] = guild.ID
+				guild.LinkCode = code
+				LinkCodeLock.Unlock()
 
 				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
 			}
@@ -336,18 +348,10 @@ func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 			VoiceRules:     MakeMuteAndDeafenRules(), //TODO swap with other rules
 			ApplyNicknames: false,
 		}
-		mems, err := s.GuildMembers(m.Guild.ID, "", 1000)
+		err := AllGuilds[m.ID].Delays.ToFile(m.ID + ".json")
 		if err != nil {
 			log.Println(err)
 		}
-
-		//TODO probably don't need all the users? Just a subset in voice?
-		//add all the users we detect by just calling GuildMembers
-		for _, v := range mems {
-			AllGuilds[m.ID].UserData.AddFullUser(game.MakeUserDataFromDiscordUser(v.User, v.Nick))
-		}
-
-		log.Println("Updated members for guild " + m.Guild.ID)
 
 		allEmojis, err := s.GuildEmojis(m.Guild.ID)
 		if err != nil {
