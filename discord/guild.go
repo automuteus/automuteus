@@ -226,13 +226,11 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	}
 }
 
-// TODO this probably deals with too much direct state-changing;
-//probably want to bubble it up to some higher authority?
 func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	//g, err := s.State.Guild(guild.ID)
-	//if err != nil {
-	//	log.Println(err)
-	//}
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
 
 	if guild.GameStateMsg.Exists() {
 
@@ -243,10 +241,16 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 				if e.ID == m.Emoji.ID {
 					idMatched = true
 					log.Printf("Player %s reacted with color %s", m.UserID, game.GetColorStringForInt(color))
+					_, added := guild.checkCacheAndAddUser(g, m.UserID)
+					if !added {
+						guild.fetchAndAddUser(s, m.UserID)
+					}
 
 					playerData := guild.AmongUsData.GetByColor(game.GetColorStringForInt(color))
 					if playerData != nil {
 						guild.UserData.UpdatePlayerData(m.UserID, playerData)
+					} else {
+
 					}
 
 					//then remove the player's reaction if we matched, or if we didn't
@@ -289,7 +293,7 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 	guild.UserData.ClearAllPlayerData()
 
 	//clears the base-level player data in memory
-	guild.AmongUsData.ClearPlayerData()
+	guild.AmongUsData.ClearAllPlayerData()
 
 	//reset all the tracking channels
 	guild.Tracking.Reset()

@@ -173,6 +173,8 @@ func socketioServer(gamePhaseUpdateChannel chan<- game.PhaseUpdate, playerUpdate
 				guild.LinkCode = code
 				LinkCodeLock.Unlock()
 
+				//TODO when the client disconnects, we don't update the status message in discord
+
 				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
 			}
 		}
@@ -279,18 +281,27 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 						playerUpdate.Player.IsDead = false
 					}
 
-					updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(playerUpdate.Player)
+					if playerUpdate.Player.Disconnected {
+						log.Println("I detected that " + playerUpdate.Player.Name + " disconnected! " +
+							"I'm removing their linked game data; they will need to relink")
 
-					if updated {
-						//log.Println("Player update received caused an update in cached state")
-						if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-							log.Println("NOT updating the discord status message; would leak info")
-						} else {
-							guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
-						}
+						guild.UserData.ClearPlayerDataByPlayerName(playerUpdate.Player.Name)
+						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					} else {
-						//log.Println("Player update received did not cause an update in cached state")
+						updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(playerUpdate.Player)
+
+						if updated {
+							//log.Println("Player update received caused an update in cached state")
+							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
+								log.Println("NOT updating the discord status message; would leak info")
+							} else {
+								guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+							}
+						} else {
+							//log.Println("Player update received did not cause an update in cached state")
+						}
 					}
+
 				}
 			}
 		}
@@ -474,32 +485,33 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 				initialTracking := TrackingChannel{}
 
-				//only completely remake the link code and
-				if !guild.GameStateMsg.Exists() {
-					connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
-					log.Println(connectCode)
-					LinkCodeLock.Lock()
-					LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
-					guild.LinkCode = connectCode
-					LinkCodeLock.Unlock()
+				//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
+				//we don't have enough info to go off of when remaking the game...
+				//if !guild.GameStateMsg.Exists() {
+				connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
+				log.Println(connectCode)
+				LinkCodeLock.Lock()
+				LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
+				guild.LinkCode = connectCode
+				LinkCodeLock.Unlock()
 
-					for _, v := range g.VoiceStates {
-						//if the user is detected in a voice channel
-						if v.UserID == m.Author.ID {
-							for _, channel := range g.Channels {
-								//once we find the channel by ID
-								if channel.ID == v.ChannelID {
-									initialTracking = TrackingChannel{
-										channelID:   channel.ID,
-										channelName: channel.Name,
-										forGhosts:   false,
-									}
-									log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
+				for _, v := range g.VoiceStates {
+					//if the user is detected in a voice channel
+					if v.UserID == m.Author.ID {
+						for _, channel := range g.Channels {
+							//once we find the channel by ID
+							if channel.ID == v.ChannelID {
+								initialTracking = TrackingChannel{
+									channelID:   channel.ID,
+									channelName: channel.Name,
+									forGhosts:   false,
 								}
+								log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 							}
 						}
 					}
 				}
+				//}
 
 				guild.handleGameStartMessage(s, m, room, region, initialTracking)
 				break
@@ -535,6 +547,12 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 				//create a new instance of the new one
 				guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+
+				//add the emojis to the refreshed message
+				for _, e := range guild.StatusEmojis[true] {
+					guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+				}
+				guild.GameStateMsg.AddReaction(s, "❌")
 			default:
 				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 

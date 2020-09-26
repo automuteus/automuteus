@@ -85,7 +85,7 @@ func (auData *AmongUsData) GetPhase() Phase {
 	return auData.phase
 }
 
-func (auData *AmongUsData) ClearPlayerData() {
+func (auData *AmongUsData) ClearAllPlayerData() {
 	auData.lock.Lock()
 	auData.playerData = map[string]*PlayerData{}
 	auData.lock.Unlock()

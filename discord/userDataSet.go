@@ -71,6 +71,17 @@ func (uds *UserDataSet) ClearPlayerData(userID string) {
 	uds.lock.Unlock()
 }
 
+func (uds *UserDataSet) ClearPlayerDataByPlayerName(playerName string) {
+	uds.lock.Lock()
+	for i, v := range uds.userDataSet {
+		if v.GetPlayerName() == playerName {
+			v.SetPlayerData(nil)
+			uds.userDataSet[i] = v
+		}
+	}
+	uds.lock.Unlock()
+}
+
 func (uds *UserDataSet) ClearAllPlayerData() {
 	uds.lock.Lock()
 	for i, v := range uds.userDataSet {
