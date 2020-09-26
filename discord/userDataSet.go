@@ -31,7 +31,7 @@ func (uds *UserDataSet) GetCountLinked() int {
 	LinkedPlayerCount := 0
 
 	for _, v := range uds.userDataSet {
-		if v.GetColor() != 0 {
+		if v.IsLinked() {
 			LinkedPlayerCount++
 		}
 	}

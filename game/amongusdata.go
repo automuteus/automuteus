@@ -52,12 +52,10 @@ func (auData *AmongUsData) SetRoomRegion(room, region string) {
 	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) GetRoomRegion() (string, string, int) {
+func (auData *AmongUsData) GetRoomRegion() (string, string) {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
-
-	// room, region, number of players in game
-	return auData.room, auData.region, len(auData.playerData)
+	return auData.room, auData.region
 }
 
 func (auData *AmongUsData) SetAllAlive() {
@@ -74,6 +72,13 @@ func (auData *AmongUsData) SetPhase(phase Phase) {
 	auData.phase = phase
 	auData.lock.Unlock()
 }
+
+func (auData *AmongUsData) NumDetectedPlayers() int {
+	auData.lock.RLock()
+	defer auData.lock.RUnlock()
+	return len(auData.playerData)
+}
+
 func (auData *AmongUsData) GetPhase() Phase {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()

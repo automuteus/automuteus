@@ -147,9 +147,8 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region, playerCount := g.AmongUsData.GetRoomRegion()
-	linkedPlayers := g.UserData.GetCountLinked()
-	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region, playerCount, linkedPlayers)
+	room, region := g.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region, g.AmongUsData.NumDetectedPlayers(), g.UserData.GetCountLinked())
 
 	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
@@ -194,9 +193,8 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region, playerCount := guild.AmongUsData.GetRoomRegion()
-	linkedPlayers := guild.UserData.GetCountLinked()
-	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region, playerCount, linkedPlayers)
+	room, region := guild.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region, guild.AmongUsData.NumDetectedPlayers(), guild.UserData.GetCountLinked())
 	listResp := guild.UserData.ToEmojiEmbedFields(guild.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
