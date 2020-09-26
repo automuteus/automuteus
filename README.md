@@ -15,8 +15,8 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 2. You need a minimum of 12 open emoji slots on your server. The bot uses player emojis to link discord users to in-game player colors; it will add them automatically, but you need at least 12 slots (25 recommended).
 3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time, and on the same PC (for now).
 
-# Demo + Installation Video (click the image):
-[![Demo Video](https://img.youtube.com/vi/ASPZ6DcKpCo/0.jpg)](https://youtu.be/ASPZ6DcKpCo)
+# Installation Video (click the image):
+[![Installation](https://img.youtube.com/vi/gRxKRqefzp4/0.jpg)](https://youtu.be/gRxKRqefzp4)
 
 # Installation
 
