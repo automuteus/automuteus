@@ -3,9 +3,10 @@ package discord
 import (
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"sync"
 )
 
 type UserDataSet struct {
@@ -24,6 +25,17 @@ func (uds *UserDataSet) Size() int {
 	uds.lock.RLock()
 	defer uds.lock.RUnlock()
 	return len(uds.userDataSet)
+}
+
+func (uds *UserDataSet) GetCountLinked() int {
+	LinkedPlayerCount := 0
+
+	for _, v := range uds.userDataSet {
+		if v.GetColor() != 0 {
+			LinkedPlayerCount++
+		}
+	}
+	return LinkedPlayerCount
 }
 
 func (uds *UserDataSet) AddFullUser(user game.UserData) {

@@ -52,11 +52,12 @@ func (auData *AmongUsData) SetRoomRegion(room, region string) {
 	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) GetRoomRegion() (string, string) {
+func (auData *AmongUsData) GetRoomRegion() (string, string, int) {
 	auData.lock.RLock()
 	defer auData.lock.RUnlock()
 
-	return auData.room, auData.region
+	// room, region, number of players in game
+	return auData.room, auData.region, len(auData.playerData)
 }
 
 func (auData *AmongUsData) SetAllAlive() {

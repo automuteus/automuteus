@@ -94,24 +94,30 @@ func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 //
 //const PaddedLen = 20
 
-func lobbyMetaEmbedFields(tracking *Tracking, room, region string) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
 	str := tracking.ToStatusString()
-	gameInfoFields := make([]*discordgo.MessageEmbedField, 3)
+	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   "room Code",
+		Name:   "Room Code",
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   "region",
+		Name:   "Region",
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
 		Name:   "Tracking",
 		Value:  str,
+		Inline: true,
+	}
+	gameInfoFields[3] = &discordgo.MessageEmbedField{
+		Name:   "Players Linked",
+		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
 		Inline: false,
 	}
+
 	return gameInfoFields
 }
 
@@ -141,8 +147,9 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region := g.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region)
+	room, region, playerCount := g.AmongUsData.GetRoomRegion()
+	linkedPlayers := g.UserData.GetCountLinked()
+	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region, playerCount, linkedPlayers)
 
 	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
@@ -187,8 +194,9 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region := guild.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region)
+	room, region, playerCount := guild.AmongUsData.GetRoomRegion()
+	linkedPlayers := guild.UserData.GetCountLinked()
+	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region, playerCount, linkedPlayers)
 	listResp := guild.UserData.ToEmojiEmbedFields(guild.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
