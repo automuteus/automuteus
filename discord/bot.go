@@ -249,13 +249,13 @@ func discordListener(dg *discordgo.Session, phaseUpdateChannel <-chan game.Phase
 				}
 			}
 
-			//TODO prevent cases where 2 players are mapped to the same underlying in-game player data
+			// TODO prevent cases where 2 players are mapped to the same underlying in-game player data
 		case playerUpdate := <-playerUpdateChannel:
 			log.Printf("Received PlayerUpdate message for guild %s\n", playerUpdate.GuildID)
 			if guild, ok := AllGuilds[playerUpdate.GuildID]; ok {
 
-				//this updates the copies in memory
-				//(player's associations to amongus data are just pointers to these structs)
+				//	this updates the copies in memory
+				//	(player's associations to amongus data are just pointers to these structs)
 				if playerUpdate.Player.Name != "" {
 					if playerUpdate.Player.Action == game.EXILED {
 						log.Println("Detected player EXILE event, marking as dead")
