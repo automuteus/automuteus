@@ -36,7 +36,7 @@ var LinkCodeLock = sync.RWMutex{}
 var GamePhaseUpdateChannel chan game.PhaseUpdate
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string, addEmojis bool) {
+func MakeAndStartBot(token string, port string, emojiGuildID string) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -47,7 +47,7 @@ func MakeAndStartBot(token string, port string, addEmojis bool) {
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(reactionCreate)
-	dg.AddHandler(newGuild(addEmojis))
+	dg.AddHandler(newGuild(emojiGuildID))
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -339,7 +339,7 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	}
 }
 
-func newGuild(addEmojis bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
+func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		filename := fmt.Sprintf("%s_config.json", m.Guild.ID)
@@ -371,8 +371,8 @@ func newGuild(addEmojis bool) func(s *discordgo.Session, m *discordgo.GuildCreat
 			AmongUsData: game.NewAmongUsData(),
 		}
 
-		if addEmojis {
-			allEmojis, err := s.GuildEmojis(m.Guild.ID)
+		if emojiGuildID != "" {
+			allEmojis, err := s.GuildEmojis(emojiGuildID)
 			if err != nil {
 				log.Println(err)
 			} else {

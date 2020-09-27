@@ -46,12 +46,7 @@ func discordMainWrapper() error {
 		log.SetOutput(mw)
 	}
 
-	addEmojis := true
-	emojiStr := os.Getenv("ADD_EMOJIS")
-	if emojiStr == "false" {
-		addEmojis = false
-		log.Println("Not adding emojis to any servers!")
-	}
+	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 
 	log.Println(VERSION)
 
@@ -68,6 +63,6 @@ func discordMainWrapper() error {
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, addEmojis)
+	discord.MakeAndStartBot(discordToken, port, emojiGuildID)
 	return nil
 }
