@@ -36,7 +36,7 @@ var LinkCodeLock = sync.RWMutex{}
 var GamePhaseUpdateChannel chan game.PhaseUpdate
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string) {
+func MakeAndStartBot(token string, port string, addEmojis bool) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -47,7 +47,7 @@ func MakeAndStartBot(token string, port string) {
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(reactionCreate)
-	dg.AddHandler(newGuild())
+	dg.AddHandler(newGuild(addEmojis))
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -339,7 +339,7 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	}
 }
 
-func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
+func newGuild(addEmojis bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		filename := fmt.Sprintf("%s_config.json", m.Guild.ID)
@@ -371,15 +371,17 @@ func newGuild() func(s *discordgo.Session, m *discordgo.GuildCreate) {
 			AmongUsData: game.NewAmongUsData(),
 		}
 
-		allEmojis, err := s.GuildEmojis(m.Guild.ID)
-		if err != nil {
-			log.Println(err)
-		} else {
-			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
+		if addEmojis {
+			allEmojis, err := s.GuildEmojis(m.Guild.ID)
+			if err != nil {
+				log.Println(err)
+			} else {
+				AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 
-			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+				AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 
-			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
+				AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
+			}
 		}
 	}
 }
