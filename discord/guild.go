@@ -6,6 +6,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"log"
+	"sync"
+	"time"
 )
 
 // GameDelays struct
@@ -170,7 +172,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, 
 					}
 				}
 
-				params := UserPatchParameters{guild.PersistentGuildData.GuildID, voiceState.UserID, shouldDeaf, shouldMute, nick, delay}
+				params := UserPatchParameters{guild.PersistentGuildData.GuildID, voiceState.UserID, shouldDeaf, shouldMute, nick}
 
 				heap.Push(priorityQueue, PrioritizedPatchParams{
 					priority:    priority,
@@ -188,13 +190,38 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, 
 			}
 		}
 	}
-	for priorityQueue.Len() > 0 {
-		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
-		log.Printf("Applying changes to %s with priority %d\n", p.patchParams.UserID, p.priority)
-		go guildMemberUpdate(dg, p.patchParams)
+	wg := sync.WaitGroup{}
+	waitForHigherPriority := false
+
+	if delay > 0 {
+		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
+		time.Sleep(time.Second * time.Duration(delay))
 	}
 
+	for priorityQueue.Len() > 0 {
+		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
+
+		if p.priority > 0 {
+			waitForHigherPriority = true
+			log.Printf("User %s has higher priority: %d\n", p.patchParams.UserID, p.priority)
+		} else if waitForHigherPriority {
+			//wait for all the other users to get muted/unmuted completely, first
+			log.Println("Waiting for high priority user changes first")
+			wg.Wait()
+			waitForHigherPriority = false
+		}
+
+		wg.Add(1)
+		go muteWorker(dg, &wg, p.patchParams)
+	}
+	wg.Wait()
+
 	return updateMade
+}
+
+func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
+	guildMemberUpdate(s, parameters)
+	wg.Done()
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
@@ -261,7 +288,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			nick = ""
 		}
 
-		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, m.UserID, deaf, mute, nick, 0})
+		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, m.UserID, deaf, mute, nick})
 
 		log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
 
@@ -349,6 +376,4 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 	guild.Tracking.Reset()
 
 	guild.GameStateMsg.Delete(s)
-
-	guild.AmongUsData.SetPhase(game.LOBBY)
 }

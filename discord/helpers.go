@@ -10,55 +10,18 @@ import (
 	"time"
 )
 
-func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
-
-	g := guild.verifyVoiceStateChanges(dg)
-
-	for _, voiceState := range g.VoiceStates {
-
-		userData, err := guild.UserData.GetUser(voiceState.UserID)
-		if err == nil {
-			//only issue a change if the user isn't in the right state already
-			if !voiceState.Mute || !voiceState.Deaf || !userData.NicknamesMatch() {
-
-				//check the userdata here so we don't spam undeafen to music bots...
-				if userData.IsLinked() && !userData.IsPendingVoiceUpdate() {
-
-					//wait until it goes through
-					userData.SetPendingVoiceUpdate(true)
-
-					guild.UserData.UpdateUserData(voiceState.UserID, userData)
-
-					go guildMemberReset(dg, guild.PersistentGuildData.GuildID, userData)
-				}
-			}
-		} else { //the user doesn't exist in our userdata cache; add them
-			guild.checkCacheAndAddUser(g, dg, voiceState.UserID)
-		}
-	}
-}
-
-func guildMemberReset(s *discordgo.Session, guildID string, userData game.UserData) {
-	guildMemberUpdate(s, UserPatchParameters{guildID, userData.GetID(), false, false, userData.GetOriginalNickName(), 0})
-}
-
 type UserPatchParameters struct {
 	GuildID string
 	UserID  string
 	Deaf    bool
 	Mute    bool
 	Nick    string
-	Delay   int
 }
 
 func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 	g, err := s.Guild(params.GuildID)
 	if err != nil {
 		log.Println(err)
-	}
-
-	if params.Delay > 0 {
-		time.Sleep(time.Duration(params.Delay) * time.Second)
 	}
 
 	//we can't nickname the owner, and we shouldn't nickname with an empty string...

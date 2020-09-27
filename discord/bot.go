@@ -217,22 +217,12 @@ func discordListener(dg *discordgo.Session) {
 					log.Println("Detected transition to Lobby")
 
 					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
-					if delay > 0 {
-						log.Printf("Sleeping for %d secs before changes\n", delay)
-					}
 
 					guild.AmongUsData.SetAllAlive()
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
 					//going back to the lobby, we have no preference on who gets applied first
 					guild.handleTrackedMembers(dg, delay, NoPriority)
-
-					//add back the emojis AFTER we do any mute/unmutes
-					//for _, e := range guild.StatusEmojis[true] {
-					//	if guild.GameStateMessage != nil {
-					//		addReaction(dg, guild.GameStateMessage.ChannelID, guild.GameStateMessage.ID, e.FormatForReaction())
-					//	}
-					//}
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				case game.TASKS:
@@ -242,9 +232,6 @@ func discordListener(dg *discordgo.Session) {
 					log.Println("Detected transition to Tasks")
 					oldPhase := guild.AmongUsData.GetPhase()
 					delay := guild.PersistentGuildData.Delays.GetDelay(oldPhase, game.TASKS)
-					if delay > 0 {
-						log.Printf("Sleeping for %d secs before changes\n", delay)
-					}
 					//when going from discussion to tasks, we should mute alive players FIRST
 					priority := AlivePriority
 
@@ -252,8 +239,6 @@ func discordListener(dg *discordgo.Session) {
 						//when we go from lobby to tasks, mark all users as alive to be sure
 						guild.AmongUsData.SetAllAlive()
 						priority = NoPriority
-						//if we went from lobby to tasks, remove all the emojis from the game start message
-						//guild.handleReactionsGameStartRemoveAll(dg)
 					}
 
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
@@ -268,9 +253,6 @@ func discordListener(dg *discordgo.Session) {
 					log.Println("Detected transition to Discussion")
 
 					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
-					if delay > 0 {
-						log.Printf("Sleeping for %d secs before changes\n", delay)
-					}
 
 					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
 
@@ -551,6 +533,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "endgame":
 				guild.handleGameEndMessage(s)
+
 				//have to explicitly delete here, because if we use the default delete below, the channelID
 				//for the game state message doesn't exist anymore...
 				deleteMessage(s, m.ChannelID, m.Message.ID)
