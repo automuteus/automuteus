@@ -1,0 +1,23 @@
+name: go-mod-fix
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  go-mod-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: fix
+        uses: at-wat/go-sum-fix-action@v0
+        with:
+          git_user: denverquane
+          git_email: dquane@unm.edu
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_style: add
+          commit_message: "Automatic go.sum update"
+          push: yes
