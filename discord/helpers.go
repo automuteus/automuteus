@@ -18,8 +18,8 @@ func (guild *GuildState) resetTrackedMembers(dg *discordgo.Session) {
 			//only issue a change if the user isn't in the right state already
 			if !voiceState.Mute || !voiceState.Deaf || !userData.NicknamesMatch() {
 
-				//only issue the req to discord if we're not waiting on another one
-				if !userData.IsPendingVoiceUpdate() {
+				//check the userdata here so we don't spam undeafen to music bots...
+				if userData.IsLinked() && !userData.IsPendingVoiceUpdate() {
 
 					//wait until it goes through
 					userData.SetPendingVoiceUpdate(true)

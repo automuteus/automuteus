@@ -28,6 +28,9 @@ func (uds *UserDataSet) Size() int {
 }
 
 func (uds *UserDataSet) GetCountLinked() int {
+	uds.lock.RLock()
+	defer uds.lock.RUnlock()
+
 	LinkedPlayerCount := 0
 
 	for _, v := range uds.userDataSet {

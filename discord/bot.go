@@ -371,18 +371,21 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 			AmongUsData: game.NewAmongUsData(),
 		}
 
-		if emojiGuildID != "" {
-			allEmojis, err := s.GuildEmojis(emojiGuildID)
-			if err != nil {
-				log.Println(err)
-			} else {
-				AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
-
-				AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
-
-				AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
-			}
+		if emojiGuildID == "" {
+			log.Println("No explicit guildID provided for emojis; using the current guild default")
+			emojiGuildID = m.Guild.ID
 		}
+		allEmojis, err := s.GuildEmojis(emojiGuildID)
+		if err != nil {
+			log.Println(err)
+		} else {
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
+
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+
+			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
+		}
+
 	}
 }
 
