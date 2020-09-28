@@ -49,15 +49,3 @@ type Player struct {
 	IsDead       bool         `json:"IsDead"`
 	Disconnected bool         `json:"Disconnected"`
 }
-
-// PlayerUpdate struct
-type PlayerUpdate struct {
-	Player  Player
-	GuildID string
-}
-
-// PhaseUpdate struct
-type PhaseUpdate struct {
-	Phase   Phase
-	GuildID string
-}
