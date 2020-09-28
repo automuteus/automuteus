@@ -87,37 +87,3 @@ func MakeMuteOnlyRules() VoiceRules {
 	}
 	return rules
 }
-
-//func MakeMuteOnlyRules() VoiceRules {
-//	rules := VoiceRules{
-//		MuteRules: map[game.Phase]map[bool]bool{
-//			game.LOBBY: map[bool]bool{
-//				true:  false,
-//				false: false,
-//			},
-//			game.TASKS: map[bool]bool{
-//				true:  true,
-//				false: true,
-//			},
-//			game.DISCUSS: map[bool]bool{
-//				true:  false,
-//				false: true,
-//			},
-//		},
-//		DeafRules: map[game.Phase]map[bool]bool{
-//			game.LOBBY: map[bool]bool{
-//				true:  false,
-//				false: false,
-//			},
-//			game.TASKS: map[bool]bool{
-//				true:  false,
-//				false: false,
-//			},
-//			game.DISCUSS: map[bool]bool{
-//				true:  false,
-//				false: false,
-//			},
-//		},
-//	}
-//	return rules
-//}

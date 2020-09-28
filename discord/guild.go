@@ -59,6 +59,12 @@ type GuildState struct {
 	AmongUsData game.AmongUsData
 }
 
+type EmojiCollection struct {
+	statusEmojis  AlivenessEmojis
+	specialEmojis map[string]Emoji
+	lock          sync.RWMutex
+}
+
 // TrackedMemberAction struct
 type TrackedMemberAction struct {
 	mute          bool

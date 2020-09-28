@@ -28,17 +28,19 @@ var LinkCodes = map[string]string{}
 // LinkCodeLock mutex for above
 var LinkCodeLock = sync.RWMutex{}
 
-// GamePhaseUpdateChannel this should not be global
-var GamePhaseUpdateChannel chan game.PhaseUpdate
+// GamePhaseUpdateChannels
+var GamePhaseUpdateChannels = make(map[string]*chan game.Phase)
 
-var PlayerUpdateChannel chan game.PlayerUpdate
+var PlayerUpdateChannels = make(map[string]*chan game.Player)
+
+var SocketUpdateChannels = make(map[string]*chan SocketStatus)
+
+var ChannelsMapLock = sync.RWMutex{}
 
 type SocketStatus struct {
 	GuildID   string
 	Connected bool
 }
-
-var SocketUpdateChannel chan SocketStatus
 
 // MakeAndStartBot does what it sounds like
 func MakeAndStartBot(token string, port string, emojiGuildID string) {
@@ -69,15 +71,7 @@ func MakeAndStartBot(token string, port string, emojiGuildID string) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	GamePhaseUpdateChannel = make(chan game.PhaseUpdate)
-
-	PlayerUpdateChannel = make(chan game.PlayerUpdate)
-
-	SocketUpdateChannel = make(chan SocketStatus)
-
 	go socketioServer(port)
-
-	go discordListener(dg)
 
 	<-sc
 
@@ -112,10 +106,13 @@ func socketioServer(port string) {
 			if gid == guildID {
 				AllConns[s.ID()] = gid
 				guild.LinkCode = ""
-				SocketUpdateChannel <- SocketStatus{
+
+				ChannelsMapLock.RLock()
+				*SocketUpdateChannels[gid] <- SocketStatus{
 					GuildID:   gid,
 					Connected: true,
 				}
+				ChannelsMapLock.RUnlock()
 			}
 		}
 
@@ -130,10 +127,9 @@ func socketioServer(port string) {
 		} else {
 			if v, ok := AllConns[s.ID()]; ok {
 				log.Println("Pushing phase event to channel")
-				GamePhaseUpdateChannel <- game.PhaseUpdate{
-					Phase:   game.Phase(phase),
-					GuildID: v,
-				}
+				ChannelsMapLock.RLock()
+				*GamePhaseUpdateChannels[v] <- game.Phase(phase)
+				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
 			}
@@ -148,10 +144,9 @@ func socketioServer(port string) {
 			log.Println(err)
 		} else {
 			if v, ok := AllConns[s.ID()]; ok {
-				PlayerUpdateChannel <- game.PlayerUpdate{
-					Player:  player,
-					GuildID: v,
-				}
+				ChannelsMapLock.RLock()
+				*PlayerUpdateChannels[v] <- player
+				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
 			}
@@ -184,10 +179,12 @@ func socketioServer(port string) {
 				guild.LinkCode = code
 				LinkCodeLock.Unlock()
 
-				SocketUpdateChannel <- SocketStatus{
+				ChannelsMapLock.RLock()
+				*SocketUpdateChannels[gid] <- SocketStatus{
 					GuildID:   gid,
 					Connected: false,
 				}
+				ChannelsMapLock.RUnlock()
 
 				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
 			}
@@ -201,13 +198,14 @@ func socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func discordListener(dg *discordgo.Session) {
+func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player) {
 	for {
 		select {
-		case phaseUpdate := <-GamePhaseUpdateChannel:
-			log.Printf("Received PhaseUpdate message for guild %s\n", phaseUpdate.GuildID)
-			if guild, ok := AllGuilds[phaseUpdate.GuildID]; ok {
-				switch phaseUpdate.Phase {
+
+		case phase := <-*phaseUpdates:
+			log.Printf("Received PhaseUpdate message for guild %s\n", guildID)
+			if guild, ok := AllGuilds[guildID]; ok {
+				switch phase {
 				case game.MENU:
 					log.Println("Detected transition to Menu; not doing anything about it yet")
 				case game.LOBBY:
@@ -219,7 +217,7 @@ func discordListener(dg *discordgo.Session) {
 					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
 
 					guild.AmongUsData.SetAllAlive()
-					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
+					guild.AmongUsData.SetPhase(phase)
 
 					//going back to the lobby, we have no preference on who gets applied first
 					guild.handleTrackedMembers(dg, delay, NoPriority)
@@ -241,7 +239,7 @@ func discordListener(dg *discordgo.Session) {
 						priority = NoPriority
 					}
 
-					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
+					guild.AmongUsData.SetPhase(phase)
 
 					guild.handleTrackedMembers(dg, delay, priority)
 
@@ -254,42 +252,42 @@ func discordListener(dg *discordgo.Session) {
 
 					delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
 
-					guild.AmongUsData.SetPhase(phaseUpdate.Phase)
+					guild.AmongUsData.SetPhase(phase)
 
 					//when going from
 					guild.handleTrackedMembers(dg, delay, DeadPriority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				default:
-					log.Printf("Undetected new state: %d\n", phaseUpdate.Phase)
+					log.Printf("Undetected new state: %d\n", phase)
 				}
 			}
 
 			// TODO prevent cases where 2 players are mapped to the same underlying in-game player data
-		case playerUpdate := <-PlayerUpdateChannel:
-			log.Printf("Received PlayerUpdate message for guild %s\n", playerUpdate.GuildID)
-			if guild, ok := AllGuilds[playerUpdate.GuildID]; ok {
+		case player := <-*playerUpdates:
+			log.Printf("Received PlayerUpdate message for guild %s\n", guildID)
+			if guild, ok := AllGuilds[guildID]; ok {
 
 				//	this updates the copies in memory
 				//	(player's associations to amongus data are just pointers to these structs)
-				if playerUpdate.Player.Name != "" {
-					if playerUpdate.Player.Action == game.EXILED {
+				if player.Name != "" {
+					if player.Action == game.EXILED {
 						log.Println("Detected player EXILE event, marking as dead")
-						playerUpdate.Player.IsDead = true
+						player.IsDead = true
 					}
-					if playerUpdate.Player.IsDead == true && guild.AmongUsData.GetPhase() == game.LOBBY {
+					if player.IsDead == true && guild.AmongUsData.GetPhase() == game.LOBBY {
 						log.Println("Received a dead event, but we're in the Lobby, so I'm ignoring it")
-						playerUpdate.Player.IsDead = false
+						player.IsDead = false
 					}
 
-					if playerUpdate.Player.Disconnected {
-						log.Println("I detected that " + playerUpdate.Player.Name + " disconnected! " +
+					if player.Disconnected {
+						log.Println("I detected that " + player.Name + " disconnected! " +
 							"I'm removing their linked game data; they will need to relink")
 
-						guild.UserData.ClearPlayerDataByPlayerName(playerUpdate.Player.Name)
+						guild.UserData.ClearPlayerDataByPlayerName(player.Name)
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					} else {
-						updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(playerUpdate.Player)
+						updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(player)
 
 						if updated {
 							//log.Println("Player update received caused an update in cached state")
@@ -306,7 +304,7 @@ func discordListener(dg *discordgo.Session) {
 				}
 			}
 			break
-		case socketUpdate := <-SocketUpdateChannel:
+		case socketUpdate := <-*socketUpdates:
 			if guild, ok := AllGuilds[socketUpdate.GuildID]; ok {
 				//this automatically updates the game state message on connect or disconnect
 				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
@@ -392,6 +390,18 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 
 			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
 		}
+
+		socketUpdates := make(chan SocketStatus)
+		playerUpdates := make(chan game.Player)
+		phaseUpdates := make(chan game.Phase)
+
+		ChannelsMapLock.Lock()
+		SocketUpdateChannels[m.Guild.ID] = &socketUpdates
+		PlayerUpdateChannels[m.Guild.ID] = &playerUpdates
+		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
+		ChannelsMapLock.Unlock()
+
+		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates)
 
 	}
 }
@@ -546,10 +556,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 				} else {
 					//TODO this is ugly, but only for debug really
-					GamePhaseUpdateChannel <- game.PhaseUpdate{
-						Phase:   phase,
-						GuildID: m.GuildID,
-					}
+					ChannelsMapLock.RLock()
+					*GamePhaseUpdateChannels[m.GuildID] <- phase
+					ChannelsMapLock.RUnlock()
 				}
 
 				break
