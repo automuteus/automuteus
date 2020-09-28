@@ -333,7 +333,7 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 					if playerData != nil {
 						guild.UserData.UpdatePlayerData(m.UserID, playerData)
 					} else {
-
+						log.Println("I couldn't find any player data for that color; is your capture linked?")
 					}
 
 					//then remove the player's reaction if we matched, or if we didn't
