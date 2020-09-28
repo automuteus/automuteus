@@ -1,14 +1,18 @@
 package discord
 
 import (
+	"github.com/denverquane/amongusdiscord/game"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
+	guild.AmongUsData.SetAllAlive()
+	guild.AmongUsData.SetPhase(game.LOBBY)
+
 	// apply the unmute/deafen to users who have state linked to them
-	guild.resetTrackedMembers(s)
+	guild.handleTrackedMembers(s, 0, NoPriority)
 
 	//clear the tracking and make sure all users are unlinked
 	guild.clearGameTracking(s)

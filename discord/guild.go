@@ -1,10 +1,13 @@
 package discord
 
 import (
+	"container/heap"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"log"
+	"sync"
+	"time"
 )
 
 // GameDelays struct
@@ -56,6 +59,12 @@ type GuildState struct {
 	AmongUsData game.AmongUsData
 }
 
+type EmojiCollection struct {
+	statusEmojis  AlivenessEmojis
+	specialEmojis map[string]Emoji
+	lock          sync.RWMutex
+}
+
 // TrackedMemberAction struct
 type TrackedMemberAction struct {
 	mute          bool
@@ -64,7 +73,7 @@ type TrackedMemberAction struct {
 	targetChannel Tracking
 }
 
-func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, userID string) (game.UserData, bool) {
+func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (game.UserData, bool) {
 	//check and see if they're cached first
 	for _, v := range g.Members {
 		if v.User.ID == userID {
@@ -73,34 +82,68 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, userID string)
 			return user, true
 		}
 	}
-	return game.UserData{}, false
-}
-
-func (guild *GuildState) fetchAndAddUser(dg *discordgo.Session, userID string) game.UserData {
-	mem, err := dg.GuildMember(guild.PersistentGuildData.GuildID, userID)
+	mem, err := s.GuildMember(guild.PersistentGuildData.GuildID, userID)
 	if err != nil {
 		log.Println(err)
+		return game.UserData{}, false
 	}
 	user := game.MakeUserDataFromDiscordUser(mem.User, mem.Nick)
 	guild.UserData.AddFullUser(user)
-	return user
+	return user, true
+}
+
+type HandlePriority int
+
+const (
+	NoPriority    HandlePriority = 0
+	AlivePriority HandlePriority = 1
+	DeadPriority  HandlePriority = 2
+)
+
+type PrioritizedPatchParams struct {
+	priority    int
+	patchParams UserPatchParameters
+}
+
+type PatchPriority []PrioritizedPatchParams
+
+func (h PatchPriority) Len() int { return len(h) }
+
+//NOTE this is inversed so HIGHER numbers are pulled FIRST
+func (h PatchPriority) Less(i, j int) bool { return h[i].priority > h[j].priority }
+func (h PatchPriority) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *PatchPriority) Push(x interface{}) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(PrioritizedPatchParams))
+}
+
+func (h *PatchPriority) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
-func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) {
+func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, handlePriority HandlePriority) bool {
 
 	g := guild.verifyVoiceStateChanges(dg)
 
 	updateMade := false
+	priorityQueue := &PatchPriority{}
+	heap.Init(priorityQueue)
+
 	for _, voiceState := range g.VoiceStates {
 
 		userData, err := guild.UserData.GetUser(voiceState.UserID)
 		if err != nil {
 			//the user doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = guild.checkCacheAndAddUser(g, voiceState.UserID)
+			userData, added = guild.checkCacheAndAddUser(g, dg, voiceState.UserID)
 			if !added {
-				userData = guild.fetchAndAddUser(dg, voiceState.UserID)
+				continue
 			}
 		}
 
@@ -125,8 +168,22 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 				userData.SetPendingVoiceUpdate(true)
 
 				guild.UserData.UpdateUserData(voiceState.UserID, userData)
+				priority := 0
 
-				go guildMemberUpdate(dg, guild.PersistentGuildData.GuildID, voiceState.UserID, UserPatchParameters{shouldDeaf, shouldMute, nick}, delay)
+				if handlePriority != NoPriority {
+					if handlePriority == AlivePriority && userData.IsAlive() {
+						priority++
+					} else if handlePriority == DeadPriority && !userData.IsAlive() {
+						priority++
+					}
+				}
+
+				params := UserPatchParameters{guild.PersistentGuildData.GuildID, voiceState.UserID, shouldDeaf, shouldMute, nick}
+
+				heap.Push(priorityQueue, PrioritizedPatchParams{
+					priority:    priority,
+					patchParams: params,
+				})
 
 				updateMade = true
 			}
@@ -139,10 +196,38 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int) 
 			}
 		}
 	}
-	if updateMade {
-		log.Println("Updating state message")
-		guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+	wg := sync.WaitGroup{}
+	waitForHigherPriority := false
+
+	if delay > 0 {
+		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
+		time.Sleep(time.Second * time.Duration(delay))
 	}
+
+	for priorityQueue.Len() > 0 {
+		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
+
+		if p.priority > 0 {
+			waitForHigherPriority = true
+			log.Printf("User %s has higher priority: %d\n", p.patchParams.UserID, p.priority)
+		} else if waitForHigherPriority {
+			//wait for all the other users to get muted/unmuted completely, first
+			log.Println("Waiting for high priority user changes first")
+			wg.Wait()
+			waitForHigherPriority = false
+		}
+
+		wg.Add(1)
+		go muteWorker(dg, &wg, p.patchParams)
+	}
+	wg.Wait()
+
+	return updateMade
+}
+
+func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
+	guildMemberUpdate(s, parameters)
+	wg.Done()
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
@@ -157,9 +242,9 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 		if err != nil {
 			//the user doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = guild.checkCacheAndAddUser(g, voiceState.UserID)
+			userData, added = guild.checkCacheAndAddUser(g, s, voiceState.UserID)
 			if !added {
-				userData = guild.fetchAndAddUser(s, voiceState.UserID)
+				continue
 			}
 		}
 
@@ -192,11 +277,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	userData, err := guild.UserData.GetUser(m.UserID)
 	if err != nil {
 		//the user doesn't exist in our userdata cache; add them
-		added := false
-		userData, added = guild.checkCacheAndAddUser(g, m.UserID)
-		if !added {
-			userData = guild.fetchAndAddUser(s, m.UserID)
-		}
+		userData, _ = guild.checkCacheAndAddUser(g, s, m.UserID)
 	}
 	tracked := guild.Tracking.IsTracked(m.ChannelID)
 	//only actually tracked if we're in a tracked channel AND linked to a player
@@ -213,7 +294,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			nick = ""
 		}
 
-		go guildMemberUpdate(s, m.GuildID, m.UserID, UserPatchParameters{deaf, mute, nick}, 0)
+		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, m.UserID, deaf, mute, nick})
 
 		log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
 
@@ -241,16 +322,18 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 				if e.ID == m.Emoji.ID {
 					idMatched = true
 					log.Printf("Player %s reacted with color %s", m.UserID, game.GetColorStringForInt(color))
-					_, added := guild.checkCacheAndAddUser(g, m.UserID)
+					//the user doesn't exist in our userdata cache; add them
+
+					_, added := guild.checkCacheAndAddUser(g, s, m.UserID)
 					if !added {
-						guild.fetchAndAddUser(s, m.UserID)
+						log.Println("No users found in Discord for userID " + m.UserID)
 					}
 
 					playerData := guild.AmongUsData.GetByColor(game.GetColorStringForInt(color))
 					if playerData != nil {
 						guild.UserData.UpdatePlayerData(m.UserID, playerData)
 					} else {
-
+						log.Println("I couldn't find any player data for that color; is your capture linked?")
 					}
 
 					//then remove the player's reaction if we matched, or if we didn't
@@ -275,7 +358,7 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 			}
 			//make sure to update any voice changes if they occurred
 			if idMatched {
-				guild.handleTrackedMembers(s, 0)
+				guild.handleTrackedMembers(s, 0, NoPriority)
 				guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 			}
 		}
@@ -299,6 +382,4 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 	guild.Tracking.Reset()
 
 	guild.GameStateMsg.Delete(s)
-
-	guild.AmongUsData.SetPhase(game.LOBBY)
 }
