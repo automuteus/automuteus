@@ -2,12 +2,12 @@ package discord
 
 import (
 	"encoding/base64"
-	"github.com/denverquane/amongusdiscord/game"
 	"io/ioutil"
 	"log"
 	"net/http"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 // Emoji struct for discord
@@ -28,7 +28,7 @@ func (e *Emoji) FormatForInline() string {
 
 // GetDiscordCDNUrl does what it sounds like
 func (e *Emoji) GetDiscordCDNUrl() string {
-	return "https://cdn.discordapp.com/emojis/" + e.ID + ".png"
+	return "https://cdn.discordapp.com/emojis/" + e.ID + ".gif"
 }
 
 // DownloadAndBase64Encode does what it sounds like
@@ -44,7 +44,7 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 		log.Println(err)
 	}
 	encodedStr := base64.StdEncoding.EncodeToString(bytes)
-	return "data:image/png;base64," + encodedStr
+	return "data:image/gif;base64," + encodedStr
 }
 
 func emptyStatusEmojis() AlivenessEmojis {
@@ -108,7 +108,7 @@ func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID strin
 var GlobalSpecialEmojis = map[string]Emoji{
 	"alarm": {
 		Name: "aualarm",
-		ID:   "756595863048159323",
+		ID:   "760601471221235722",
 	},
 }
 
@@ -120,101 +120,97 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	true: []Emoji{
 		game.Red: {
 			Name: "aured",
-			ID:   "756202732301320325",
+			ID:   "760600880650649600",
 		},
 		game.Blue: {
 			Name: "aublue",
-			ID:   "756201148154642642",
+			ID:   "760600903895089182",
 		},
 		game.Green: {
 			Name: "augreen",
-			ID:   "756202732099993753",
+			ID:   "760600905128083496",
 		},
 		game.Pink: {
 			Name: "aupink",
-			ID:   "756200620049956864",
+			ID:   "760600906126721045",
 		},
 		game.Orange: {
 			Name: "auorange",
-			ID:   "756202732523618435",
+			ID:   "760600907040686100",
 		},
 		game.Yellow: {
 			Name: "auyellow",
-			ID:   "756202732678938624",
+			ID:   "760600907913101333",
 		},
 		game.Black: {
 			Name: "aublack",
-			ID:   "756202732758761522",
+			ID:   "760600908974260234",
 		},
 		game.White: {
 			Name: "auwhite",
-			ID:   "756202732343394386",
+			ID:   "760600909427376159",
 		},
 		game.Purple: {
 			Name: "aupurple",
-			ID:   "756202732624543770",
+			ID:   "760600910685929482",
 		},
 		game.Brown: {
 			Name: "aubrown",
-			ID:   "756202732594921482",
+			ID:   "760600911675654184",
 		},
 		game.Cyan: {
 			Name: "aucyan",
-			ID:   "756202732511297556",
-		},
-		game.Lime: {
-			Name: "aulime",
-			ID:   "756202732360040569",
+			ID:   "760600912514646026",
 		},
 	},
 	false: []Emoji{
 		game.Red: {
 			Name: "aureddead",
-			ID:   "756404218163888200",
+			ID:   "760601090701393967",
 		},
 		game.Blue: {
 			Name: "aubluedead",
-			ID:   "756552864309969057",
+			ID:   "760601091729129543",
 		},
 		game.Green: {
 			Name: "augreendead",
-			ID:   "756552867275604008",
+			ID:   "760601093260050432",
 		},
 		game.Pink: {
 			Name: "aupinkdead",
-			ID:   "756552867413753906",
+			ID:   "760601094630932520",
 		},
 		game.Orange: {
 			Name: "auorangedead",
-			ID:   "756404218436517888",
+			ID:   "760601095507673108",
 		},
 		game.Yellow: {
 			Name: "auyellowdead",
-			ID:   "756404218339786762",
+			ID:   "760601096271429632",
 		},
 		game.Black: {
 			Name: "aublackdead",
-			ID:   "756552864171557035",
+			ID:   "760601097126543431",
 		},
 		game.White: {
 			Name: "auwhitedead",
-			ID:   "756552867200106596",
+			ID:   "760601097546760224",
 		},
 		game.Purple: {
 			Name: "aupurpledead",
-			ID:   "756552866491138159",
+			ID:   "760601098473701428",
 		},
 		game.Brown: {
 			Name: "aubrowndead",
-			ID:   "756552864620347422",
+			ID:   "760601099660689428",
 		},
 		game.Cyan: {
 			Name: "aucyandead",
-			ID:   "756204054698262559",
+			ID:   "760601100737839105",
 		},
 		game.Lime: {
 			Name: "aulimedead",
-			ID:   "756552864847102042",
+			ID:   "760601101773963274",
 		},
 	},
 }
