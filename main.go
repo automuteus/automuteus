@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/denverquane/amongusdiscord/discord"
@@ -62,7 +63,12 @@ func discordMainWrapper() error {
 		port = DefaultPort
 	}
 
+	// useAnimatedEmojis true by default, unless emojiGuildID is set
+	useAnimatedEmojis := strings.ToLower(os.Getenv("USE_ANIMATED_EMOJIS")) == "true" ||
+		os.Getenv("USE_ANIMATED_EMOJIS") == "1" ||
+		os.Getenv("USE_ANIMATED_EMOJIS")+emojiGuildID == ""
+
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, emojiGuildID)
+	discord.MakeAndStartBot(discordToken, port, emojiGuildID, useAnimatedEmojis)
 	return nil
 }

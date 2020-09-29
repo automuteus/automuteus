@@ -27,13 +27,16 @@ func (e *Emoji) FormatForInline() string {
 }
 
 // GetDiscordCDNUrl does what it sounds like
-func (e *Emoji) GetDiscordCDNUrl() string {
-	return "https://cdn.discordapp.com/emojis/" + e.ID + ".gif"
+func (e *Emoji) GetDiscordCDNUrl(useAnimatedEmojis bool) string {
+	if useAnimatedEmojis {
+		return "https://cdn.discordapp.com/emojis/" + e.ID + ".gif"
+	}
+	return "https://cdn.discordapp.com/emojis/" + e.ID + ".png"
 }
 
 // DownloadAndBase64Encode does what it sounds like
-func (e *Emoji) DownloadAndBase64Encode() string {
-	url := e.GetDiscordCDNUrl()
+func (e *Emoji) DownloadAndBase64Encode(useAnimatedEmojis bool) string {
+	url := e.GetDiscordCDNUrl(useAnimatedEmojis)
 	response, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
@@ -44,7 +47,11 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 		log.Println(err)
 	}
 	encodedStr := base64.StdEncoding.EncodeToString(bytes)
-	return "data:image/gif;base64," + encodedStr
+
+	if useAnimatedEmojis {
+		return "data:image/gif;base64," + encodedStr
+	}
+	return "data:image/png;base64," + encodedStr
 }
 
 func emptyStatusEmojis() AlivenessEmojis {
@@ -54,7 +61,7 @@ func emptyStatusEmojis() AlivenessEmojis {
 	return topMap
 }
 
-func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, serverEmojis []*discordgo.Emoji) {
+func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, serverEmojis []*discordgo.Emoji, useAnimatedEmojis bool) {
 	for _, emoji := range GlobalSpecialEmojis {
 		alreadyExists := false
 		for _, v := range serverEmojis {
@@ -66,7 +73,7 @@ func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, 
 			}
 		}
 		if !alreadyExists {
-			b64 := emoji.DownloadAndBase64Encode()
+			b64 := emoji.DownloadAndBase64Encode(useAnimatedEmojis)
 			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
 			if err != nil {
 				log.Println(err)
@@ -79,7 +86,7 @@ func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, 
 	}
 }
 
-func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
+func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji, useAnimatedEmojis bool) {
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
@@ -91,7 +98,7 @@ func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID strin
 			}
 		}
 		if !alreadyExists {
-			b64 := emoji.DownloadAndBase64Encode()
+			b64 := emoji.DownloadAndBase64Encode(useAnimatedEmojis)
 			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
 			if err != nil {
 				log.Println(err)

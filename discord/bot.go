@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 // AllConns mapping of socket IDs to guild IDs
@@ -43,7 +44,7 @@ type SocketStatus struct {
 }
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string, emojiGuildID string) {
+func MakeAndStartBot(token string, port string, emojiGuildID string, useAnimatedEmojis bool) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -54,7 +55,7 @@ func MakeAndStartBot(token string, port string, emojiGuildID string) {
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(reactionCreate)
-	dg.AddHandler(newGuild(emojiGuildID))
+	dg.AddHandler(newGuild(emojiGuildID, useAnimatedEmojis))
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -344,7 +345,7 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	}
 }
 
-func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
+func newGuild(emojiGuildID string, useAnimatedEmojis bool) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		filename := fmt.Sprintf("%s_config.json", m.Guild.ID)
@@ -384,11 +385,11 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		if err != nil {
 			log.Println(err)
 		} else {
-			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, true, allEmojis, useAnimatedEmojis)
 
-			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+			AllGuilds[m.Guild.ID].addAllMissingEmojis(s, m.Guild.ID, false, allEmojis, useAnimatedEmojis)
 
-			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis)
+			AllGuilds[m.Guild.ID].addSpecialEmojis(s, m.Guild.ID, allEmojis, useAnimatedEmojis)
 		}
 
 		socketUpdates := make(chan SocketStatus)
