@@ -463,7 +463,10 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 	}
 
 	contents := m.Content
-	if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
+	perms := guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
+	if !perms {
+		s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+	} else if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
 		args := strings.Split(contents, " ")[1:]
 		for i, v := range args {
 			args[i] = strings.ToLower(v)
@@ -550,7 +553,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			case "n":
 				room, region := getRoomAndRegionFromArgs(args[1:])
 
-				initialTracking := TrackingChannel{}
+				initialTracking := make([]TrackingChannel, 0)
 
 				//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 				//we don't have enough info to go off of when remaking the game...
@@ -574,23 +577,41 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					LinkCodeLock.Unlock()
 				}
 
-				for _, v := range g.VoiceStates {
-					//if the user is detected in a voice channel
-					if v.UserID == m.Author.ID {
-						for _, channel := range g.Channels {
+				channels, err := s.GuildChannels(m.GuildID)
+				if err != nil {
+					log.Println(err)
+				}
+
+				for _, channel := range channels {
+					if channel.Type == discordgo.ChannelTypeGuildVoice {
+						if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
+							initialTracking = append(initialTracking, TrackingChannel{
+								channelID:   channel.ID,
+								channelName: channel.Name,
+								forGhosts:   false,
+							})
+							log.Printf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name)
+						}
+					}
+					for _, v := range g.VoiceStates {
+						//if the user is detected in a voice channel
+						if v.UserID == m.Author.ID {
+
 							//once we find the channel by ID
-							if channel.ID == v.ChannelID {
-								initialTracking = TrackingChannel{
-									channelID:   channel.ID,
-									channelName: channel.Name,
-									forGhosts:   false,
+							if channel.Type == discordgo.ChannelTypeGuildVoice {
+								if channel.ID == v.ChannelID {
+									initialTracking = append(initialTracking, TrackingChannel{
+										channelID:   channel.ID,
+										channelName: channel.Name,
+										forGhosts:   false,
+									})
+									log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 								}
-								log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 							}
+
 						}
 					}
 				}
-				//}
 
 				guild.handleGameStartMessage(s, m, room, region, initialTracking)
 				break
