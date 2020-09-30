@@ -1,8 +1,8 @@
-![](https://github.com/denverquane/amongusdiscord/blob/master/assets/botProfilePicture.jpg?raw=true)
+
 
 [![Build](https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg)](https://github.com/denverquane/amongusdiscord/actions?query=build)
 
-# AmongUsAutoMute (BETA)
+# AmongUsAutoMute (BETA) <img src="assets/botProfilePicture.jpg" width="128">
 Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
 
 Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
