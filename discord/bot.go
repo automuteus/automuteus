@@ -518,7 +518,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				guild.LinkCode = connectCode
 				LinkCodeLock.Unlock()
 
-				rawCode := "{\"Host\":\"http://localhost:8123\",\"ConnectCode\":\"32D5560D\"}"
+				rawCode := "{\"Host\":\"http://localhost:8123\",\"ConnectCode\":\"" + connectCode + "\"}"
 				hyperlink := "aucapture://connect/?data=" + b64.StdEncoding.EncodeToString([]byte(rawCode))
 
 				var embed = discordgo.MessageEmbed{

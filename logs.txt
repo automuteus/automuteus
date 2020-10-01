@@ -1,34 +1,15 @@
-2020/10/02 01:09:18 2.2.0-Prerelease
-2020/10/02 01:09:18 Invalid or no particular SERVER_PORT provided. Defaulting to 8123
-2020/10/02 01:09:19 Bot is now running.  Press CTRL-C to exit.
-2020/10/02 01:09:19 Serving at localhost:8123...
-2020/10/02 01:09:19 Added to new Guild, id 190486704577052673, name Blamant
-2020/10/02 01:09:19 Added to new Guild, id 591350539959271465, name ph0t0shop
-2020/10/02 01:09:19 No explicit guildID provided for emojis; using the current guild default
-2020/10/02 01:09:19 No explicit guildID provided for emojis; using the current guild default
-2020/10/02 01:09:27 4C9F6F5D
-2020/10/02 01:09:27 Added self game state message
-2020/10/02 01:09:42 connected: 1
-2020/10/02 01:09:42 set connect code: 32D5560D
-2020/10/02 01:09:42 No guild has the current connect code of 32D5560D
-2020/10/02 01:09:42 Associated websocket id 1 with guildID  using code 32D5560D
-2020/10/02 01:09:57 Client connection closed:  
-2020/10/02 01:09:57 meet error: websocket: close 1000 (normal)
-2020/10/02 01:09:57 connected: 2
-2020/10/02 01:09:57 set connect code: 32D5560D
-2020/10/02 01:09:57 No guild has the current connect code of 32D5560D
-2020/10/02 01:09:57 Associated websocket id 2 with guildID  using code 32D5560D
-2020/10/02 01:10:50 Client connection closed:  
-2020/10/02 01:10:50 meet error: websocket: close 1000 (normal)
-2020/10/02 01:10:50 connected: 3
-2020/10/02 01:10:50 set connect code: 32D5560D
-2020/10/02 01:10:50 No guild has the current connect code of 32D5560D
-2020/10/02 01:10:50 Associated websocket id 3 with guildID  using code 32D5560D
-2020/10/02 01:10:52 Client connection closed:  
-2020/10/02 01:10:52 meet error: websocket: close 1000 (normal)
-2020/10/02 01:10:52 connected: 4
-2020/10/02 01:10:52 set connect code: 32D5560D
-2020/10/02 01:10:52 No guild has the current connect code of 32D5560D
-2020/10/02 01:10:52 Associated websocket id 4 with guildID  using code 32D5560D
-2020/10/02 01:16:47 Client connection closed:  client namespace disconnect
-2020/10/02 01:16:47 meet error: read tcp [::1]:8123->[::1]:64479: wsarecv: An existing connection was forcibly closed by the remote host.
+2020/10/02 01:37:28 2.2.0-Prerelease
+2020/10/02 01:37:28 Invalid or no particular SERVER_PORT provided. Defaulting to 8123
+2020/10/02 01:37:29 Bot is now running.  Press CTRL-C to exit.
+2020/10/02 01:37:29 Serving at localhost:8123...
+2020/10/02 01:37:29 Added to new Guild, id 190486704577052673, name Blamant
+2020/10/02 01:37:29 No explicit guildID provided for emojis; using the current guild default
+2020/10/02 01:37:29 Added to new Guild, id 591350539959271465, name ph0t0shop
+2020/10/02 01:37:46 141DBAB4
+2020/10/02 01:37:47 Added self game state message
+2020/10/02 01:38:19 connected: 1
+2020/10/02 01:38:19 set connect code: 32D5560D
+2020/10/02 01:38:19 No guild has the current connect code of 32D5560D
+2020/10/02 01:38:19 Associated websocket id 1 with guildID  using code 32D5560D
+2020/10/02 01:40:41 Client connection closed:  client namespace disconnect
+2020/10/02 01:40:41 meet error: read tcp [::1]:8123->[::1]:64981: wsarecv: An existing connection was forcibly closed by the remote host.

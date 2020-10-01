@@ -2,16 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47c18952-f2bf-41ff-8210-bc3aa4f5ce9a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/amongusdiscord.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/190486704577052673_config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/591350539959271465_config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/logs.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discord/bot.go" beforeDir="false" afterPath="$PROJECT_DIR$/discord/bot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord/helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/discord/helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discord/responses.go" beforeDir="false" afterPath="$PROJECT_DIR$/discord/responses.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
