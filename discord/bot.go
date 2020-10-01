@@ -1,6 +1,7 @@
 package discord
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -516,6 +517,26 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
 				guild.LinkCode = connectCode
 				LinkCodeLock.Unlock()
+
+				rawCode := "{\"Host\":\"http://localhost:8123\",\"ConnectCode\":\"32D5560D\"}"
+				hyperlink := "aucapture://connect/?data=" + b64.StdEncoding.EncodeToString([]byte(rawCode))
+
+				var embed = discordgo.MessageEmbed{
+					URL:         "",
+					Type:        "",
+					Title:       "You just started a game!",
+					Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>", hyperlink),
+					Timestamp:   "",
+					Color:     3066993, //GREEN
+					Image:     nil,
+					Thumbnail: nil,
+					Video:     nil,
+					Provider:  nil,
+					Author:    nil,
+				}
+
+				var ch, _ = s.UserChannelCreate(m.Author.ID)
+				_, _ = s.ChannelMessageSendEmbed(ch.ID, &embed)
 
 				for _, v := range g.VoiceStates {
 					//if the user is detected in a voice channel
