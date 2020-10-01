@@ -20,6 +20,10 @@ RUN CGO_ENABLED=0 go build \
 
 FROM alpine AS final
 
+# Create a volume for guildid_config.json storage
+VOLUME /config
+WORKDIR /config
+
 # Import the compiled executable from the first stage.
 COPY --from=builder /app /app
 
