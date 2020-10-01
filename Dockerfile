@@ -1,11 +1,14 @@
-# TODO Make this a proper multi-stage build; build image w/ dependencies v. runtime image
-FROM golang:1.14
+FROM golang:latest as build
 
 WORKDIR /go/src/app
 COPY . .
 
-RUN go build -o amongusdiscord main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o amongusdiscord main.go
+
+
+FROM alpine
+
+COPY --from=build /go/src/app/amongusdiscord /amongusdiscord
 
 EXPOSE 8123
-
-CMD ./amongusdiscord
+CMD ["/amongusdiscord"]
