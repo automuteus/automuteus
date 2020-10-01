@@ -368,7 +368,7 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 
 func (guild *GuildState) HasAdminPermissions(userID string) bool {
 	if len(guild.PersistentGuildData.AdminUserIDs) == 0 {
-		return true
+		return false
 	}
 
 	for _, v := range guild.PersistentGuildData.AdminUserIDs {
@@ -381,7 +381,7 @@ func (guild *GuildState) HasAdminPermissions(userID string) bool {
 
 func (guild *GuildState) HasRolePermissions(s *discordgo.Session, userID string) bool {
 	if len(guild.PersistentGuildData.PermissionedRoleIDs) == 0 {
-		return true
+		return false
 	}
 
 	mem, err := s.GuildMember(guild.PersistentGuildData.GuildID, userID)
