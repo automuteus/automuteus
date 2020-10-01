@@ -1,16 +1,34 @@
-FROM golang:latest as build
+FROM golang:1.14-alpine AS builder
 
-WORKDIR /go/src/app
-COPY . .
+# Git is required for getting the dependencies.
+RUN apk add --no-cache git
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o amongusdiscord main.go
+WORKDIR /src
 
+# Fetch dependencies first; they are less susceptible to change on every build
+# and will therefore be cached for speeding up the next build
+COPY ./go.mod ./go.sum ./
+RUN go mod download
 
-FROM alpine
+# Import the code from the context.
+COPY ./ ./
 
-VOLUME [ "/config" ]
+# Build the executable to `/app`. Mark the build as statically linked.
+RUN CGO_ENABLED=0 go build \
+    -installsuffix 'static' \
+    -o /app .
+
+FROM alpine AS final
+
+# Create a volume for guildid_config.json storage
+VOLUME /config
 WORKDIR /config
-COPY --from=build /go/src/app/amongusdiscord /amongusdiscord
+
+# Import the compiled executable from the first stage.
+COPY --from=builder /app /app
 
 EXPOSE 8123
 CMD ["/amongusdiscord"]
+
+# Run the compiled binary.
+ENTRYPOINT ["/app"]
