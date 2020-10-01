@@ -43,11 +43,17 @@ type SocketStatus struct {
 }
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string, emojiGuildID string) {
+func MakeAndStartBot(token string, port string, emojiGuildID string, numShards, shardID int) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
 		return
+	}
+
+	if numShards > 0 && shardID > -1 {
+		log.Printf("Identifying to the Discord API with %d total shards, and shard ID=%d\n", numShards, shardID)
+		dg.ShardCount = numShards
+		dg.ShardID = shardID
 	}
 
 	dg.AddHandler(voiceStateChange)
@@ -504,6 +510,12 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				fallthrough
 			case "n":
 				room, region := getRoomAndRegionFromArgs(args[1:])
+
+				channel, err := s.UserChannelCreate(m.Author.ID)
+				if err != nil {
+					log.Println(err)
+				}
+				s.ChannelMessageSend(channel.ID, "test")
 
 				initialTracking := TrackingChannel{}
 

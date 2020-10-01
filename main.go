@@ -55,14 +55,25 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
+	numShardsStr := os.Getenv("NUM_SHARDS")
+	numShards, err := strconv.Atoi(numShardsStr)
+	if err != nil {
+		numShards = 0
+	}
+	shardIDStr := os.Getenv("SHARD_ID")
+	shardID, err := strconv.Atoi(shardIDStr)
+	if err != nil {
+		shardID = -1
+	}
+
 	port := os.Getenv("SERVER_PORT")
 	num, err := strconv.Atoi(port)
-	if err != nil || num < 1000 || num > 9999 {
+	if err != nil || num < 100 || num > 65535 {
 		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, emojiGuildID)
+	discord.MakeAndStartBot(discordToken, port, emojiGuildID, numShards, shardID)
 	return nil
 }
