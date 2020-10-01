@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 // AllConns mapping of socket IDs to guild IDs
@@ -35,11 +36,18 @@ var PlayerUpdateChannels = make(map[string]*chan game.Player)
 
 var SocketUpdateChannels = make(map[string]*chan SocketStatus)
 
+var RoomCodeUpdateChannels = make(map[string]*chan RoomCodeStatus)
+
 var ChannelsMapLock = sync.RWMutex{}
 
 type SocketStatus struct {
 	GuildID   string
 	Connected bool
+}
+
+type RoomCodeStatus struct {
+	GuildID  string
+	RoomCode string
 }
 
 // MakeAndStartBot does what it sounds like
@@ -152,6 +160,19 @@ func socketioServer(port string) {
 			}
 		}
 	})
+	server.OnEvent("/", "roomcode", func(s socketio.Conn, msg string) {
+		if gid, ok := AllConns[s.ID()]; ok {
+			if guild, ok := AllGuilds[gid]; ok {
+				log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+				ChannelsMapLock.RLock()
+				*RoomCodeUpdateChannels[gid] <- RoomCodeStatus{
+					GuildID:  gid,
+					RoomCode: msg,
+				}
+				ChannelsMapLock.RUnlock()
+			}
+		}
+	})
 	server.OnError("/", func(s socketio.Conn, e error) {
 		log.Println("meet error:", e)
 	})
@@ -198,7 +219,7 @@ func socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player) {
+func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, roomCodeUpdates *chan RoomCodeStatus) {
 	for {
 		select {
 
@@ -309,6 +330,13 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 				//this automatically updates the game state message on connect or disconnect
 				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 			}
+
+		case roomCodeUpdate := <-*roomCodeUpdates:
+			if guild, ok := AllGuilds[roomCodeUpdate.GuildID]; ok {
+				_, region := guild.AmongUsData.GetRoomRegion()
+				guild.AmongUsData.SetRoomRegion(roomCodeUpdate.RoomCode, region) // Set new room code
+				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))            // Update game state message
+			}
 		}
 	}
 }
@@ -394,14 +422,16 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		socketUpdates := make(chan SocketStatus)
 		playerUpdates := make(chan game.Player)
 		phaseUpdates := make(chan game.Phase)
+		roomCodeUpdates := make(chan RoomCodeStatus)
 
 		ChannelsMapLock.Lock()
 		SocketUpdateChannels[m.Guild.ID] = &socketUpdates
 		PlayerUpdateChannels[m.Guild.ID] = &playerUpdates
 		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
+		RoomCodeUpdateChannels[m.Guild.ID] = &roomCodeUpdates
 		ChannelsMapLock.Unlock()
 
-		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates)
+		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &roomCodeUpdates)
 
 	}
 }
