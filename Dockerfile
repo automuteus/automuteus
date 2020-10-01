@@ -8,6 +8,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o amo
 
 FROM alpine
 
+VOLUME [ "/config" ]
+WORKDIR /config
 COPY --from=build /go/src/app/amongusdiscord /amongusdiscord
 
 EXPOSE 8123
