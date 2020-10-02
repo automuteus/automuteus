@@ -464,14 +464,15 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 	contents := m.Content
 
-	//either BOTH the admin/roles are empty, or the user fulfills EITHER perm "bucket"
-	perms := len(guild.PersistentGuildData.AdminUserIDs) == 0 && len(guild.PersistentGuildData.PermissionedRoleIDs) == 0
-	if !perms {
-		perms = guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
-	}
-	if !perms {
-		s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
-	} else if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
+	if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
+		//either BOTH the admin/roles are empty, or the user fulfills EITHER perm "bucket"
+		perms := len(guild.PersistentGuildData.AdminUserIDs) == 0 && len(guild.PersistentGuildData.PermissionedRoleIDs) == 0
+		if !perms {
+			perms = guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
+		}
+		if !perms {
+			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+		}
 		args := strings.Split(contents, " ")[1:]
 		for i, v := range args {
 			args[i] = strings.ToLower(v)
