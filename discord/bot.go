@@ -55,12 +55,21 @@ type RoomCodeStatus struct {
 	RoomCode string
 }
 
+var Version string
+
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string, emojiGuildID string) {
+func MakeAndStartBot(version, token, port, emojiGuildID string, numShards, shardID int) {
+	Version = version
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
 		return
+	}
+
+	if numShards > 0 && shardID > -1 {
+		log.Printf("Identifying to the Discord API with %d total shards, and shard ID=%d\n", numShards, shardID)
+		dg.ShardCount = numShards
+		dg.ShardID = shardID
 	}
 
 	dg.AddHandler(voiceStateChange)
@@ -503,22 +512,25 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		if !perms {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
 		}
-		args := strings.Split(contents, " ")[1:]
-		for i, v := range args {
-			args[i] = strings.ToLower(v)
+		oldLen := len(contents)
+		contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
+		if len(contents) == oldLen { //didn't have a space
+			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
 		}
-		if len(args) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
+
+		if len(contents) == 0 {
+			s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 		} else {
-			switch args[0] {
-			case "help":
-				fallthrough
-			case "h":
-				s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
+			args := strings.Split(contents, " ")
+
+			for i, v := range args {
+				args[i] = strings.ToLower(v)
+			}
+			switch GetCommandType(args[0]) {
+			case Help:
+				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 				break
-			case "track":
-				fallthrough
-			case "t":
+			case Track:
 				if len(args[1:]) == 0 {
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
@@ -544,9 +556,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				}
 				break
 
-			case "link":
-				fallthrough
-			case "l":
+			case Link:
 				if len(args[1:]) < 2 {
 					//TODO print usage of this command specifically
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
@@ -556,11 +566,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
 				break
-			case "unlink":
-				fallthrough
-			case "ul":
-				fallthrough
-			case "u":
+			case Unlink:
 				if len(args[1:]) == 0 {
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 				} else {
@@ -580,13 +586,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//update the state message to reflect the player leaving
 					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
-			case "start":
-				fallthrough
-			case "s":
-				fallthrough
-			case "new":
-				fallthrough
-			case "n":
+			case New:
 				room, region := getRoomAndRegionFromArgs(args[1:])
 
 				initialTracking := make([]TrackingChannel, 0)
@@ -651,20 +651,14 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 				guild.handleGameStartMessage(s, m, room, region, initialTracking)
 				break
-			case "end":
-				fallthrough
-			case "e":
-				fallthrough
-			case "endgame":
+			case End:
 				guild.handleGameEndMessage(s)
 
 				//have to explicitly delete here, because if we use the default delete below, the channelID
 				//for the game state message doesn't exist anymore...
 				deleteMessage(s, m.ChannelID, m.Message.ID)
 				break
-			case "force":
-				fallthrough
-			case "f":
+			case Force:
 				phase := getPhaseFromArgs(args[1:])
 				if phase == game.UNINITIALIZED {
 					s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
@@ -676,9 +670,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				}
 
 				break
-			case "refresh":
-				fallthrough
-			case "r":
+			case Refresh:
 				guild.GameStateMsg.Delete(s) //delete the old message
 
 				//create a new instance of the new one
