@@ -92,6 +92,11 @@ func socketioServer(port string) {
 		ClientConnection = s // assumes most recent connection is the only relevant connection
 		return nil
 	})
+	server.OnDisconnect("/", func(s socketio.Conn, e string) {
+		if ClientConnection.ID() == s.ID() {
+			ClientConnection = nil
+		}
+	})
 	server.OnEvent("/", "connect", func(s socketio.Conn, msg string) {
 		log.Println("set connect code:", msg)
 		guildID := ""
