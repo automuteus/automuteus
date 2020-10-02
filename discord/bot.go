@@ -41,7 +41,7 @@ var PlayerUpdateChannels = make(map[string]*chan game.Player)
 
 var SocketUpdateChannels = make(map[string]*chan SocketStatus)
 
-var RoomCodeUpdateChannels = make(map[string]*chan RoomCodeStatus)
+var LobbyUpdateChannels = make(map[string]*chan LobbyStatus)
 
 var ChannelsMapLock = sync.RWMutex{}
 
@@ -50,9 +50,9 @@ type SocketStatus struct {
 	Connected bool
 }
 
-type RoomCodeStatus struct {
-	GuildID  string
-	RoomCode string
+type LobbyStatus struct {
+	GuildID string
+	Lobby   game.Lobby
 }
 
 var Version string
@@ -160,13 +160,23 @@ func socketioServer(port string) {
 			//TODO race condition
 			if v, ok := AllConns[s.ID()]; ok {
 				if v.guildID != "" {
-					ChannelsMapLock.RLock()
-					*SocketUpdateChannels[v.guildID] <- SocketStatus{
-						GuildID:   v.guildID,
-						Connected: true,
+					if guild, ok := AllGuilds[v.guildID]; ok { // Game is connected -> update its room code
+						log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+						ChannelsMapLock.RLock()
+						*LobbyUpdateChannels[v.guildID] <- LobbyStatus{
+							GuildID: v.guildID,
+							Lobby:   lobby,
+						}
+						ChannelsMapLock.RUnlock()
+					} else { // No game connected
+						ChannelsMapLock.RLock()
+						*SocketUpdateChannels[v.guildID] <- SocketStatus{
+							GuildID:   v.guildID,
+							Connected: true,
+						}
+						ChannelsMapLock.RUnlock()
+						log.Println("Associated lobby with existing game!")
 					}
-					ChannelsMapLock.RUnlock()
-					log.Println("Associated lobby with existing game!")
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
@@ -181,7 +191,6 @@ func socketioServer(port string) {
 			}
 		}
 	})
-
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
 		phase, err := strconv.Atoi(msg)
@@ -211,19 +220,6 @@ func socketioServer(port string) {
 				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
-			}
-		}
-	})
-	server.OnEvent("/", "roomcode", func(s socketio.Conn, msg string) {
-		if gid, ok := AllConns[s.ID()]; ok && gid.guildID != "" {
-			if guild, ok := AllGuilds[gid.guildID]; ok {
-				log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
-				ChannelsMapLock.RLock()
-				*RoomCodeUpdateChannels[gid.guildID] <- RoomCodeStatus{
-					GuildID:  gid.guildID,
-					RoomCode: msg,
-				}
-				ChannelsMapLock.RUnlock()
 			}
 		}
 	})
@@ -273,7 +269,7 @@ func socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, roomCodeUpdates *chan RoomCodeStatus) {
+func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, lobbyUpdates *chan LobbyStatus) {
 	for {
 		select {
 
@@ -385,11 +381,10 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 			}
 
-		case roomCodeUpdate := <-*roomCodeUpdates:
-			if guild, ok := AllGuilds[roomCodeUpdate.GuildID]; ok {
-				_, region := guild.AmongUsData.GetRoomRegion()
-				guild.AmongUsData.SetRoomRegion(roomCodeUpdate.RoomCode, region) // Set new room code
-				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))            // Update game state message
+		case lobbyUpdate := <-*lobbyUpdates:
+			if guild, ok := AllGuilds[lobbyUpdate.GuildID]; ok {
+				guild.AmongUsData.SetRoomRegion(lobbyUpdate.Lobby.LobbyCode, lobbyUpdate.Lobby.Region.ToString()) // Set new room code
+				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))                                             // Update game state message
 			}
 		}
 	}
@@ -476,16 +471,16 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		socketUpdates := make(chan SocketStatus)
 		playerUpdates := make(chan game.Player)
 		phaseUpdates := make(chan game.Phase)
-		roomCodeUpdates := make(chan RoomCodeStatus)
+		lobbyUpdates := make(chan LobbyStatus)
 
 		ChannelsMapLock.Lock()
 		SocketUpdateChannels[m.Guild.ID] = &socketUpdates
 		PlayerUpdateChannels[m.Guild.ID] = &playerUpdates
 		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
-		RoomCodeUpdateChannels[m.Guild.ID] = &roomCodeUpdates
+		LobbyUpdateChannels[m.Guild.ID] = &lobbyUpdates
 		ChannelsMapLock.Unlock()
 
-		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &roomCodeUpdates)
+		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates)
 
 	}
 }
@@ -511,186 +506,187 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		}
 		if !perms {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
-		}
-		oldLen := len(contents)
-		contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
-		if len(contents) == oldLen { //didn't have a space
-			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
-		}
-
-		if len(contents) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 		} else {
-			args := strings.Split(contents, " ")
 
-			for i, v := range args {
-				args[i] = strings.ToLower(v)
+			oldLen := len(contents)
+			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
+			if len(contents) == oldLen { //didn't have a space
+				contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
 			}
-			switch GetCommandType(args[0]) {
-			case Help:
-				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
-				break
-			case Track:
-				if len(args[1:]) == 0 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
-				} else {
-					// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
-					forGhosts := false
-					endIdx := len(args)
-					if args[len(args)-1] == "true" || args[len(args)-1] == "t" {
-						forGhosts = true
-						endIdx--
-					}
 
-					channelName := strings.Join(args[1:endIdx], " ")
+			if len(contents) == 0 {
+				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+			} else {
+				args := strings.Split(contents, " ")
+
+				for i, v := range args {
+					args[i] = strings.ToLower(v)
+				}
+				switch GetCommandType(args[0]) {
+				case Help:
+					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+					break
+				case Track:
+					if len(args[1:]) == 0 {
+						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+					} else {
+						// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
+						forGhosts := false
+						endIdx := len(args)
+						if args[len(args)-1] == "true" || args[len(args)-1] == "t" {
+							forGhosts = true
+							endIdx--
+						}
+
+						channelName := strings.Join(args[1:endIdx], " ")
+
+						channels, err := s.GuildChannels(m.GuildID)
+						if err != nil {
+							log.Println(err)
+						}
+
+						guild.trackChannelResponse(channelName, channels, forGhosts)
+
+						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+					}
+					break
+
+				case Link:
+					if len(args[1:]) < 2 {
+						//TODO print usage of this command specifically
+						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+					} else {
+						guild.linkPlayerResponse(args[1:])
+
+						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+					}
+					break
+				case Unlink:
+					if len(args[1:]) == 0 {
+						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+					} else {
+
+					}
+					userID, err := extractUserIDFromMention(args[1])
+					if err != nil {
+						log.Println(err)
+					} else {
+
+						log.Printf("Removing player %s", userID)
+						guild.UserData.ClearPlayerData(userID)
+
+						//make sure that any players we remove/unlink get auto-unmuted/undeafened
+						guild.verifyVoiceStateChanges(s)
+
+						//update the state message to reflect the player leaving
+						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+					}
+				case New:
+					room, region := getRoomAndRegionFromArgs(args[1:])
+
+					initialTracking := make([]TrackingChannel, 0)
+
+					//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
+					//we don't have enough info to go off of when remaking the game...
+					//if !guild.GameStateMsg.Exists() {
+					paired := false
+					for i, guildOrRoom := range AllConns {
+						if guildOrRoom.lobbyCode == room {
+							guildOrRoom.guildID = guild.PersistentGuildData.GuildID
+							AllConns[i] = guildOrRoom
+							guild.LinkCode = ""
+							paired = true
+							log.Println("Linked game with existing lobby!")
+						}
+					}
+					if !paired {
+						connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
+						log.Println(connectCode)
+						LinkCodeLock.Lock()
+						LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
+						guild.LinkCode = connectCode
+						LinkCodeLock.Unlock()
+					}
 
 					channels, err := s.GuildChannels(m.GuildID)
 					if err != nil {
 						log.Println(err)
 					}
 
-					guild.trackChannelResponse(channelName, channels, forGhosts)
-
-					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
-				}
-				break
-
-			case Link:
-				if len(args[1:]) < 2 {
-					//TODO print usage of this command specifically
-					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
-				} else {
-					guild.linkPlayerResponse(args[1:])
-
-					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
-				}
-				break
-			case Unlink:
-				if len(args[1:]) == 0 {
-					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
-				} else {
-
-				}
-				userID, err := extractUserIDFromMention(args[1])
-				if err != nil {
-					log.Println(err)
-				} else {
-
-					log.Printf("Removing player %s", userID)
-					guild.UserData.ClearPlayerData(userID)
-
-					//make sure that any players we remove/unlink get auto-unmuted/undeafened
-					guild.verifyVoiceStateChanges(s)
-
-					//update the state message to reflect the player leaving
-					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
-				}
-			case New:
-				room, region := getRoomAndRegionFromArgs(args[1:])
-
-				initialTracking := make([]TrackingChannel, 0)
-
-				//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
-				//we don't have enough info to go off of when remaking the game...
-				//if !guild.GameStateMsg.Exists() {
-				paired := false
-				for i, guildOrRoom := range AllConns {
-					if guildOrRoom.lobbyCode == room {
-						guildOrRoom.guildID = guild.PersistentGuildData.GuildID
-						AllConns[i] = guildOrRoom
-						guild.LinkCode = ""
-						paired = true
-						log.Println("Linked game with existing lobby!")
-					}
-				}
-				if !paired {
-					connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
-					log.Println(connectCode)
-					LinkCodeLock.Lock()
-					LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
-					guild.LinkCode = connectCode
-					LinkCodeLock.Unlock()
-				}
-
-				channels, err := s.GuildChannels(m.GuildID)
-				if err != nil {
-					log.Println(err)
-				}
-
-				for _, channel := range channels {
-					if channel.Type == discordgo.ChannelTypeGuildVoice {
-						if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
-							initialTracking = append(initialTracking, TrackingChannel{
-								channelID:   channel.ID,
-								channelName: channel.Name,
-								forGhosts:   false,
-							})
-							log.Printf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name)
-						}
-					}
-					for _, v := range g.VoiceStates {
-						//if the user is detected in a voice channel
-						if v.UserID == m.Author.ID {
-
-							//once we find the channel by ID
-							if channel.Type == discordgo.ChannelTypeGuildVoice {
-								if channel.ID == v.ChannelID {
-									initialTracking = append(initialTracking, TrackingChannel{
-										channelID:   channel.ID,
-										channelName: channel.Name,
-										forGhosts:   false,
-									})
-									log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
-								}
+					for _, channel := range channels {
+						if channel.Type == discordgo.ChannelTypeGuildVoice {
+							if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
+								initialTracking = append(initialTracking, TrackingChannel{
+									channelID:   channel.ID,
+									channelName: channel.Name,
+									forGhosts:   false,
+								})
+								log.Printf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name)
 							}
+						}
+						for _, v := range g.VoiceStates {
+							//if the user is detected in a voice channel
+							if v.UserID == m.Author.ID {
 
+								//once we find the channel by ID
+								if channel.Type == discordgo.ChannelTypeGuildVoice {
+									if channel.ID == v.ChannelID {
+										initialTracking = append(initialTracking, TrackingChannel{
+											channelID:   channel.ID,
+											channelName: channel.Name,
+											forGhosts:   false,
+										})
+										log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
+									}
+								}
+
+							}
 						}
 					}
+
+					guild.handleGameStartMessage(s, m, room, region, initialTracking)
+					break
+				case End:
+					guild.handleGameEndMessage(s)
+
+					//have to explicitly delete here, because if we use the default delete below, the channelID
+					//for the game state message doesn't exist anymore...
+					deleteMessage(s, m.ChannelID, m.Message.ID)
+					break
+				case Force:
+					phase := getPhaseFromArgs(args[1:])
+					if phase == game.UNINITIALIZED {
+						s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
+					} else {
+						//TODO this is ugly, but only for debug really
+						ChannelsMapLock.RLock()
+						*GamePhaseUpdateChannels[m.GuildID] <- phase
+						ChannelsMapLock.RUnlock()
+					}
+
+					break
+				case Refresh:
+					guild.GameStateMsg.Delete(s) //delete the old message
+
+					//create a new instance of the new one
+					guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+
+					//add the emojis to the refreshed message
+					for _, e := range guild.StatusEmojis[true] {
+						guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+					}
+					guild.GameStateMsg.AddReaction(s, "❌")
+				default:
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
+
 				}
+			}
+			//Just deletes messages starting with .au
 
-				guild.handleGameStartMessage(s, m, room, region, initialTracking)
-				break
-			case End:
-				guild.handleGameEndMessage(s)
-
-				//have to explicitly delete here, because if we use the default delete below, the channelID
-				//for the game state message doesn't exist anymore...
+			if guild.GameStateMsg.SameChannel(m.ChannelID) {
 				deleteMessage(s, m.ChannelID, m.Message.ID)
-				break
-			case Force:
-				phase := getPhaseFromArgs(args[1:])
-				if phase == game.UNINITIALIZED {
-					s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
-				} else {
-					//TODO this is ugly, but only for debug really
-					ChannelsMapLock.RLock()
-					*GamePhaseUpdateChannels[m.GuildID] <- phase
-					ChannelsMapLock.RUnlock()
-				}
-
-				break
-			case Refresh:
-				guild.GameStateMsg.Delete(s) //delete the old message
-
-				//create a new instance of the new one
-				guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
-
-				//add the emojis to the refreshed message
-				for _, e := range guild.StatusEmojis[true] {
-					guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
-				}
-				guild.GameStateMsg.AddReaction(s, "❌")
-			default:
-				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
-
 			}
 		}
-		//Just deletes messages starting with .au
-
-		if guild.GameStateMsg.SameChannel(m.ChannelID) {
-			deleteMessage(s, m.ChannelID, m.Message.ID)
-		}
-
 	}
 }
