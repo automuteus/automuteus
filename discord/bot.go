@@ -1,7 +1,6 @@
 package discord
 
 import (
-	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -518,8 +517,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				guild.LinkCode = connectCode
 				LinkCodeLock.Unlock()
 
-				rawCode := "{\"Host\":\"http://localhost:8123\",\"ConnectCode\":\"" + connectCode + "\"}"
-				hyperlink := "aucapture://connect/?data=" + b64.StdEncoding.EncodeToString([]byte(rawCode))
+				hyperlink := "aucapture://localhost:8123/" + connectCode + "?insecure"
 
 				var embed = discordgo.MessageEmbed{
 					URL:         "",
