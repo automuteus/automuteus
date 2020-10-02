@@ -14,8 +14,12 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+.idea/
+
 final.txt
 final.env
 temp.png
 discuss.png
 ending.png
+logs.txt
+*_config.json
