@@ -366,6 +366,38 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 
 }
 
+func (guild *GuildState) HasAdminPermissions(userID string) bool {
+	if len(guild.PersistentGuildData.AdminUserIDs) == 0 {
+		return false
+	}
+
+	for _, v := range guild.PersistentGuildData.AdminUserIDs {
+		if v == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func (guild *GuildState) HasRolePermissions(s *discordgo.Session, userID string) bool {
+	if len(guild.PersistentGuildData.PermissionedRoleIDs) == 0 {
+		return false
+	}
+
+	mem, err := s.GuildMember(guild.PersistentGuildData.GuildID, userID)
+	if err != nil {
+		log.Println(err)
+	}
+	for _, role := range mem.Roles {
+		for _, testRole := range guild.PersistentGuildData.PermissionedRoleIDs {
+			if testRole == role {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)

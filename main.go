@@ -12,9 +12,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.2.0-Prerelease"
+const VERSION = "2.2.1-Prerelease"
 
 const DefaultPort = "8123"
+const DefaultURL = "localhost"
 
 func main() {
 	err := discordMainWrapper()
@@ -58,11 +59,17 @@ func discordMainWrapper() error {
 	port := os.Getenv("SERVER_PORT")
 	num, err := strconv.Atoi(port)
 	if err != nil || num < 1000 || num > 9999 {
-		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
+		log.Printf("[This is not an error] No valid SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
+	url := os.Getenv("SERVER_URL")
+	if url == "" {
+		log.Printf("[This is not an error] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
+		url = DefaultURL
+	}
+
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, emojiGuildID)
+	discord.MakeAndStartBot(discordToken, url, port, emojiGuildID)
 	return nil
 }

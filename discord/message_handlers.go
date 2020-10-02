@@ -21,13 +21,15 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	guild.AmongUsData.SetRoomRegion("", "")
 }
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channel TrackingChannel) {
+func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel) {
 	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
 
-	if channel.channelID != "" {
-		guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+	for _, channel := range channels {
+		if channel.channelName != "" {
+			guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+		}
 	}
 
 	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
@@ -47,6 +49,18 @@ func sendMessage(s *discordgo.Session, channelID string, message string) *discor
 		log.Println(err)
 	}
 	return msg
+}
+
+func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	dmChannel, err := s.UserChannelCreate(userID)
+	if err != nil {
+		log.Println(err)
+	}
+	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return m
 }
 
 func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {

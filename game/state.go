@@ -1,5 +1,7 @@
 package game
 
+import "strings"
+
 // Phase type
 type Phase int
 
@@ -48,4 +50,21 @@ type Player struct {
 	Color        int          `json:"Color"`
 	IsDead       bool         `json:"IsDead"`
 	Disconnected bool         `json:"Disconnected"`
+}
+
+type Region int
+
+const (
+	NA Region = 0
+	EU Region = 1
+	AS Region = 2
+)
+
+type Lobby struct {
+	LobbyCode string `json:"LobbyCode"`
+	Region    Region `json:"Region"`
+}
+
+func (l *Lobby) ReduceLobbyCode() {
+	l.LobbyCode = strings.Replace(l.LobbyCode, "Code\r\n", "", 1)
 }
