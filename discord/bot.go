@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 // AllConns mapping of socket IDs to guild IDs
@@ -36,6 +37,8 @@ var PlayerUpdateChannels = make(map[string]*chan game.Player)
 var SocketUpdateChannels = make(map[string]*chan SocketStatus)
 
 var ChannelsMapLock = sync.RWMutex{}
+
+var ClientConnection socketio.Conn
 
 type SocketStatus struct {
 	GuildID   string
@@ -86,6 +89,7 @@ func socketioServer(port string) {
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
 		log.Println("connected:", s.ID())
+		ClientConnection = s // assumes most recent connection is the only relevant connection
 		return nil
 	})
 	server.OnEvent("/", "connect", func(s socketio.Conn, msg string) {

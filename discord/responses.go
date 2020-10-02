@@ -167,6 +167,10 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 		desc = "Successfully linked to capture!"
 	} else {
 		desc = fmt.Sprintf("%s**No capture linked! Enter the code `%s` in your capture to connect!**%s", alarmFormatted, g.LinkCode, alarmFormatted)
+		if ClientConnection != nil {
+			// Sends the capture link code to the last client connected
+			ClientConnection.Emit("code", g.LinkCode)
+		}
 	}
 
 	msg := discordgo.MessageEmbed{
