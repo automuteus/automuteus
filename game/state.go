@@ -56,8 +56,8 @@ type Region int
 
 const (
 	NA Region = 0
-	EU Region = 1
-	AS Region = 2
+	AS Region = 1
+	EU Region = 2
 )
 
 type Lobby struct {
