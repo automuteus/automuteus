@@ -16,19 +16,19 @@ import (
 	"syscall"
 )
 
-type GuildOrLobbyId struct {
-	guildID   string
-	lobbyCode string
+type GameOrLobbyCode struct {
+	gameCode    string
+	connectCode string
 }
 
-// AllConns mapping of socket IDs to either guild IDs or lobby codes
-var AllConns = map[string]GuildOrLobbyId{}
+// AllConns mapping of socket IDs to guilds
+var AllConns = map[string]string{}
 
 // AllGuilds mapping of guild IDs to GuildState references
 var AllGuilds = map[string]*GuildState{}
 
-// LinkCodes maps the code to the guildID
-var LinkCodes = map[string]string{}
+// LinkCodes maps the game or lobby codes to the guildID
+var LinkCodes = map[GameOrLobbyCode]string{}
 
 // LinkCodeLock mutex for above
 var LinkCodeLock = sync.RWMutex{}
@@ -103,8 +103,8 @@ func socketioServer(port string) {
 		log.Println("set connect code:", msg)
 		guildID := ""
 		LinkCodeLock.RLock()
-		for code, gid := range LinkCodes {
-			if code == msg {
+		for codes, gid := range LinkCodes {
+			if codes.gameCode == msg || codes.connectCode == msg {
 				guildID = gid
 				break
 			}
@@ -112,18 +112,12 @@ func socketioServer(port string) {
 		LinkCodeLock.RUnlock()
 		if guildID == "" {
 			log.Printf("No guild has the current connect code of %s\n", msg)
+			return
 		}
+		//only link the socket to guilds that we actually have a record of
 		for gid, guild := range AllGuilds {
 			if gid == guildID {
-				if v, ok := AllConns[s.ID()]; ok {
-					v.guildID = gid
-					AllConns[s.ID()] = v
-				} else {
-					AllConns[s.ID()] = GuildOrLobbyId{
-						guildID:   gid,
-						lobbyCode: "",
-					}
-				}
+				AllConns[s.ID()] = gid
 				guild.LinkCode = ""
 
 				ChannelsMapLock.RLock()
@@ -147,11 +141,11 @@ func socketioServer(port string) {
 		} else {
 			lobby.ReduceLobbyCode()
 			//TODO race condition
-			if v, ok := AllConns[s.ID()]; ok {
-				if v.guildID != "" {
+			if gid, ok := AllConns[s.ID()]; ok {
+				if gid != "" {
 					ChannelsMapLock.RLock()
-					*SocketUpdateChannels[v.guildID] <- SocketStatus{
-						GuildID:   v.guildID,
+					*SocketUpdateChannels[gid] <- SocketStatus{
+						GuildID:   gid,
 						Connected: true,
 					}
 					ChannelsMapLock.RUnlock()
@@ -159,13 +153,12 @@ func socketioServer(port string) {
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
-				v.lobbyCode = lobby.LobbyCode
-				AllConns[s.ID()] = v
+				AllConns[s.ID()] = gid
 			} else {
-				AllConns[s.ID()] = GuildOrLobbyId{
-					guildID:   "",
-					lobbyCode: lobby.LobbyCode,
-				}
+				LinkCodes[GameOrLobbyCode{
+					gameCode:    "",
+					connectCode: lobby.LobbyCode,
+				}] = ""
 				log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 			}
 		}
@@ -177,10 +170,10 @@ func socketioServer(port string) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			if v, ok := AllConns[s.ID()]; ok && v.guildID != "" {
+			if gid, ok := AllConns[s.ID()]; ok && gid != "" {
 				log.Println("Pushing phase event to channel")
 				ChannelsMapLock.RLock()
-				*GamePhaseUpdateChannels[v.guildID] <- game.Phase(phase)
+				*GamePhaseUpdateChannels[gid] <- game.Phase(phase)
 				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
@@ -194,9 +187,9 @@ func socketioServer(port string) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			if v, ok := AllConns[s.ID()]; ok && v.guildID != "" {
+			if gid, ok := AllConns[s.ID()]; ok && gid != "" {
 				ChannelsMapLock.RLock()
-				*PlayerUpdateChannels[v.guildID] <- player
+				*PlayerUpdateChannels[gid] <- player
 				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
@@ -209,7 +202,7 @@ func socketioServer(port string) {
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
 		log.Println("Client connection closed: ", reason)
 
-		previousGid := AllConns[s.ID()].guildID
+		previousGid := AllConns[s.ID()]
 		delete(AllConns, s.ID())
 		LinkCodeLock.Lock()
 		for i, v := range LinkCodes {
@@ -226,10 +219,9 @@ func socketioServer(port string) {
 
 				code := generateConnectCode(gid) //this is unlinked
 				LinkCodeLock.Lock()
-				LinkCodes[code] = guild.PersistentGuildData.GuildID
+				//TODO delete the old combo of link codes
 				guild.LinkCode = code
 				LinkCodeLock.Unlock()
-
 				ChannelsMapLock.RLock()
 				*SocketUpdateChannels[gid] <- SocketStatus{
 					GuildID:   gid,
@@ -570,27 +562,16 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				//we don't have enough info to go off of when remaking the game...
 				//if !guild.GameStateMsg.Exists() {
 
-				paired := false
-				for i, guildOrRoom := range AllConns {
-					if guildOrRoom.lobbyCode == room {
-						guildOrRoom.guildID = guild.PersistentGuildData.GuildID
-						AllConns[i] = guildOrRoom
-						guild.LinkCode = ""
-						paired = true
-						log.Println("Linked game with existing lobby!")
-					}
-				}
-				if !paired {
-					connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
-					log.Println(connectCode)
-					LinkCodeLock.Lock()
-					LinkCodes[connectCode] = guild.PersistentGuildData.GuildID
-					guild.LinkCode = connectCode
-					LinkCodeLock.Unlock()
-				}
-
 				connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
 				log.Println(connectCode)
+				LinkCodeLock.Lock()
+				LinkCodes[GameOrLobbyCode{
+					gameCode:    "",
+					connectCode: connectCode,
+				}] = guild.PersistentGuildData.GuildID
+				guild.LinkCode = connectCode
+				LinkCodeLock.Unlock()
+
 				hyperlink := fmt.Sprintf("aucapture://%s:%s/%s?insecure", BotUrl, BotPort, connectCode)
 
 				var embed = discordgo.MessageEmbed{
