@@ -41,7 +41,7 @@ var PlayerUpdateChannels = make(map[string]*chan game.Player)
 
 var SocketUpdateChannels = make(map[string]*chan SocketStatus)
 
-var RoomCodeUpdateChannels = make(map[string]*chan RoomCodeStatus)
+var LobbyUpdateChannels = make(map[string]*chan LobbyStatus)
 
 var ChannelsMapLock = sync.RWMutex{}
 
@@ -50,9 +50,9 @@ type SocketStatus struct {
 	Connected bool
 }
 
-type RoomCodeStatus struct {
-	GuildID  string
-	RoomCode string
+type LobbyStatus struct {
+	GuildID string
+	Lobby   game.Lobby
 }
 
 var Version string
@@ -160,13 +160,23 @@ func socketioServer(port string) {
 			//TODO race condition
 			if v, ok := AllConns[s.ID()]; ok {
 				if v.guildID != "" {
-					ChannelsMapLock.RLock()
-					*SocketUpdateChannels[v.guildID] <- SocketStatus{
-						GuildID:   v.guildID,
-						Connected: true,
+					if guild, ok := AllGuilds[v.guildID]; ok { // Game is connected -> update its room code
+						log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+						ChannelsMapLock.RLock()
+						*LobbyUpdateChannels[v.guildID] <- LobbyStatus{
+							GuildID: v.guildID,
+							Lobby:   lobby,
+						}
+						ChannelsMapLock.RUnlock()
+					} else { // No game connected
+						ChannelsMapLock.RLock()
+						*SocketUpdateChannels[v.guildID] <- SocketStatus{
+							GuildID:   v.guildID,
+							Connected: true,
+						}
+						ChannelsMapLock.RUnlock()
+						log.Println("Associated lobby with existing game!")
 					}
-					ChannelsMapLock.RUnlock()
-					log.Println("Associated lobby with existing game!")
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
@@ -181,7 +191,6 @@ func socketioServer(port string) {
 			}
 		}
 	})
-
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
 		phase, err := strconv.Atoi(msg)
@@ -211,19 +220,6 @@ func socketioServer(port string) {
 				ChannelsMapLock.RUnlock()
 			} else {
 				log.Println("This websocket is not associated with any guilds")
-			}
-		}
-	})
-	server.OnEvent("/", "roomcode", func(s socketio.Conn, msg string) {
-		if gid, ok := AllConns[s.ID()]; ok && gid.guildID != "" {
-			if guild, ok := AllGuilds[gid.guildID]; ok {
-				log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
-				ChannelsMapLock.RLock()
-				*RoomCodeUpdateChannels[gid.guildID] <- RoomCodeStatus{
-					GuildID:  gid.guildID,
-					RoomCode: msg,
-				}
-				ChannelsMapLock.RUnlock()
 			}
 		}
 	})
@@ -273,7 +269,7 @@ func socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, roomCodeUpdates *chan RoomCodeStatus) {
+func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, lobbyUpdates *chan LobbyStatus) {
 	for {
 		select {
 
@@ -385,11 +381,10 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 			}
 
-		case roomCodeUpdate := <-*roomCodeUpdates:
-			if guild, ok := AllGuilds[roomCodeUpdate.GuildID]; ok {
-				_, region := guild.AmongUsData.GetRoomRegion()
-				guild.AmongUsData.SetRoomRegion(roomCodeUpdate.RoomCode, region) // Set new room code
-				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))            // Update game state message
+		case lobbyUpdate := <-*lobbyUpdates:
+			if guild, ok := AllGuilds[lobbyUpdate.GuildID]; ok {
+				guild.AmongUsData.SetRoomRegion(lobbyUpdate.Lobby.LobbyCode, lobbyUpdate.Lobby.Region.ToString()) // Set new room code
+				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))                                             // Update game state message
 			}
 		}
 	}
@@ -476,16 +471,16 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		socketUpdates := make(chan SocketStatus)
 		playerUpdates := make(chan game.Player)
 		phaseUpdates := make(chan game.Phase)
-		roomCodeUpdates := make(chan RoomCodeStatus)
+		lobbyUpdates := make(chan LobbyStatus)
 
 		ChannelsMapLock.Lock()
 		SocketUpdateChannels[m.Guild.ID] = &socketUpdates
 		PlayerUpdateChannels[m.Guild.ID] = &playerUpdates
 		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
-		RoomCodeUpdateChannels[m.Guild.ID] = &roomCodeUpdates
+		LobbyUpdateChannels[m.Guild.ID] = &lobbyUpdates
 		ChannelsMapLock.Unlock()
 
-		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &roomCodeUpdates)
+		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates)
 
 	}
 }
