@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/denverquane/amongusdiscord/storage"
 	"io"
 	"log"
 	"os"
@@ -16,6 +17,8 @@ const VERSION = "2.2.3-Prerelease"
 
 const DefaultPort = "8123"
 const DefaultURL = "localhost"
+
+const ConfigBasePath = "./"
 
 func main() {
 	err := discordMainWrapper()
@@ -81,7 +84,32 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
+	var storageClient storage.StorageInterface
+	dbSuccess := false
+
+	authPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if authPath != "" {
+		log.Println("GOOGLE_APPLICATION_CREDENTIALS is set; attempting to use Firestore")
+		storageClient = &storage.FirestoreDriver{}
+		err = storageClient.Init("automuteus_project")
+		if err != nil {
+			log.Printf("Failed to create Firestore client with error: %s", err)
+		} else {
+			dbSuccess = true
+			log.Println("Success in initializing Firestore client")
+		}
+	}
+
+	if !dbSuccess {
+		storageClient = &storage.FilesystemDriver{}
+		err := storageClient.Init(ConfigBasePath)
+		if err != nil {
+			log.Printf("Failed to create filesystem driver with error: %s", err)
+		}
+		storageClient.GetGuildData("asd")
+	}
+
 	//start the discord bot
-	discord.MakeAndStartBot(VERSION, discordToken, url, port, emojiGuildID, numShards, shardID)
+	discord.MakeAndStartBot(VERSION, discordToken, url, port, emojiGuildID, numShards, shardID, storageClient)
 	return nil
 }

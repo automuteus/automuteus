@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
 	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
@@ -46,16 +47,18 @@ type SocketStatus struct {
 	GuildID   string
 	Connected bool
 }
+
 var BotUrl string
 var BotPort string
 
 var Version string
 
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, shardID int) {
+//TODO collapse these fields into proper structs?
+func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) {
 	Version = version
-		BotPort = port
-		BotUrl = url
+	BotPort = port
+	BotUrl = url
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
