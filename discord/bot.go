@@ -42,8 +42,11 @@ type SocketStatus struct {
 	Connected bool
 }
 
+var Version string
+
 // MakeAndStartBot does what it sounds like
-func MakeAndStartBot(token string, port string, emojiGuildID string, numShards, shardID int) {
+func MakeAndStartBot(version, token, port, emojiGuildID string, numShards, shardID int) {
+	Version = version
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -425,16 +428,23 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 	contents := m.Content
 	if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
-		args := strings.Split(contents, " ")[1:]
-		for i, v := range args {
-			args[i] = strings.ToLower(v)
+		oldLen := len(contents)
+		contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
+		if len(contents) == oldLen { //didn't have a space
+			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
 		}
-		if len(args) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
+
+		if len(contents) == 0 {
+			s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 		} else {
+			args := strings.Split(contents, " ")
+
+			for i, v := range args {
+				args[i] = strings.ToLower(v)
+			}
 			switch GetCommandType(args[0]) {
 			case Help:
-				s.ChannelMessageSend(m.ChannelID, helpResponse(guild.PersistentGuildData.CommandPrefix))
+				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 				break
 			case Track:
 				if len(args[1:]) == 0 {

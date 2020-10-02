@@ -68,12 +68,12 @@ func discordMainWrapper() error {
 
 	port := os.Getenv("SERVER_PORT")
 	num, err := strconv.Atoi(port)
-	if err != nil || num < 100 || num > 65535 {
-		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
+	if err != nil || num < 1024 || num > 65535 {
+		log.Printf("Invalid or no particular SERVER_PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, emojiGuildID, numShards, shardID)
+	discord.MakeAndStartBot(VERSION, discordToken, port, emojiGuildID, numShards, shardID)
 	return nil
 }

@@ -30,7 +30,7 @@ var CommandTypeStringMapping = map[string]CommandType{
 
 func GetCommandType(arg string) CommandType {
 	for str, cmd := range CommandTypeStringMapping {
-		if len(arg) == 1 {
+		if len(arg) == 1 && cmd != Null {
 			if str[0] == arg[0] {
 				return cmd
 			}
