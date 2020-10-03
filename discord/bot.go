@@ -334,11 +334,12 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 						player.IsDead = false
 					}
 
-					if player.Disconnected {
+					if player.Disconnected || player.Action == game.LEFT {
 						log.Println("I detected that " + player.Name + " disconnected! " +
 							"I'm removing their linked game data; they will need to relink")
 
 						guild.UserData.ClearPlayerDataByPlayerName(player.Name)
+						guild.AmongUsData.ClearPlayerData(player.Name)
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					} else {
 						updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(player)
@@ -532,7 +533,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 					} else {
-						guild.linkPlayerResponse(args[1:])
+						guild.linkPlayerResponse(s, args[1:])
 
 						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 					}
