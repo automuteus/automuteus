@@ -55,10 +55,16 @@ type Player struct {
 type Region int
 
 const (
-	NA Region = 0
-	EU Region = 1
-	AS Region = 2
+	NA Region = iota
+	AS
+	EU
 )
+
+var RegionNumsToStrings = map[Region]string{
+	NA: "North America",
+	AS: "Asia",
+	EU: "Europe",
+}
 
 type Lobby struct {
 	LobbyCode string `json:"LobbyCode"`

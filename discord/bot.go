@@ -161,6 +161,12 @@ func socketioServer(port string) {
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
+				//TODO should probably provide this info via a channel and/or "socketupdatechannels" event
+				//this is probably overly coupled
+				if v, ok := AllGuilds[gid]; ok {
+					v.AmongUsData.SetRoomRegion(lobby.LobbyCode, game.RegionNumsToStrings[lobby.Region])
+					AllGuilds[gid] = v
+				}
 				AllConns[s.ID()] = gid
 			} else {
 				LinkCodes[GameOrLobbyCode{
@@ -258,7 +264,11 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 			if guild, ok := AllGuilds[guildID]; ok {
 				switch phase {
 				case game.MENU:
-					log.Println("Detected transition to Menu; not doing anything about it yet")
+					log.Println("Detected transition to Menu")
+					guild.UserData.ClearAllPlayerData()
+					guild.AmongUsData.ClearAllPlayerData()
+					guild.AmongUsData.SetRoomRegion("Unprovided", "Unprovided")
+					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 				case game.LOBBY:
 					if guild.AmongUsData.GetPhase() == game.LOBBY {
 						break
