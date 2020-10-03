@@ -142,7 +142,7 @@ func (auData *AmongUsData) GetByName(text string) *PlayerData {
 	defer auData.lock.RUnlock()
 
 	for _, playerData := range auData.playerData {
-		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == text {
+		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == strings.ReplaceAll(strings.ToLower(text), " ", "") {
 			return playerData
 		}
 	}
