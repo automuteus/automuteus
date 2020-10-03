@@ -300,7 +300,13 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 			if guild, ok := AllGuilds[guildID]; ok {
 				switch phase {
 				case game.MENU:
-					log.Println("Detected transition to Menu; not doing anything about it yet")
+					if guild.AmongUsData.GetPhase() == game.MENU {
+						break
+					}
+					log.Println("Detected transition to Menu; purging underlying among us player data")
+					guild.UserData.ClearAllPlayerData()
+					guild.AmongUsData.ClearAllPlayerData()
+					break
 				case game.LOBBY:
 					if guild.AmongUsData.GetPhase() == game.LOBBY {
 						break
@@ -316,6 +322,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					guild.handleTrackedMembers(dg, delay, NoPriority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+					break
 				case game.TASKS:
 					if guild.AmongUsData.GetPhase() == game.TASKS {
 						break
@@ -337,6 +344,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					guild.handleTrackedMembers(dg, delay, priority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+					break
 				case game.DISCUSS:
 					if guild.AmongUsData.GetPhase() == game.DISCUSS {
 						break
@@ -351,6 +359,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					guild.handleTrackedMembers(dg, delay, DeadPriority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+					break
 				default:
 					log.Printf("Undetected new state: %d\n", phase)
 				}
@@ -560,22 +569,24 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		}
 		if !perms {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
-		}
-		oldLen := len(contents)
-		contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
-		if len(contents) == oldLen { //didn't have a space
-			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
-		}
-
-		if len(contents) == 0 {
-			s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 		} else {
-			args := strings.Split(contents, " ")
-
-			for i, v := range args {
-				args[i] = strings.ToLower(v)
+			oldLen := len(contents)
+			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
+			if len(contents) == oldLen { //didn't have a space
+				contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
 			}
-			guild.HandleCommand(s, g, m, args)
+
+			if len(contents) == 0 {
+				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+			} else {
+				args := strings.Split(contents, " ")
+
+				for i, v := range args {
+					args[i] = strings.ToLower(v)
+				}
+				guild.HandleCommand(s, g, m, args)
+			}
+
 		}
 		//Just deletes messages starting with .au
 

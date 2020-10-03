@@ -231,7 +231,8 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 		break
 
 	case Settings:
-
+		s.ChannelMessageSendEmbed(m.ChannelID, TopSettingsMessage(guild.PersistentGuildData.CommandPrefix))
+		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 
