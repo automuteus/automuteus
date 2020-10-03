@@ -88,10 +88,11 @@ func discordMainWrapper() error {
 	dbSuccess := false
 
 	authPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if authPath != "" {
+	projectID := os.Getenv("FIRESTORE_PROJECTID")
+	if authPath != "" && projectID != "" {
 		log.Println("GOOGLE_APPLICATION_CREDENTIALS is set; attempting to use Firestore")
 		storageClient = &storage.FirestoreDriver{}
-		err = storageClient.Init("automuteus_project")
+		err = storageClient.Init(projectID)
 		if err != nil {
 			log.Printf("Failed to create Firestore client with error: %s", err)
 		} else {
@@ -106,7 +107,6 @@ func discordMainWrapper() error {
 		if err != nil {
 			log.Printf("Failed to create filesystem driver with error: %s", err)
 		}
-		storageClient.GetGuildData("asd")
 	}
 
 	//start the discord bot

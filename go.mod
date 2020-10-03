@@ -7,4 +7,5 @@ require (
 	github.com/bwmarrin/discordgo v0.22.0
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/joho/godotenv v1.3.0
+	google.golang.org/api v0.29.0
 )

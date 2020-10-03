@@ -53,12 +53,16 @@ var BotPort string
 
 var Version string
 
+var StorageInterface storage.StorageInterface
+
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
 func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) {
 	Version = version
 	BotPort = port
 	BotUrl = url
+	StorageInterface = storageClient
+
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -96,6 +100,7 @@ func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, 
 
 	<-sc
 
+	StorageInterface.Close()
 	dg.Close()
 }
 
@@ -400,16 +405,34 @@ func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
-		filename := fmt.Sprintf("%s_config.json", m.Guild.ID)
-		pgd, err := LoadPGDFromFile(filename)
+
+		var pgd *PersistentGuildData = nil
+
+		data, err := StorageInterface.GetGuildData(m.Guild.ID)
 		if err != nil {
-			log.Printf("Couldn't load config from %s; using default config instead", filename)
+			log.Printf("Couldn't load guild data for %s from storageDriver; using default config instead\n", m.Guild.ID)
 			log.Printf("Exact error: %s", err)
-			pgd = PGDDefault(m.Guild.ID)
-			err := pgd.ToFile(filename)
+		} else {
+			tempPgd, err := FromData(data)
 			if err != nil {
-				log.Println("Using default config, but could not write that default to " + filename + " with error:")
-				log.Println(err)
+				log.Printf("Couldn't marshal guild data for %s; using default config instead\n", m.Guild.ID)
+			} else {
+				log.Printf("Successfully loaded config from storagedriver for %s\n", m.Guild.ID)
+				pgd = tempPgd
+			}
+		}
+		if pgd == nil {
+			pgd = PGDDefault(m.Guild.ID)
+			data, err := pgd.ToData()
+			if err != nil {
+				log.Printf("Error marshalling %s PGD to map(!): %s\n", m.Guild.ID, err)
+			} else {
+				err := StorageInterface.WriteGuildData(m.Guild.ID, data)
+				if err != nil {
+					log.Printf("Error writing %s PGD to storage interface: %s\n", m.Guild.ID, err)
+				} else {
+					log.Printf("Successfully wrote %s PGD to Storage interface!", m.Guild.ID)
+				}
 			}
 		}
 
@@ -496,9 +519,11 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				args[i] = strings.ToLower(v)
 			}
 			switch GetCommandType(args[0]) {
+
 			case Help:
 				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
 				break
+
 			case Track:
 				if len(args[1:]) == 0 {
 					//TODO print usage of this command specifically
@@ -535,6 +560,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
 				break
+
 			case Unlink:
 				if len(args[1:]) == 0 {
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
@@ -555,6 +581,8 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					//update the state message to reflect the player leaving
 					guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 				}
+				break
+
 			case New:
 				room, region := getRoomAndRegionFromArgs(args[1:])
 
@@ -633,6 +661,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 
 				guild.handleGameStartMessage(s, m, room, region, initialTracking)
 				break
+
 			case End:
 				guild.handleGameEndMessage(s)
 
@@ -640,6 +669,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				//for the game state message doesn't exist anymore...
 				deleteMessage(s, m.ChannelID, m.Message.ID)
 				break
+
 			case Force:
 				phase := getPhaseFromArgs(args[1:])
 				if phase == game.UNINITIALIZED {
@@ -650,8 +680,8 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					*GamePhaseUpdateChannels[m.GuildID] <- phase
 					ChannelsMapLock.RUnlock()
 				}
-
 				break
+
 			case Refresh:
 				guild.GameStateMsg.Delete(s) //delete the old message
 
@@ -663,6 +693,10 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 				}
 				guild.GameStateMsg.AddReaction(s, "❌")
+				break
+
+			case Config:
+
 			default:
 				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 

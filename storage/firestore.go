@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"google.golang.org/api/iterator"
 
 	"cloud.google.com/go/firestore"
 )
@@ -25,8 +26,24 @@ func (fs *FirestoreDriver) Close() error {
 	return fs.client.Close()
 }
 
-func (fs *FirestoreDriver) GetGuildData(string) (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+func (fs *FirestoreDriver) GetGuildData(guildID string) (map[string]interface{}, error) {
+	docs := fs.client.Collection("guilds").Where("guildID", "==", guildID).Documents(fs.ctx)
+	for {
+		doc, err := docs.Next()
+		if err == iterator.Done {
+			return nil, err
+		}
+		if err != nil {
+			return nil, err
+		}
+		return doc.Data(), nil
+	}
+
+}
+
+func (fs *FirestoreDriver) WriteGuildData(guildID string, data map[string]interface{}) error {
+	_, err := fs.client.Collection("guilds").Doc(guildID).Set(fs.ctx, data)
+	return err
 }
 
 func createFirestoreClient(ctx context.Context, projectID string) (*firestore.Client, error) {
