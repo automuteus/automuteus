@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.2.1-Prerelease"
+const VERSION = "2.2.3-Prerelease"
 
 const DefaultPort = "8123"
 
@@ -55,14 +55,25 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
+	numShardsStr := os.Getenv("NUM_SHARDS")
+	numShards, err := strconv.Atoi(numShardsStr)
+	if err != nil {
+		numShards = 0
+	}
+	shardIDStr := os.Getenv("SHARD_ID")
+	shardID, err := strconv.Atoi(shardIDStr)
+	if err != nil {
+		shardID = -1
+	}
+
 	port := os.Getenv("SERVER_PORT")
 	num, err := strconv.Atoi(port)
-	if err != nil || num < 1000 || num > 9999 {
-		log.Printf("Invalid or no particular SERVER_PORT provided. Defaulting to %s\n", DefaultPort)
+	if err != nil || num < 1024 || num > 65535 {
+		log.Printf("Invalid or no particular SERVER_PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(discordToken, port, emojiGuildID)
+	discord.MakeAndStartBot(VERSION, discordToken, port, emojiGuildID, numShards, shardID)
 	return nil
 }
