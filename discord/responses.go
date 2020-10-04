@@ -41,11 +41,21 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string) {
+func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, args []string) {
+
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
 
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		log.Printf("Invalid mention format for \"%s\"", args[0])
+	}
+
+	_, added := guild.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for userID " + userID)
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
@@ -78,6 +88,7 @@ func (guild *GuildState) linkPlayerResponse(args []string) {
 func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
+		game.MENU:    lobbyMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
@@ -131,18 +142,6 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 }
 
 func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
-	//buf.WriteString("Lobby is open!\n")
-	//if g.LinkCode != "" {
-	//	alarmFormatted := ":x:"
-	//	if v, ok := g.SpecialEmojis["alarm"]; ok {
-	//		alarmFormatted = v.FormatForInline()
-	//	}
-	//
-	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
-	//}
-	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("room Code", PaddedLen), padToLength("region", PaddedLen))) // maybe this is a toggle?
-	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.room, PaddedLen), padToLength(g.region, PaddedLen)))
-
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
@@ -153,10 +152,6 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 
 	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
-	//if len(listResp) > 0 {
-	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
-	//	buf.WriteString(listResp)
-	//}
 
 	alarmFormatted := ":x:"
 	if v, ok := g.SpecialEmojis["alarm"]; ok {
