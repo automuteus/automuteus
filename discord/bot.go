@@ -182,7 +182,7 @@ func socketioServer(port string) {
 				//TODO should probably provide this info via a channel and/or "socketupdatechannels" event
 				//this is probably overly coupled
 				if v, ok := AllGuilds[gid]; ok {
-					v.AmongUsData.SetRoomRegion(lobby.LobbyCode, game.RegionNumsToStrings[lobby.Region])
+					v.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
 					AllGuilds[gid] = v
 				}
 				AllConns[s.ID()] = gid
