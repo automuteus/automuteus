@@ -407,7 +407,7 @@ var AllCommands = []Command{
 	{
 		cmdType: Ascii,
 		command: "ascii",
-		example: "ascii",
+		example: "ascii @Soup t 10",
 		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Ascii.shortDesc",
 			Other: "Print an ASCII crewmate",
@@ -418,7 +418,7 @@ var AllCommands = []Command{
 		},
 		args: &i18n.Message{
 			ID:    "commands.AllCommands.Ascii.args",
-			Other: "None",
+			Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 		},
 		aliases:           []string{"ascii"},
 		secret:            true,
@@ -814,6 +814,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 			}
 			break
+
 		case Ascii:
 			if len(args[1:]) == 0 {
 				s.ChannelMessageSend(m.ChannelID, AsciiCrewmate)
@@ -823,12 +824,18 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
 				} else {
 					imposter := false
+					count := 1
 					if len(args[2:]) > 0 {
 						if args[2] == "true" || args[2] == "t" {
 							imposter = true
 						}
+						if len(args[3:]) > 0 {
+							if itCount, err := strconv.Atoi(args[3]); err == nil {
+								count = itCount
+							}
+						}
 					}
-					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(args[1], imposter))
+					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(args[1], imposter, count))
 				}
 			}
 			break
