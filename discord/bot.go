@@ -317,7 +317,6 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 				}
 			}
 
-			// TODO prevent cases where 2 players are mapped to the same underlying in-game player data
 		case player := <-*playerUpdates:
 			log.Printf("Received PlayerUpdate message for guild %s\n", guildID)
 			if guild, ok := AllGuilds[guildID]; ok {
@@ -334,14 +333,25 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 						player.IsDead = false
 					}
 
-					if player.Disconnected {
+					if player.Disconnected || player.Action == game.LEFT {
 						log.Println("I detected that " + player.Name + " disconnected! " +
 							"I'm removing their linked game data; they will need to relink")
 
 						guild.UserData.ClearPlayerDataByPlayerName(player.Name)
+						guild.AmongUsData.ClearPlayerData(player.Name)
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					} else {
 						updated, isAliveUpdated := guild.AmongUsData.ApplyPlayerUpdate(player)
+
+						if player.Action == game.JOINED {
+							log.Println("Detected a player joined, refreshing user data mappings")
+							data := guild.AmongUsData.GetByName(player.Name)
+							if data == nil {
+								log.Println("No player data found for " + player.Name)
+							}
+
+							guild.UserData.UpdatePlayerMappingByName(player.Name, data)
+						}
 
 						if updated {
 							//log.Println("Player update received caused an update in cached state")
@@ -532,7 +542,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 					} else {
-						guild.linkPlayerResponse(args[1:])
+						guild.linkPlayerResponse(s, args[1:])
 
 						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 					}

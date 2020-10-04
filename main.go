@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.2.3-Prerelease"
+const VERSION = "2.2.4-Prerelease"
 
 const DefaultPort = "8123"
 

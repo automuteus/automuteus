@@ -41,11 +41,21 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string) {
+func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, args []string) {
+
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
 
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		log.Printf("Invalid mention format for \"%s\"", args[0])
+	}
+
+	_, added := guild.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for userID " + userID)
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
