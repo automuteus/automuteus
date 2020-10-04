@@ -15,6 +15,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
 	socketio "github.com/googollee/go-socket.io"
 )
 
@@ -631,9 +632,9 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 		}
 		//Just deletes messages starting with .au
 
-			if guild.GameStateMsg.SameChannel(m.ChannelID) {
-				deleteMessage(s, m.ChannelID, m.Message.ID)
-			}
+		if guild.GameStateMsg.SameChannel(m.ChannelID) {
+			deleteMessage(s, m.ChannelID, m.Message.ID)
 		}
 	}
+
 }
