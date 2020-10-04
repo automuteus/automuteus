@@ -355,7 +355,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 
 						if updated {
 							//log.Println("Player update received caused an update in cached state")
-							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
+							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS && !guild.PersistentGuildData.UnmuteDeadDuringTasks {
 								log.Println("NOT updating the discord status message; would leak info")
 							} else {
 								guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
@@ -542,7 +542,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 					} else {
-						guild.linkPlayerResponse(s, args[1:])
+						guild.linkPlayerResponse(s, m.GuildID, args[1:])
 
 						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 					}
@@ -640,7 +640,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 					break
 				case Force:
-					phase := getPhaseFromArgs(args[1:])
+					phase := getPhaseFromString(args[1])
 					if phase == game.UNINITIALIZED {
 						s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 					} else {
@@ -662,13 +662,347 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 					}
 					guild.GameStateMsg.AddReaction(s, "❌")
+				case Settings:
+					// if no arg passed, send them list of possible settings to change
+					if len(args) == 1 {
+						s.ChannelMessageSend(m.ChannelID, "The list of possible settings are:\n"+
+							"•`CommandPrefix [prefix]`: Change the bot's prefix in this server\n"+
+							"•`DefaultTrackedChannel [voiceChannel]`: Change the voice channel the bot tracks by default\n"+
+							"•`AdminUserIDs [user 1] [user 2] [etc]`: Add or remove bot admins a.k.a users that can use commands with the bot\n"+
+							"•`ApplyNicknames [true/false]`: Whether the bot should change the nicknames of the players to reflect the player's color\n"+
+							"•`UnmuteDeadDuringTasks [true/false]`: Whether the bot should unmute dead players immediately when they die (**WARNING**: reveals information)\n"+
+							"•`Delays [old game phase] [new game phase] [delay]`: Change the delay between changing game phase and muting/unmuting players\n"+
+							"•`VoiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`: Whether to mute/deafen alive/dead players during that game phase")
+						return
+					}
+					// if command invalid, no need to reapply changes to json file
+					isValid := false
+					switch args[1] {
+					case "commandprefix":
+						if len(args) == 2 {
+							s.ChannelMessageSend(m.ChannelID, "`CommandPrefix [prefix]`: Change the bot's prefix in this server.")
+							return
+						}
+						if len(args[2]) > 10 {
+							// prevent someone from setting something ridiculous lol
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, the prefix `%s` is too long (%d characters, max 10). Try something shorter.", args[2], len(args[2])))
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
+								guild.PersistentGuildData.CommandPrefix, args[2]))
+							guild.PersistentGuildData.CommandPrefix = args[2]
+							isValid = true
+						}
+					case "defaulttrackedchannel":
+						if len(args) == 2 {
+							// give them both command syntax and current voice channel
+							channelList, _ := s.GuildChannels(m.GuildID)
+							for _, c := range channelList {
+								if c.ID == guild.PersistentGuildData.DefaultTrackedChannel {
+									s.ChannelMessageSend(m.ChannelID, "`DefaultTrackedChannel [voiceChannel]`: Change the voice channel the bot tracks by default.\n"+
+										fmt.Sprintf("Currently, I'm tracking the `%s` voice channel", c.Name))
+									return
+								}
+							}
+							s.ChannelMessageSend(m.ChannelID, "`DefaultTrackedChannel [voiceChannel]`: Change the voice channel the bot tracks by default.\n"+
+								"Currently, I'm not tracking any voice channel. Either the ID is invalid or you didn't give me one.")
+							return
+						}
+						// now to find the channel they are referencing
+						channelID := ""
+						channelName := "" // we track name to confirm to the user they selected the right channel
+						channelList, _ := s.GuildChannels(m.GuildID)
+						for _, c := range channelList {
+							// Check if channel is a voice channel
+							if c.Type != discordgo.ChannelTypeGuildVoice {
+								continue
+							}
+							// check if this is the right channel
+							if strings.ToLower(c.Name) == args[2] || c.ID == args[2] {
+								channelID = c.ID
+								channelName = c.Name
+								break
+							}
+						}
+						// check if channel was found
+						if channelID != "" {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Default voice channel changed to `%s`. Use that from now on!",
+								channelName))
+							guild.PersistentGuildData.DefaultTrackedChannel = channelID
+							isValid = true
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Could not find the voice channel `%s`! Pass in the name or the ID, and make sure the bot can see it.", args[2]))
+						}
+					case "adminuserids":
+						if len(args) == 2 {
+							adminCount := len(guild.PersistentGuildData.AdminUserIDs) // caching for optimisation
+							// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
+							if adminCount == 0 {
+								s.ChannelMessageSend(m.ChannelID, "`AdminUserIDs [user 1] [user 2] [etc]`: Add or remove bot admins, a.k.a users that can use commands with the bot.\n"+
+									"Currently, there are no bot admins.")
+							} else if adminCount == 1 {
+								members, _ := s.GuildMembers(m.GuildID, "", 500)
+								for _, member := range members {
+									if guild.HasAdminPermissions(member.User.ID) {
+										// mention user without pinging
+										s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+											Content: "`AdminUserIDs [user 1] [user 2] [etc]`: Add or remove bot admins, a.k.a users that can use commands with the bot.\n" +
+												fmt.Sprintf("Currently, the only admin is %s.", member.Mention()),
+											AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+										})
+									}
+								}
+							} else {
+								adminsAccountedFor := 0 // to help formatting
+								listOfAdmins := ""
+								members, _ := s.GuildMembers(m.GuildID, "", 500)
+								for _, member := range members {
+									if guild.HasAdminPermissions(member.User.ID) {
+										adminsAccountedFor++
+										if adminsAccountedFor == adminCount {
+											listOfAdmins += " and " + member.Mention()
+										} else if adminsAccountedFor == 1 {
+											listOfAdmins += member.Mention()
+										} else {
+											listOfAdmins += ", " + member.Mention()
+										}
+									}
+								}
+								// mention users without pinging
+								s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+									Content: "`AdminUserIDs [user 1] [user 2] [etc]`: Add or remove bot admins, a.k.a users that can use commands with the bot.\n" +
+										fmt.Sprintf("Currently, the admins are %s.", listOfAdmins),
+									AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+								})
+							}
+							return
+						}
+						// users to get admin-ed (adminated?)
+						var userIDs []string
+
+						for _, userName := range args[2:len(args)] {
+							ID := getMemberFromString(s, m.GuildID, userName)
+							if ID == "" {
+								s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
+							} else {
+								userIDs = append(userIDs, ID)
+							}
+						}
+
+						// the index of admins to remove from AdminUserIDs
+						var removeAdmins []int
+
+						for _, ID := range userIDs {
+							// can't use guild.HasAdminPermissions() because we also need index
+							for index, adminID := range guild.PersistentGuildData.AdminUserIDs {
+								if ID == adminID {
+									// add ID to IDs to be deleted
+									removeAdmins = append(removeAdmins, index)
+									ID = "" // indicate to other loop this ID has been dealt with
+									break
+								}
+							}
+							if ID != "" {
+								guild.PersistentGuildData.AdminUserIDs = append(guild.PersistentGuildData.AdminUserIDs, ID)
+								// mention user without pinging
+								s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+									Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
+									AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+								})
+								isValid = true
+							}
+						}
+
+						for _, indexToRemove := range removeAdmins {
+							s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+								Content:         fmt.Sprintf("<@%s> is no longer a bot admin, RIP", guild.PersistentGuildData.AdminUserIDs[indexToRemove]),
+								AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+							})
+							guild.PersistentGuildData.AdminUserIDs = append(guild.PersistentGuildData.AdminUserIDs[:indexToRemove],
+								guild.PersistentGuildData.AdminUserIDs[indexToRemove+1:]...)
+							isValid = true
+						}
+					case "applynicknames":
+						if len(args) == 2 {
+							if guild.PersistentGuildData.ApplyNicknames {
+								s.ChannelMessageSend(m.ChannelID, "`ApplyNicknames [true/false]`: Whether the bot should change the nicknames of the players to reflect the player's color.\n"+
+									"Currently the bot does change nicknames.")
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "`ApplyNicknames [true/false]`: Whether the bot should change the nicknames of the players to reflect the player's color.\n"+
+									"Currently the bot does **not** change nicknames.")
+							}
+							return
+						}
+						if args[2] == "true" {
+							if guild.PersistentGuildData.ApplyNicknames {
+								s.ChannelMessageSend(m.ChannelID, "It's already true!")
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "I will now rename the players in the voice chat.")
+								guild.PersistentGuildData.ApplyNicknames = true
+							}
+						} else if args[2] == "false" {
+							if guild.PersistentGuildData.ApplyNicknames {
+								s.ChannelMessageSend(m.ChannelID, "I will no longer  rename the players in the voice chat.")
+								guild.PersistentGuildData.ApplyNicknames = false
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "It's already false!")
+							}
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is neither `true` nor `false`.", args[2]))
+						}
+						isValid = true
+					case "unmutedeadduringtasks":
+						if len(args) == 2 {
+							if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+								s.ChannelMessageSend(m.ChannelID, "`UnmuteDeadDuringTasks [true/false]`: Whether the bot should unmute dead players immediately when they die. "+
+									"**WARNING**: reveals who died before discussion begins! Use at your own risk.\n"+
+									"Currently the bot does unmute the players immediately after dying.")
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "`UnmuteDeadDuringTasks [true/false]`: Whether the bot should unmute dead players immediately when they die. "+
+									"**WARNING**: reveals who died before discussion begins! Use at your own risk.\n"+
+									"Currently the bot does **not** unmute the players immediately after dying.")
+							}
+							return
+						}
+						if args[2] == "true" {
+							if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+								s.ChannelMessageSend(m.ChannelID, "It's already true!")
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!")
+								guild.PersistentGuildData.UnmuteDeadDuringTasks = true
+							}
+						} else if args[2] == "false" {
+							if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+								s.ChannelMessageSend(m.ChannelID, "I will no longer immediately unmute dead people. Good choice!")
+								guild.PersistentGuildData.UnmuteDeadDuringTasks = false
+							} else {
+								s.ChannelMessageSend(m.ChannelID, "It's already false!")
+							}
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is neither `true` nor `false`.", args[2]))
+						}
+						isValid = true
+					case "delays":
+						if len(args) == 2 {
+							s.ChannelMessageSend(m.ChannelID, "`Delays [old game phase] [new game phase] [delay]`: Change the delay between changing game phase and muting/unmuting players.")
+							return
+						}
+						// user passes phase name, phase name and new delay value
+						if len(args) < 4 {
+							// user didn't pass 2 phases, tell them the list of game phases
+							s.ChannelMessageSend(m.ChannelID, "The list of game phases are `Lobby`, `Tasks` and `Discussion`.\n"+
+								"You need to type both phases the game is transitioning from and to to change the delay.") // find a better wording for this at some point
+							break
+						}
+						// now to find the actual game state from the string they passed
+						var gamePhase1 = getPhaseFromString(args[2])
+						var gamePhase2 = getPhaseFromString(args[3])
+						if gamePhase1 == game.UNINITIALIZED {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I don't know what `%s` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.", args[2]))
+							break
+						} else if gamePhase2 == game.UNINITIALIZED {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I don't know what `%s` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.", args[3]))
+							break
+						}
+						oldDelay := guild.PersistentGuildData.Delays.GetDelay(gamePhase1, gamePhase2)
+						if len(args) == 4 {
+							// no number was passed, user was querying the delay
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Currently, the delay when passing from `%s` to `%s` is %d.", args[2], args[3], oldDelay))
+							break
+						}
+						newDelay, err := strconv.Atoi(args[4])
+						if err != nil || newDelay < 0 {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%d` is not a valid number! Please try again", args[4]))
+							break
+						}
+						guild.PersistentGuildData.Delays.Delays[game.PhaseNames[gamePhase1]][game.PhaseNames[gamePhase2]] = newDelay
+						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The delay when passing from `%s` to `%s` changed from %d to %d.", args[2], args[3], oldDelay, newDelay))
+						isValid = true
+					case "voicerules":
+						if len(args) == 2 {
+							s.ChannelMessageSend(m.ChannelID, "`VoiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`: Whether to mute/deafen alive/dead players during that game phase.")
+							return
+						}
+						// now for a bunch of input checking
+						if len(args) < 5 {
+							// user didn't pass enough args
+							s.ChannelMessageSend(m.ChannelID, "You didn't pass enough arguments! Correct syntax is: `VoiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`")
+							return
+						}
+						if args[2] == "deaf" {
+							args[2] = "deafened" // for formatting later on
+						} else if args[2] == "mute" {
+							args[2] = "muted" // same here
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s` is neither `mute` nor `deaf`!", args[2]))
+							return
+						}
+						gamePhase := getPhaseFromString(args[3])
+						if gamePhase == game.UNINITIALIZED {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I don't know what %s is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.", args[3]))
+						}
+						if args[4] != "alive" && args[4] != "dead" {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s` is neither `alive` or `dead`!", args[4]))
+							return
+						}
+						var oldValue bool
+						if args[2] == "muted" {
+							oldValue = guild.PersistentGuildData.VoiceRules.MuteRules[game.PhaseNames[gamePhase]][args[4]]
+						} else {
+							oldValue = guild.PersistentGuildData.VoiceRules.DeafRules[game.PhaseNames[gamePhase]][args[4]]
+						}
+						if len(args) == 5 {
+							// user was only querying
+							if oldValue {
+								s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("When in `%s` phase, %s players are currently %s.", args[3], args[4], args[2]))
+							} else {
+								s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("When in `%s` phase, %s players are currently NOT %s.", args[3], args[4], args[2]))
+							}
+							break
+						}
+						var newValue bool
+						if args[5] == "true" {
+							newValue = true
+						} else if args[5] == "false" {
+							newValue = false
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s` is neither `true` or `false`!", args[5]))
+							return
+						}
+						if newValue == oldValue {
+							if newValue {
+								s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("When in `%s` phase, %s players are already %s!", args[3], args[4], args[2]))
+							} else {
+								s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("When in `%s` phase, %s players are already un%s!", args[3], args[4], args[2]))
+							}
+							return
+						}
+						if args[2] == "muted" {
+							guild.PersistentGuildData.VoiceRules.MuteRules[game.PhaseNames[gamePhase]][args[4]] = newValue
+						} else {
+							guild.PersistentGuildData.VoiceRules.DeafRules[game.PhaseNames[gamePhase]][args[4]] = newValue
+						}
+						if newValue {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("From now on, when in `%s` phase, %s players will be %s.", args[3], args[4], args[2]))
+						} else {
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("From now on, when in `%s` phase, %s players will be un%s.", args[3], args[4], args[2]))
+						}
+						isValid = true
+					case "permissiondroleids":
+						// this setting is not actually used anywhere
+						s.ChannelMessageSend(m.ChannelID, "Sorry, not supported yet! You need to edit the JSON file and restart the bot.")
+					default:
+						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n"+
+							"Valid settings include `CommandPrefix`, `DefaultTrackedChannel`, `AdminUserIDs`, `ApplyNicknames`, `UnmuteDeadDuringTasks`, `Delays` and `VoiceRules`.", args[1]))
+					}
+					if isValid {
+						// TODO apply changes to JSON file
+						// currently changes are lost once bot is restarted
+					}
 				default:
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
-
 				}
 			}
 			//Just deletes messages starting with .au
-
 			if guild.GameStateMsg.SameChannel(m.ChannelID) {
 				deleteMessage(s, m.ChannelID, m.Message.ID)
 			}

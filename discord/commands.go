@@ -13,19 +13,21 @@ const (
 	End
 	Force
 	Refresh
+	Settings
 	Null
 )
 
 var CommandTypeStringMapping = map[string]CommandType{
-	"help":    Help,
-	"track":   Track,
-	"link":    Link,
-	"unlink":  Unlink,
-	"new":     New,
-	"end":     End,
-	"force":   Force,
-	"refresh": Refresh,
-	"":        Null,
+	"help":     Help,
+	"track":    Track,
+	"link":     Link,
+	"unlink":   Unlink,
+	"new":      New,
+	"end":      End,
+	"force":    Force,
+	"refresh":  Refresh,
+	"settings": Settings,
+	"":         Null,
 }
 
 func GetCommandType(arg string) CommandType {

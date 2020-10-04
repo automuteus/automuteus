@@ -56,13 +56,12 @@ func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
 	}
 }
 
-func getPhaseFromArgs(args []string) game.Phase {
-	if len(args) == 0 {
+func getPhaseFromString(input string) game.Phase {
+	if len(input) == 0 {
 		return game.UNINITIALIZED
 	}
 
-	phase := strings.ToLower(args[0])
-	switch phase {
+	switch strings.ToLower(input) {
 	case "lobby":
 		fallthrough
 	case "l":
@@ -87,7 +86,6 @@ func getPhaseFromArgs(args []string) game.Phase {
 		return game.DISCUSS
 	default:
 		return game.UNINITIALIZED
-
 	}
 }
 
@@ -120,6 +118,23 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 		region = "Asia"
 	}
 	return room, region
+}
+
+func getMemberFromString(s *discordgo.Session, GuildID string, input string) string {
+	// find which member the user was referencing in their message
+	// first check if is mentionned
+	ID, err := extractUserIDFromMention(input)
+	if err == nil {
+		return ID
+	}
+	members, _ := s.GuildMembers(GuildID, "", 500)
+	for _, member := range members {
+		if input == member.User.ID || input == strings.ToLower(member.Nick) || input == strings.ToLower(member.User.Username) ||
+			input == strings.ToLower(member.User.Username)+"#"+member.User.Discriminator {
+			return member.User.ID
+		}
+	}
+	return ""
 }
 
 func generateConnectCode(guildID string) string {
