@@ -90,7 +90,7 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 			//TODO print usage of this command specifically
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 		} else {
-			guild.linkPlayerResponse(args[1:])
+			guild.linkPlayerResponse(s, args[1:])
 
 			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		}
