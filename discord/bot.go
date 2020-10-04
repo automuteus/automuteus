@@ -3,9 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	socketio "github.com/googollee/go-socket.io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 type GuildOrLobbyId struct {
@@ -40,11 +41,18 @@ var PlayerUpdateChannels = make(map[string]*chan game.Player)
 
 var SocketUpdateChannels = make(map[string]*chan SocketStatus)
 
+var LobbyUpdateChannels = make(map[string]*chan LobbyStatus)
+
 var ChannelsMapLock = sync.RWMutex{}
 
 type SocketStatus struct {
 	GuildID   string
 	Connected bool
+}
+
+type LobbyStatus struct {
+	GuildID string
+	Lobby   game.Lobby
 }
 
 var Version string
@@ -152,13 +160,23 @@ func socketioServer(port string) {
 			//TODO race condition
 			if v, ok := AllConns[s.ID()]; ok {
 				if v.guildID != "" {
-					ChannelsMapLock.RLock()
-					*SocketUpdateChannels[v.guildID] <- SocketStatus{
-						GuildID:   v.guildID,
-						Connected: true,
+					if guild, ok := AllGuilds[v.guildID]; ok { // Game is connected -> update its room code
+						log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+						ChannelsMapLock.RLock()
+						*LobbyUpdateChannels[v.guildID] <- LobbyStatus{
+							GuildID: v.guildID,
+							Lobby:   lobby,
+						}
+						ChannelsMapLock.RUnlock()
+					} else { // No game connected
+						ChannelsMapLock.RLock()
+						*SocketUpdateChannels[v.guildID] <- SocketStatus{
+							GuildID:   v.guildID,
+							Connected: true,
+						}
+						ChannelsMapLock.RUnlock()
+						log.Println("Associated lobby with existing game!")
 					}
-					ChannelsMapLock.RUnlock()
-					log.Println("Associated lobby with existing game!")
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
@@ -173,7 +191,6 @@ func socketioServer(port string) {
 			}
 		}
 	})
-
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
 		phase, err := strconv.Atoi(msg)
@@ -252,7 +269,7 @@ func socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player) {
+func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, lobbyUpdates *chan LobbyStatus) {
 	for {
 		select {
 
@@ -373,6 +390,12 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 				//this automatically updates the game state message on connect or disconnect
 				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 			}
+
+		case lobbyUpdate := <-*lobbyUpdates:
+			if guild, ok := AllGuilds[lobbyUpdate.GuildID]; ok {
+				guild.AmongUsData.SetRoomRegion(lobbyUpdate.Lobby.LobbyCode, lobbyUpdate.Lobby.Region.ToString()) // Set new room code
+				guild.GameStateMsg.Edit(dg, gameStateResponse(guild))                                             // Update game state message
+			}
 		}
 	}
 }
@@ -458,14 +481,16 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		socketUpdates := make(chan SocketStatus)
 		playerUpdates := make(chan game.Player)
 		phaseUpdates := make(chan game.Phase)
+		lobbyUpdates := make(chan LobbyStatus)
 
 		ChannelsMapLock.Lock()
 		SocketUpdateChannels[m.Guild.ID] = &socketUpdates
 		PlayerUpdateChannels[m.Guild.ID] = &playerUpdates
 		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
+		LobbyUpdateChannels[m.Guild.ID] = &lobbyUpdates
 		ChannelsMapLock.Unlock()
 
-		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates)
+		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates)
 
 	}
 }
