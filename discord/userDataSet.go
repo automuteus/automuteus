@@ -65,6 +65,17 @@ func (uds *UserDataSet) UpdatePlayerData(userID string, data *game.PlayerData) b
 	return false
 }
 
+func (uds *UserDataSet) UpdatePlayerMappingByName(name string, data *game.PlayerData) {
+	uds.lock.Lock()
+	for userID, v := range uds.userDataSet {
+		if v.GetPlayerName() == name {
+			v.SetPlayerData(data)
+			uds.userDataSet[userID] = v
+		}
+	}
+	uds.lock.Unlock()
+}
+
 func (uds *UserDataSet) ClearPlayerData(userID string) {
 	uds.lock.Lock()
 	if v, ok := uds.userDataSet[userID]; ok {

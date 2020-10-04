@@ -60,12 +60,6 @@ const (
 	EU
 )
 
-var RegionNumsToStrings = map[Region]string{
-	NA: "North America",
-	AS: "Asia",
-	EU: "Europe",
-}
-
 type Lobby struct {
 	LobbyCode string `json:"LobbyCode"`
 	Region    Region `json:"Region"`
@@ -73,4 +67,16 @@ type Lobby struct {
 
 func (l *Lobby) ReduceLobbyCode() {
 	l.LobbyCode = strings.Replace(l.LobbyCode, "Code\r\n", "", 1)
+}
+
+func (r Region) ToString() string {
+	switch r {
+	case NA:
+		return "North America"
+	case EU:
+		return "Europe"
+	case AS:
+		return "Asia"
+	}
+	return "Unknown"
 }

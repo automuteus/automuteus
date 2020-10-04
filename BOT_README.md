@@ -7,5 +7,3 @@
 4. On the left panel, click "OAuth2", and then check the box marked `bot` under `Scopes`. Then scroll down to `Bot Permissions`, and check the box marked `Administrator` in the future, we will refine the permissions, but for now it is easiest with Admin permissions.
 
 5. Scroll back up to `Scopes`, and copy the URL in the field that begins with `https://discord.com/api/oauth2/authorize?`. Paste this in a new browser tab, and grant the App access to whatever server you wish it to access. Close this tab when Finalized.
-
-6. Last step, almost there! Now we need to get our discord Guild ID. Go to https://discord.com/app, and navigate to the Server you want the Bot to communicate in (Servers are also known as Guilds). Look at the URL in your browser. It will have the format `https://discord.com/channels/<DISCORD_GUILD_ID>/<DISCORD_CHANNEL_ID>`. Copy the `GUILD_ID` portion somewhere; we will need it later to configure the capture portion (`guildid.txt`).

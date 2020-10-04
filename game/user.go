@@ -17,6 +17,7 @@ type User struct {
 type UserData struct {
 	user               User
 	pendingVoiceUpdate bool
+	cachedPlayerName   string
 	auData             *PlayerData //we want to point to player data that isn't necessarily correlated with a player yet...
 }
 
@@ -29,6 +30,7 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 			discriminator: dUser.Discriminator,
 			originalNick:  nick,
 		},
+		cachedPlayerName:   "",
 		pendingVoiceUpdate: false,
 		auData:             nil,
 	}
@@ -75,14 +77,14 @@ func (user *UserData) GetID() string {
 }
 
 func (user *UserData) GetPlayerName() string {
-	if user.auData != nil {
-		return user.auData.Name
-	} else {
-		return ""
-	}
+	return user.cachedPlayerName
 }
 
 func (user *UserData) SetPlayerData(player *PlayerData) {
+	if player != nil {
+		user.cachedPlayerName = player.Name
+	}
+
 	user.auData = player
 }
 
