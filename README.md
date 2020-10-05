@@ -1,12 +1,22 @@
+<p align="center">
+    <img src="assets/botProfilePicture.jpg" width="196">
+</p>
 
-
-[![Build](https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg)](https://github.com/denverquane/amongusdiscord/actions?query=build)
-
-<img src="assets/botProfilePicture.jpg" width="128">
+<p align="center">
+    <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
+        <img src="https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg" />
+    </a>
+    <a href="https://github.com/denverquane/amongusdiscord/graphs/contributors" alt="Contributors">
+        <img src="https://img.shields.io/github/contributors/denverquane/amongusdiscord" />
+    </a>
+    <a href="https://discord.gg/ZkqZSWF" alt="Contributors">
+        <img src="https://img.shields.io/discord/754465589958803548?logo=discord" />
+    </a>
+</p>
 
 # AmongUsAutoMute (BETA) 
 
-Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
+Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!
 
 Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
 
@@ -57,11 +67,21 @@ You can also run the discord portion using docker if you prefer, it simply needs
 Example:
 `docker run -p 8123:8123 -e DISCORD_BOT_TOKEN=<YourTokenHere> denverquane/amongusdiscord`
 
+## Deploy to Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not set. To fix this:
+
+1. Create a new Config var in your Heroku app's settings with the key `DISCORD_BOT_TOKEN` and the value as your bot token obtained from the pre-installation step.
+2. Restart all dynos
+
+To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
+
 # Sample Usage
 To start the bot in the current channel, type the following `.au` commands in Discord:
 ```
 .au new ABCD eu
-# Starts a game, and allows users to add emojis to link to their in-game players
+# Starts a game, and allows users to react to emojis to link to their in-game players
 
 .au t <voice channel name> 
 # (Optional) This specifically marks the channel you want users automute within. Users in other voice channels will be ignored.
@@ -79,6 +99,7 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au new`|`.au n`|None|Start a new game in the current text channel. Optionally accepts the room code and region|`.au n CODE eu`|
 |`.au track`|`.au t`|VC Name|Tell Bot to use a single voice channel for mute/unmute, and ignore any other channels|`.au t Test Voice`|
 |`.au link`|`.au l`|@name color|Manually link a discord user to their in-game color|`.au l @Soup cyan`|
+|`.au refresh`|`.au r`|None|Remake the bot's status message entirely, in case it ends up too far up in the chat.||
 |`.au end`|`.au e`|None|End the game entirely, and stop tracking players. Unmutes all and resets state||
 |`.au unlink`|`.au u`|@name|Manually unlink a player|`.au u @player`|
 |`.au force`|`.au f`|stage|Force a transition to a stage if you encounter a problem in the state|`.au f task` or `.au f d`(discuss)|

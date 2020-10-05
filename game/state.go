@@ -56,8 +56,8 @@ type Region int
 
 const (
 	NA Region = 0
-	EU Region = 1
-	AS Region = 2
+	AS Region = 1
+	EU Region = 2
 )
 
 type Lobby struct {
@@ -67,4 +67,16 @@ type Lobby struct {
 
 func (l *Lobby) ReduceLobbyCode() {
 	l.LobbyCode = strings.Replace(l.LobbyCode, "Code\r\n", "", 1)
+}
+
+func (r Region) ToString() string {
+	switch r {
+	case NA:
+		return "North America"
+	case EU:
+		return "Europe"
+	case AS:
+		return "Asia"
+	}
+	return "Unknown"
 }
