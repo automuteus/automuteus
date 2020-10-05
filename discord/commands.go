@@ -175,26 +175,24 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 				//if the user is detected in a voice channel
 				if v.UserID == m.Author.ID {
 
-					for _, channel := range g.Channels {
-						//once we find the channel by ID
-						if channel.Type == discordgo.ChannelTypeGuildVoice {
-							if channel.ID == v.ChannelID {
-								initialTracking = append(initialTracking, TrackingChannel{
-									channelID:   channel.ID,
-									channelName: channel.Name,
-									forGhosts:   false,
-								})
-								log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
-							}
+					//once we find the channel by ID
+					if channel.Type == discordgo.ChannelTypeGuildVoice {
+						if channel.ID == v.ChannelID {
+							initialTracking = append(initialTracking, TrackingChannel{
+								channelID:   channel.ID,
+								channelName: channel.Name,
+								forGhosts:   false,
+							})
+							log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
 						}
-
 					}
+
 				}
 
 			}
 		}
 
-		guild.handleGameStartMessage(s, m, room, region, initialTracking)
+		guild.handleGameStartMessage(s, m, room, region, initialTracking, g)
 		break
 
 	case End:

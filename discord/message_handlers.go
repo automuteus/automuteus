@@ -21,7 +21,7 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	guild.AmongUsData.SetRoomRegion("", "")
 }
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel) {
+func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
 	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
@@ -29,6 +29,11 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 	for _, channel := range channels {
 		if channel.channelName != "" {
 			guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+			for _, v := range g.VoiceStates {
+				if v.ChannelID == channel.channelID {
+					guild.checkCacheAndAddUser(g, s, v.UserID)
+				}
+			}
 		}
 	}
 

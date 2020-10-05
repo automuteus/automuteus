@@ -186,7 +186,7 @@ func socketioServer(port string) {
 			if gid, ok := AllConns[s.ID()]; ok {
 				if gid != "" {
 					if guild, ok := AllGuilds[gid]; ok { // Game is connected -> update its room code
-						log.Println("received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+						log.Println("Received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
 						ChannelsMapLock.RLock()
 						*LobbyUpdateChannels[gid] <- LobbyStatus{
 							GuildID: gid,
@@ -406,7 +406,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					}
 
 					if player.Disconnected || player.Action == game.LEFT {
-						log.Println("I detected that " + player.Name + " disconnected! " +
+						log.Println("I detected that " + player.Name + " disconnected or left! " +
 							"I'm removing their linked game data; they will need to relink")
 
 						guild.UserData.ClearPlayerDataByPlayerName(player.Name)
@@ -426,6 +426,12 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 						}
 
 						if updated {
+							data := guild.AmongUsData.GetByName(player.Name)
+							paired := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
+							if paired {
+								log.Println("Successfully linked discord user to player using matching names!")
+							}
+
 							//log.Println("Player update received caused an update in cached state")
 							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
 								log.Println("NOT updating the discord status message; would leak info")

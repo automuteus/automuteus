@@ -48,6 +48,7 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 
 ## Easiest:
 1. [Download the latest release executable (`.exe`) and `final.txt`](https://github.com/denverquane/amongusdiscord/releases) for this discord bot.
+If you don't see one for the current version, then simply create a new text document called `final.txt`, and put `DISCORD_BOT_TOKEN = ` as the contents.
 2. Paste the Bot Token you obtained in the pre-installation into the `final.txt` file, after the `=` sign.
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
 4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
@@ -67,6 +68,20 @@ You can also run the discord portion using docker if you prefer, it simply needs
 Example:
 `docker run -p 8123:8123 -e DISCORD_BOT_TOKEN=<YourTokenHere> denverquane/amongusdiscord`
 
+## Environment Variables
+- `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
+
+### Advanced. Only configure these variables if you know what you're doing
+- `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123
+- `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `automute.us`.
+This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
+- `NUM_SHARDS`: How many total bot shard instances you'll be running in your current stack.
+- `SHARD_ID`: The specific ID of this bot instance. Should always be *strictly less* than the NUM_SHARDS. (0-indexed)
+
+## Google Firestore Config (Optional)
+- `GOOGLE_APPLICATION_CREDENTIALS`: Credentials used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECTID below as well.
+` `FIRESTORE_PROJECTID`: The specific Project ID for the Firestore operations you intend this bot to use.
+
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
@@ -78,17 +93,16 @@ The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not
 To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
 
 # Sample Usage
-To start the bot in the current channel, type the following `.au` commands in Discord:
+To start the bot in the current channel, type the following `.au` command in Discord:
 ```
-.au new ABCD eu
+.au new
 # Starts a game, and allows users to react to emojis to link to their in-game players
-
-.au t <voice channel name> 
-# (Optional) This specifically marks the channel you want users automute within. Users in other voice channels will be ignored.
 ```
 Get Playing!
 
-If you need to add more players to the tracking list, they can be added using the reaction emojis once back in the lobby. Or, manually using `.au link @player color`. If all else fails, you can start a new game with `.au new`.
+If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
+
+If you need to add more players to the tracking list, they can be added using the reaction emojis once back in the lobby. Or, manually using `.au link @player color`.
 
 # Bot Commands
 The Discord Bot uses the `.au` prefix for any commands
@@ -113,4 +127,12 @@ with a lot of the OCR/Discord functionality, I never would have even thought of 
 Their project works like a traditional Discord bot; very easy installation!
 
 # Troubleshooting
+
+- "Websocket 400-something: Authentication Failed" Error!
+Your `DISCORD_BOT_TOKEN` is incorrect or invalid. Make sure you copied/pasted the Bot *token*, NOT the "client secret" from the Discord Developer portal
+
+- "Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!
+The discord API is agonizingly slow to upload new emojis, inform bots about the presence of new/updated emojis, and delete emojis.
+The easiest answer is to **give it a while** (sometimes can take almost 30 minutes), and try again.
+
 

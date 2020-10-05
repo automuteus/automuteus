@@ -90,14 +90,14 @@ func discordMainWrapper() error {
 	authPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	projectID := os.Getenv("FIRESTORE_PROJECTID")
 	if authPath != "" && projectID != "" {
-		log.Println("GOOGLE_APPLICATION_CREDENTIALS is set; attempting to use Firestore")
+		log.Println("GOOGLE_APPLICATION_CREDENTIALS variable is set; attempting to use Firestore as the Storage Driver")
 		storageClient = &storage.FirestoreDriver{}
 		err = storageClient.Init(projectID)
 		if err != nil {
 			log.Printf("Failed to create Firestore client with error: %s", err)
 		} else {
 			dbSuccess = true
-			log.Println("Success in initializing Firestore client")
+			log.Println("Success in initializing Firestore client as the Storage Driver")
 		}
 	}
 
@@ -105,8 +105,9 @@ func discordMainWrapper() error {
 		storageClient = &storage.FilesystemDriver{}
 		err := storageClient.Init(ConfigBasePath)
 		if err != nil {
-			log.Printf("Failed to create filesystem driver with error: %s", err)
+			log.Fatalf("Failed to create Filesystem Storage Driver with error: %s", err)
 		}
+		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
 
 	//start the discord bot
