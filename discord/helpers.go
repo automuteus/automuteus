@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// when querying for the member list we need to specify a size
+// too high reduces performance
+// too low increases the chance of the member we want not being in the list
+// ideally this should be adjusted on a per-server basis
+const MemberQuerySize = 1000
+
 type UserPatchParameters struct {
 	GuildID string
 	UserID  string
@@ -122,16 +128,33 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 
 func getMemberFromString(s *discordgo.Session, GuildID string, input string) string {
 	// find which member the user was referencing in their message
+	// TODO increase performance by caching member list for when function called more than once
 	// first check if is mentionned
 	ID, err := extractUserIDFromMention(input)
 	if err == nil {
 		return ID
 	}
-	members, _ := s.GuildMembers(GuildID, "", 500)
+	members, _ := s.GuildMembers(GuildID, "", MemberQuerySize)
 	for _, member := range members {
 		if input == member.User.ID || input == strings.ToLower(member.Nick) || input == strings.ToLower(member.User.Username) ||
 			input == strings.ToLower(member.User.Username)+"#"+member.User.Discriminator {
 			return member.User.ID
+		}
+	}
+	return ""
+}
+
+func getRoleFromString(s *discordgo.Session, GuildID string, input string) string {
+	// find which role the user was referencing in their message
+	// first check if is mentionned
+	ID, err := extractRoleIDFromMention(input)
+	if err == nil {
+		return ID
+	}
+	roles, _ := s.GuildRoles(GuildID)
+	for _, role := range roles {
+		if input == role.ID || input == strings.ToLower(role.Name) {
+			return role.ID
 		}
 	}
 	return ""

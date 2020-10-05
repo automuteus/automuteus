@@ -252,3 +252,12 @@ func extractUserIDFromMention(mention string) (string, error) {
 		return "", errors.New("mention does not conform to the correct format")
 	}
 }
+
+func extractRoleIDFromMention(mention string) (string, error) {
+	//role is formatted <&123456>
+	if strings.HasPrefix(mention, "<@&") && strings.HasSuffix(mention, ">") {
+		return mention[3 : len(mention)-1], nil
+	} else {
+		return "", errors.New("mention does not conform to the correct format")
+	}
+}
