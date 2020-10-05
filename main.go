@@ -70,11 +70,11 @@ func discordMainWrapper() error {
 		shardID = -1
 	}
 
-	port := os.Getenv("SERVER_PORT")
+	port := os.Getenv("PORT")
 	num, err := strconv.Atoi(port)
 
 	if err != nil || num < 1024 || num > 65535 {
-		log.Printf("[This is not an error] Invalid or no particular SERVER_PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
+		log.Printf("Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
