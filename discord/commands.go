@@ -14,6 +14,7 @@ const (
 	Force
 	Refresh
 	Settings
+	Prompt
 	Null
 )
 
@@ -27,6 +28,7 @@ var CommandTypeStringMapping = map[string]CommandType{
 	"force":    Force,
 	"refresh":  Refresh,
 	"settings": Settings,
+	"prompt":  Prompt,
 	"":         Null,
 }
 

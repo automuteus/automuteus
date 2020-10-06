@@ -13,6 +13,8 @@ type PersistentGuildData struct {
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 
+	PrivateChannelID      string `json:"privateChannelID"`
+
 	AdminUserIDs          []string   `json:"adminIDs"`
 	PermissionedRoleIDs   []string   `json:"permissionRoleIDs"`
 	Delays                GameDelays `json:"delays"`
@@ -28,6 +30,7 @@ func PGDDefault(id string) *PersistentGuildData {
 		GuildID:               id,
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
+		PrivateChannelID:      "000000000000000000",
 		AdminUserIDs:          nil,
 		PermissionedRoleIDs:   nil,
 		Delays:                MakeDefaultDelays(),

@@ -84,6 +84,34 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 	}
 }
 
+func (guild *GuildState) linkPlayerResponseByIdAndColor(s *discordgo.Session, userID string, color string) {
+
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, added := guild.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for userID " + userID)
+	}
+
+	if game.IsColorString(color) {
+		playerData := guild.AmongUsData.GetByColor(color)
+		if playerData != nil {
+			found := guild.UserData.UpdatePlayerData(userID, playerData)
+			if found {
+				log.Printf("Successfully linked %s to a color\n", userID)
+			} else {
+				log.Printf("No player was found with id %s\n", userID)
+			}
+		}
+		return
+	} else {
+		log.Println("Using linkPlayerResponseByIdAndColor but not valid color for: " + color);
+	}
+}
+
 // TODO:
 func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game

@@ -45,6 +45,9 @@ var LobbyUpdateChannels = make(map[string]*chan LobbyStatus)
 
 var ChannelsMapLock = sync.RWMutex{}
 
+var privateChannelIDTemp = "";
+var initialTracking []TrackingChannel;
+
 type SocketStatus struct {
 	GuildID   string
 	Connected bool
@@ -431,8 +434,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 func reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	for id, socketGuild := range AllGuilds {
 		if id == m.GuildID {
-			socketGuild.handleReactionGameStartAdd(s, m)
-			break
+			if socketGuild.GameStateMsg.Exists() && socketGuild.GameStateMsg.IsReactionTo(m) {
+				socketGuild.handleReactionGameStartAdd(s, m)
+			} else if m.ChannelID == privateChannelIDTemp {
+				socketGuild.handleReactionPrivateUserMessage(s, m);
+			}
 		}
 	}
 }
@@ -462,6 +468,7 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 			UserData:     MakeUserDataSet(),
 			Tracking:     MakeTracking(),
 			GameStateMsg: MakeGameStateMessage(),
+			PrivateStateMsg: MakePrivateStateMessage(),
 
 			StatusEmojis:  emptyStatusEmojis(),
 			SpecialEmojis: map[string]Emoji{},
@@ -495,6 +502,7 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		GamePhaseUpdateChannels[m.Guild.ID] = &phaseUpdates
 		LobbyUpdateChannels[m.Guild.ID] = &lobbyUpdates
 		ChannelsMapLock.Unlock()
+		privateChannelIDTemp = pgd.PrivateChannelID;
 
 		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates)
 
@@ -607,7 +615,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				case New:
 					room, region := getRoomAndRegionFromArgs(args[1:])
 
-					initialTracking := make([]TrackingChannel, 0)
+					initialTracking = make([]TrackingChannel, 0)
 
 					//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 					//we don't have enough info to go off of when remaking the game...
@@ -667,10 +675,22 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						}
 					}
 
+					guild.PrivateStateMsg.privateChannelID = privateChannelIDTemp;
+
 					guild.handleGameStartMessage(s, m, room, region, initialTracking)
+					guild.PrivateStateMsg.idUsernameMap = make(map[string]string)
+					guild.PrivateStateMsg.printedUsers = make([]string, 0)
+					guild.PrivateStateMsg.currentUserID = ""
+					guild.PrivateStateMsg.message = nil;
+					guild.createPrivateMapMessage(s, m, initialTracking)
 					break
 				case End:
 					guild.handleGameEndMessage(s)
+					var pMessage = guild.PrivateStateMsg.message;
+
+					if (pMessage != nil) {
+						deleteMessage(s, pMessage.ChannelID, pMessage.ID);
+					}
 
 					//have to explicitly delete here, because if we use the default delete below, the channelID
 					//for the game state message doesn't exist anymore...
@@ -702,6 +722,20 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				case Settings:
 					HandleSettingsCommand(s, m, guild, args)
 					return // to prevent the user's message from being deleted
+				case Prompt:
+					// Can use initialTracking here!
+					// Check if there is a currently showing message
+					var pMessage = guild.PrivateStateMsg.message;
+
+					if pMessage != nil {
+						deleteMessage(s, pMessage.ChannelID, pMessage.ID);
+					}
+
+					guild.PrivateStateMsg.idUsernameMap = make(map[string]string)
+					guild.PrivateStateMsg.printedUsers = make([]string, 0)
+					guild.PrivateStateMsg.currentUserID = ""
+					guild.PrivateStateMsg.message = nil;
+					guild.createPrivateMapMessage(s, m, initialTracking)
 				default:
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 				}

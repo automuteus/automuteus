@@ -52,6 +52,7 @@ type GuildState struct {
 	Tracking Tracking
 
 	GameStateMsg GameStateMessage
+	PrivateStateMsg PrivateStateMessage
 
 	StatusEmojis  AlivenessEmojis
 	SpecialEmojis map[string]Emoji
@@ -363,6 +364,104 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 			}
 		}
 	}
+
+}
+
+func (guild *GuildState) handleReactionPrivateUserMessage(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	if !guild.PrivateStateMsg.Exists() || !guild.PrivateStateMsg.IsReactionTo(m) {
+		return
+	}
+
+	var idUsernameMap = guild.PrivateStateMsg.idUsernameMap;
+	var printedUsers = guild.PrivateStateMsg.printedUsers;
+	var userId = guild.PrivateStateMsg.currentUserID;
+
+	/////////////////////////
+
+	idMatched := false;
+
+	for color, e := range guild.StatusEmojis[true] {
+		if e.ID == m.Emoji.ID {
+			idMatched = true
+			log.Printf("The react button %s has been pressed", game.GetColorStringForInt(color))
+
+			guild.linkPlayerResponseByIdAndColor(s, userId, m.Emoji.Name[2:]);
+
+			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+
+			//then remove the player's reaction if we matched, or if we didn't
+			err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID);
+			if err != nil {
+				log.Println(err)
+			}
+			break;
+		}
+	}
+
+	if !idMatched {
+		if m.Emoji.Name == "❌" {
+			log.Printf("Removing player %s", m.UserID)
+			err := s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
+			if err != nil {
+				log.Println(err)
+			}
+			idMatched = true
+		}
+	}
+
+	var previousMessage = guild.PrivateStateMsg.message;
+
+	if len(guild.PrivateStateMsg.printedUsers) == len(guild.PrivateStateMsg.idUsernameMap) {
+		log.Print("Printed Users equals idUsernameMap")
+		if previousMessage != nil  {
+			s.ChannelMessageDelete(previousMessage.ChannelID, previousMessage.ID)
+			guild.PrivateStateMsg.message = nil;
+		}
+		return;
+	}
+
+	userId = "";
+	var userName string;
+	for uId, uName := range idUsernameMap {
+
+
+		//log.Print("Showing printedUsers again...")
+		var shownUsername = false;
+		for _, username := range printedUsers {
+			//log.Print("user: " + username);
+			if username == uId {
+				shownUsername = true;
+			}
+		}
+
+		log.Print("uID:" + uId)
+
+		if (!shownUsername) {
+			log.Print("Haven't shown this user: " + uName);
+			log.Print("users id: " + uId);
+			userId = uId;
+			userName = uName;
+			//username = uName;
+			break;
+		}
+	}
+
+	guild.PrivateStateMsg.currentUserID = userId;
+
+	var newEmbed = guild.PrivateStateMsg.privateMapResponse(userId, userName);
+
+
+	//var newMessage = guild.PrivateStateMsg.CreateMessage(s, , guild.PrivateStateMsg.privateChannelID)
+
+
+
+	var editedMessage = editMessageEmbed(s, previousMessage.ChannelID, previousMessage.ID, newEmbed); // Should update the message in private
+
+
+	guild.PrivateStateMsg.printedUsers = append(guild.PrivateStateMsg.printedUsers, userId);
+
+
+	guild.PrivateStateMsg.message = editedMessage;
 
 }
 
