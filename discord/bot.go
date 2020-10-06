@@ -63,6 +63,8 @@ var LobbyUpdateChannels = make(map[string]*chan LobbyStatus)
 
 var ChannelsMapLock = sync.RWMutex{}
 
+var AltDiscordSession *discordgo.Session = nil
+
 type SocketStatus struct {
 	GuildID   string
 	Connected bool
@@ -82,7 +84,7 @@ var StorageInterface storage.StorageInterface
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) {
+func MakeAndStartBot(version, token, token2, url, port, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) {
 	Version = version
 	BotPort = port
 	BotUrl = url
@@ -93,11 +95,23 @@ func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, 
 		log.Println("error creating Discord session,", err)
 		return
 	}
+	if token2 != "" {
+		AltDiscordSession, err = discordgo.New("Bot " + token2)
+		if err != nil {
+			log.Println("error creating 2nd Discord session,", err)
+			return
+		}
+	}
 
 	if numShards > 0 && shardID > -1 {
 		log.Printf("Identifying to the Discord API with %d total shards, and shard ID=%d\n", numShards, shardID)
 		dg.ShardCount = numShards
 		dg.ShardID = shardID
+		if AltDiscordSession != nil {
+			log.Printf("Identifying to the Discord API for the 2nd Bot with %d total shards, and shard ID=%d\n", numShards, shardID)
+			AltDiscordSession.ShardCount = numShards
+			AltDiscordSession.ShardID = shardID
+		}
 	}
 
 	dg.AddHandler(voiceStateChange)
@@ -110,10 +124,20 @@ func MakeAndStartBot(version, token, url, port, emojiGuildID string, numShards, 
 
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
-
 	if err != nil {
 		log.Println("Could not connect Bot to the Discord Servers with error:", err)
 		return
+	}
+
+	if AltDiscordSession != nil {
+		AltDiscordSession.AddHandler(newAltGuild)
+		AltDiscordSession.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds)
+		err = AltDiscordSession.Open()
+		if err != nil {
+			log.Println("Could not connect 2nd Bot to the Discord Servers with error:", err)
+			return
+		}
+		defer AltDiscordSession.Close()
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
@@ -343,7 +367,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					guild.AmongUsData.SetPhase(phase)
 
 					//going back to the lobby, we have no preference on who gets applied first
-					guild.handleTrackedMembers(dg, delay, NoPriority)
+					guild.handleTrackedMembers(dg, AltDiscordSession, delay, NoPriority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					break
@@ -365,7 +389,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 
 					guild.AmongUsData.SetPhase(phase)
 
-					guild.handleTrackedMembers(dg, delay, priority)
+					guild.handleTrackedMembers(dg, AltDiscordSession, delay, priority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					break
@@ -380,7 +404,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 					guild.AmongUsData.SetPhase(phase)
 
 					//when going from
-					guild.handleTrackedMembers(dg, delay, DeadPriority)
+					guild.handleTrackedMembers(dg, AltDiscordSession, delay, DeadPriority)
 
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					break
@@ -436,7 +460,7 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
 								if guild.PersistentGuildData.UnmuteDeadDuringTasks {
 									// unmute players even if in tasks because UnmuteDeadDuringTasks is true
-									guild.handleTrackedMembers(dg, 0, NoPriority)
+									guild.handleTrackedMembers(dg, AltDiscordSession, 0, NoPriority)
 									guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 								} else {
 									log.Println("NOT updating the discord status message; would leak info")
@@ -600,6 +624,10 @@ func newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.Guild
 		go updatesListener(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates, &globalUpdates)
 
 	}
+}
+
+func newAltGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
+	//TODO ensure that the 2nd bot is also present in the same guilds as the original bot (to ensure it can also issue requests)
 }
 
 func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {

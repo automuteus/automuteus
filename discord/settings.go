@@ -43,9 +43,6 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		isValid = SettingDelays(s, m, guild, args)
 	case "voicerules":
 		isValid = SettingVoiceRules(s, m, guild, args)
-	case "permissiondroleids":
-		// this setting is not actually used anywhere
-		s.ChannelMessageSend(m.ChannelID, "Sorry, not supported yet! You need to edit the JSON file and restart the bot.")
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n"+
 			"Valid settings include `CommandPrefix`, `DefaultTrackedChannel`, `AdminUserIDs`, `ApplyNicknames`, `UnmuteDeadDuringTasks`, `Delays` and `VoiceRules`.", args[1]))

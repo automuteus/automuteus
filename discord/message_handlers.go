@@ -12,7 +12,7 @@ func (guild *GuildState) handleGameEndMessage(s *discordgo.Session) {
 	guild.AmongUsData.SetPhase(game.LOBBY)
 
 	// apply the unmute/deafen to users who have state linked to them
-	guild.handleTrackedMembers(s, 0, NoPriority)
+	guild.handleTrackedMembers(s, AltDiscordSession, 0, NoPriority)
 
 	//clear the tracking and make sure all users are unlinked
 	guild.clearGameTracking(s)

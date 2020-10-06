@@ -138,7 +138,14 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 		guild.LinkCode = connectCode
 		LinkCodeLock.Unlock()
 
-		hyperlink := fmt.Sprintf("aucapture://%s:%s/%s?insecure", BotUrl, BotPort, connectCode)
+		var hyperlink string
+		if strings.HasPrefix(BotUrl, "https://") {
+			hyperlink = fmt.Sprintf("aucapture://%s:%s/%s", strings.Replace(BotUrl, "https://", "", 1), BotPort, connectCode)
+		} else if strings.HasPrefix(BotUrl, "http://") {
+			hyperlink = fmt.Sprintf("aucapture://%s:%s/%s?insecure", strings.Replace(BotUrl, "http://", "", 1), BotPort, connectCode)
+		} else {
+			hyperlink = "aucapture://INVALID_PROTOCOL_ON_SERVER_URL"
+		}
 
 		var embed = discordgo.MessageEmbed{
 			URL:         "",

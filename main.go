@@ -59,6 +59,11 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
+	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
+	if discordToken2 == "" {
+		log.Println("No 2nd Discord Bot Token provided, only using 1")
+	}
+
 	numShardsStr := os.Getenv("NUM_SHARDS")
 	numShards, err := strconv.Atoi(numShardsStr)
 	if err != nil {
@@ -111,6 +116,6 @@ func discordMainWrapper() error {
 	}
 
 	//start the discord bot
-	discord.MakeAndStartBot(VERSION, discordToken, url, port, emojiGuildID, numShards, shardID, storageClient)
+	discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, port, emojiGuildID, numShards, shardID, storageClient)
 	return nil
 }
