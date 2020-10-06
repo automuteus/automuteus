@@ -373,7 +373,13 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 						if updated {
 							//log.Println("Player update received caused an update in cached state")
 							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-								log.Println("NOT updating the discord status message; would leak info")
+								if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+									// unmute players even if in tasks because UnmuteDeadDuringTasks is true
+									guild.handleTrackedMembers(dg, 0, NoPriority)
+									guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+								} else {
+									log.Println("NOT updating the discord status message; would leak info")
+								}
 							} else {
 								guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 							}
@@ -525,7 +531,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			}
 
 			if len(contents) == 0 {
-				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+				if len(guild.PersistentGuildData.CommandPrefix) <= 1 {
+					// prevent bot from spamming help message whenever the single character
+					// prefix is sent by mistake
+					return
+				} else {
+					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+				}
 			} else {
 				args := strings.Split(contents, " ")
 
@@ -567,7 +579,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						//TODO print usage of this command specifically
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 					} else {
-						guild.linkPlayerResponse(s, args[1:])
+						guild.linkPlayerResponse(s, m.GuildID, args[1:])
 
 						guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 					}
@@ -665,7 +677,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					deleteMessage(s, m.ChannelID, m.Message.ID)
 					break
 				case Force:
-					phase := getPhaseFromArgs(args[1:])
+					phase := getPhaseFromString(args[1])
 					if phase == game.UNINITIALIZED {
 						s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 					} else {
@@ -687,13 +699,14 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
 					}
 					guild.GameStateMsg.AddReaction(s, "❌")
+				case Settings:
+					HandleSettingsCommand(s, m, guild, args)
+					return // to prevent the user's message from being deleted
 				default:
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
-
 				}
 			}
 			//Just deletes messages starting with .au
-
 			if guild.GameStateMsg.SameChannel(m.ChannelID) {
 				deleteMessage(s, m.ChannelID, m.Message.ID)
 			}

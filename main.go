@@ -28,9 +28,9 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("final.env")
+	err := godotenv.Load("final.txt")
 	if err != nil {
-		err = godotenv.Load("final.txt")
+		err = godotenv.Load("final.env")
 		if err != nil {
 			log.Println("Can't open env file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
 		}

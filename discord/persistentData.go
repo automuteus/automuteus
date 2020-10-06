@@ -13,11 +13,12 @@ type PersistentGuildData struct {
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 
-	AdminUserIDs        []string   `json:"adminIDs"`
-	PermissionedRoleIDs []string   `json:"permissionRoleIDs"`
-	Delays              GameDelays `json:"delays"`
-	VoiceRules          VoiceRules `json:"voiceRules"`
-	ApplyNicknames      bool       `json:"applyNicknames"`
+	AdminUserIDs          []string   `json:"adminIDs"`
+	PermissionedRoleIDs   []string   `json:"permissionRoleIDs"`
+	Delays                GameDelays `json:"delays"`
+	VoiceRules            VoiceRules `json:"voiceRules"`
+	ApplyNicknames        bool       `json:"applyNicknames"`
+	UnmuteDeadDuringTasks bool       `json:"UnmuteDeadDuringTasks"`
 
 	lock sync.RWMutex
 }
