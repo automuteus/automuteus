@@ -644,7 +644,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 				for i, v := range args {
 					args[i] = strings.ToLower(v)
 				}
-				guild.HandleCommand(s, g, m, args)
+				guild.HandleCommand(s, g, StorageInterface, m, args)
 			}
 
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strings"
 )
@@ -52,7 +53,7 @@ func GetCommandType(arg string) CommandType {
 	return Null
 }
 
-func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild, m *discordgo.MessageCreate, args []string) {
+func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
 	switch GetCommandType(args[0]) {
 
 	case Help:
@@ -90,7 +91,7 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 			//TODO print usage of this command specifically
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 		} else {
-			guild.linkPlayerResponse(s, args[1:])
+			guild.linkPlayerResponse(s, m.GuildID, args[1:])
 
 			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		}
@@ -204,7 +205,7 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 		break
 
 	case Force:
-		phase := getPhaseFromArgs(args[1:])
+		phase := getPhaseFromString(args[1])
 		if phase == game.UNINITIALIZED {
 			s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 		} else {
@@ -229,8 +230,8 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 		break
 
 	case Settings:
-		s.ChannelMessageSendEmbed(m.ChannelID, TopSettingsMessage(guild.PersistentGuildData.CommandPrefix))
-		break
+		HandleSettingsCommand(s, m, guild, storageInterface, args)
+		return // to prevent the user's message from being deleted
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 
