@@ -434,7 +434,13 @@ func updatesListener(dg *discordgo.Session, guildID string, socketUpdates *chan 
 
 							//log.Println("Player update received caused an update in cached state")
 							if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-								log.Println("NOT updating the discord status message; would leak info")
+								if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+									// unmute players even if in tasks because UnmuteDeadDuringTasks is true
+									guild.handleTrackedMembers(dg, 0, NoPriority)
+									guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+								} else {
+									log.Println("NOT updating the discord status message; would leak info")
+								}
 							} else {
 								guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 							}
@@ -625,7 +631,13 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 			}
 
 			if len(contents) == 0 {
-				s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+				if len(guild.PersistentGuildData.CommandPrefix) <= 1 {
+					// prevent bot from spamming help message whenever the single character
+					// prefix is sent by mistake
+					return
+				} else {
+					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+				}
 			} else {
 				args := strings.Split(contents, " ")
 

@@ -41,16 +41,16 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, args []string) {
+func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
 
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
 	}
 
-	userID, err := extractUserIDFromMention(args[0])
-	if err != nil {
-		log.Printf("Invalid mention format for \"%s\"", args[0])
+	userID := getMemberFromString(s, GuildID, args[0])
+	if userID == "" {
+		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}
 
 	_, added := guild.checkCacheAndAddUser(g, s, userID)
@@ -233,6 +233,15 @@ func extractUserIDFromMention(mention string) (string, error) {
 		//non-nickname format
 	} else if strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">") {
 		return mention[2 : len(mention)-1], nil
+	} else {
+		return "", errors.New("mention does not conform to the correct format")
+	}
+}
+
+func extractRoleIDFromMention(mention string) (string, error) {
+	//role is formatted <&123456>
+	if strings.HasPrefix(mention, "<@&") && strings.HasSuffix(mention, ">") {
+		return mention[3 : len(mention)-1], nil
 	} else {
 		return "", errors.New("mention does not conform to the correct format")
 	}

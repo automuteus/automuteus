@@ -16,7 +16,7 @@
 
 # AmongUsAutoMute (BETA) 
 
-Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!
+Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!
 
 Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
 
