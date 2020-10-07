@@ -13,10 +13,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.2.4-Prerelease"
+const VERSION = "2.5.0-Prerelease"
 
 const DefaultPort = "8123"
-const DefaultURL = "localhost"
+const DefaultURL = "http://localhost"
 
 const ConfigBasePath = "./"
 
@@ -60,8 +60,8 @@ func discordMainWrapper() error {
 	}
 
 	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
-	if discordToken2 == "" {
-		log.Println("No 2nd Discord Bot Token provided, only using 1")
+	if discordToken2 != "" {
+		log.Println("You provided a 2nd Discord Bot Token, so I'll try to use it")
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
@@ -79,13 +79,13 @@ func discordMainWrapper() error {
 	num, err := strconv.Atoi(port)
 
 	if err != nil || num < 1024 || num > 65535 {
-		log.Printf("Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
+		log.Printf("[Info] Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
 		port = DefaultPort
 	}
 
 	url := os.Getenv("SERVER_URL")
 	if url == "" {
-		log.Printf("[This is not an error] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
+		log.Printf("[Info] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
 		url = DefaultURL
 	}
 
@@ -93,7 +93,7 @@ func discordMainWrapper() error {
 	dbSuccess := false
 
 	authPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	projectID := os.Getenv("FIRESTORE_PROJECTID")
+	projectID := os.Getenv("FIRESTORE_PROJECT_ID")
 	if authPath != "" && projectID != "" {
 		log.Println("GOOGLE_APPLICATION_CREDENTIALS variable is set; attempting to use Firestore as the Storage Driver")
 		storageClient = &storage.FirestoreDriver{}

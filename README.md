@@ -49,7 +49,7 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 ## Easiest:
 1. [Download the latest release executable (`.exe`) and `final.txt`](https://github.com/denverquane/amongusdiscord/releases) for this discord bot.
 If you don't see one for the current version, then simply create a new text document called `final.txt`, and put `DISCORD_BOT_TOKEN = ` as the contents.
-2. Paste the Bot Token you obtained in the pre-installation into the `final.txt` file, after the `=` sign.
+2. Paste the Bot Token you obtained in the pre-installation into the `final.txt` file, after the `=` sign for the `DISCORD_BOT_TOKEN`.
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
 4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
 you can add a `host.txt` file in the same folder with the contents `http://<host>:<port>` to point to that instance, but this is totally optional.
@@ -61,7 +61,7 @@ Congrats, if you followed the instructions correctly, the bot should now be runn
 1. [Install Go 1.15.2](https://golang.org/dl/go1.15.2.windows-amd64.msi), but any version of Go 1.12+ should work.
 2. Clone the repository using `git clone https://github.com/denverquane/amongusdiscord`.
 3. Navigate to the directory with `cd amongusdiscord`, and then build the executable using `go build -o amongusdiscord.exe main.go`.
-4. Proceed to steps 2-3 of the `Easiest` install section above.
+4. Proceed to steps 2-5 of the `Easiest` install section above.
 
 ## Docker
 You can also run the discord portion using docker if you prefer, it simply needs the port `8123` exposed, and you should provide your `DISCORD_BOT_TOKEN` as an env variable.
@@ -70,17 +70,20 @@ Example:
 
 ## Environment Variables
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
+- `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to issue 1/2 of the mute/deafen requests to Discord.
+If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 
 ### Advanced. Only configure these variables if you know what you're doing
 - `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123
-- `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `automute.us`.
+- `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
+**You must specify `http://` or `https://` accordingly as part of the URL**
 - `NUM_SHARDS`: How many total bot shard instances you'll be running in your current stack.
 - `SHARD_ID`: The specific ID of this bot instance. Should always be *strictly less* than the NUM_SHARDS. (0-indexed)
 
 ## Google Firestore Config (Optional)
-- `GOOGLE_APPLICATION_CREDENTIALS`: Credentials used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECTID below as well.
-` `FIRESTORE_PROJECTID`: The specific Project ID for the Firestore operations you intend this bot to use.
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to credentials JSON file used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECT_ID below as well.
+` `FIRESTORE_PROJECT_ID`: The specific Project ID for the Firestore operations you intend this bot to use.
 
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
@@ -116,6 +119,7 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au refresh`|`.au r`|None|Remake the bot's status message entirely, in case it ends up too far up in the chat.||
 |`.au end`|`.au e`|None|End the game entirely, and stop tracking players. Unmutes all and resets state||
 |`.au unlink`|`.au u`|@name|Manually unlink a player|`.au u @player`|
+|`.au settings`|`.au s`||View and change settings for the bot, such as the command prefix or mute behavior||
 |`.au force`|`.au f`|stage|Force a transition to a stage if you encounter a problem in the state|`.au f task` or `.au f d`(discuss)|
 
 # Similar Projects
