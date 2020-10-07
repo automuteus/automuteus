@@ -15,12 +15,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.5.0-Prerelease"
+const VERSION = "2.3.0-Prerelease"
 
+//TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
 const DefaultPort = "8123"
 const DefaultURL = "http://localhost"
-
-const ConfigBasePath = "./"
 
 func main() {
 	err := discordMainWrapper()
@@ -117,7 +116,12 @@ func discordMainWrapper() error {
 
 	if !dbSuccess {
 		storageClient = &storage.FilesystemDriver{}
-		err := storageClient.Init(ConfigBasePath)
+		configPath := os.Getenv("CONFIG_PATH")
+		if configPath == "" {
+			configPath = "./"
+		}
+		log.Printf("Using %s as the base path for config", configPath)
+		err := storageClient.Init(configPath)
 		if err != nil {
 			log.Fatalf("Failed to create Filesystem Storage Driver with error: %s", err)
 		}

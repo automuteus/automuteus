@@ -78,6 +78,7 @@ If you play in larger groups of 8+ people, this is recommended to not be rate-li
 - `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
 **You must specify `http://` or `https://` accordingly as part of the URL**
+- `CONFIG_PATH`: Alternate filesystem path for guild config files. Defaults to `./`
 - `NUM_SHARDS`: How many total bot shard instances you'll be running in your current stack.
 - `SHARD_ID`: The specific ID of this bot instance. Should always be *strictly less* than the NUM_SHARDS. (0-indexed)
 
