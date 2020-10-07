@@ -6,7 +6,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/denverquane/amongusdiscord/discord"
@@ -32,11 +34,18 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("final.txt")
+	err := godotenv.Load("config.txt")
 	if err != nil {
-		err = godotenv.Load("final.env")
+		err = godotenv.Load("final.txt")
 		if err != nil {
-			log.Println("Can't open env file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
+			log.Println("Can't open config file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
+			f, err := os.Create("config.txt")
+			if err != nil {
+				log.Println("Issue creating sample config.txt")
+				return err
+			}
+			_, err = f.WriteString("DISCORD_BOT_TOKEN = \n")
+			f.Close()
 		}
 	}
 
@@ -114,8 +123,15 @@ func discordMainWrapper() error {
 		}
 		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
+	log.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
 	//start the discord bot
-	discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, port, emojiGuildID, numShards, shardID, storageClient)
+	bot := discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, port, emojiGuildID, numShards, shardID, storageClient)
+
+	<-sc
+	bot.Close()
+	storageClient.Close()
 	return nil
 }
