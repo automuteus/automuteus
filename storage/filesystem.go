@@ -78,7 +78,7 @@ func (fs *FilesystemDriver) WriteGuildData(guildID string, data map[string]inter
 			return err //can be nil if it worked
 		}
 	}
-	f, err := os.Create(guildID + FileSuffix)
+	f, err := os.Create(path.Join(fs.baseDir, guildID+FileSuffix))
 	if err != nil {
 		return err
 	}
