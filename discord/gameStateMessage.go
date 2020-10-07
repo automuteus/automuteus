@@ -37,6 +37,23 @@ func MakePrivateStateMessage() PrivateStateMessage {
 	}
 }
 
+func (psm *PrivateStateMessage) Initialize(){
+	psm.lock.Lock();
+	defer psm.lock.Unlock()
+
+	psm.idUsernameMap = make(map[string]string)
+	psm.printedUsers = make([]string, 0)
+	psm.currentUserID = ""
+	psm.message = nil;
+}
+
+func (psm *PrivateStateMessage) getIDUsernameMap() map[string]string{
+	psm.lock.RLock()
+	defer psm.lock.RUnlock()
+
+	return psm.idUsernameMap
+}
+
 func (gsm *GameStateMessage) Exists() bool {
 	gsm.lock.RLock()
 	defer gsm.lock.RUnlock()

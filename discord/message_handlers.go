@@ -44,7 +44,7 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 
 func (guildState *GuildState) createPrivateMapMessage(s *discordgo.Session, m *discordgo.MessageCreate, channels []TrackingChannel) {
 	mapUsers(s, m, channels, guildState)
-	createMessage(s, guildState)
+	createInitialMessageAndUpdatePrintedUsers(s, guildState)
 }
 
 // START - createPrivateMapMessage Helper Methods
@@ -190,7 +190,7 @@ func getUsername(member *discordgo.Member) string {
 	return username;
 }
 
-func createMessage(s *discordgo.Session, guildState *GuildState) {
+func createInitialMessageAndUpdatePrintedUsers(s *discordgo.Session, guildState *GuildState) {
 	var message *discordgo.Message;
 	for uID, uName := range guildState.PrivateStateMsg.idUsernameMap {
 		message = guildState.PrivateStateMsg.CreateMessage(s, guildState.PrivateStateMsg.privateMapResponse(uID, uName), guildState.PrivateStateMsg.privateChannelID);

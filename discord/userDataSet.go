@@ -47,15 +47,12 @@ func (uds *UserDataSet) AddFullUser(user game.UserData) {
 	uds.lock.Unlock()
 }
 
-func (uds *UserDataSet) containsUser(userId string) bool{
-	var found = false
-	uds.lock.Lock()
+func (uds *UserDataSet) containsUser(userID string) bool{
+	uds.lock.RLock() //no need for a full write lock, read lock is fine
+	defer uds.lock.RUnlock()
 
-	_, ok := uds.userDataSet[userId]
-	found = ok;
-
-	uds.lock.Unlock()
-	return found
+	_, ok := uds.userDataSet[userID]
+	return ok
 }
 
 func (uds *UserDataSet) UpdateUserData(userID string, data game.UserData) {

@@ -372,7 +372,7 @@ func (guild *GuildState) handleReactionPrivateUserMessage(s *discordgo.Session, 
 		return
 	}
 
-	var idUsernameMap = guild.PrivateStateMsg.idUsernameMap;
+	var idUsernameMap = guild.PrivateStateMsg.getIDUsernameMap();
 	var printedUsers = guild.PrivateStateMsg.printedUsers;
 	var userId = guild.PrivateStateMsg.currentUserID;
 

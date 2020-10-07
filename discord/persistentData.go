@@ -30,7 +30,7 @@ func PGDDefault(id string) *PersistentGuildData {
 		GuildID:               id,
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
-		PrivateChannelID:      "000000000000000000",
+		PrivateChannelID:      "",
 		AdminUserIDs:          nil,
 		PermissionedRoleIDs:   nil,
 		Delays:                MakeDefaultDelays(),

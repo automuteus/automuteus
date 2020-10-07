@@ -678,17 +678,14 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 					guild.PrivateStateMsg.privateChannelID = privateChannelIDTemp;
 
 					guild.handleGameStartMessage(s, m, room, region, initialTracking)
-					guild.PrivateStateMsg.idUsernameMap = make(map[string]string)
-					guild.PrivateStateMsg.printedUsers = make([]string, 0)
-					guild.PrivateStateMsg.currentUserID = ""
-					guild.PrivateStateMsg.message = nil;
+					guild.PrivateStateMsg.Initialize()
 					guild.createPrivateMapMessage(s, m, initialTracking)
 					break
 				case End:
 					guild.handleGameEndMessage(s)
 					var pMessage = guild.PrivateStateMsg.message;
 
-					if (pMessage != nil) {
+					if guild.PrivateStateMsg.Exists() {
 						deleteMessage(s, pMessage.ChannelID, pMessage.ID);
 					}
 
