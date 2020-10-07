@@ -728,10 +728,7 @@ func (guild *GuildState) handleMessageCreate(s *discordgo.Session, m *discordgo.
 						deleteMessage(s, pMessage.ChannelID, pMessage.ID);
 					}
 
-					guild.PrivateStateMsg.idUsernameMap = make(map[string]string)
-					guild.PrivateStateMsg.printedUsers = make([]string, 0)
-					guild.PrivateStateMsg.currentUserID = ""
-					guild.PrivateStateMsg.message = nil;
+					guild.PrivateStateMsg.Initialize()
 					guild.createPrivateMapMessage(s, m, initialTracking)
 				default:
 					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
