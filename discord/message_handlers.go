@@ -10,6 +10,7 @@ import (
 )
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x32.exe"
+const dotNetUrl = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
 
 func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 	guild.AmongUsData.SetAllAlive()
@@ -52,17 +53,18 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	}
 
 	var embed = discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       "You just started a game!",
-		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\nDon't have the capture installed? [Download it here](%s)", hyperlink, downloadURL),
-		Timestamp:   "",
-		Color:       3066993, //GREEN
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+		URL:   "",
+		Type:  "",
+		Title: "You just started a game!",
+		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
+			"Don't have the capture installed? [Download it here](%s)\nIf you don't have .NET Core installed, you can get that [here](%s)", hyperlink, downloadURL, dotNetUrl),
+		Timestamp: "",
+		Color:     3066993, //GREEN
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
 	}
 
 	sendMessageDM(s, m.Author.ID, &embed)
