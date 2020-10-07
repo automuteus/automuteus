@@ -53,7 +53,7 @@ func GetCommandType(arg string) CommandType {
 	return Null
 }
 
-func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
+func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
 	switch GetCommandType(args[0]) {
 
 	case Help:
@@ -122,89 +122,11 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 	case New:
 		room, region := getRoomAndRegionFromArgs(args[1:])
 
-		initialTracking := make([]TrackingChannel, 0)
-
-		//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
-		//we don't have enough info to go off of when remaking the game...
-		//if !guild.GameStateMsg.Exists() {
-
-		connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
-		log.Println(connectCode)
-		LinkCodeLock.Lock()
-		LinkCodes[GameOrLobbyCode{
-			gameCode:    "",
-			connectCode: connectCode,
-		}] = guild.PersistentGuildData.GuildID
-		guild.LinkCode = connectCode
-		LinkCodeLock.Unlock()
-
-		var hyperlink string
-		if strings.HasPrefix(BotUrl, "https://") {
-			hyperlink = fmt.Sprintf("aucapture://%s:%s/%s", strings.Replace(BotUrl, "https://", "", 1), BotPort, connectCode)
-		} else if strings.HasPrefix(BotUrl, "http://") {
-			hyperlink = fmt.Sprintf("aucapture://%s:%s/%s?insecure", strings.Replace(BotUrl, "http://", "", 1), BotPort, connectCode)
-		} else {
-			hyperlink = "aucapture://INVALID_PROTOCOL_ON_SERVER_URL"
-		}
-
-		var embed = discordgo.MessageEmbed{
-			URL:         "",
-			Type:        "",
-			Title:       "You just started a game!",
-			Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>", hyperlink),
-			Timestamp:   "",
-			Color:       3066993, //GREEN
-			Image:       nil,
-			Thumbnail:   nil,
-			Video:       nil,
-			Provider:    nil,
-			Author:      nil,
-		}
-
-		sendMessageDM(s, m.Author.ID, &embed)
-
-		channels, err := s.GuildChannels(m.GuildID)
-		if err != nil {
-			log.Println(err)
-		}
-
-		for _, channel := range channels {
-			if channel.Type == discordgo.ChannelTypeGuildVoice {
-				if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
-					initialTracking = append(initialTracking, TrackingChannel{
-						channelID:   channel.ID,
-						channelName: channel.Name,
-						forGhosts:   false,
-					})
-					log.Printf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name)
-				}
-			}
-			for _, v := range g.VoiceStates {
-				//if the user is detected in a voice channel
-				if v.UserID == m.Author.ID {
-
-					//once we find the channel by ID
-					if channel.Type == discordgo.ChannelTypeGuildVoice {
-						if channel.ID == v.ChannelID {
-							initialTracking = append(initialTracking, TrackingChannel{
-								channelID:   channel.ID,
-								channelName: channel.Name,
-								forGhosts:   false,
-							})
-							log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
-						}
-					}
-
-				}
-
-			}
-		}
-
-		guild.handleGameStartMessage(s, m, room, region, initialTracking, g)
+		bot.handleNewGameMessage(guild, s, m, g, room, region)
 		break
 
 	case End:
-		guild.handleGameEndMessage(s)
+		bot.handleGameEndMessage(guild, s)
 
 		//have to explicitly delete here, because if we use the default delete below, the channelID
 		//for the game state message doesn't exist anymore...
@@ -217,9 +139,7 @@ func (guild *GuildState) HandleCommand(s *discordgo.Session, g *discordgo.Guild,
 			s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 		} else {
 			//TODO this is ugly, but only for debug really
-			ChannelsMapLock.RLock()
-			*GamePhaseUpdateChannels[m.GuildID] <- phase
-			ChannelsMapLock.RUnlock()
+			bot.PushGuildPhaseUpdate(m.GuildID, phase)
 		}
 		break
 
