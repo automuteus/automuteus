@@ -70,17 +70,17 @@ Example:
 
 ## Environment Variables
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
-- `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to issue 1/2 of the mute/deafen requests to Discord.
+- `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to distribute the mute/deafen requests to Discord.
 If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 
 ### Advanced. Only configure these variables if you know what you're doing
-- `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123
+- `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.
+You must specify more (comma-delimited ports) if you are running with `NUM_SHARDS` > 1. For example, with 3 shards, `PORT = 8123,8124,8125`
 - `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
 **You must specify `http://` or `https://` accordingly as part of the URL**
 - `CONFIG_PATH`: Alternate filesystem path for guild config files. Defaults to `./`
 - `NUM_SHARDS`: How many total bot shard instances you'll be running in your current stack.
-- `SHARD_ID`: The specific ID of this bot instance. Should always be *strictly less* than the NUM_SHARDS. (0-indexed)
 
 ## Google Firestore Config (Optional)
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to credentials JSON file used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECT_ID below as well.

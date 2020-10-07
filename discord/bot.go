@@ -14,6 +14,7 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/gorilla/mux"
 )
 
 type GameOrLobbyCode struct {
@@ -161,7 +162,7 @@ func MakeAndStartBot(version, token, token2, url, port, emojiGuildID string, num
 		}
 	}
 
-	if numShards > 0 && shardID > -1 {
+	if numShards > 1 {
 		log.Printf("Identifying to the Discord API with %d total shards, and shard ID=%d\n", numShards, shardID)
 		dg.ShardCount = numShards
 		dg.ShardID = shardID
@@ -379,12 +380,16 @@ func (bot *Bot) socketioServer(port string) {
 	go server.Serve()
 	defer server.Close()
 
-	http.Handle("/socket.io/", server)
+	//http.Handle("/socket.io/", server)
+
+	router := mux.NewRouter()
+	router.Handle("/socket.io/", server)
+
 	log.Printf("Serving at localhost:%s...\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-func messagesServer(port string, bots []*Bot) {
+func MessagesServer(port string, bots []*Bot) {
 
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
 		for _, bot := range bots {
@@ -719,7 +724,7 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 		if !perms {
 			perms = guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
 		}
-		if !perms {
+		if !perms && g.OwnerID != m.Author.ID {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
 		} else {
 			oldLen := len(contents)

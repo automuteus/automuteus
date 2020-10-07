@@ -9,6 +9,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x32.exe"
+
 func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 	guild.AmongUsData.SetAllAlive()
 	guild.AmongUsData.SetPhase(game.LOBBY)
@@ -53,7 +55,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		URL:         "",
 		Type:        "",
 		Title:       "You just started a game!",
-		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>", hyperlink),
+		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\nDon't have the capture installed? [Download it here](%s)", hyperlink, downloadURL),
 		Timestamp:   "",
 		Color:       3066993, //GREEN
 		Image:       nil,

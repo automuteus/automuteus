@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -75,20 +76,28 @@ func discordMainWrapper() error {
 	numShardsStr := os.Getenv("NUM_SHARDS")
 	numShards, err := strconv.Atoi(numShardsStr)
 	if err != nil {
-		numShards = 0
+		numShards = 1
 	}
-	shardIDStr := os.Getenv("SHARD_ID")
-	shardID, err := strconv.Atoi(shardIDStr)
-	if err != nil {
-		shardID = -1
-	}
+	ports := make([]string, numShards)
+	tempPort := strings.ReplaceAll(os.Getenv("PORT"), " ", "")
+	portStrings := strings.Split(tempPort, ",")
+	if len(ports) == 0 {
+		num, err := strconv.Atoi(tempPort)
 
-	port := os.Getenv("PORT")
-	num, err := strconv.Atoi(port)
-
-	if err != nil || num < 1024 || num > 65535 {
-		log.Printf("[Info] Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
-		port = DefaultPort
+		if err != nil || num < 1024 || num > 65535 {
+			log.Printf("[Info] Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
+			ports[0] = DefaultPort
+		}
+	} else if len(portStrings) == numShards {
+		for i := 0; i < numShards; i++ {
+			num, err := strconv.Atoi(portStrings[i])
+			if err != nil || num < 1024 || num > 65535 {
+				return errors.New("invalid or no particular PORT (range [1024-65535]) provided")
+			}
+			ports[i] = portStrings[i]
+		}
+	} else {
+		return errors.New("the number of shards does not match the number of ports provided")
 	}
 
 	url := os.Getenv("SERVER_URL")
@@ -131,11 +140,18 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	//start the discord bot
-	bot := discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, port, emojiGuildID, numShards, shardID, storageClient)
+	bots := make([]*discord.Bot, numShards)
+
+	for i := 0; i < numShards; i++ {
+		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], emojiGuildID, numShards, i, storageClient)
+	}
+
+	go discord.MessagesServer("5000", bots)
 
 	<-sc
-	bot.Close()
+	for i := 0; i < numShards; i++ {
+		bots[i].Close()
+	}
 	storageClient.Close()
 	return nil
 }
