@@ -84,7 +84,7 @@ This is used to provide the linking URI to the capture, via the Direct Message t
 
 ## Google Firestore Config (Optional)
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to credentials JSON file used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECT_ID below as well.
-` `FIRESTORE_PROJECT_ID`: The specific Project ID for the Firestore operations you intend this bot to use.
+- `FIRESTORE_PROJECT_ID`: The specific Project ID for the Firestore operations you intend this bot to use.
 
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
