@@ -12,9 +12,9 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 )
 
-func helpResponse(CommandPrefix string) string {
+func helpResponse(version, CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString("Among Us Bot command reference:\n")
+	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (v%s):\n", version))
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))
@@ -23,6 +23,7 @@ func helpResponse(CommandPrefix string) string {
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s unlink` or `%s u`: Manually unlink a player. Ex: `%s u @player`\n", CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s settings` or `%s s`: View and change settings for the bot, such as the command prefix or mute behavior\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s force` or `%s f`: Force a transition to a stage if you encounter a problem in the state. Ex: `%s f task` or `%s f d`(discuss)\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 
 	return buf.String()
@@ -41,11 +42,21 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string) {
+func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
 
-	userID, err := extractUserIDFromMention(args[0])
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
-		log.Printf("Invalid mention format for \"%s\"", args[0])
+		log.Println(err)
+	}
+
+	userID := getMemberFromString(s, GuildID, args[0])
+	if userID == "" {
+		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
+	}
+
+	_, added := guild.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for userID " + userID)
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
@@ -78,6 +89,7 @@ func (guild *GuildState) linkPlayerResponse(args []string) {
 func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
+		game.MENU:    lobbyMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
@@ -131,18 +143,6 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 }
 
 func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
-	//buf.WriteString("Lobby is open!\n")
-	//if g.LinkCode != "" {
-	//	alarmFormatted := ":x:"
-	//	if v, ok := g.SpecialEmojis["alarm"]; ok {
-	//		alarmFormatted = v.FormatForInline()
-	//	}
-	//
-	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
-	//}
-	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("room Code", PaddedLen), padToLength("region", PaddedLen))) // maybe this is a toggle?
-	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.room, PaddedLen), padToLength(g.region, PaddedLen)))
-
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
@@ -153,10 +153,6 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 
 	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
-	//if len(listResp) > 0 {
-	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
-	//	buf.WriteString(listResp)
-	//}
 
 	alarmFormatted := ":x:"
 	if v, ok := g.SpecialEmojis["alarm"]; ok {
@@ -166,7 +162,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	if g.LinkCode == "" {
 		desc = "Successfully linked to capture!"
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Enter the code `%s` in your capture to connect!**%s", alarmFormatted, g.LinkCode, alarmFormatted)
+		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -238,6 +234,15 @@ func extractUserIDFromMention(mention string) (string, error) {
 		//non-nickname format
 	} else if strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">") {
 		return mention[2 : len(mention)-1], nil
+	} else {
+		return "", errors.New("mention does not conform to the correct format")
+	}
+}
+
+func extractRoleIDFromMention(mention string) (string, error) {
+	//role is formatted <&123456>
+	if strings.HasPrefix(mention, "<@&") && strings.HasSuffix(mention, ">") {
+		return mention[3 : len(mention)-1], nil
 	} else {
 		return "", errors.New("mention does not conform to the correct format")
 	}

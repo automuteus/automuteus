@@ -13,11 +13,12 @@ type PersistentGuildData struct {
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 
-	AdminUserIDs        []string   `json:"adminIDs"`
-	PermissionedRoleIDs []string   `json:"permissionRoleIDs"`
-	Delays              GameDelays `json:"delays"`
-	VoiceRules          VoiceRules `json:"voiceRules"`
-	ApplyNicknames      bool       `json:"applyNicknames"`
+	AdminUserIDs          []string   `json:"adminIDs"`
+	PermissionedRoleIDs   []string   `json:"permissionRoleIDs"`
+	Delays                GameDelays `json:"delays"`
+	VoiceRules            VoiceRules `json:"voiceRules"`
+	ApplyNicknames        bool       `json:"applyNicknames"`
+	UnmuteDeadDuringTasks bool       `json:"UnmuteDeadDuringTasks"`
 
 	lock sync.RWMutex
 }
@@ -34,6 +35,33 @@ func PGDDefault(id string) *PersistentGuildData {
 		ApplyNicknames:        false,
 		lock:                  sync.RWMutex{},
 	}
+}
+
+func FromData(data map[string]interface{}) (*PersistentGuildData, error) {
+	var newPgd PersistentGuildData
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &newPgd)
+	if err != nil {
+		return nil, err
+	}
+	return &newPgd, nil
+}
+
+func (pgd *PersistentGuildData) ToData() (map[string]interface{}, error) {
+	var data map[string]interface{}
+
+	jsonBytes, err := json.Marshal(pgd)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(jsonBytes, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (pgd *PersistentGuildData) ToFile(filename string) error {

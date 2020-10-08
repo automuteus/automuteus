@@ -85,6 +85,12 @@ func (auData *AmongUsData) GetPhase() Phase {
 	return auData.phase
 }
 
+func (auData *AmongUsData) ClearPlayerData(name string) {
+	auData.lock.Lock()
+	delete(auData.playerData, name)
+	auData.lock.Unlock()
+}
+
 func (auData *AmongUsData) ClearAllPlayerData() {
 	auData.lock.Lock()
 	auData.playerData = map[string]*PlayerData{}
@@ -136,7 +142,7 @@ func (auData *AmongUsData) GetByName(text string) *PlayerData {
 	defer auData.lock.RUnlock()
 
 	for _, playerData := range auData.playerData {
-		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == text {
+		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == strings.ReplaceAll(strings.ToLower(text), " ", "") {
 			return playerData
 		}
 	}

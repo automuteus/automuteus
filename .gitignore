@@ -14,8 +14,19 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# json config files
+*.json
+
+.idea/
+
+# final config file
 final.txt
 final.env
+
+# logs file
+logs.txt
+
+# remnant from when the project used tesseract
 temp.png
 discuss.png
 ending.png

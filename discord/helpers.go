@@ -3,12 +3,19 @@ package discord
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
+
+// when querying for the member list we need to specify a size
+// too high reduces performance
+// too low increases the chance of the member we want not being in the list
+// ideally this should be adjusted on a per-server basis
+const MemberQuerySize = 1000
 
 type UserPatchParameters struct {
 	GuildID string
@@ -56,13 +63,12 @@ func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
 	}
 }
 
-func getPhaseFromArgs(args []string) game.Phase {
-	if len(args) == 0 {
+func getPhaseFromString(input string) game.Phase {
+	if len(input) == 0 {
 		return game.UNINITIALIZED
 	}
 
-	phase := strings.ToLower(args[0])
-	switch phase {
+	switch strings.ToLower(input) {
 	case "lobby":
 		fallthrough
 	case "l":
@@ -87,7 +93,6 @@ func getPhaseFromArgs(args []string) game.Phase {
 		return game.DISCUSS
 	default:
 		return game.UNINITIALIZED
-
 	}
 }
 
@@ -122,12 +127,46 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 	return room, region
 }
 
+func getMemberFromString(s *discordgo.Session, GuildID string, input string) string {
+	// find which member the user was referencing in their message
+	// TODO increase performance by caching member list for when function called more than once
+	// first check if is mentionned
+	ID, err := extractUserIDFromMention(input)
+	if err == nil {
+		return ID
+	}
+	members, _ := s.GuildMembers(GuildID, "", MemberQuerySize)
+	for _, member := range members {
+		if input == member.User.ID || input == strings.ToLower(member.Nick) || input == strings.ToLower(member.User.Username) ||
+			input == strings.ToLower(member.User.Username)+"#"+member.User.Discriminator {
+			return member.User.ID
+		}
+	}
+	return ""
+}
+
+func getRoleFromString(s *discordgo.Session, GuildID string, input string) string {
+	// find which role the user was referencing in their message
+	// first check if is mentionned
+	ID, err := extractRoleIDFromMention(input)
+	if err == nil {
+		return ID
+	}
+	roles, _ := s.GuildRoles(GuildID)
+	for _, role := range roles {
+		if input == role.ID || input == strings.ToLower(role.Name) {
+			return role.ID
+		}
+	}
+	return ""
+}
+
 func generateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
 	//add some "randomness" with the current time
 	h.Write([]byte(time.Now().String()))
-	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:6])
+	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 	//TODO replace common problematic characters?
 	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
 }
