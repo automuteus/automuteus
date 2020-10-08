@@ -28,20 +28,64 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 	isValid := false
 	switch args[1] {
 	case "commandprefix":
+		fallthrough
+	case "prefix":
+		fallthrough
+	case "cp":
 		isValid = CommandPrefixSetting(s, m, guild, args)
 	case "defaulttrackedchannel":
+		fallthrough
+	case "channel":
+		fallthrough
+	case "vc":
+		fallthrough
+	case "dtc":
 		isValid = SettingDefaultTrackedChannel(s, m, guild, args)
 	case "adminuserids":
+		fallthrough
+	case "admins":
+		fallthrough
+	case "admin":
+		fallthrough
+	case "auid":
+		fallthrough
+	case "aui":
+		fallthrough
+	case "a":
 		isValid = SettingAdminUserIDs(s, m, guild, args)
 	case "permissionroleids":
+		fallthrough
+	case "roles":
+		fallthrough
+	case "role":
+		fallthrough
+	case "prid":
+		fallthrough
+	case "pri":
+		fallthrough
+	case "r":
 		isValid = SettingPermissionRoleIDs(s, m, guild, args)
 	case "applynicknames":
+		fallthrough
+	case "nicknames":
+		fallthrough
+	case "nickname":
+		fallthrough
+	case "an":
 		isValid = SettingApplyNicknames(s, m, guild, args)
 	case "unmutedeadduringtasks":
+		fallthrough
+	case "unmute":
+		fallthrough
+	case "uddt":
 		isValid = SettingUnmuteDeadDuringTasks(s, m, guild, args)
 	case "delays":
+		fallthrough
+	case "d":
 		isValid = SettingDelays(s, m, guild, args)
 	case "voicerules":
+		fallthrough
+	case "vr":
 		isValid = SettingVoiceRules(s, m, guild, args)
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n"+
@@ -156,6 +200,10 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 	var userIDs []string
 
 	for _, userName := range args[2:] {
+		if userName == "" || userName == " " {
+			// user added a double space by accident, ignore it
+			continue
+		}
 		ID := getMemberFromString(s, m.GuildID, userName)
 		if ID == "" {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
@@ -225,6 +273,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 				nextIndexToRemove = removeAdmins[currentIndexInRemoveAdmins]
 			} else {
 				// reached the end of removeAdmins
+				newAdminList = append(newAdminList, guild.PersistentGuildData.AdminUserIDs[currentIndex+1:]...)
 				break
 			}
 		}
@@ -341,6 +390,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 				nextIndexToRemove = removeRoles[currentIndexInRemoveAdminRoles]
 			} else {
 				// reached the end of removeRoles
+				newAdminRoleList = append(newAdminRoleList, guild.PersistentGuildData.PermissionedRoleIDs[currentIndex+1:]...)
 				break
 			}
 		}

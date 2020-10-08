@@ -367,7 +367,7 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 	}
 }
 
-func (guild *GuildState) HasAdminPermissions(userID string) bool {
+func (guild *GuildState) HasAdminPermissions(s *discordgo.Session, userID string) bool {
 	if len(guild.PersistentGuildData.AdminUserIDs) == 0 {
 		return false
 	}
@@ -377,6 +377,14 @@ func (guild *GuildState) HasAdminPermissions(userID string) bool {
 			return true
 		}
 	}
+
+	// check if user is guild owner
+	theGuild, _ := s.Guild(guild.PersistentGuildData.GuildID)
+	if userID == theGuild.OwnerID {
+		// guild owners are always admins
+		return true
+	}
+
 	return false
 }
 
