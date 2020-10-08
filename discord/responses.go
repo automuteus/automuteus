@@ -23,6 +23,7 @@ func helpResponse(version, CommandPrefix string) string {
 	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s unlink` or `%s u`: Manually unlink a player. Ex: `%s u @player`\n", CommandPrefix, CommandPrefix, CommandPrefix))
+	buf.WriteString(fmt.Sprintf("`%s settings` or `%s s`: View and change settings for the bot, such as the command prefix or mute behavior\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s force` or `%s f`: Force a transition to a stage if you encounter a problem in the state. Ex: `%s f task` or `%s f d`(discuss)\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
 
 	return buf.String()
@@ -88,6 +89,7 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
+		game.MENU:    lobbyMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
@@ -141,18 +143,6 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 }
 
 func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
-	//buf.WriteString("Lobby is open!\n")
-	//if g.LinkCode != "" {
-	//	alarmFormatted := ":x:"
-	//	if v, ok := g.SpecialEmojis["alarm"]; ok {
-	//		alarmFormatted = v.FormatForInline()
-	//	}
-	//
-	//	buf.WriteString(fmt.Sprintf("%s **No capture is linked! Use the guildID %s to connect!** %s\n", alarmFormatted, g.LinkCode, alarmFormatted))
-	//}
-	//buf.WriteString(fmt.Sprintf("\n%s %s\n", padToLength("room Code", PaddedLen), padToLength("region", PaddedLen))) // maybe this is a toggle?
-	//uf.WriteString(fmt.Sprintf("**%s** **%s**\n", padToLength(g.room, PaddedLen), padToLength(g.region, PaddedLen)))
-
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
@@ -163,10 +153,6 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 
 	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
-	//if len(listResp) > 0 {
-	//	buf.WriteString(fmt.Sprintf("\nTracked Player List:\n"))
-	//	buf.WriteString(listResp)
-	//}
 
 	alarmFormatted := ":x:"
 	if v, ok := g.SpecialEmojis["alarm"]; ok {
@@ -176,7 +162,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	if g.LinkCode == "" {
 		desc = "Successfully linked to capture!"
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Enter the code `%s` in your capture to connect!**%s", alarmFormatted, g.LinkCode, alarmFormatted)
+		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
 	}
 
 	msg := discordgo.MessageEmbed{

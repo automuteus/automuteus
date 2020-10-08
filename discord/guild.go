@@ -127,9 +127,9 @@ func (h *PatchPriority) Pop() interface{} {
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
-func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, handlePriority HandlePriority) bool {
+func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, handlePriority HandlePriority) bool {
 
-	g := guild.verifyVoiceStateChanges(dg)
+	g := guild.verifyVoiceStateChanges(sm.GetPrimarySession())
 
 	updateMade := false
 	priorityQueue := &PatchPriority{}
@@ -141,7 +141,7 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, 
 		if err != nil {
 			//the user doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = guild.checkCacheAndAddUser(g, dg, voiceState.UserID)
+			userData, added = guild.checkCacheAndAddUser(g, sm.GetPrimarySession(), voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -218,7 +218,9 @@ func (guild *GuildState) handleTrackedMembers(dg *discordgo.Session, delay int, 
 		}
 
 		wg.Add(1)
-		go muteWorker(dg, &wg, p.patchParams)
+
+		//we can issue mutes/deafens from ANY session, not just the primary
+		go muteWorker(sm.GetSessionForRequest(), &wg, p.patchParams)
 	}
 	wg.Wait()
 
@@ -307,7 +309,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	}
 }
 
-func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
@@ -358,12 +360,11 @@ func (guild *GuildState) handleReactionGameStartAdd(s *discordgo.Session, m *dis
 			}
 			//make sure to update any voice changes if they occurred
 			if idMatched {
-				guild.handleTrackedMembers(s, 0, NoPriority)
+				guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
 				guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 			}
 		}
 	}
-
 }
 
 func (guild *GuildState) HasAdminPermissions(userID string) bool {

@@ -37,6 +37,33 @@ func PGDDefault(id string) *PersistentGuildData {
 	}
 }
 
+func FromData(data map[string]interface{}) (*PersistentGuildData, error) {
+	var newPgd PersistentGuildData
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &newPgd)
+	if err != nil {
+		return nil, err
+	}
+	return &newPgd, nil
+}
+
+func (pgd *PersistentGuildData) ToData() (map[string]interface{}, error) {
+	var data map[string]interface{}
+
+	jsonBytes, err := json.Marshal(pgd)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(jsonBytes, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 func (pgd *PersistentGuildData) ToFile(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {

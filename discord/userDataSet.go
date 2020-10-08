@@ -3,6 +3,7 @@ package discord
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -67,13 +68,30 @@ func (uds *UserDataSet) UpdatePlayerData(userID string, data *game.PlayerData) b
 
 func (uds *UserDataSet) UpdatePlayerMappingByName(name string, data *game.PlayerData) {
 	uds.lock.Lock()
+	defer uds.lock.Unlock()
 	for userID, v := range uds.userDataSet {
 		if v.GetPlayerName() == name {
 			v.SetPlayerData(data)
 			uds.userDataSet[userID] = v
+			return
 		}
 	}
-	uds.lock.Unlock()
+}
+
+func (uds *UserDataSet) AttemptPairingByMatchingNames(name string, data *game.PlayerData) bool {
+	uds.lock.Lock()
+	defer uds.lock.Unlock()
+	name = strings.ReplaceAll(strings.ToLower(name), " ", "")
+	for userID, v := range uds.userDataSet {
+		if !v.IsLinked() {
+			if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
+				v.SetPlayerData(data)
+				uds.userDataSet[userID] = v
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (uds *UserDataSet) ClearPlayerData(userID string) {

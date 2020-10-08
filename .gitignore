@@ -17,6 +17,8 @@
 # json config files
 *.json
 
+.idea/
+
 # final config file
 final.txt
 final.env
@@ -25,7 +27,6 @@ final.env
 logs.txt
 
 # remnant from when the project used tesseract
-
 temp.png
 discuss.png
 ending.png

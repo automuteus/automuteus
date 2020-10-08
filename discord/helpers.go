@@ -3,11 +3,12 @@ package discord
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 // when querying for the member list we need to specify a size
@@ -165,7 +166,7 @@ func generateConnectCode(guildID string) string {
 	h.Write([]byte(guildID))
 	//add some "randomness" with the current time
 	h.Write([]byte(time.Now().String()))
-	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:6])
+	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 	//TODO replace common problematic characters?
 	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
 }

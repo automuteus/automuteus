@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
+	"log"
 	"strconv"
 	"strings"
 )
 
-func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) {
+func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, storageInterface storage.StorageInterface, args []string) {
 	// if no arg passed, send them list of possible settings to change
 	if len(args) == 1 {
 		s.ChannelMessageSend(m.ChannelID, "The list of possible settings are:\n"+
@@ -41,16 +43,20 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		isValid = SettingDelays(s, m, guild, args)
 	case "voicerules":
 		isValid = SettingVoiceRules(s, m, guild, args)
-	case "permissiondroleids":
-		// this setting is not actually used anywhere
-		s.ChannelMessageSend(m.ChannelID, "Sorry, not supported yet! You need to edit the JSON file and restart the bot.")
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n"+
 			"Valid settings include `CommandPrefix`, `DefaultTrackedChannel`, `AdminUserIDs`, `ApplyNicknames`, `UnmuteDeadDuringTasks`, `Delays` and `VoiceRules`.", args[1]))
 	}
 	if isValid {
-		// TODO apply changes to JSON file
-		// currently changes are lost once bot is restarted
+		data, err := guild.PersistentGuildData.ToData()
+		if err != nil {
+			log.Println(err)
+		} else {
+			err := storageInterface.WriteGuildData(m.GuildID, data)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	}
 }
 
