@@ -2,12 +2,19 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"log"
 	"sync"
+	"time"
 )
+
+//TODO up this for a full public rollout
+const EditDelaySeconds = 1
 
 type GameStateMessage struct {
 	message *discordgo.Message
 	lock    sync.RWMutex
+
+	deferredEdit *discordgo.MessageEmbed
 }
 
 func MakeGameStateMessage() GameStateMessage {
@@ -42,9 +49,26 @@ func (gsm *GameStateMessage) Delete(s *discordgo.Session) {
 
 func (gsm *GameStateMessage) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) {
 	gsm.lock.Lock()
-	if gsm.message != nil {
-		editMessageEmbed(s, gsm.message.ChannelID, gsm.message.ID, me)
+	//the worker is already waiting to update the message, so just swap the message in-place
+	if gsm.deferredEdit != nil {
+		gsm.deferredEdit = me //swap with the newer message
+	} else {
+		gsm.deferredEdit = me
+		//the edit is empty, so there isn't a worker waiting to update it
+		go gsm.EditWorker(s, EditDelaySeconds)
 	}
+	gsm.lock.Unlock()
+}
+
+func (gsm *GameStateMessage) EditWorker(s *discordgo.Session, delay int) {
+	log.Printf("Waiting %d secs to update the status message to not be rate-limited", delay)
+	time.Sleep(time.Duration(delay) * time.Second)
+
+	gsm.lock.Lock()
+	if gsm.message != nil {
+		editMessageEmbed(s, gsm.message.ChannelID, gsm.message.ID, gsm.deferredEdit)
+	}
+	gsm.deferredEdit = nil
 	gsm.lock.Unlock()
 }
 

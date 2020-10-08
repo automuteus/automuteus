@@ -256,20 +256,18 @@ func (bot *Bot) socketioServer(port string) {
 			return
 		}
 		//only link the socket to guilds that we actually have a record of
-		for gid, guild := range bot.AllGuilds {
-			if gid == guildID {
-				bot.AllConns[s.ID()] = gid
-				guild.LinkCode = ""
+		if guild, ok := bot.AllGuilds[guildID]; ok {
+			bot.AllConns[s.ID()] = guildID
+			guild.LinkCode = ""
 
-				bot.PushGuildSocketUpdate(gid, SocketStatus{
-					GuildID:   gid,
-					Connected: true,
-				})
-			}
+			bot.PushGuildSocketUpdate(guildID, SocketStatus{
+				GuildID:   guildID,
+				Connected: true,
+			})
 		}
 
 		log.Printf("Associated websocket id %s with guildID %s using code %s\n", s.ID(), guildID, msg)
-		s.Emit("reply", "set guildID successfully")
+		//s.Emit("reply", "set guildID successfully")
 	})
 	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
@@ -284,27 +282,20 @@ func (bot *Bot) socketioServer(port string) {
 				if gid != "" {
 					if guild, ok := bot.AllGuilds[gid]; ok { // Game is connected -> update its room code
 						log.Println("Received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
-						bot.PushGuildLobbyUpdate(gid, LobbyStatus{
-							GuildID: gid,
-							Lobby:   lobby,
-						})
-					} else { // No game connected
+					} else {
 						bot.PushGuildSocketUpdate(gid, SocketStatus{
 							GuildID:   gid,
 							Connected: true,
 						})
 						log.Println("Associated lobby with existing game!")
 					}
+					bot.PushGuildLobbyUpdate(gid, LobbyStatus{
+						GuildID: gid,
+						Lobby:   lobby,
+					})
 				} else {
 					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
 				}
-				//TODO should probably provide this info via a channel and/or "socketupdatechannels" event
-				//this is probably overly coupled
-				if v, ok := bot.AllGuilds[gid]; ok {
-					v.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
-					bot.AllGuilds[gid] = v
-				}
-				bot.AllConns[s.ID()] = gid
 			} else {
 				bot.LinkCodes[GameOrLobbyCode{
 					gameCode:    "",
@@ -563,6 +554,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 
 			case lobbyUpdate := <-*lobbyUpdates:
 				if guild, ok := bot.AllGuilds[lobbyUpdate.GuildID]; ok {
+					guild.LinkCode = ""
 					guild.AmongUsData.SetRoomRegion(lobbyUpdate.Lobby.LobbyCode, lobbyUpdate.Lobby.Region.ToString()) // Set new room code
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))                                             // Update game state message
 				}
