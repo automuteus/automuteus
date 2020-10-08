@@ -31,9 +31,8 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time, and on the same PC (for now).
 
 # Installation Video (click the image):
-Made by Wolfhound905 for the pre-release! :)
 
-[![Installation](https://img.youtube.com/vi/gRxKRqefzp4/0.jpg)](https://youtu.be/gRxKRqefzp4)
+[![Installation](https://img.youtube.com/vi/LUptOv5ohNc/0.jpg)](https://youtu.be/LUptOv5ohNc)
 
 # Installation
 
