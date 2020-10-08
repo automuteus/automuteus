@@ -69,7 +69,7 @@ Example:
 
 ## Environment Variables
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
-- `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to distribute the mute/deafen requests to Discord.
+- **BROKEN. STILL BEING DEVELOPED** `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to distribute the mute/deafen requests to Discord.
 If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 
 ### Advanced. Only configure these variables if you know what you're doing
@@ -132,10 +132,10 @@ Their project works like a traditional Discord bot; very easy installation!
 
 # Troubleshooting
 
-- "Websocket 400-something: Authentication Failed" Error!
+- **"Websocket 400-something: Authentication Failed" Error!**
 Your `DISCORD_BOT_TOKEN` is incorrect or invalid. Make sure you copied/pasted the Bot *token*, NOT the "client secret" from the Discord Developer portal
 
-- "Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!
+- **"Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!**
 The discord API is agonizingly slow to upload new emojis, inform bots about the presence of new/updated emojis, and delete emojis.
 The easiest answer is to **give it a while** (sometimes can take almost 30 minutes), and try again.
 
