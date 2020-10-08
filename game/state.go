@@ -55,9 +55,9 @@ type Player struct {
 type Region int
 
 const (
-	NA Region = 0
-	AS Region = 1
-	EU Region = 2
+	NA Region = iota
+	AS
+	EU
 )
 
 type Lobby struct {
