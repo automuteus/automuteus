@@ -323,6 +323,10 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	var roleIDs []string
 
 	for _, roleName := range args[2:] {
+		if roleName == "" || roleName == " " {
+			// user added a double space by accident, ignore it
+			continue
+		}
 		ID := getRoleFromString(s, m.GuildID, roleName)
 		if ID == "" {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
