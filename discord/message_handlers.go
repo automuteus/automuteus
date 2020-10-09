@@ -46,7 +46,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
-	urlregex := regexp.MustCompile(`http(?P<secure>s?)://(?P<host>[^:]*):?(?P<port>.*)`)
+	urlregex := regexp.MustCompile(`^http(?P<secure>s?):\/\/(?P<host>[\w.-]+)(?::(?P<port>\d+))?$`)
 	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]

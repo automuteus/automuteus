@@ -23,6 +23,7 @@
 # final config file
 final.txt
 final.env
+config.txt
 
 # logs file
 logs.txt
