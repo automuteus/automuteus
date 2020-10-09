@@ -94,6 +94,7 @@ func (sm *SessionManager) Close() {
 type Bot struct {
 	url                     string
 	socketPort              string
+	extPort                 string
 	AllConns                map[string]string
 	AllGuilds               map[string]*GuildState
 	LinkCodes               map[GameOrLobbyCode]string
@@ -144,7 +145,7 @@ var Version string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, port, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) *Bot {
+func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) *Bot {
 	Version = version
 
 	var altDiscordSession *discordgo.Session = nil
@@ -176,6 +177,7 @@ func MakeAndStartBot(version, token, token2, url, port, emojiGuildID string, num
 	bot := Bot{
 		url:                     url,
 		socketPort:              port,
+		extPort:                 extPort,
 		AllConns:                make(map[string]string),
 		AllGuilds:               make(map[string]*GuildState),
 		LinkCodes:               make(map[GameOrLobbyCode]string),

@@ -75,6 +75,7 @@ If you play in larger groups of 8+ people, this is recommended to not be rate-li
 ### Advanced. Only configure these variables if you know what you're doing
 - `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.
 You must specify more (comma-delimited ports) if you are running with `NUM_SHARDS` > 1. For example, with 3 shards, `PORT = 8123,8124,8125`
+- `EXT_PORT`: The port to use for the capture url. Must be a valid port number, or "protocol" to not include a port in the url. Defaults to PORT.
 - `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
 **You must specify `http://` or `https://` accordingly as part of the URL**

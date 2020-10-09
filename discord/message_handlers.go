@@ -2,9 +2,10 @@ package discord
 
 import (
 	"fmt"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
+
+	"github.com/denverquane/amongusdiscord/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -44,10 +45,20 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
+	var hyperlinkPort string
+	if bot.extPort != "" {
+		if bot.extPort == "protocol" {
+			hyperlinkPort = ""
+		} else {
+			hyperlinkPort = ":" + bot.extPort
+		}
+	} else {
+		hyperlinkPort = ":" + bot.socketPort
+	}
 	if strings.HasPrefix(bot.url, "https://") {
-		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s", strings.Replace(bot.url, "https://", "", 1), bot.socketPort, connectCode)
+		hyperlink = fmt.Sprintf("aucapture://%s%s/%s", strings.Replace(bot.url, "https://", "", 1), hyperlinkPort, connectCode)
 	} else if strings.HasPrefix(bot.url, "http://") {
-		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s?insecure", strings.Replace(bot.url, "http://", "", 1), bot.socketPort, connectCode)
+		hyperlink = fmt.Sprintf("aucapture://%s%s/%s?insecure", strings.Replace(bot.url, "http://", "", 1), hyperlinkPort, connectCode)
 	} else {
 		hyperlink = "aucapture://INVALID_PROTOCOL_ON_SERVER_URL"
 	}

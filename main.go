@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"github.com/denverquane/amongusdiscord/storage"
 	"io"
 	"log"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
@@ -106,6 +107,18 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
+	extPort := os.Getenv("EXT_PORT")
+	if extPort == "" {
+		log.Print("[Info] No EXT_PORT provided. Defaulting to PORT\n")
+	} else if extPort == "protocol" {
+		log.Print("[Info] EXT_PORT set to protocol. Not adding port to url\n")
+	} else {
+		num, err := strconv.Atoi(extPort)
+		if err != nil || num < 1024 || num > 65535 || num == 80 || num == 443 {
+			return errors.New("invalid EXT_PORT (range [1024-65535]) provided")
+		}
+	}
+
 	var storageClient storage.StorageInterface
 	dbSuccess := false
 
@@ -143,7 +156,7 @@ func discordMainWrapper() error {
 	bots := make([]*discord.Bot, numShards)
 
 	for i := 0; i < numShards; i++ {
-		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], emojiGuildID, numShards, i, storageClient)
+		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], extPort, emojiGuildID, numShards, i, storageClient)
 	}
 
 	go discord.MessagesServer("5000", bots)
