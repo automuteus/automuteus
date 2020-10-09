@@ -74,6 +74,9 @@ type TrackedMemberAction struct {
 }
 
 func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (game.UserData, bool) {
+	if g == nil {
+		return game.UserData{}, false
+	}
 	//check and see if they're cached first
 	for _, v := range g.Members {
 		if v.User.ID == userID {
@@ -127,11 +130,14 @@ func (h *PatchPriority) Pop() interface{} {
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
-func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, handlePriority HandlePriority) bool {
+func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, handlePriority HandlePriority) {
 
 	g := guild.verifyVoiceStateChanges(sm.GetPrimarySession())
 
-	updateMade := false
+	if g == nil {
+		return
+	}
+
 	priorityQueue := &PatchPriority{}
 	heap.Init(priorityQueue)
 
@@ -180,8 +186,6 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 					priority:    priority,
 					patchParams: params,
 				})
-
-				updateMade = true
 			}
 
 		} else if userData.IsLinked() {
@@ -208,7 +212,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 			log.Printf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority)
 		} else if waitForHigherPriority {
 			//wait for all the other users to get muted/unmuted completely, first
-			log.Println("Waiting for high priority user changes first")
+			//log.Println("Waiting for high priority user changes first")
 			wg.Wait()
 			waitForHigherPriority = false
 		}
@@ -225,7 +229,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 	}
 	wg.Wait()
 
-	return updateMade
+	return
 }
 
 func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
@@ -237,6 +241,7 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
+		return nil
 	}
 
 	for _, voiceState := range g.VoiceStates {
@@ -274,6 +279,10 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 	g := guild.verifyVoiceStateChanges(s)
 
+	if g == nil {
+		return
+	}
+
 	updateMade := false
 
 	//fetch the userData from our userData data cache
@@ -299,13 +308,13 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 
 		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 
-		log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
+		//log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
 
 		updateMade = true
 	}
 
 	if updateMade {
-		log.Println("Updating state message")
+		//log.Println("Updating state message")
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 	}
 }
@@ -314,6 +323,7 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	if guild.GameStateMsg.Exists() {

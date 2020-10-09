@@ -711,6 +711,7 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	contents := m.Content

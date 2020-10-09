@@ -47,6 +47,7 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	userID := getMemberFromString(s, GuildID, args[0])
