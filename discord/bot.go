@@ -412,8 +412,6 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 							break
 						}
 						log.Println("Detected transition to Menu")
-						guild.UserData.ClearAllPlayerData()
-						guild.AmongUsData.ClearAllPlayerData()
 						guild.AmongUsData.SetRoomRegion("Unprovided", "Unprovided")
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 					case game.LOBBY:
