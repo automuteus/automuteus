@@ -50,10 +50,18 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]
-		port := match[urlregex.SubexpIndex("port")]
+		port := ":" + match[urlregex.SubexpIndex("port")]
 
-		if port == "" {
-			port = bot.socketPort
+		if port == ":" {
+			if bot.extPort != "" {
+				if bot.extPort == "protocol" {
+					port = ""
+				} else {
+					port = ":" + bot.extPort
+				}
+			} else {
+				port = ""
+			}
 		}
 
 		insecure := "?insecure"
@@ -61,7 +69,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 			insecure = ""
 		}
 
-		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s%s", host, port, connectCode, insecure)
+		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
 	} else {
 		hyperlink = "aucapture://INVALID_SERVER_URL"
 	}
@@ -139,14 +147,16 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 		}
 	}
 
-	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, m.Author.ID)
 
 	log.Println("Added self game state message")
 
-	for _, e := range guild.StatusEmojis[true] {
-		guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+	if guild.AmongUsData.GetPhase() != game.MENU {
+		for _, e := range guild.StatusEmojis[true] {
+			guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+		}
+		guild.GameStateMsg.AddReaction(s, "❌")
 	}
-	guild.GameStateMsg.AddReaction(s, "❌")
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
