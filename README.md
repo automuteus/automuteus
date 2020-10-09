@@ -69,10 +69,11 @@ Example:
 
 ## Environment Variables
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
-- **BROKEN. STILL BEING DEVELOPED** `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to distribute the mute/deafen requests to Discord.
+- `DISCORD_BOT_TOKEN_2`: (Optional) A second Bot Token to be used to distribute the mute/deafen requests to Discord.
 If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 
 ### Advanced. Only configure these variables if you know what you're doing
+- `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
 - `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.
 You must specify more (comma-delimited ports) if you are running with `NUM_SHARDS` > 1. For example, with 3 shards, `PORT = 8123,8124,8125`
 - `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
