@@ -114,7 +114,7 @@ func discordMainWrapper() error {
 		log.Print("[Info] EXT_PORT set to protocol. Not adding port to url\n")
 	} else {
 		num, err := strconv.Atoi(extPort)
-		if err != nil || num < 1024 || num > 65535 || num == 80 || num == 443 {
+		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
 			return errors.New("invalid EXT_PORT (range [1024-65535]) provided")
 		}
 	}
