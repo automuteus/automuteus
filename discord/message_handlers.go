@@ -2,9 +2,11 @@ package discord
 
 import (
 	"fmt"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
+	"regexp"
 	"strings"
+
+	"github.com/denverquane/amongusdiscord/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -44,12 +46,24 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
-	if strings.HasPrefix(bot.url, "https://") {
-		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s", strings.Replace(bot.url, "https://", "", 1), bot.socketPort, connectCode)
-	} else if strings.HasPrefix(bot.url, "http://") {
-		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s?insecure", strings.Replace(bot.url, "http://", "", 1), bot.socketPort, connectCode)
+	urlregex := regexp.MustCompile(`http(?P<secure>s?)://(?P<host>[^:]*):?(?P<port>.*)`)
+	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
+		secure := match[urlregex.SubexpIndex("secure")] == "s"
+		host := match[urlregex.SubexpIndex("host")]
+		port := match[urlregex.SubexpIndex("port")]
+
+		if port == "" {
+			port = bot.socketPort
+		}
+
+		insecure := "?insecure"
+		if secure {
+			insecure = ""
+		}
+
+		hyperlink = fmt.Sprintf("aucapture://%s:%s/%s%s", host, port, connectCode, insecure)
 	} else {
-		hyperlink = "aucapture://INVALID_PROTOCOL_ON_SERVER_URL"
+		hyperlink = "aucapture://INVALID_SERVER_URL"
 	}
 
 	var embed = discordgo.MessageEmbed{
