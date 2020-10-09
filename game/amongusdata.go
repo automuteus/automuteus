@@ -38,7 +38,7 @@ type AmongUsData struct {
 func NewAmongUsData() AmongUsData {
 	return AmongUsData{
 		playerData: map[string]*PlayerData{},
-		phase:      LOBBY,
+		phase:      MENU,
 		room:       "",
 		region:     "",
 		lock:       sync.RWMutex{},
@@ -121,6 +121,25 @@ func (auData *AmongUsData) ApplyPlayerUpdate(update Player) (bool, bool) {
 	}
 
 	return isUpdate, isAliveUpdate
+}
+
+func (auData *AmongUsData) NameColorMappings() map[string]int {
+	ret := make(map[string]int)
+	auData.lock.RLock()
+	for i, v := range auData.playerData {
+		ret[i] = v.Color
+	}
+	auData.lock.RUnlock()
+	return ret
+}
+func (auData *AmongUsData) NameAliveMappings() map[string]bool {
+	ret := make(map[string]bool)
+	auData.lock.RLock()
+	for i, v := range auData.playerData {
+		ret[i] = v.IsAlive
+	}
+	auData.lock.RUnlock()
+	return ret
 }
 
 func (auData *AmongUsData) GetByColor(text string) *PlayerData {

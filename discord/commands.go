@@ -146,7 +146,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameStateMsg.Delete(s) //delete the old message
 
 		//create a new instance of the new one
-		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, guild.GameStateMsg.leaderID)
 
 		//add the emojis to the refreshed message
 		for _, e := range guild.StatusEmojis[true] {

@@ -69,7 +69,7 @@ func (fs *FilesystemDriver) WriteGuildData(guildID string, data map[string]inter
 	for _, fi := range fs.fileInfo {
 		//TODO enforce naming scheme?
 		if strings.Contains(fi.Name(), guildID+FileSuffix) {
-			f, err := os.OpenFile(path.Join(fs.baseDir, fi.Name()), os.O_CREATE, 0660)
+			f, err := os.OpenFile(path.Join(fs.baseDir, fi.Name()), os.O_CREATE|os.O_WRONLY, 0660)
 			if err != nil {
 				return err
 			}

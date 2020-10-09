@@ -133,23 +133,37 @@ func (uds *UserDataSet) GetUser(userID string) (game.UserData, error) {
 	return game.UserData{}, errors.New(fmt.Sprintf("No user found with ID %s", userID))
 }
 
-func (uds *UserDataSet) ToEmojiEmbedFields(emojis AlivenessEmojis) []*discordgo.MessageEmbedField {
+func (uds *UserDataSet) ToEmojiEmbedFields(nameColorMap map[string]int, nameAliveMap map[string]bool, emojis AlivenessEmojis) []*discordgo.MessageEmbedField {
 	uds.lock.RLock()
 	defer uds.lock.RUnlock()
 
 	unsorted := make([]*discordgo.MessageEmbedField, 12)
 	num := 0
-	for _, player := range uds.userDataSet {
-		if player.IsLinked() {
-			emoji := emojis[player.IsAlive()][player.GetColor()]
-			unsorted[player.GetColor()] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.GetPlayerName()),
-				Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.GetID()),
+
+	for name, color := range nameColorMap {
+		for _, player := range uds.userDataSet {
+			if player.IsLinked() && player.GetPlayerName() == name {
+				emoji := emojis[player.IsAlive()][color]
+				unsorted[color] = &discordgo.MessageEmbedField{
+					Name:   fmt.Sprintf("%s", name),
+					Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), player.GetID()),
+					Inline: true,
+				}
+				break
+			}
+		}
+		//no player matched; unlinked player
+		if unsorted[color] == nil {
+			emoji := emojis[nameAliveMap[name]][color]
+			unsorted[color] = &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("%s", name),
+				Value:  fmt.Sprintf("%s **Unlinked**", emoji.FormatForInline()),
 				Inline: true,
 			}
-			num++
 		}
+		num++
 	}
+
 	sorted := make([]*discordgo.MessageEmbedField, num)
 	num = 0
 	for i := 0; i < 12; i++ {

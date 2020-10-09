@@ -413,7 +413,10 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 						}
 						log.Println("Detected transition to Menu")
 						guild.AmongUsData.SetRoomRegion("Unprovided", "Unprovided")
+						guild.AmongUsData.SetPhase(phase)
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+						guild.GameStateMsg.RemoveAllReactions(dg)
+						break
 					case game.LOBBY:
 						if guild.AmongUsData.GetPhase() == game.LOBBY {
 							break
@@ -429,6 +432,8 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 						guild.handleTrackedMembers(&bot.SessionManager, delay, NoPriority)
 
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
+
+						guild.GameStateMsg.AddAllReactions(dg, guild.StatusEmojis[true])
 						break
 					case game.TASKS:
 						if guild.AmongUsData.GetPhase() == game.TASKS {

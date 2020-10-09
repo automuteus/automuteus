@@ -184,7 +184,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 				updateMade = true
 			}
 
-		} else {
+		} else if userData.IsLinked() {
 			if shouldMute {
 				log.Printf("Not muting %s because they're already muted\n", userData.GetUserName())
 			} else {
