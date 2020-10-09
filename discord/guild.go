@@ -164,10 +164,6 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 
 			//only issue the req to discord if we're not waiting on another one
 			if !userData.IsPendingVoiceUpdate() {
-				//wait until it goes through
-				userData.SetPendingVoiceUpdate(true)
-
-				guild.UserData.UpdateUserData(voiceState.UserID, userData)
 				priority := 0
 
 				if handlePriority != NoPriority {
@@ -178,7 +174,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 					}
 				}
 
-				params := UserPatchParameters{guild.PersistentGuildData.GuildID, voiceState.UserID, shouldDeaf, shouldMute, nick}
+				params := UserPatchParameters{guild.PersistentGuildData.GuildID, userData, shouldDeaf, shouldMute, nick}
 
 				heap.Push(priorityQueue, PrioritizedPatchParams{
 					priority:    priority,
@@ -188,7 +184,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 				updateMade = true
 			}
 
-		} else {
+		} else if userData.IsLinked() {
 			if shouldMute {
 				log.Printf("Not muting %s because they're already muted\n", userData.GetUserName())
 			} else {
@@ -209,7 +205,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 
 		if p.priority > 0 {
 			waitForHigherPriority = true
-			log.Printf("User %s has higher priority: %d\n", p.patchParams.UserID, p.priority)
+			log.Printf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority)
 		} else if waitForHigherPriority {
 			//wait for all the other users to get muted/unmuted completely, first
 			log.Println("Waiting for high priority user changes first")
@@ -218,6 +214,11 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 		}
 
 		wg.Add(1)
+
+		//wait until it goes through
+		p.patchParams.Userdata.SetPendingVoiceUpdate(true)
+
+		guild.UserData.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		//we can issue mutes/deafens from ANY session, not just the primary
 		go muteWorker(sm.GetSessionForRequest(), &wg, p.patchParams)
@@ -296,7 +297,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 			nick = ""
 		}
 
-		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, m.UserID, deaf, mute, nick})
+		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 
 		log.Println("Applied deaf/undeaf mute/unmute via voiceStateChange")
 

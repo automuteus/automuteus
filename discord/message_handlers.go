@@ -125,14 +125,16 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 		}
 	}
 
-	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, m.Author.ID)
 
 	log.Println("Added self game state message")
 
-	for _, e := range guild.StatusEmojis[true] {
-		guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+	if guild.AmongUsData.GetPhase() != game.MENU {
+		for _, e := range guild.StatusEmojis[true] {
+			guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+		}
+		guild.GameStateMsg.AddReaction(s, "❌")
 	}
-	guild.GameStateMsg.AddReaction(s, "❌")
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord

@@ -91,8 +91,8 @@ func discordMainWrapper() error {
 	} else if len(portStrings) == numShards {
 		for i := 0; i < numShards; i++ {
 			num, err := strconv.Atoi(portStrings[i])
-			if err != nil || num < 1024 || num > 65535 {
-				return errors.New("invalid or no particular PORT (range [1024-65535]) provided")
+			if err != nil || num < 0 || num > 65535 {
+				return errors.New("invalid or no particular PORT (range [0-65535]) provided")
 			}
 			ports[i] = portStrings[i]
 		}
