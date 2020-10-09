@@ -68,7 +68,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Type:  "",
 		Title: "You just started a game!",
 		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? [Download it here](%s)\nIf you don't have .NET Core installed, you can get that [here](%s)", hyperlink, downloadURL, dotNetUrl),
+			"Don't have the capture installed? [Download it here](%s)\nIf you don't have .NET Core installed, you can get that [here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNetUrl),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,
@@ -76,6 +76,18 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Video:     nil,
 		Provider:  nil,
 		Author:    nil,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "URL",
+				Value:  bot.url,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "Code",
+				Value:  connectCode,
+				Inline: true,
+			},
+		},
 	}
 
 	sendMessageDM(s, m.Author.ID, &embed)
