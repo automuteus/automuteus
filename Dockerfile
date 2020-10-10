@@ -1,4 +1,4 @@
-FROM golang:1.14-alpine AS builder
+FROM golang:1.15-alpine AS builder
 
 # Git is required for getting the dependencies.
 RUN apk add --no-cache git
