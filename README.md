@@ -126,11 +126,13 @@ The Discord Bot uses the `.au` prefix for any commands
 
 # Similar Projects
 
-- [AmongUsBot](https://github.com/alpharaoh/AmongUsBot). Without their original Python program
+- [AmongUsBot](https://github.com/alpharaoh/AmongUsBot): Without their original Python program
 with a lot of the OCR/Discord functionality, I never would have even thought of this idea! Not currently maintained
 
-- [amongcord](https://github.com/pedrofracassi) great program for tracking player status and auto mute/unmute in Among Us.
+- [amongcord](https://github.com/pedrofracassi/amongcord): A great program for tracking player status and auto mute/unmute in Among Us.
 Their project works like a traditional Discord bot; very easy installation!
+
+- [Silence Among Us](https://github.com/tanndev/silence-among-us#silence-among-us): Another bot quite similar to this one, which also uses AmongUsCapture. Now in early-access with a publicly-hosted instance.
 
 # Troubleshooting
 
