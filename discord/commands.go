@@ -21,6 +21,7 @@ const (
 	Force
 	Refresh
 	Settings
+	Pause
 	Null
 )
 
@@ -34,6 +35,7 @@ var CommandTypeStringMapping = map[string]CommandType{
 	"force":    Force,
 	"refresh":  Refresh,
 	"settings": Settings,
+	"pause":    Pause,
 	"":         Null,
 }
 
@@ -125,6 +127,8 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		break
 
 	case End:
+		log.Println("User typed end to end the current game")
+
 		bot.handleGameEndMessage(guild, s)
 
 		//have to explicitly delete here, because if we use the default delete below, the channelID
@@ -151,16 +155,23 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		//create a new instance of the new one
 		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, guild.GameStateMsg.leaderID)
 
-		//add the emojis to the refreshed message
-		for _, e := range guild.StatusEmojis[true] {
-			guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+		//add the emojis to the refreshed message if in the right stage
+		if guild.AmongUsData.GetPhase() != game.MENU {
+			for _, e := range guild.StatusEmojis[true] {
+				guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+			}
+			guild.GameStateMsg.AddReaction(s, "❌")
 		}
-		guild.GameStateMsg.AddReaction(s, "❌")
 		break
 
 	case Settings:
 		HandleSettingsCommand(s, m, guild, storageInterface, args)
 		return // to prevent the user's message from being deleted
+
+	case Pause:
+		guild.GameRunning = !guild.GameRunning
+		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
 

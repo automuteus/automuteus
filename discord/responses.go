@@ -140,7 +140,7 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 	}
 	color := 15158332 //red
 	desc := ""
-	if g.LinkCode == "" {
+	if g.Linked {
 		desc = g.makeDescription()
 		color = 3066993
 	} else {
@@ -183,7 +183,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	}
 	color := 15158332 //red
 	desc := ""
-	if g.LinkCode == "" {
+	if g.Linked {
 		desc = g.makeDescription()
 		color = 3066993
 	} else {
@@ -254,6 +254,10 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 
 func (guild *GuildState) makeDescription() string {
 	buf := bytes.NewBuffer([]byte{})
+	if !guild.GameRunning {
+		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.PersistentGuildData.CommandPrefix + " p`!**\n\n")
+	}
+
 	author := guild.GameStateMsg.leaderID
 	if author != "" {
 		buf.WriteString("<@" + author + "> is running an Among Us game!\nThe game is happening in ")

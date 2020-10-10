@@ -232,6 +232,22 @@ func (bot *Bot) Close() {
 	bot.SessionManager.Close()
 }
 
+func (bot *Bot) guildIDForCode(code string) string {
+	if code == "" {
+		return ""
+	}
+	bot.LinkCodeLock.RLock()
+	defer bot.LinkCodeLock.RUnlock()
+	for codes, gid := range bot.LinkCodes {
+		if code != "" {
+			if codes.gameCode == code || codes.connectCode == code {
+				return gid
+			}
+		}
+	}
+	return ""
+}
+
 func (bot *Bot) socketioServer(port string) {
 	server, err := socketio.NewServer(nil)
 	if err != nil {
@@ -243,18 +259,8 @@ func (bot *Bot) socketioServer(port string) {
 		return nil
 	})
 	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
-		log.Println("set connect code: \"", msg, "\"")
-		guildID := ""
-		bot.LinkCodeLock.RLock()
-		for codes, gid := range bot.LinkCodes {
-			if msg != "" {
-				if codes.gameCode == msg || codes.connectCode == msg {
-					guildID = gid
-					break
-				}
-			}
-		}
-		bot.LinkCodeLock.RUnlock()
+		log.Printf("Received connection code: \"%s\"", msg)
+		guildID := bot.guildIDForCode(msg)
 		if guildID == "" {
 			log.Printf("No guild has the current connect code of %s\n", msg)
 			return
@@ -262,7 +268,7 @@ func (bot *Bot) socketioServer(port string) {
 		//only link the socket to guilds that we actually have a record of
 		if guild, ok := bot.AllGuilds[guildID]; ok {
 			bot.AllConns[s.ID()] = guildID
-			guild.LinkCode = ""
+			guild.Linked = true
 
 			bot.PushGuildSocketUpdate(guildID, SocketStatus{
 				GuildID:   guildID,
@@ -280,32 +286,36 @@ func (bot *Bot) socketioServer(port string) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			lobby.ReduceLobbyCode()
+			guildID := ""
+
 			//TODO race condition
 			if gid, ok := bot.AllConns[s.ID()]; ok {
-				if gid != "" {
-					if guild, ok := bot.AllGuilds[gid]; ok { // Game is connected -> update its room code
-						log.Println("Received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
-					} else {
-						bot.PushGuildSocketUpdate(gid, SocketStatus{
-							GuildID:   gid,
-							Connected: true,
-						})
-						log.Println("Associated lobby with existing game!")
-					}
-					bot.PushGuildLobbyUpdate(gid, LobbyStatus{
-						GuildID: gid,
-						Lobby:   lobby,
-					})
-				} else {
-					log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
-				}
+				guildID = gid
 			} else {
-				bot.LinkCodes[GameOrLobbyCode{
-					gameCode:    "",
-					connectCode: lobby.LobbyCode,
-				}] = ""
-				log.Println("Couldn't find existing game; use `.au new " + lobby.LobbyCode + "` to connect")
+				guildID = bot.guildIDForCode(lobby.LobbyCode)
+			}
+
+			if guildID != "" {
+				if guild, ok := bot.AllGuilds[guildID]; ok { // Game is connected -> update its room code
+					log.Println("Received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+				} else {
+					bot.PushGuildSocketUpdate(guildID, SocketStatus{
+						GuildID:   guildID,
+						Connected: true,
+					})
+					log.Println("Associated lobby with existing game!")
+				}
+				//we went to lobby, so set the phase. Also adds the initial reaction emojis
+				bot.PushGuildPhaseUpdate(guildID, game.LOBBY)
+				if bot.AllConns[s.ID()] != guildID {
+					bot.AllConns[s.ID()] = guildID
+				}
+				bot.PushGuildLobbyUpdate(guildID, LobbyStatus{
+					GuildID: guildID,
+					Lobby:   lobby,
+				})
+			} else {
+				log.Println("I don't have a record of any games with a lobby or connect code of " + lobby.LobbyCode)
 			}
 		}
 	})
@@ -357,11 +367,8 @@ func (bot *Bot) socketioServer(port string) {
 
 		for gid, guild := range bot.AllGuilds {
 			if gid == previousGid {
-
-				code := generateConnectCode(gid) //this is unlinked
 				bot.LinkCodeLock.Lock()
-				//TODO delete the old combo of link codes
-				guild.LinkCode = code
+				guild.Linked = false
 				bot.LinkCodeLock.Unlock()
 				bot.PushGuildSocketUpdate(gid, SocketStatus{
 					GuildID:   gid,
@@ -408,8 +415,13 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 			select {
 
 			case phase := <-*phaseUpdates:
+
 				log.Printf("Received PhaseUpdate message for guild %s\n", guildID)
 				if guild, ok := bot.AllGuilds[guildID]; ok {
+					if !guild.GameRunning {
+						//completely ignore events if the game is ended/paused
+						break
+					}
 					switch phase {
 					case game.MENU:
 						if guild.AmongUsData.GetPhase() == game.MENU {
@@ -483,6 +495,9 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 			case player := <-*playerUpdates:
 				log.Printf("Received PlayerUpdate message for guild %s\n", guildID)
 				if guild, ok := bot.AllGuilds[guildID]; ok {
+					if !guild.GameRunning {
+						break
+					}
 
 					//	this updates the copies in memory
 					//	(player's associations to amongus data are just pointers to these structs)
@@ -561,7 +576,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 
 			case lobbyUpdate := <-*lobbyUpdates:
 				if guild, ok := bot.AllGuilds[lobbyUpdate.GuildID]; ok {
-					guild.LinkCode = ""
+					guild.Linked = true
 					guild.AmongUsData.SetRoomRegion(lobbyUpdate.Lobby.LobbyCode, lobbyUpdate.Lobby.Region.ToString()) // Set new room code
 					guild.GameStateMsg.Edit(dg, gameStateResponse(guild))                                             // Update game state message
 				}
@@ -654,7 +669,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		bot.AllGuilds[m.ID] = &GuildState{
 			PersistentGuildData: pgd,
 
-			LinkCode: m.Guild.ID,
+			Linked: false,
 
 			UserData:     MakeUserDataSet(),
 			Tracking:     MakeTracking(),
@@ -662,6 +677,8 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 			StatusEmojis:  emptyStatusEmojis(),
 			SpecialEmojis: map[string]Emoji{},
+
+			GameRunning: false,
 
 			AmongUsData: game.NewAmongUsData(),
 		}

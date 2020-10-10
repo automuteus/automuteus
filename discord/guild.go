@@ -46,7 +46,7 @@ func (gd *GameDelays) GetDelay(origin, dest game.Phase) int {
 type GuildState struct {
 	PersistentGuildData *PersistentGuildData
 
-	LinkCode string
+	Linked bool
 
 	UserData UserDataSet
 	Tracking Tracking
@@ -57,6 +57,7 @@ type GuildState struct {
 	SpecialEmojis map[string]Emoji
 
 	AmongUsData game.AmongUsData
+	GameRunning bool
 }
 
 type EmojiCollection struct {

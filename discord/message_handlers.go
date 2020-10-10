@@ -24,6 +24,8 @@ func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 	//clear the tracking and make sure all users are unlinked
 	guild.clearGameTracking(s)
 
+	guild.GameRunning = false
+
 	// clear any existing game state message
 	guild.AmongUsData.SetRoomRegion("", "")
 }
@@ -35,14 +37,16 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
 
+	//TODO don't always recreate if we're already connected...
+
 	connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
 	log.Println(connectCode)
 	bot.LinkCodeLock.Lock()
 	bot.LinkCodes[GameOrLobbyCode{
-		gameCode:    "",
+		gameCode:    room,
 		connectCode: connectCode,
 	}] = guild.PersistentGuildData.GuildID
-	guild.LinkCode = connectCode
+
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
@@ -147,6 +151,8 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 	guild.AmongUsData.SetRoomRegion(room, region)
 
 	guild.clearGameTracking(s)
+
+	guild.GameRunning = true
 
 	for _, channel := range channels {
 		if channel.channelName != "" {
