@@ -133,6 +133,9 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		break
 
 	case Force:
+		if len(args[1:]) < 1 {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+		}
 		phase := getPhaseFromString(args[1])
 		if phase == game.UNINITIALIZED {
 			s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
