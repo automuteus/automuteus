@@ -17,7 +17,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.3.0-Prerelease"
+const VERSION = "2.3.2-Prerelease"
 
 //TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
 const DefaultPort = "8123"

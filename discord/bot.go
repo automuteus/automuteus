@@ -242,14 +242,16 @@ func (bot *Bot) socketioServer(port string) {
 		log.Println("connected:", s.ID())
 		return nil
 	})
-	server.OnEvent("/", "connect", func(s socketio.Conn, msg string) {
-		log.Println("set connect code:", msg)
+	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
+		log.Println("set connect code: \"", msg, "\"")
 		guildID := ""
 		bot.LinkCodeLock.RLock()
 		for codes, gid := range bot.LinkCodes {
-			if codes.gameCode == msg || codes.connectCode == msg {
-				guildID = gid
-				break
+			if msg != "" {
+				if codes.gameCode == msg || codes.connectCode == msg {
+					guildID = gid
+					break
+				}
 			}
 		}
 		bot.LinkCodeLock.RUnlock()
