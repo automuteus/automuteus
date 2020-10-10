@@ -20,7 +20,8 @@
 
 .idea/
 
-# final config file
+# config files
+config.txt
 final.txt
 final.env
 config.txt
