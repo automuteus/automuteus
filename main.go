@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"github.com/denverquane/amongusdiscord/storage"
 	"io"
 	"log"
 	"os"
@@ -12,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/denverquane/amongusdiscord/storage"
+
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.3.0-Prerelease"
+const VERSION = "2.3.2-Prerelease"
 
 //TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
 const DefaultPort = "8123"
@@ -91,8 +92,8 @@ func discordMainWrapper() error {
 	} else if len(portStrings) == numShards {
 		for i := 0; i < numShards; i++ {
 			num, err := strconv.Atoi(portStrings[i])
-			if err != nil || num < 1024 || num > 65535 {
-				return errors.New("invalid or no particular PORT (range [1024-65535]) provided")
+			if err != nil || num < 0 || num > 65535 {
+				return errors.New("invalid or no particular PORT (range [0-65535]) provided")
 			}
 			ports[i] = portStrings[i]
 		}
@@ -104,6 +105,18 @@ func discordMainWrapper() error {
 	if url == "" {
 		log.Printf("[Info] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
 		url = DefaultURL
+	}
+
+	extPort := os.Getenv("EXT_PORT")
+	if extPort == "" {
+		log.Print("[Info] No EXT_PORT provided. Defaulting to PORT\n")
+	} else if extPort == "protocol" {
+		log.Print("[Info] EXT_PORT set to protocol. Not adding port to url\n")
+	} else {
+		num, err := strconv.Atoi(extPort)
+		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
+			return errors.New("invalid EXT_PORT (range [1024-65535]) provided")
+		}
 	}
 
 	var storageClient storage.StorageInterface
@@ -143,7 +156,7 @@ func discordMainWrapper() error {
 	bots := make([]*discord.Bot, numShards)
 
 	for i := 0; i < numShards; i++ {
-		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], emojiGuildID, numShards, i, storageClient)
+		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], extPort, emojiGuildID, numShards, i, storageClient)
 	}
 
 	go discord.MessagesServer("5000", bots)

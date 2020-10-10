@@ -102,20 +102,19 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
 		} else {
 
-		}
-		userID, err := extractUserIDFromMention(args[1])
-		if err != nil {
-			log.Println(err)
-		} else {
+			userID, err := extractUserIDFromMention(args[1])
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Printf("Removing player %s", userID)
+				guild.UserData.ClearPlayerData(userID)
 
-			log.Printf("Removing player %s", userID)
-			guild.UserData.ClearPlayerData(userID)
+				//make sure that any players we remove/unlink get auto-unmuted/undeafened
+				guild.verifyVoiceStateChanges(s)
 
-			//make sure that any players we remove/unlink get auto-unmuted/undeafened
-			guild.verifyVoiceStateChanges(s)
-
-			//update the state message to reflect the player leaving
-			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+				//update the state message to reflect the player leaving
+				guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+			}
 		}
 		break
 
@@ -147,7 +146,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameStateMsg.Delete(s) //delete the old message
 
 		//create a new instance of the new one
-		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID)
+		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, guild.GameStateMsg.leaderID)
 
 		//add the emojis to the refreshed message
 		for _, e := range guild.StatusEmojis[true] {

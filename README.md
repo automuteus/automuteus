@@ -73,8 +73,10 @@ Example:
 If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 
 ### Advanced. Only configure these variables if you know what you're doing
+- `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
 - `PORT`: The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.
 You must specify more (comma-delimited ports) if you are running with `NUM_SHARDS` > 1. For example, with 3 shards, `PORT = 8123,8124,8125`
+- `EXT_PORT`: The port to use for the capture url. Must be a valid port number, or "protocol" to not include a port in the url. Defaults to PORT.
 - `SERVER_URL`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new` (in conjunction with the PORT above).
 **You must specify `http://` or `https://` accordingly as part of the URL**
@@ -132,10 +134,10 @@ Their project works like a traditional Discord bot; very easy installation!
 
 # Troubleshooting
 
-- "Websocket 400-something: Authentication Failed" Error!
+- **"Websocket 400-something: Authentication Failed" Error!**
 Your `DISCORD_BOT_TOKEN` is incorrect or invalid. Make sure you copied/pasted the Bot *token*, NOT the "client secret" from the Discord Developer portal
 
-- "Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!
+- **"Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!**
 The discord API is agonizingly slow to upload new emojis, inform bots about the presence of new/updated emojis, and delete emojis.
 The easiest answer is to **give it a while** (sometimes can take almost 30 minutes), and try again.
 

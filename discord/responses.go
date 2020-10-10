@@ -47,6 +47,7 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	userID := getMemberFromString(s, GuildID, args[0])
@@ -89,23 +90,13 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
-		game.MENU:    lobbyMessage,
+		game.MENU:    menuMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
 	return messages[guild.AmongUsData.GetPhase()](guild)
 }
-
-//func padToLength(input string, length int) string {
-//	diff := length - len(input)
-//	if diff > 0 {
-//		return input + strings.Repeat("  ", diff)
-//	}
-//	return input
-//}
-//
-//const PaddedLen = 20
 
 func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
 	str := tracking.ToStatusString()
@@ -142,6 +133,38 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 	Height:   200,
 }
 
+func menuMessage(g *GuildState) *discordgo.MessageEmbed {
+	alarmFormatted := ":x:"
+	if v, ok := g.SpecialEmojis["alarm"]; ok {
+		alarmFormatted = v.FormatForInline()
+	}
+	color := 15158332 //red
+	desc := ""
+	if g.LinkCode == "" {
+		desc = g.makeDescription()
+		color = 3066993
+	} else {
+		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Main Menu",
+		Description: desc,
+		Timestamp:   "",
+		Footer:      nil,
+		Color:       color,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      nil,
+	}
+	return &msg
+}
+
 func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
@@ -151,16 +174,18 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	room, region := g.AmongUsData.GetRoomRegion()
 	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region, g.AmongUsData.NumDetectedPlayers(), g.UserData.GetCountLinked())
 
-	listResp := g.UserData.ToEmojiEmbedFields(g.StatusEmojis)
+	listResp := g.UserData.ToEmojiEmbedFields(g.AmongUsData.NameColorMappings(), g.AmongUsData.NameAliveMappings(), g.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 
 	alarmFormatted := ":x:"
 	if v, ok := g.SpecialEmojis["alarm"]; ok {
 		alarmFormatted = v.FormatForInline()
 	}
+	color := 15158332 //red
 	desc := ""
 	if g.LinkCode == "" {
-		desc = "Successfully linked to capture!"
+		desc = g.makeDescription()
+		color = 3066993
 	} else {
 		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
 	}
@@ -168,7 +193,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       "Lobby is Open!",
+		Title:       "Lobby",
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
@@ -176,7 +201,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 			IconURL:      "",
 			ProxyIconURL: "",
 		},
-		Color:     3066993, //GREEN
+		Color:     color,
 		Image:     nil,
 		Thumbnail: nil,
 		Video:     nil,
@@ -192,7 +217,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	//guild.UserDataLock.Lock()
 	room, region := guild.AmongUsData.GetRoomRegion()
 	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region, guild.AmongUsData.NumDetectedPlayers(), guild.UserData.GetCountLinked())
-	listResp := guild.UserData.ToEmojiEmbedFields(guild.StatusEmojis)
+	listResp := guild.UserData.ToEmojiEmbedFields(guild.AmongUsData.NameColorMappings(), guild.AmongUsData.NameAliveMappings(), guild.StatusEmojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
@@ -211,8 +236,8 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       "Game is Running",
-		Description: fmt.Sprintf("Current Phase: %s", phase.ToString()),
+		Title:       string(phase.ToString()),
+		Description: guild.makeDescription(),
 		Timestamp:   "",
 		Color:       color,
 		Footer:      nil,
@@ -225,6 +250,27 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	}
 
 	return &msg
+}
+
+func (guild *GuildState) makeDescription() string {
+	buf := bytes.NewBuffer([]byte{})
+	author := guild.GameStateMsg.leaderID
+	if author != "" {
+		buf.WriteString("<@" + author + "> is running an Among Us game!\nThe game is happening in ")
+	}
+
+	if len(guild.Tracking.tracking) == 0 {
+		buf.WriteString("any voice channel!")
+	} else {
+		t, err := guild.Tracking.FindAnyTrackedChannel(false)
+		if err != nil {
+			buf.WriteString("an invalid voice channel!")
+		} else {
+			buf.WriteString("the **" + t.channelName + "** voice channel!")
+		}
+	}
+
+	return buf.String()
 }
 
 func extractUserIDFromMention(mention string) (string, error) {

@@ -18,11 +18,11 @@ import (
 const MemberQuerySize = 1000
 
 type UserPatchParameters struct {
-	GuildID string
-	UserID  string
-	Deaf    bool
-	Mute    bool
-	Nick    string
+	GuildID  string
+	Userdata game.UserData
+	Deaf     bool
+	Mute     bool
+	Nick     string
 }
 
 func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
@@ -32,7 +32,7 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 	}
 
 	//we can't nickname the owner, and we shouldn't nickname with an empty string...
-	if params.Nick == "" || g.OwnerID == params.UserID {
+	if params.Nick == "" || g.OwnerID == params.Userdata.GetID() {
 		guildMemberUpdateNoNick(s, params)
 	} else {
 		newParams := struct {
@@ -40,9 +40,9 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 			Mute bool   `json:"mute"`
 			Nick string `json:"nick"`
 		}{params.Deaf, params.Mute, params.Nick}
-		log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v nick=%s\n", params.UserID, params.Mute, params.Deaf, params.Nick)
+		log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
 
-		_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.UserID), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
+		_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
 		if err != nil {
 			log.Println("Failed to change nickname for user: move the bot up in your Roles")
 			log.Println(err)
@@ -52,12 +52,12 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 }
 
 func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
-	log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v\n", params.UserID, params.Mute, params.Deaf)
+	log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
 	newParams := struct {
 		Deaf bool `json:"deaf"`
 		Mute bool `json:"mute"`
 	}{params.Deaf, params.Mute}
-	_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.UserID), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
+	_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
 	if err != nil {
 		log.Println(err)
 	}
