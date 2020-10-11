@@ -28,7 +28,8 @@ Have any questions, concerns, bug reports, or just want to chat? Join the discor
 
 1. This program must be run on a Windows PC. The program **CANNOT** be run directly on mobile phones.
 2. You need a minimum of 12 open emoji slots on your server. The bot uses player emojis to link discord users to in-game player colors; it will add them automatically, but you need at least 12 slots (25 recommended).
-3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time, and on the same PC (for now).
+3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time. Easiest installation covers running the bot
+portion locally, but feel free to use Heroku or Docker or the like to host the bot remotely.
 
 # Installation Video (click the image):
 
@@ -123,6 +124,7 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au unlink`|`.au u`|@name|Manually unlink a player|`.au u @player`|
 |`.au settings`|`.au s`||View and change settings for the bot, such as the command prefix or mute behavior||
 |`.au force`|`.au f`|stage|Force a transition to a stage if you encounter a problem in the state|`.au f task` or `.au f d`(discuss)|
+|`.au pause`|`.au p`||Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**||
 
 # Similar Projects
 
