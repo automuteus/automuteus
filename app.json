@@ -1,6 +1,6 @@
 {
     "name": "AmongUsAutoMute (BETA)",
-    "description": "Discord Bot to scrape Among Us on-screen data, and automatically mute/unmute players during the course of the game!",
+    "description": "Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!",
     "repository": "https://github.com/denverquane/amongusdiscord",
     "logo": "https://github.com/denverquane/amongusdiscord/raw/master/assets/botProfilePicture.jpg",
     "keywords": ["go", "among us", "discord"],
@@ -18,7 +18,7 @@
         "required": false
       },
       "PORT": {
-        "description": "The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123. You must specify more (comma-delimited ports) if you are running with NUM_SHARDS > 1. For example, with 3 shards, PORT = 8123,8124,8125",
+        "description": "The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.",
         "required": false
       },
       "EXT_PORT": {
@@ -36,10 +36,6 @@
       },
       "CONFIG_PATH": {
         "description": "Alternate filesystem path for guild config files. Defaults to ./",
-        "required": false
-      },
-      "NUM_SHARDS": {
-        "description": "How many total bot shard instances you'll be running in your current stack.",
         "required": false
       }
     }
