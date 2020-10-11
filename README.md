@@ -93,8 +93,10 @@ This is used to provide the linking URI to the capture, via the Direct Message t
 
 The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not set. To fix this:
 
-1. Create a new Config var in your Heroku app's settings with the key `DISCORD_BOT_TOKEN` and the value as your bot token obtained from the pre-installation step.
-2. Restart all dynos
+1. Create a Config var in your Heroku app's settings with the key `DISCORD_BOT_TOKEN` and the value as your bot token obtained from the pre-installation step.
+2. Create another Config var with the key `SERVER_URL` and for the value use the url of your Heroku app. Should be in the form of `https://<your-app-name>.herokuapp.com` (withouth tailing slash)
+3. Create another Config var with the key `EXT_PORT` and the value `protocol`
+4. Restart all dynos
 
 To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
 
