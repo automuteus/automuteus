@@ -64,7 +64,8 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 					port = ":" + bot.extPort
 				}
 			} else {
-				port = ""
+				//if no port explicitly provided via config, use the default
+				port = ":" + bot.socketPort
 			}
 		}
 
