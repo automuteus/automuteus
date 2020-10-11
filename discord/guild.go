@@ -142,38 +142,6 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 	priorityQueue := &PatchPriority{}
 	heap.Init(priorityQueue)
 
-	// amountWorkers value determines how many goroutines will be spawned to mute users
-	// this amount could be increased up to 10, but 8 should be enough
-	const amountWorkers = 8
-
-	// wait group
-	wgWorkers := sync.WaitGroup{}
-	wgWorkers.Add(amountWorkers)
-
-	// buffered channel of size 10 (maximum numbers os players in a match)
-	userChan := make(chan UserPatchParameters, 10)
-
-	// starts workers, aka channel receivers
-	for i := 0; i < amountWorkers; i++ {
-		// Receive values until userChan is
-		// closed and the value buffer queue
-		// of userChan becomes empty.
-		go func() {
-			defer wgWorkers.Done()
-
-			// read messages from the channel and act on them
-			for parameters := range userChan {
-				guildMemberUpdate(sm.GetSessionForRequest(), parameters)
-				log.Println(parameters)
-			}
-		}()
-	}
-
-	if delay > 0 {
-		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
-		time.Sleep(time.Second * time.Duration(delay))
-	}
-
 	for _, voiceState := range g.VoiceStates {
 
 		userData, err := guild.UserData.GetUser(voiceState.UserID)
@@ -203,15 +171,22 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 
 			//only issue the req to discord if we're not waiting on another one
 			if !userData.IsPendingVoiceUpdate() {
-				//wait until it goes through
-				userData.SetPendingVoiceUpdate(true)
+				priority := 0
 
-				guild.UserData.UpdateUserData(voiceState.UserID, userData)
+				if handlePriority != NoPriority {
+					if handlePriority == AlivePriority && userData.IsAlive() {
+						priority++
+					} else if handlePriority == DeadPriority && !userData.IsAlive() {
+						priority++
+					}
+				}
 
 				params := UserPatchParameters{guild.PersistentGuildData.GuildID, userData, shouldDeaf, shouldMute, nick}
 
-				// send params to worker
-				userChan <- params
+				heap.Push(priorityQueue, PrioritizedPatchParams{
+					priority:    priority,
+					patchParams: params,
+				})
 			}
 
 		} else if userData.IsLinked() {
@@ -222,14 +197,45 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 			}
 		}
 	}
+	wg := sync.WaitGroup{}
+	waitForHigherPriority := false
 
-	// Close channel because all users were sent
-	close(userChan)
+	if delay > 0 {
+		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
+		time.Sleep(time.Second * time.Duration(delay))
+	}
 
-	// wait for all workers to close
-	wgWorkers.Wait()
+	for priorityQueue.Len() > 0 {
+		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
+
+		if p.priority > 0 {
+			waitForHigherPriority = true
+			log.Printf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority)
+		} else if waitForHigherPriority {
+			//wait for all the other users to get muted/unmuted completely, first
+			//log.Println("Waiting for high priority user changes first")
+			wg.Wait()
+			waitForHigherPriority = false
+		}
+
+		wg.Add(1)
+
+		//wait until it goes through
+		p.patchParams.Userdata.SetPendingVoiceUpdate(true)
+
+		guild.UserData.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
+
+		//we can issue mutes/deafens from ANY session, not just the primary
+		go muteWorker(sm.GetSessionForRequest(), &wg, p.patchParams)
+	}
+	wg.Wait()
 
 	return
+}
+
+func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
+	guildMemberUpdate(s, parameters)
+	wg.Done()
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
