@@ -6,19 +6,33 @@
     "keywords": ["go", "among us", "discord"],
     "env": {
       "DISCORD_BOT_TOKEN": {
-
+        "description": "The Bot Token used by the bot to authenticate with Discord.",
+        "required": true
       },
       "DISCORD_BOT_TOKEN_2": {
-
+        "description": "The optional second bot token used by the bot to avoid Discord API rate limiting. Recommended with large groups (8+) people to speed up muting/unmuting.",
+        "required": false
       },
       "EXT_PORT": {
-
+        "description": "The port to use for the capture url. Must be a valid port number, or \"protocol\" to not include a port in the url. Defaults to PORT.",
+        "required": false
       },
       "SERVER_URL": {
-
+        "description": "The externally-accessible URL for this instance of the discord bot. For example, http://test.com. This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing .au new (in conjunction with the PORT above). You must specify http:// or https:// accordingly as part of the URL",
+        "required": false
       },
       "GOVERSION": {
-        
+        "description": "Default Go version to use for Heroku deployment. Defaults to Go 1.15. Required to be >= 1.13 for package purposes.",
+        "value": "1.15",
+        "required": false
+      },
+      "CONFIG_PATH": {
+        "description": "Alternate filesystem path for guild config files. Defaults to ./",
+        "required": false
+      },
+      "NUM_SHARDS": {
+        "description": "How many total bot shard instances you'll be running in your current stack.",
+        "required": false
       }
     }
   }
