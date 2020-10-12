@@ -98,8 +98,6 @@ The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not
 3. Create another Config var with the key `EXT_PORT` and the value `protocol`
 4. Restart all dynos
 
-To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
-
 # Sample Usage
 To start the bot in the current channel, type the following `.au` command in Discord:
 ```
