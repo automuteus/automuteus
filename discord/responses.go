@@ -45,7 +45,7 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 
 func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
 
-	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	g, err := s.State.Guild(GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -256,7 +256,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 func (guild *GuildState) makeDescription() string {
 	buf := bytes.NewBuffer([]byte{})
 	if !guild.GameRunning {
-		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.PersistentGuildData.CommandPrefix + " p`!**\n\n")
+		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.CommandPrefix() + " p`!**\n\n")
 	}
 
 	author := guild.GameStateMsg.leaderID

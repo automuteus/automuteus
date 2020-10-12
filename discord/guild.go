@@ -11,8 +11,6 @@ import (
 
 // GuildState struct
 type GuildState struct {
-	PersistentGuildData *storage.PersistentGuildData
-
 	Linked bool
 
 	UserData UserDataSet
@@ -25,6 +23,8 @@ type GuildState struct {
 
 	AmongUsData game.AmongUsData
 	GameRunning bool
+
+	persistentGuildData *storage.PersistentGuildData
 }
 
 type EmojiCollection struct {
@@ -53,7 +53,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.S
 			return user, true
 		}
 	}
-	mem, err := s.GuildMember(guild.PersistentGuildData.GuildID, userID)
+	mem, err := s.GuildMember(guild.persistentGuildData.GuildID, userID)
 	if err != nil {
 		log.Println(err)
 		return game.UserData{}, false
@@ -64,7 +64,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.S
 }
 
 func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	g, err := s.State.Guild(guild.persistentGuildData.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -122,38 +122,6 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 	}
 }
 
-func (guild *GuildState) HasAdminPermissions(userID string) bool {
-	if len(guild.PersistentGuildData.AdminUserIDs) == 0 {
-		return false
-	}
-
-	for _, v := range guild.PersistentGuildData.AdminUserIDs {
-		if v == userID {
-			return true
-		}
-	}
-	return false
-}
-
-func (guild *GuildState) HasRolePermissions(s *discordgo.Session, userID string) bool {
-	if len(guild.PersistentGuildData.PermissionedRoleIDs) == 0 {
-		return false
-	}
-
-	mem, err := s.GuildMember(guild.PersistentGuildData.GuildID, userID)
-	if err != nil {
-		log.Println(err)
-	}
-	for _, role := range mem.Roles {
-		for _, testRole := range guild.PersistentGuildData.PermissionedRoleIDs {
-			if testRole == role {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // ToString returns a simple string representation of the current state of the guild
 func (guild *GuildState) ToString() string {
 	return fmt.Sprintf("%v", guild)
@@ -170,4 +138,32 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 	guild.Tracking.Reset()
 
 	guild.GameStateMsg.Delete(s)
+}
+
+func (guild *GuildState) CommandPrefix() string {
+	return guild.persistentGuildData.GuildSettings.GetCommandPrefix()
+}
+
+func (guild *GuildState) EmptyAdminAndRolePerms() bool {
+	return guild.persistentGuildData.GuildSettings.EmptyAdminAndRolePerms()
+}
+
+func (guild *GuildState) HasAdminPerms(mem *discordgo.Member) bool {
+	return guild.persistentGuildData.GuildSettings.HasAdminPerms(mem)
+}
+
+func (guild *GuildState) HasRolePerms(mem *discordgo.Member) bool {
+	return guild.persistentGuildData.GuildSettings.HasRolePerms(mem)
+}
+
+func (guild *GuildState) GetDelay(oldPhase, newPhase game.Phase) int {
+	return guild.persistentGuildData.GuildSettings.Delays.GetDelay(oldPhase, newPhase)
+}
+
+func (guild *GuildState) UnmuteDeadImmediately() bool {
+	return guild.persistentGuildData.GuildSettings.UnmuteDeadDuringTasks
+}
+
+func (guild *GuildState) DefaultTrackedChannel() string {
+	return guild.persistentGuildData.GuildSettings.DefaultTrackedChannel
 }

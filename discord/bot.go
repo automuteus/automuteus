@@ -312,8 +312,8 @@ func (bot *Bot) socketioServer(port string) {
 			}
 
 			if guildID != "" {
-				if guild, ok := bot.AllGuilds[guildID]; ok { // Game is connected -> update its room code
-					log.Println("Received room code", msg, "for guild", guild.PersistentGuildData.GuildID, "from capture")
+				if _, ok := bot.AllGuilds[guildID]; ok { // Game is connected -> update its room code
+					log.Println("Received room code", msg, "for guild", guildID, "from capture")
 				} else {
 					bot.PushGuildSocketUpdate(guildID, SocketStatus{
 						GuildID:   guildID,
@@ -466,7 +466,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 						}
 						log.Println("Detected transition to Lobby")
 
-						delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
+						delay := guild.GetDelay(guild.AmongUsData.GetPhase(), game.LOBBY)
 
 						guild.AmongUsData.SetAllAlive()
 						guild.AmongUsData.SetPhase(phase)
@@ -484,7 +484,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 						}
 						log.Println("Detected transition to Tasks")
 						oldPhase := guild.AmongUsData.GetPhase()
-						delay := guild.PersistentGuildData.Delays.GetDelay(oldPhase, game.TASKS)
+						delay := guild.GetDelay(oldPhase, game.TASKS)
 						//when going from discussion to tasks, we should mute alive players FIRST
 						priority := AlivePriority
 
@@ -506,7 +506,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 						}
 						log.Println("Detected transition to Discussion")
 
-						delay := guild.PersistentGuildData.Delays.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
+						delay := guild.GetDelay(guild.AmongUsData.GetPhase(), game.DISCUSS)
 
 						guild.AmongUsData.SetPhase(phase)
 
@@ -567,7 +567,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 
 								//log.Println("Player update received caused an update in cached state")
 								if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-									if guild.PersistentGuildData.UnmuteDeadDuringTasks {
+									if guild.UnmuteDeadImmediately() {
 										// unmute players even if in tasks because UnmuteDeadDuringTasks is true
 										guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
 										guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
@@ -694,7 +694,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.AllGuilds[m.ID] = &GuildState{
-			PersistentGuildData: pgd,
+			persistentGuildData: pgd,
 
 			Linked: false,
 
@@ -754,36 +754,37 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 		return
 	}
 
-	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	g, err := s.State.Guild(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	contents := m.Content
+	prefix := guild.CommandPrefix()
 
-	if strings.HasPrefix(contents, guild.PersistentGuildData.CommandPrefix) {
+	if strings.HasPrefix(contents, prefix) {
 		//either BOTH the admin/roles are empty, or the user fulfills EITHER perm "bucket"
-		perms := len(guild.PersistentGuildData.AdminUserIDs) == 0 && len(guild.PersistentGuildData.PermissionedRoleIDs) == 0
+		perms := guild.EmptyAdminAndRolePerms()
 		if !perms {
-			perms = guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
+			perms = guild.HasAdminPerms(m.Member) || guild.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
 		} else {
 			oldLen := len(contents)
-			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)
+			contents = strings.Replace(contents, prefix+" ", "", 1)
 			if len(contents) == oldLen { //didn't have a space
-				contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix, "", 1)
+				contents = strings.Replace(contents, prefix, "", 1)
 			}
 
 			if len(contents) == 0 {
-				if len(guild.PersistentGuildData.CommandPrefix) <= 1 {
+				if len(prefix) <= 1 {
 					// prevent bot from spamming help message whenever the single character
 					// prefix is sent by mistake
 					return
 				} else {
-					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, prefix))
 				}
 			} else {
 				args := strings.Split(contents, " ")

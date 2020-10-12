@@ -2,41 +2,23 @@ package storage
 
 import (
 	"encoding/json"
-	"github.com/denverquane/amongusdiscord/game"
-	"os"
-	"sync"
 )
 
 type PersistentGuildData struct {
 	GuildID   string `json:"guildID"`
 	GuildName string `json:"guildName"`
 
-	CommandPrefix         string `json:"commandPrefix"`
-	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
-
-	AdminUserIDs          []string        `json:"adminIDs"`
-	PermissionedRoleIDs   []string        `json:"permissionRoleIDs"`
-	Delays                game.GameDelays `json:"delays"`
-	VoiceRules            game.VoiceRules `json:"voiceRules"`
-	ApplyNicknames        bool            `json:"applyNicknames"`
-	UnmuteDeadDuringTasks bool            `json:"unmuteDeadDuringTasks"`
-
-	lock sync.RWMutex
+	GuildStats    GuildStats
+	GuildSettings GuildSettings
 }
 
 func PGDDefault(id string, name string) *PersistentGuildData {
 	return &PersistentGuildData{
-		GuildID:               id,
-		GuildName:             name,
-		CommandPrefix:         ".au",
-		DefaultTrackedChannel: "",
-		AdminUserIDs:          []string{},
-		PermissionedRoleIDs:   []string{},
-		Delays:                game.MakeDefaultDelays(),
-		VoiceRules:            game.MakeMuteAndDeafenRules(),
-		ApplyNicknames:        false,
-		UnmuteDeadDuringTasks: false,
-		lock:                  sync.RWMutex{},
+		GuildID:   id,
+		GuildName: name,
+
+		GuildStats:    MakeGuildStats(),
+		GuildSettings: MakeGuildSettings(),
 	}
 }
 
@@ -65,19 +47,4 @@ func (pgd *PersistentGuildData) ToData() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-func (pgd *PersistentGuildData) ToFile(filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	jsonBytes, err := json.MarshalIndent(pgd, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(jsonBytes)
-	return err
 }

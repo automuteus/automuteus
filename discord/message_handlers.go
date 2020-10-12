@@ -39,13 +39,13 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 
 	//TODO don't always recreate if we're already connected...
 
-	connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
+	connectCode := generateConnectCode(m.GuildID)
 	log.Println(connectCode)
 	bot.LinkCodeLock.Lock()
 	bot.LinkCodes[GameOrLobbyCode{
 		gameCode:    room,
 		connectCode: connectCode,
-	}] = guild.PersistentGuildData.GuildID
+	}] = m.GuildID
 
 	bot.LinkCodeLock.Unlock()
 
@@ -115,7 +115,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
+			if channel.ID == guild.DefaultTrackedChannel() || strings.ToLower(channel.Name) == strings.ToLower(guild.DefaultTrackedChannel()) {
 				initialTracking = append(initialTracking, TrackingChannel{
 					channelID:   channel.ID,
 					channelName: channel.Name,

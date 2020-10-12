@@ -56,16 +56,17 @@ func GetCommandType(arg string) CommandType {
 }
 
 func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
+	prefix := guild.CommandPrefix()
 	switch GetCommandType(args[0]) {
 
 	case Help:
-		s.ChannelMessageSend(m.ChannelID, helpResponse(Version, guild.PersistentGuildData.CommandPrefix))
+		s.ChannelMessageSend(m.ChannelID, helpResponse(Version, prefix))
 		break
 
 	case Track:
 		if len(args[1:]) == 0 {
 			//TODO print usage of this command specifically
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", prefix))
 		} else {
 			// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
 			forGhosts := false
@@ -91,7 +92,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 	case Link:
 		if len(args[1:]) < 2 {
 			//TODO print usage of this command specifically
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", prefix))
 		} else {
 			guild.linkPlayerResponse(s, m.GuildID, args[1:])
 
@@ -101,7 +102,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 
 	case Unlink:
 		if len(args[1:]) == 0 {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", prefix))
 		} else {
 
 			userID, err := extractUserIDFromMention(args[1])
@@ -138,7 +139,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 
 	case Force:
 		if len(args[1:]) < 1 {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", prefix))
 		}
 		phase := getPhaseFromString(args[1])
 		if phase == game.UNINITIALIZED {
@@ -173,7 +174,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))
 
 	}
 }

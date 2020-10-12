@@ -115,8 +115,8 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, guil
 		return false
 	}
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
-		guild.PersistentGuildData.CommandPrefix, args[2]))
-	guild.PersistentGuildData.CommandPrefix = args[2]
+		guild.CommandPrefix(), args[2]))
+	guild.CommandPrefix() = args[2]
 	return true
 }
 
