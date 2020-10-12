@@ -47,16 +47,20 @@ type SocketStatus struct {
 type SessionManager struct {
 	PrimarySession *discordgo.Session
 	AltSession     *discordgo.Session
-	count          int
-	countLock      sync.Mutex
+	//AltSessionGuilds is a record of which guilds also have the 2nd bot added to them (and therefore should be allowed to
+	//use the 2nd bot token
+	AltSessionGuilds map[string]struct{}
+	count            int
+	lock             sync.RWMutex
 }
 
 func NewSessionManager(primary, secondary *discordgo.Session) SessionManager {
 	return SessionManager{
-		PrimarySession: primary,
-		AltSession:     secondary,
-		count:          0,
-		countLock:      sync.Mutex{},
+		PrimarySession:   primary,
+		AltSession:       secondary,
+		AltSessionGuilds: make(map[string]struct{}),
+		count:            0,
+		lock:             sync.RWMutex{},
 	}
 }
 
@@ -64,20 +68,26 @@ func (sm *SessionManager) GetPrimarySession() *discordgo.Session {
 	return sm.PrimarySession
 }
 
-func (sm *SessionManager) GetSessionForRequest() *discordgo.Session {
+func (sm *SessionManager) GetSessionForRequest(guildID string) *discordgo.Session {
 	if sm.AltSession == nil {
 		return sm.PrimarySession
 	}
-	sm.countLock.Lock()
-	defer sm.countLock.Unlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
-	sm.count++
-	if sm.count%2 == 0 {
+	//only bother using a separate token/session if the guild also has that bot invited/a member
+	if _, hasSecond := sm.AltSessionGuilds[guildID]; hasSecond {
+		sm.count++
+		if sm.count%2 == 0 {
+			log.Println("Using primary session for request")
+			return sm.PrimarySession
+		} else {
+			log.Println("Using secondary session for request")
+			return sm.AltSession
+		}
+	} else {
 		log.Println("Using primary session for request")
 		return sm.PrimarySession
-	} else {
-		log.Println("Using secondary session for request")
-		return sm.AltSession
 	}
 }
 
@@ -89,6 +99,12 @@ func (sm *SessionManager) Close() {
 	if sm.AltSession != nil {
 		sm.AltSession.Close()
 	}
+}
+
+func (sm *SessionManager) RegisterGuildSecondSession(guildID string) {
+	sm.lock.Lock()
+	sm.AltSessionGuilds[guildID] = struct{}{}
+	sm.lock.Unlock()
 }
 
 type Bot struct {
@@ -208,7 +224,7 @@ func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID st
 	}
 
 	if altDiscordSession != nil {
-		altDiscordSession.AddHandler(newAltGuild)
+		altDiscordSession.AddHandler(bot.newAltGuild)
 		altDiscordSession.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds)
 		err = altDiscordSession.Open()
 		if err != nil {
@@ -391,19 +407,30 @@ func (bot *Bot) socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-func MessagesServer(port string, bots []*Bot) {
+func MessagesServer(port string, bot *Bot) {
 
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
-		for _, bot := range bots {
-			bot.ChannelsMapLock.RLock()
-			for _, v := range bot.GlobalBroadcastChannels {
-				*v <- BroadcastMessage{
-					Type: GRACEFUL_SHUTDOWN,
-					Data: 30,
-				}
+		bot.ChannelsMapLock.RLock()
+		for _, v := range bot.GlobalBroadcastChannels {
+			*v <- BroadcastMessage{
+				Type: GRACEFUL_SHUTDOWN,
+				Data: 30,
 			}
-			bot.ChannelsMapLock.RUnlock()
 		}
+		bot.ChannelsMapLock.RUnlock()
+
+	})
+	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]interface{}{
+			"activeConnections": len(bot.AllConns),
+			"activeGames":       len(bot.LinkCodes), //probably an inaccurate metric
+			"totalGuilds":       len(bot.AllGuilds),
+		}
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			log.Println(err)
+		}
+		w.Write(jsonBytes)
 	})
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -635,14 +662,14 @@ func (bot *Bot) reactionCreate() func(s *discordgo.Session, m *discordgo.Message
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
-		var pgd *PersistentGuildData = nil
+		var pgd *storage.PersistentGuildData = nil
 
 		data, err := bot.StorageInterface.GetGuildData(m.Guild.ID)
 		if err != nil {
 			log.Printf("Couldn't load guild data for %s from storageDriver; using default config instead\n", m.Guild.ID)
 			log.Printf("Exact error: %s", err)
 		} else {
-			tempPgd, err := FromData(data)
+			tempPgd, err := storage.FromData(data)
 			if err != nil {
 				log.Printf("Couldn't marshal guild data for %s; using default config instead\n", m.Guild.ID)
 			} else {
@@ -651,7 +678,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			}
 		}
 		if pgd == nil {
-			pgd = PGDDefault(m.Guild.ID)
+			pgd = storage.PGDDefault(m.Guild.ID, m.Guild.Name)
 			data, err := pgd.ToData()
 			if err != nil {
 				log.Printf("Error marshalling %s PGD to map(!): %s\n", m.Guild.ID, err)
@@ -717,8 +744,8 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	}
 }
 
-func newAltGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
-	//TODO ensure that the 2nd bot is also present in the same guilds as the original bot (to ensure it can also issue requests)
+func (bot *Bot) newAltGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
+	bot.SessionManager.RegisterGuildSecondSession(m.Guild.ID)
 }
 
 func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate) {

@@ -1,38 +1,41 @@
-package discord
+package storage
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"github.com/denverquane/amongusdiscord/game"
 	"os"
 	"sync"
 )
 
 type PersistentGuildData struct {
-	GuildID string `json:"guildID"`
+	GuildID   string `json:"guildID"`
+	GuildName string `json:"guildName"`
 
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 
-	AdminUserIDs          []string   `json:"adminIDs"`
-	PermissionedRoleIDs   []string   `json:"permissionRoleIDs"`
-	Delays                GameDelays `json:"delays"`
-	VoiceRules            VoiceRules `json:"voiceRules"`
-	ApplyNicknames        bool       `json:"applyNicknames"`
-	UnmuteDeadDuringTasks bool       `json:"UnmuteDeadDuringTasks"`
+	AdminUserIDs          []string        `json:"adminIDs"`
+	PermissionedRoleIDs   []string        `json:"permissionRoleIDs"`
+	Delays                game.GameDelays `json:"delays"`
+	VoiceRules            game.VoiceRules `json:"voiceRules"`
+	ApplyNicknames        bool            `json:"applyNicknames"`
+	UnmuteDeadDuringTasks bool            `json:"unmuteDeadDuringTasks"`
 
 	lock sync.RWMutex
 }
 
-func PGDDefault(id string) *PersistentGuildData {
+func PGDDefault(id string, name string) *PersistentGuildData {
 	return &PersistentGuildData{
 		GuildID:               id,
+		GuildName:             name,
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
-		AdminUserIDs:          nil,
-		PermissionedRoleIDs:   nil,
-		Delays:                MakeDefaultDelays(),
-		VoiceRules:            MakeMuteAndDeafenRules(),
+		AdminUserIDs:          []string{},
+		PermissionedRoleIDs:   []string{},
+		Delays:                game.MakeDefaultDelays(),
+		VoiceRules:            game.MakeMuteAndDeafenRules(),
 		ApplyNicknames:        false,
+		UnmuteDeadDuringTasks: false,
 		lock:                  sync.RWMutex{},
 	}
 }
@@ -77,23 +80,4 @@ func (pgd *PersistentGuildData) ToFile(filename string) error {
 
 	_, err = file.Write(jsonBytes)
 	return err
-}
-
-func LoadPGDFromFile(filename string) (*PersistentGuildData, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	jsonBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	pgd := PersistentGuildData{}
-	err = json.Unmarshal(jsonBytes, &pgd)
-	if err != nil {
-		return nil, err
-	}
-	return &pgd, nil
 }

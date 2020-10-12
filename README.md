@@ -51,8 +51,7 @@ Now follow either the `Easiest` install, or the `Install From Source`:
 If you don't see one for the current version, then simply create a new text document called `final.txt`, and put `DISCORD_BOT_TOKEN = ` as the contents.
 2. Paste the Bot Token you obtained in the pre-installation into the `final.txt` file, after the `=` sign for the `DISCORD_BOT_TOKEN`.
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
-4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
-you can add a `host.txt` file in the same folder with the contents `http://<host>:<port>` to point to that instance, but this is totally optional.
+4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases).
 5. **If Among Us is already running,** then start the capture executable you downloaded in the previous step. Otherwise, start the game and **then** start the capture.
 
 Congrats, if you followed the instructions correctly, the bot should now be running! See the Sample Usage section below for details.

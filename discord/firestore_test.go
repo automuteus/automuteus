@@ -18,7 +18,7 @@ func TestFirestoreAdd(t *testing.T) {
 		t.Fail()
 	}
 
-	pgd := PGDDefault("testguild")
+	pgd := storage.PGDDefault("testguild")
 	var intf map[string]interface{}
 
 	bytes, err := json.Marshal(pgd)
@@ -44,7 +44,7 @@ func TestFirestoreAdd(t *testing.T) {
 		t.Fail()
 	}
 
-	var newPgd PersistentGuildData
+	var newPgd storage.PersistentGuildData
 	bytes, err = json.Marshal(data)
 	if err != nil {
 		log.Println(err)
