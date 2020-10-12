@@ -3,11 +3,12 @@ package discord
 import (
 	"container/heap"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 // GameDelays struct
@@ -142,6 +143,30 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 	priorityQueue := &PatchPriority{}
 	heap.Init(priorityQueue)
 
+	// amountWorkers value determines how many goroutines will be spawned to mute users
+	// this amount could be increased up to 10, but 8 should be enough
+	const amountWorkers = 8
+	// moved users wait group
+	wg := sync.WaitGroup{}
+
+	// buffered channel of size 10 (maximum numbers os players in a match)
+	userChan := make(chan UserPatchParameters, 10)
+
+	// starts workers, aka channel receivers
+	for i := 0; i < amountWorkers; i++ {
+		// Receive values until userChan is
+		// closed and the value buffer queue
+		// of userChan becomes empty.
+		go func() {
+			// read messages from the channel and act on them
+			for parameters := range userChan {
+				guildMemberUpdate(sm.GetSessionForRequest(), parameters)
+				wg.Done()
+				log.Println(parameters)
+			}
+		}()
+	}
+
 	for _, voiceState := range g.VoiceStates {
 
 		userData, err := guild.UserData.GetUser(voiceState.UserID)
@@ -197,7 +222,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 			}
 		}
 	}
-	wg := sync.WaitGroup{}
+
 	waitForHigherPriority := false
 
 	if delay > 0 {
@@ -226,16 +251,14 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 		guild.UserData.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		//we can issue mutes/deafens from ANY session, not just the primary
-		go muteWorker(sm.GetSessionForRequest(), &wg, p.patchParams)
+		// send params to worker
+		userChan <- p.patchParams
 	}
 	wg.Wait()
+	// Close channel because all users were sent
+	close(userChan)
 
 	return
-}
-
-func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
-	guildMemberUpdate(s, parameters)
-	wg.Done()
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
