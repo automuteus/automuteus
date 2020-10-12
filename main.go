@@ -21,7 +21,8 @@ const VERSION = "2.3.2-Prerelease"
 
 //TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
 const DefaultPort = "8123"
-const DefaultURL = "http://localhost"
+//const DefaultURL = "http://localhost" 
+const DefaultURL =  "https://among-enemies.herokuapp.com"
 
 func main() {
 	err := discordMainWrapper()
