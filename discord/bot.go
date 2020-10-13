@@ -567,8 +567,8 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 
 								//log.Println("Player update received caused an update in cached state")
 								if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-									if guild.UnmuteDeadImmediately() {
-										// unmute players even if in tasks because UnmuteDeadDuringTasks is true
+									if guild.guildData.GuildSettings.GetUnmuteDeadDuringTasks() {
+										// unmute players even if in tasks because unmuteDeadDuringTasks is true
 										guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
 										guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 									} else {
@@ -662,39 +662,30 @@ func (bot *Bot) reactionCreate() func(s *discordgo.Session, m *discordgo.Message
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
-		var pgd *storage.PersistentGuildData = nil
+		var gd = storage.MakeEmptyGuildData(m.ID, m.Name)
 
-		data, err := bot.StorageInterface.GetGuildData(m.Guild.ID)
+		data, err := bot.StorageInterface.GetGuildSettings(m.Guild.ID)
 		if err != nil {
 			log.Printf("Couldn't load guild data for %s from storageDriver; using default config instead\n", m.Guild.ID)
 			log.Printf("Exact error: %s", err)
 		} else {
-			tempPgd, err := storage.FromData(data)
-			if err != nil {
-				log.Printf("Couldn't marshal guild data for %s; using default config instead\n", m.Guild.ID)
-			} else {
-				log.Printf("Successfully loaded config from storagedriver for %s\n", m.Guild.ID)
-				pgd = tempPgd
-			}
+			gd.GuildSettings = data
 		}
-		if pgd == nil {
-			pgd = storage.PGDDefault(m.Guild.ID, m.Guild.Name)
-			data, err := pgd.ToData()
+		if gd.GuildSettings == nil {
+			gset := storage.MakeGuildSettings()
+			gd.GuildSettings = gset
+			err := bot.StorageInterface.WriteGuildSettings(m.ID, gset)
 			if err != nil {
-				log.Printf("Error marshalling %s PGD to map(!): %s\n", m.Guild.ID, err)
+				log.Printf("Error writing %s guild settings to storage interface: %s\n", m.Guild.ID, err)
 			} else {
-				err := bot.StorageInterface.WriteGuildData(m.Guild.ID, data)
-				if err != nil {
-					log.Printf("Error writing %s PGD to storage interface: %s\n", m.Guild.ID, err)
-				} else {
-					log.Printf("Successfully wrote %s PGD to Storage interface!", m.Guild.ID)
-				}
+				log.Printf("Successfully wrote %s guild settings to Storage interface!", m.Guild.ID)
 			}
+
 		}
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.AllGuilds[m.ID] = &GuildState{
-			persistentGuildData: pgd,
+			guildData: gd,
 
 			Linked: false,
 

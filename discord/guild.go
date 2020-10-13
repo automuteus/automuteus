@@ -24,7 +24,7 @@ type GuildState struct {
 	AmongUsData game.AmongUsData
 	GameRunning bool
 
-	persistentGuildData *storage.PersistentGuildData
+	guildData *storage.GuildData
 }
 
 type EmojiCollection struct {
@@ -53,7 +53,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.S
 			return user, true
 		}
 	}
-	mem, err := s.GuildMember(guild.persistentGuildData.GuildID, userID)
+	mem, err := s.GuildMember(guild.guildData.GuildID, userID)
 	if err != nil {
 		log.Println(err)
 		return game.UserData{}, false
@@ -64,7 +64,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.S
 }
 
 func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	g, err := s.State.Guild(guild.persistentGuildData.GuildID)
+	g, err := s.State.Guild(guild.guildData.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -141,29 +141,29 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 }
 
 func (guild *GuildState) CommandPrefix() string {
-	return guild.persistentGuildData.GuildSettings.GetCommandPrefix()
+	return guild.guildData.GuildSettings.GetCommandPrefix()
 }
 
 func (guild *GuildState) EmptyAdminAndRolePerms() bool {
-	return guild.persistentGuildData.GuildSettings.EmptyAdminAndRolePerms()
+	return guild.guildData.GuildSettings.EmptyAdminAndRolePerms()
 }
 
 func (guild *GuildState) HasAdminPerms(mem *discordgo.Member) bool {
-	return guild.persistentGuildData.GuildSettings.HasAdminPerms(mem)
+	return guild.guildData.GuildSettings.HasAdminPerms(mem)
 }
 
 func (guild *GuildState) HasRolePerms(mem *discordgo.Member) bool {
-	return guild.persistentGuildData.GuildSettings.HasRolePerms(mem)
+	return guild.guildData.GuildSettings.HasRolePerms(mem)
 }
 
 func (guild *GuildState) GetDelay(oldPhase, newPhase game.Phase) int {
-	return guild.persistentGuildData.GuildSettings.Delays.GetDelay(oldPhase, newPhase)
+	return guild.guildData.GuildSettings.GetDelay(oldPhase, newPhase)
 }
 
-func (guild *GuildState) UnmuteDeadImmediately() bool {
-	return guild.persistentGuildData.GuildSettings.UnmuteDeadDuringTasks
+func (guild *GuildState) GetUnmuteDeadImmediately() bool {
+	return guild.guildData.GuildSettings.GetUnmuteDeadDuringTasks()
 }
 
-func (guild *GuildState) DefaultTrackedChannel() string {
-	return guild.persistentGuildData.GuildSettings.DefaultTrackedChannel
+func (guild *GuildState) GetDefaultTrackedChannel() string {
+	return guild.guildData.GuildSettings.GetDefaultTrackedChannel()
 }

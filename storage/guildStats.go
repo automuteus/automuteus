@@ -4,6 +4,6 @@ type GuildStats struct {
 	gamesPlayed int
 }
 
-func MakeGuildStats() GuildStats {
-	return GuildStats{}
+func MakeGuildStats() *GuildStats {
+	return &GuildStats{}
 }

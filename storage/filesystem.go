@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const FileSuffix = "_config.json"
+const SettingsFileSuffix = "_settings.json"
 
 type FilesystemDriver struct {
 	baseDir  string
@@ -33,12 +33,12 @@ func (fs *FilesystemDriver) Init(directory string) error {
 	return nil
 }
 
-func (fs *FilesystemDriver) GetGuildData(guildID string) (map[string]interface{}, error) {
+func (fs *FilesystemDriver) GetGuildSettings(guildID string) (*GuildSettings, error) {
 	for _, info := range fs.fileInfo {
 		if !info.IsDir() {
 			name := info.Name()
 			fullPath := path.Join(fs.baseDir, name)
-			if strings.Contains(fullPath, guildID+FileSuffix) {
+			if strings.Contains(fullPath, guildID+SettingsFileSuffix) {
 				f, err := os.Open(fullPath)
 				if err != nil {
 					return nil, err
@@ -48,27 +48,27 @@ func (fs *FilesystemDriver) GetGuildData(guildID string) (map[string]interface{}
 				if err != nil {
 					return nil, err
 				}
-				var intf map[string]interface{}
-				err = json.Unmarshal(bytes, &intf)
+				var gs GuildSettings
+				err = json.Unmarshal(bytes, &gs)
 				if err != nil {
 					return nil, err
 				}
-				return intf, nil
+				return &gs, nil
 			}
 		}
 	}
-	return map[string]interface{}{}, errors.New("no config json found")
+	return nil, errors.New("no guild settings found for guildID " + guildID)
 }
 
-func (fs *FilesystemDriver) WriteGuildData(guildID string, data map[string]interface{}) error {
-	jsonBytes, err := json.MarshalIndent(data, "", "    ")
+func (fs *FilesystemDriver) WriteGuildSettings(guildID string, gs *GuildSettings) error {
+	jsonBytes, err := json.MarshalIndent(gs, "", "    ")
 	if err != nil {
 		return err
 	}
 
 	for _, fi := range fs.fileInfo {
 		//TODO enforce naming scheme?
-		if strings.Contains(fi.Name(), guildID+FileSuffix) {
+		if strings.Contains(fi.Name(), guildID+SettingsFileSuffix) {
 			f, err := os.OpenFile(path.Join(fs.baseDir, fi.Name()), os.O_CREATE|os.O_WRONLY, 0660)
 			if err != nil {
 				return err
@@ -78,7 +78,7 @@ func (fs *FilesystemDriver) WriteGuildData(guildID string, data map[string]inter
 			return err //can be nil if it worked
 		}
 	}
-	f, err := os.Create(path.Join(fs.baseDir, guildID+FileSuffix))
+	f, err := os.Create(path.Join(fs.baseDir, guildID+SettingsFileSuffix))
 	if err != nil {
 		return err
 	}

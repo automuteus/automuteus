@@ -44,7 +44,7 @@ func TestFirestoreAdd(t *testing.T) {
 		t.Fail()
 	}
 
-	var newPgd storage.PersistentGuildData
+	var newPgd storage.GuildData
 	bytes, err = json.Marshal(data)
 	if err != nil {
 		log.Println(err)

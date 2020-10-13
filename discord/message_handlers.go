@@ -120,9 +120,10 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		log.Println(err)
 	}
 
+	defaultTracked := guild.guildData.GuildSettings.GetDefaultTrackedChannel()
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			if channel.ID == guild.DefaultTrackedChannel() || strings.ToLower(channel.Name) == strings.ToLower(guild.DefaultTrackedChannel()) {
+			if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
 				initialTracking = append(initialTracking, TrackingChannel{
 					channelID:   channel.ID,
 					channelName: channel.Name,
