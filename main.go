@@ -17,7 +17,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.3.2-Prerelease"
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 //TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
 const DefaultPort = "8123"
@@ -62,7 +66,7 @@ func discordMainWrapper() error {
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 
-	log.Println(VERSION)
+	log.Println(version + "-" + commit)
 
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {
@@ -156,7 +160,7 @@ func discordMainWrapper() error {
 	bots := make([]*discord.Bot, numShards)
 
 	for i := 0; i < numShards; i++ {
-		bots[i] = discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, ports[i], extPort, emojiGuildID, numShards, i, storageClient)
+		bots[i] = discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, ports[i], extPort, emojiGuildID, numShards, i, storageClient)
 	}
 
 	go discord.MessagesServer("5000", bots)

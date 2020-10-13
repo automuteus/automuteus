@@ -1,0 +1,11 @@
+builds:
+  - goos:
+      - windows
+      - linux
+    goarch:
+      - "386"
+    mod_timestamp: "{{ .CommitTimestamp }}"
+archives:
+  - format: binary
+    replacements:
+      "386": 32bit
