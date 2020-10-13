@@ -53,7 +53,9 @@ If you don't see one for the current version, then simply create a new text docu
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
 4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
 you can add a `host.txt` file in the same folder with the contents `http://<host>:<port>` to point to that instance, but this is totally optional.
-5. **If Among Us is already running,** then start the capture executable you downloaded in the previous step. Otherwise, start the game and **then** start the capture.
+5. Start Among Us and host a game. 
+6. Automatically start capture by issuing the .au n(ew) command to the bot via Discord. The bot will send you a Direct Message with a link like: aucapture://<host>:8123/<connectcode>?insecure. Click this link and the capture executable will automatically be launched. Alternatively, manually start the capture executable from step 4 and type in the Connect Code from amongusdiscord.exe (should be 8 characters long), Connect, and issue the bot the command .au n(ew) via Discord.
+7. Have fun and enjoy a seamless game with no micromanaging!
 
 Congrats, if you followed the instructions correctly, the bot should now be running! See the Sample Usage section below for details.
 
