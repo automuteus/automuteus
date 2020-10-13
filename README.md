@@ -101,7 +101,7 @@ DISCORD_BOT_TOKEN = xxx
 EXT_PORT = 443
 GOVERSION = 1.15
 PORT = 443
-SERVER_URL = https:// your-app.herokuapp.com
+SERVER_URL = https:// your-app.herokuapp.com:443
 (Click on open app if you are unsure. Be sure to remove the space and ensure no slash "/" at the end, this fixed it for me)
 
 5) In Capture program's folder, create a host.txt file and enter the same as SERVER_URL
