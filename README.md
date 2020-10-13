@@ -93,12 +93,20 @@ This is used to provide the linking URI to the capture, via the Direct Message t
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not set. To fix this:
+1) Navigate to your Heroku app dashboard
+2) Go to Settings
+3) Click on Reveal Config Vars
+4) Ensure the following is populated
+DISCORD_BOT_TOKEN = xxx
+EXT_PORT = 443
+GOVERSION = 1.15
+PORT = 443
+SERVER_URL = https:// your-app.herokuapp.com
+(Click on open app if you are unsure. Be sure to remove the space and ensure no slash "/" at the end, this fixed it for me)
 
-1. Create a new Config var in your Heroku app's settings with the key `DISCORD_BOT_TOKEN` and the value as your bot token obtained from the pre-installation step.
-2. Restart all dynos
-
-To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
+5) In Capture program's folder, create a host.txt file and enter the same as SERVER_URL
+https:// your-app.herokuapp.com
+6) Remember to run the capture program as administrator
 
 # Sample Usage
 To start the bot in the current channel, type the following `.au` command in Discord:
