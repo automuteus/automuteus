@@ -11,8 +11,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x32.exe"
-const dotNetUrl = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
+const download32URL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x32.exe"
+const download64URL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x64.exe"
+const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
+const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
 func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 	guild.AmongUsData.SetAllAlive()
@@ -50,7 +52,8 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
-	urlregex := regexp.MustCompile(`^http(?P<secure>s?):\/\/(?P<host>[\w.-]+)(?::(?P<port>\d+))?$`)
+	var minimalUrl string
+	urlregex := regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
 	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]
@@ -70,13 +73,17 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		}
 
 		insecure := "?insecure"
+		protocol := "http://"
 		if secure {
 			insecure = ""
+			protocol = "https://"
 		}
 
 		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
+		minimalUrl = fmt.Sprintf("%s%s%s", protocol, host, port)
 	} else {
-		hyperlink = "aucapture://INVALID_SERVER_URL"
+		hyperlink = "Invalid Server URL (missing `http://`? Or do you have a trailing `/`?)"
+		minimalUrl = "Invalid Server URL"
 	}
 
 	var embed = discordgo.MessageEmbed{
@@ -84,7 +91,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Type:  "",
 		Title: "You just started a game!",
 		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? [Download it here](%s)\nIf you don't have .NET Core installed, you can get that [here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNetUrl),
+			"Don't have the capture installed? [32-bit here](%s), [64-bit here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, download32URL, download64URL, dotNet32Url, dotNet64Url),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,
@@ -95,7 +102,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
 				Name:   "URL",
-				Value:  bot.url,
+				Value:  minimalUrl,
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
