@@ -53,7 +53,9 @@ If you don't see one for the current version, then simply create a new text docu
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
 4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
 you can add a `host.txt` file in the same folder with the contents `http://<host>:<port>` to point to that instance, but this is totally optional.
-5. **If Among Us is already running,** then start the capture executable you downloaded in the previous step. Otherwise, start the game and **then** start the capture.
+5. Start Among Us and host a game or join a game. 
+6. Automatically start capture by issuing the .au n(ew) command to the bot via Discord. The bot will send you a Direct Message with a link like: aucapture://<host>:8123/<connectcode>?insecure. Click this link and the capture executable will automatically be launched. Alternatively, manually start the capture executable from step 4 and type in the Connect Code from amongusdiscord.exe (should be 8 characters long), Connect, and issue the bot the command .au n(ew) via Discord.
+7. Have fun and enjoy a seamless game with no micromanaging!
 
 Congrats, if you followed the instructions correctly, the bot should now be running! See the Sample Usage section below for details.
 
@@ -91,12 +93,20 @@ This is used to provide the linking URI to the capture, via the Direct Message t
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-The app will fail the first time you deploy since the `DISCORD_BOT_TOKEN` is not set. To fix this:
+1) Navigate to your Heroku app dashboard
+2) Go to Settings
+3) Click on Reveal Config Vars
+4) Ensure the following is populated
+DISCORD_BOT_TOKEN = xxx
+EXT_PORT = 443
+GOVERSION = 1.15
+PORT = 443
+SERVER_URL = https:// your-app.herokuapp.com:443
+(Click on open app if you are unsure. Be sure to remove the space and ensure no slash "/" at the end, this fixed it for me)
 
-1. Create a new Config var in your Heroku app's settings with the key `DISCORD_BOT_TOKEN` and the value as your bot token obtained from the pre-installation step.
-2. Restart all dynos
-
-To connect to this deployment, create a `host.txt` file in the same folder as the  `amonguscapture.exe` file with the contents `https://<host>`, where the host is your Heroku app URL and restart `amonguscapture.exe` if its already running.
+5) Check the app's logs. See if it is up and running with no issues.
+6) You should see your bot in discord. Issue a .au n(ew) command and click the link in the direct message from the bot. If you haven't already download the capture app and .Net Core install.
+7) The link should connect the capture.exe to your bot and Discord will show your game in it's assigned text channel.
 
 # Sample Usage
 To start the bot in the current channel, type the following `.au` command in Discord:
