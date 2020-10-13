@@ -104,9 +104,9 @@ PORT = 443
 SERVER_URL = https:// your-app.herokuapp.com:443
 (Click on open app if you are unsure. Be sure to remove the space and ensure no slash "/" at the end, this fixed it for me)
 
-5) In Capture program's folder, create a host.txt file and enter the same as SERVER_URL
-https:// your-app.herokuapp.com
-6) Remember to run the capture program as administrator
+5) Check the app's logs. See if it is up and running with no issues.
+6) You should see your bot in discord. Issue a .au n(ew) command and click the link in the direct message from the bot. If you haven't already download the capture app and .Net Core install.
+7) The link should connect the capture.exe to your bot and Discord will show your game in it's assigned text channel.
 
 # Sample Usage
 To start the bot in the current channel, type the following `.au` command in Discord:
