@@ -92,7 +92,7 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 			"Valid settings include `commandPrefix`, `defaultTrackedChannel`, `adminUserIDs`, `applyNicknames`, `unmuteDeadDuringTasks`, `delays` and `voiceRules`.", args[1]))
 	}
 	if isValid {
-		err := storageInterface.WriteGuildSettings(m.GuildID, guild.guildData.GuildSettings)
+		err := storageInterface.WriteGuildSettings(m.GuildID, guild.guildSettings)
 		if err != nil {
 			log.Println(err)
 		}
@@ -111,7 +111,7 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, guil
 	}
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
 		guild.CommandPrefix(), args[2]))
-	guild.guildData.GuildSettings.SetCommandPrefix(args[2])
+	guild.guildSettings.SetCommandPrefix(args[2])
 	return true
 }
 
@@ -153,13 +153,13 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 	} else {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Default voice channel changed to `%s`. Use that from now on!",
 			channelName))
-		guild.guildData.GuildSettings.SetDefaultTrackedChannel(channelID)
+		guild.guildSettings.SetDefaultTrackedChannel(channelID)
 		return true
 	}
 }
 
 func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	adminIDs := guild.guildData.GuildSettings.GetAdminUserIDs()
+	adminIDs := guild.guildSettings.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
 		// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
@@ -276,12 +276,12 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 		currentIndex++
 	}
 
-	guild.guildData.GuildSettings.SetAdminUserIDs(newAdminList)
+	guild.guildSettings.SetAdminUserIDs(newAdminList)
 	return true
 }
 
 func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	oldRoleIDs := guild.guildData.GuildSettings.GetPermissionRoleIDs()
+	oldRoleIDs := guild.guildSettings.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
@@ -398,12 +398,12 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 		currentIndex++
 	}
 
-	guild.guildData.GuildSettings.SetPermissionRoleIDs(newAdminRoleList)
+	guild.guildSettings.SetPermissionRoleIDs(newAdminRoleList)
 	return true
 }
 
 func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	applyNicknames := guild.guildData.GuildSettings.GetApplyNicknames()
+	applyNicknames := guild.guildSettings.GetApplyNicknames()
 	if len(args) == 2 {
 		if applyNicknames {
 			s.ChannelMessageSend(m.ChannelID, "`applyNicknames [true/false]`: Whether the bot should change the nicknames of the players to reflect the player's color.\n"+
@@ -419,13 +419,13 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, gui
 			s.ChannelMessageSend(m.ChannelID, "It's already true!")
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "I will now rename the players in the voice chat.")
-			guild.guildData.GuildSettings.SetApplyNicknames(true)
+			guild.guildSettings.SetApplyNicknames(true)
 			return true
 		}
 	} else if args[2] == "false" {
 		if applyNicknames {
 			s.ChannelMessageSend(m.ChannelID, "I will no longer  rename the players in the voice chat.")
-			guild.guildData.GuildSettings.SetApplyNicknames(false)
+			guild.guildSettings.SetApplyNicknames(false)
 			return true
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "It's already false!")
@@ -437,7 +437,7 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, gui
 }
 
 func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	unmuteDead := guild.guildData.GuildSettings.GetUnmuteDeadDuringTasks()
+	unmuteDead := guild.guildSettings.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		if unmuteDead {
 			s.ChannelMessageSend(m.ChannelID, "`unmuteDeadDuringTasks [true/false]`: Whether the bot should unmute dead players immediately when they die. "+
@@ -455,13 +455,13 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			s.ChannelMessageSend(m.ChannelID, "It's already true!")
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!")
-			guild.guildData.GuildSettings.SetUnmuteDeadDuringTasks(true)
+			guild.guildSettings.SetUnmuteDeadDuringTasks(true)
 			return true
 		}
 	} else if args[2] == "false" {
 		if unmuteDead {
 			s.ChannelMessageSend(m.ChannelID, "I will no longer immediately unmute dead people. Good choice!")
-			guild.guildData.GuildSettings.SetUnmuteDeadDuringTasks(false)
+			guild.guildSettings.SetUnmuteDeadDuringTasks(false)
 			return true
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "It's already false!")
@@ -494,7 +494,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, guild *Guil
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I don't know what `%s` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.", args[3]))
 		return false
 	}
-	oldDelay := guild.guildData.GuildSettings.GetDelay(gamePhase1, gamePhase2)
+	oldDelay := guild.guildSettings.GetDelay(gamePhase1, gamePhase2)
 	if len(args) == 4 {
 		// no number was passed, user was querying the delay
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Currently, the delay when passing from `%s` to `%s` is %d.", args[2], args[3], oldDelay))
@@ -505,7 +505,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, guild *Guil
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s` is not a valid number! Please try again", args[4]))
 		return false
 	}
-	guild.guildData.GuildSettings.SetDelay(gamePhase1, gamePhase2, newDelay)
+	guild.guildSettings.SetDelay(gamePhase1, gamePhase2, newDelay)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The delay when passing from `%s` to `%s` changed from %d to %d.", args[2], args[3], oldDelay, newDelay))
 	return true
 }
@@ -540,9 +540,9 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *
 	}
 	var oldValue bool
 	if args[2] == "muted" {
-		oldValue = guild.guildData.GuildSettings.GetVoiceRule(true, gamePhase, args[4])
+		oldValue = guild.guildSettings.GetVoiceRule(true, gamePhase, args[4])
 	} else {
-		oldValue = guild.guildData.GuildSettings.GetVoiceRule(false, gamePhase, args[4])
+		oldValue = guild.guildSettings.GetVoiceRule(false, gamePhase, args[4])
 	}
 	if len(args) == 5 {
 		// user was only querying
@@ -571,9 +571,9 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *
 		return false
 	}
 	if args[2] == "muted" {
-		guild.guildData.GuildSettings.SetVoiceRule(true, gamePhase, args[4], newValue)
+		guild.guildSettings.SetVoiceRule(true, gamePhase, args[4], newValue)
 	} else {
-		guild.guildData.GuildSettings.SetVoiceRule(false, gamePhase, args[4], newValue)
+		guild.guildSettings.SetVoiceRule(false, gamePhase, args[4], newValue)
 	}
 	if newValue {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("From now on, when in `%s` phase, %s players will be %s.", args[3], args[4], args[2]))

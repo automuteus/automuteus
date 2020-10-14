@@ -131,6 +131,8 @@ type Bot struct {
 	SessionManager SessionManager
 
 	StorageInterface storage.StorageInterface
+
+	UserSettings *storage.UserSettingsCollection
 }
 
 func (bot *Bot) PushGuildSocketUpdate(guildID string, status SocketStatus) {
@@ -206,6 +208,7 @@ func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID st
 		ChannelsMapLock:         sync.RWMutex{},
 		SessionManager:          NewSessionManager(dg, altDiscordSession),
 		StorageInterface:        storageClient,
+		UserSettings:            storageClient.GetAllUserSettings(),
 	}
 
 	dg.AddHandler(bot.voiceStateChange())
@@ -560,14 +563,37 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 
 							if updated {
 								data := guild.AmongUsData.GetByName(player.Name)
-								paired := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
+								paired, userID, name := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
 								if paired {
 									log.Println("Successfully linked discord user to player using matching names!")
+									user := bot.UserSettings.GetUser(userID)
+									if user == nil {
+										user = &storage.UserSettings{
+											UserID:    userID,
+											UserName:  name,
+											GameNames: []string{player.Name},
+										}
+									} else {
+										//TODO this shouldn't technically be append, this should check for duplicates...
+										user.GameNames = append(user.GameNames, player.Name)
+									}
+									bot.UserSettings.UpdateUser(userID, user)
+									err := bot.StorageInterface.WriteUserSettings(userID, user)
+									if err != nil {
+										log.Println(err)
+									}
+								} else {
+									log.Println("Attempting to link via cached user names")
+									id := bot.UserSettings.PairByName(player.Name)
+									if id != "" {
+										log.Printf("Paired %s to their cached name of %s!\n", id, player.Name)
+										guild.UserData.UpdatePlayerData(id, data)
+									}
 								}
 
 								//log.Println("Player update received caused an update in cached state")
 								if isAliveUpdated && guild.AmongUsData.GetPhase() == game.TASKS {
-									if guild.guildData.GuildSettings.GetUnmuteDeadDuringTasks() {
+									if guild.guildSettings.GetUnmuteDeadDuringTasks() {
 										// unmute players even if in tasks because unmuteDeadDuringTasks is true
 										guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
 										guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
@@ -662,19 +688,18 @@ func (bot *Bot) reactionCreate() func(s *discordgo.Session, m *discordgo.Message
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
-		var gd = storage.MakeEmptyGuildData(m.ID, m.Name)
+		var gs *storage.GuildSettings = nil
 
 		data, err := bot.StorageInterface.GetGuildSettings(m.Guild.ID)
 		if err != nil {
 			log.Printf("Couldn't load guild data for %s from storageDriver; using default config instead\n", m.Guild.ID)
 			log.Printf("Exact error: %s", err)
 		} else {
-			gd.GuildSettings = data
+			gs = data
 		}
-		if gd.GuildSettings == nil {
-			gset := storage.MakeGuildSettings()
-			gd.GuildSettings = gset
-			err := bot.StorageInterface.WriteGuildSettings(m.ID, gset)
+		if gs == nil {
+			gs = storage.MakeGuildSettings(m.Guild.ID, m.Guild.Name)
+			err := bot.StorageInterface.WriteGuildSettings(m.ID, gs)
 			if err != nil {
 				log.Printf("Error writing %s guild settings to storage interface: %s\n", m.Guild.ID, err)
 			} else {
@@ -685,7 +710,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.AllGuilds[m.ID] = &GuildState{
-			guildData: gd,
+			guildSettings: gs,
 
 			Linked: false,
 

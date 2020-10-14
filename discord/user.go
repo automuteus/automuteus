@@ -1,7 +1,8 @@
-package game
+package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 )
 
 // User struct
@@ -18,7 +19,7 @@ type UserData struct {
 	user               User
 	pendingVoiceUpdate bool
 	cachedPlayerName   string
-	auData             *PlayerData //we want to point to player data that isn't necessarily correlated with a player yet...
+	auData             *game.PlayerData //we want to point to player data that isn't necessarily correlated with a player yet...
 }
 
 func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
@@ -80,7 +81,7 @@ func (user *UserData) GetPlayerName() string {
 	return user.cachedPlayerName
 }
 
-func (user *UserData) SetPlayerData(player *PlayerData) {
+func (user *UserData) SetPlayerData(player *game.PlayerData) {
 	if player != nil {
 		user.cachedPlayerName = player.Name
 	}
@@ -97,6 +98,6 @@ func (user *UserData) GetColor() int {
 }
 
 // AmongUsPlayerMatch determines if a player is in the game
-func (user *UserData) AmongUsPlayerMatch(player Player) bool {
+func (user *UserData) AmongUsPlayerMatch(player game.Player) bool {
 	return user.auData != nil && user.auData.Color == player.Color && user.auData.Name == player.Name
 }

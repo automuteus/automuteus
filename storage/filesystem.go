@@ -3,13 +3,22 @@ package storage
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 )
 
-const SettingsFileSuffix = "_settings.json"
+func guildFileName(guildID string) string {
+	return fmt.Sprintf("guild_%s_settings.json", guildID)
+}
+
+func userFileName(userID string) string {
+	return fmt.Sprintf("user_%s_settings.json", userID)
+}
 
 type FilesystemDriver struct {
 	baseDir  string
@@ -38,7 +47,7 @@ func (fs *FilesystemDriver) GetGuildSettings(guildID string) (*GuildSettings, er
 		if !info.IsDir() {
 			name := info.Name()
 			fullPath := path.Join(fs.baseDir, name)
-			if strings.Contains(fullPath, guildID+SettingsFileSuffix) {
+			if strings.Contains(fullPath, guildFileName(guildID)) {
 				f, err := os.Open(fullPath)
 				if err != nil {
 					return nil, err
@@ -68,7 +77,7 @@ func (fs *FilesystemDriver) WriteGuildSettings(guildID string, gs *GuildSettings
 
 	for _, fi := range fs.fileInfo {
 		//TODO enforce naming scheme?
-		if strings.Contains(fi.Name(), guildID+SettingsFileSuffix) {
+		if strings.Contains(fi.Name(), guildFileName(guildID)) {
 			f, err := os.OpenFile(path.Join(fs.baseDir, fi.Name()), os.O_CREATE|os.O_WRONLY, 0660)
 			if err != nil {
 				return err
@@ -78,7 +87,68 @@ func (fs *FilesystemDriver) WriteGuildSettings(guildID string, gs *GuildSettings
 			return err //can be nil if it worked
 		}
 	}
-	f, err := os.Create(path.Join(fs.baseDir, guildID+SettingsFileSuffix))
+	f, err := os.Create(path.Join(fs.baseDir, guildFileName(guildID)))
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(jsonBytes)
+	f.Close()
+	return err
+}
+
+var userSettingsRegex = regexp.MustCompile(`^user_(?P<userid>\d+)_settings.json$`)
+
+func (fs *FilesystemDriver) GetAllUserSettings() *UserSettingsCollection {
+	col := MakeUserSettingsCollection()
+	for _, info := range fs.fileInfo {
+		if !info.IsDir() {
+			name := info.Name()
+			fullPath := path.Join(fs.baseDir, name)
+			if match := userSettingsRegex.FindStringSubmatch(name); match != nil {
+				userID := match[userSettingsRegex.SubexpIndex("userid")]
+				f, err := os.Open(fullPath)
+				if err != nil {
+					log.Println(err)
+					return col
+				}
+				bytes, err := ioutil.ReadAll(f)
+				f.Close()
+				if err != nil {
+					log.Println(err)
+					return col
+				}
+				var us UserSettings
+				err = json.Unmarshal(bytes, &us)
+				if err != nil {
+					log.Println(err)
+					return col
+				}
+				col.users[userID] = &us
+			}
+		}
+	}
+	return col
+}
+
+func (fs *FilesystemDriver) WriteUserSettings(userID string, gs *UserSettings) error {
+	jsonBytes, err := json.MarshalIndent(gs, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	for _, fi := range fs.fileInfo {
+		//TODO enforce naming scheme?
+		if strings.Contains(fi.Name(), userFileName(userID)) {
+			f, err := os.OpenFile(path.Join(fs.baseDir, fi.Name()), os.O_CREATE|os.O_WRONLY, 0660)
+			if err != nil {
+				return err
+			}
+			_, err = f.Write(jsonBytes)
+			f.Close()
+			return err //can be nil if it worked
+		}
+	}
+	f, err := os.Create(path.Join(fs.baseDir, userFileName(userID)))
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,7 @@ type GuildState struct {
 	AmongUsData game.AmongUsData
 	GameRunning bool
 
-	guildData *storage.GuildData
+	guildSettings *storage.GuildSettings
 }
 
 type EmojiCollection struct {
@@ -41,30 +41,30 @@ type TrackedMemberAction struct {
 	targetChannel Tracking
 }
 
-func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (game.UserData, bool) {
+func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
 	if g == nil {
-		return game.UserData{}, false
+		return UserData{}, false
 	}
 	//check and see if they're cached first
 	for _, v := range g.Members {
 		if v.User.ID == userID {
-			user := game.MakeUserDataFromDiscordUser(v.User, v.Nick)
+			user := MakeUserDataFromDiscordUser(v.User, v.Nick)
 			guild.UserData.AddFullUser(user)
 			return user, true
 		}
 	}
-	mem, err := s.GuildMember(guild.guildData.GuildID, userID)
+	mem, err := s.GuildMember(guild.guildSettings.GuildID, userID)
 	if err != nil {
 		log.Println(err)
-		return game.UserData{}, false
+		return UserData{}, false
 	}
-	user := game.MakeUserDataFromDiscordUser(mem.User, mem.Nick)
+	user := MakeUserDataFromDiscordUser(mem.User, mem.Nick)
 	guild.UserData.AddFullUser(user)
 	return user, true
 }
 
 func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	g, err := s.State.Guild(guild.guildData.GuildID)
+	g, err := s.State.Guild(guild.guildSettings.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -80,7 +80,6 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 					idMatched = true
 					log.Printf("Player %s reacted with color %s", m.UserID, game.GetColorStringForInt(color))
 					//the user doesn't exist in our userdata cache; add them
-
 					_, added := guild.checkCacheAndAddUser(g, s, m.UserID)
 					if !added {
 						log.Println("No users found in Discord for userID " + m.UserID)
@@ -141,29 +140,29 @@ func (guild *GuildState) clearGameTracking(s *discordgo.Session) {
 }
 
 func (guild *GuildState) CommandPrefix() string {
-	return guild.guildData.GuildSettings.GetCommandPrefix()
+	return guild.guildSettings.GetCommandPrefix()
 }
 
 func (guild *GuildState) EmptyAdminAndRolePerms() bool {
-	return guild.guildData.GuildSettings.EmptyAdminAndRolePerms()
+	return guild.guildSettings.EmptyAdminAndRolePerms()
 }
 
 func (guild *GuildState) HasAdminPerms(mem *discordgo.Member) bool {
-	return guild.guildData.GuildSettings.HasAdminPerms(mem)
+	return guild.guildSettings.HasAdminPerms(mem)
 }
 
 func (guild *GuildState) HasRolePerms(mem *discordgo.Member) bool {
-	return guild.guildData.GuildSettings.HasRolePerms(mem)
+	return guild.guildSettings.HasRolePerms(mem)
 }
 
 func (guild *GuildState) GetDelay(oldPhase, newPhase game.Phase) int {
-	return guild.guildData.GuildSettings.GetDelay(oldPhase, newPhase)
+	return guild.guildSettings.GetDelay(oldPhase, newPhase)
 }
 
 func (guild *GuildState) GetUnmuteDeadImmediately() bool {
-	return guild.guildData.GuildSettings.GetUnmuteDeadDuringTasks()
+	return guild.guildSettings.GetUnmuteDeadDuringTasks()
 }
 
 func (guild *GuildState) GetDefaultTrackedChannel() string {
-	return guild.guildData.GuildSettings.GetDefaultTrackedChannel()
+	return guild.guildSettings.GetDefaultTrackedChannel()
 }

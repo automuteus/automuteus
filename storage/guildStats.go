@@ -1,9 +1,13 @@
 package storage
 
 type GuildStats struct {
-	gamesPlayed int
+	GuildID     string `json:"guildID"`
+	GamesPlayed int    `json:"gamesPlayed"`
 }
 
-func MakeGuildStats() *GuildStats {
-	return &GuildStats{}
+func MakeGuildStats(guildID string) *GuildStats {
+	return &GuildStats{
+		GuildID:     guildID,
+		GamesPlayed: 0,
+	}
 }

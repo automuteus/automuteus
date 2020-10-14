@@ -7,6 +7,8 @@ import (
 )
 
 type GuildSettings struct {
+	GuildID               string `json:"guildID"`
+	GuildName             string `json:"guildName"`
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 
@@ -20,8 +22,10 @@ type GuildSettings struct {
 	lock sync.RWMutex
 }
 
-func MakeGuildSettings() *GuildSettings {
+func MakeGuildSettings(guildID, guildName string) *GuildSettings {
 	return &GuildSettings{
+		GuildID:               guildID,
+		GuildName:             guildName,
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
 		AdminUserIDs:          []string{},

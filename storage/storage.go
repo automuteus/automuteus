@@ -8,7 +8,8 @@ type StorageInterface interface {
 	GetGuildSettings(string) (*GuildSettings, error)
 	WriteGuildSettings(string, *GuildSettings) error
 
-	//GetGuildStats(string) (*GuildStats, error)
-	//WriteGuildStats(string, *GuildStats) error
+	GetAllUserSettings() *UserSettingsCollection
+	WriteUserSettings(string, *UserSettings) error
+
 	Close() error
 }

@@ -34,9 +34,9 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("config.txt")
+	err := godotenv.Load("final.txt")
 	if err != nil {
-		err = godotenv.Load("final.txt")
+		err = godotenv.Load("config.txt")
 		if err != nil {
 			log.Println("Can't open config file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
 			f, err := os.Create("config.txt")

@@ -19,7 +19,7 @@ const MemberQuerySize = 1000
 
 type UserPatchParameters struct {
 	GuildID  string
-	Userdata game.UserData
+	Userdata UserData
 	Deaf     bool
 	Mute     bool
 	Nick     string

@@ -43,7 +43,7 @@ func (h *PatchPriority) Pop() interface{} {
 }
 
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
-	g, err := s.State.Guild(guild.guildData.GuildID)
+	g, err := s.State.Guild(guild.guildSettings.GuildID)
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -64,7 +64,7 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
-		mute, deaf := guild.guildData.GuildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		mute, deaf := guild.guildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
 		if userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
 			userData.SetPendingVoiceUpdate(false)
 
@@ -104,10 +104,10 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 		tracked := guild.Tracking.IsTracked(voiceState.ChannelID)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
-		shouldMute, shouldDeaf := guild.guildData.GuildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+		shouldMute, shouldDeaf := guild.guildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
 
 		nick := userData.GetPlayerName()
-		if !guild.guildData.GuildSettings.GetApplyNicknames() {
+		if !guild.guildSettings.GetApplyNicknames() {
 			nick = ""
 		}
 
@@ -128,7 +128,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 					}
 				}
 
-				params := UserPatchParameters{guild.guildData.GuildID, userData, shouldDeaf, shouldMute, nick}
+				params := UserPatchParameters{guild.guildSettings.GuildID, userData, shouldDeaf, shouldMute, nick}
 
 				heap.Push(priorityQueue, PrioritizedPatchParams{
 					priority:    priority,
@@ -206,7 +206,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 	tracked := guild.Tracking.IsTracked(m.ChannelID)
 	//only actually tracked if we're in a tracked channel AND linked to a player
 	tracked = tracked && userData.IsLinked()
-	mute, deaf := guild.guildData.GuildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
+	mute, deaf := guild.guildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
 	if userData.IsLinked() && !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
 		userData.SetPendingVoiceUpdate(true)
@@ -214,7 +214,7 @@ func (guild *GuildState) voiceStateChange(s *discordgo.Session, m *discordgo.Voi
 		guild.UserData.UpdateUserData(m.UserID, userData)
 
 		nick := userData.GetPlayerName()
-		if !guild.guildData.GuildSettings.GetApplyNicknames() {
+		if !guild.guildSettings.GetApplyNicknames() {
 			nick = ""
 		}
 
