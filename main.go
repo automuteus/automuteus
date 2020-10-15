@@ -17,7 +17,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const VERSION = "2.3.2-Prerelease"
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 const DefaultURL = "http://localhost:8123"
 
@@ -65,7 +69,7 @@ func discordMainWrapper() error {
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 
-	log.Println(VERSION)
+	log.Println(version + "-" + commit)
 
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {
@@ -144,7 +148,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
+	bot := discord.MakeAndStartBot(version + "-" + commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
 
 	go discord.MessagesServer("5000", bot)
 
