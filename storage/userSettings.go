@@ -11,10 +11,20 @@ type UserSettings struct {
 	GameNames []string `json:"gameNames"`
 }
 
+type UserSettingsUpdate struct {
+	UserID string
+	Type   int
+	Value  string
+}
+
 type UserSettingsCollection struct {
 	users map[string]*UserSettings
 	lock  sync.RWMutex
 }
+
+const (
+	GAME_NAME = 0
+)
 
 func MakeUserSettingsCollection() *UserSettingsCollection {
 	return &UserSettingsCollection{
@@ -23,18 +33,21 @@ func MakeUserSettingsCollection() *UserSettingsCollection {
 	}
 }
 
-func (usc *UserSettingsCollection) GetUser(userID string) *UserSettings {
+func (usc *UserSettingsCollection) GetUser(userID string) (UserSettings, bool) {
 	usc.lock.RLock()
 	defer usc.lock.RUnlock()
 
-	return usc.users[userID]
+	if v, ok := usc.users[userID]; ok {
+		return *v, true
+	}
+	return UserSettings{}, false
 }
 
-func (usc *UserSettingsCollection) UpdateUser(userID string, settings *UserSettings) {
+func (usc *UserSettingsCollection) UpdateUser(userID string, settings UserSettings) {
 	usc.lock.Lock()
 	defer usc.lock.Unlock()
 
-	usc.users[userID] = settings
+	usc.users[userID] = &settings
 }
 
 //TODO this is very inefficient. n^2 based on the number of users and their cached names

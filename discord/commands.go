@@ -22,9 +22,11 @@ const (
 	Refresh
 	Settings
 	Pause
+	Log
 	Null
 )
 
+//note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
 var CommandTypeStringMapping = map[string]CommandType{
 	"help":     Help,
 	"track":    Track,
@@ -36,6 +38,7 @@ var CommandTypeStringMapping = map[string]CommandType{
 	"refresh":  Refresh,
 	"settings": Settings,
 	"pause":    Pause,
+	"log":      Log,
 	"":         Null,
 }
 
@@ -57,7 +60,18 @@ func GetCommandType(arg string) CommandType {
 
 func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
 	prefix := guild.CommandPrefix()
-	switch GetCommandType(args[0]) {
+	cmdType := GetCommandType(args[0])
+	cmdTypeStr := ""
+	for i, v := range CommandTypeStringMapping {
+		if v == cmdType {
+			cmdTypeStr = i
+			break
+		}
+	}
+	if cmdType != Null {
+		guild.Log(fmt.Sprintf("\"%s\" command typed by user %s\n", cmdTypeStr, m.Author.ID))
+	}
+	switch cmdType {
 
 	case Help:
 		s.ChannelMessageSend(m.ChannelID, helpResponse(Version, prefix))
@@ -109,7 +123,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			if err != nil {
 				log.Println(err)
 			} else {
-				log.Printf("Removing player %s", userID)
+				guild.Log(fmt.Sprintf("Removing player %s", userID))
 				guild.UserData.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
@@ -172,6 +186,9 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 	case Pause:
 		guild.GameRunning = !guild.GameRunning
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+		break
+	case Log:
+		guild.Logln(fmt.Sprintf("%s", args))
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"container/heap"
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"sync"
@@ -45,7 +46,7 @@ func (h *PatchPriority) Pop() interface{} {
 func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordgo.Guild {
 	g, err := s.State.Guild(guild.guildSettings.GuildID)
 	if err != nil {
-		log.Println(err)
+		guild.Logln(err.Error())
 		return nil
 	}
 
@@ -69,10 +70,7 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 			userData.SetPendingVoiceUpdate(false)
 
 			guild.UserData.UpdateUserData(voiceState.UserID, userData)
-
-			//log.Println("Successfully updated pendingVoice")
 		}
-
 	}
 	return g
 }
@@ -138,9 +136,9 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 
 		} else if userData.IsLinked() {
 			if shouldMute {
-				log.Printf("Not muting %s because they're already muted\n", userData.GetUserName())
+				guild.Log(fmt.Sprintf("Not muting %s because they're already muted\n", userData.GetUserName()))
 			} else {
-				log.Printf("Not unmuting %s because they're already unmuted\n", userData.GetUserName())
+				guild.Log(fmt.Sprintf("Not unmuting %s because they're already unmuted\n", userData.GetUserName()))
 			}
 		}
 	}
@@ -157,7 +155,7 @@ func (guild *GuildState) handleTrackedMembers(sm *SessionManager, delay int, han
 
 		if p.priority > 0 {
 			waitForHigherPriority = true
-			log.Printf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority)
+			guild.Log(fmt.Sprintf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority))
 		} else if waitForHigherPriority {
 			//wait for all the other users to get muted/unmuted completely, first
 			//log.Println("Waiting for high priority user changes first")

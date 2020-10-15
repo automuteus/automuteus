@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"syscall"
 	"time"
@@ -18,9 +19,7 @@ import (
 
 const VERSION = "2.3.2-Prerelease"
 
-//TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
-const DefaultPort = "8123"
-const DefaultURL = "http://localhost"
+const DefaultURL = "http://localhost:8123"
 
 func main() {
 	err := discordMainWrapper()
@@ -37,8 +36,8 @@ func discordMainWrapper() error {
 	err := godotenv.Load("final.txt")
 	if err != nil {
 		err = godotenv.Load("config.txt")
-		if err != nil {
-			log.Println("Can't open config file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
+		if err != nil && os.Getenv("DISCORD_BOT_TOKEN") == "" {
+			log.Println("Can't open config file and missing DISCORD_BOT_TOKEN; creating config.txt for you to use for your config")
 			f, err := os.Create("config.txt")
 			if err != nil {
 				log.Println("Issue creating sample config.txt")
@@ -49,9 +48,14 @@ func discordMainWrapper() error {
 		}
 	}
 
+	logPath := os.Getenv("LOG_PATH")
+	if logPath == "" {
+		logPath = "./"
+	}
+
 	logEntry := os.Getenv("DISABLE_LOG_FILE")
 	if logEntry == "" {
-		file, err := os.Create("logs.txt")
+		file, err := os.Create(path.Join(logPath, "logs.txt"))
 		if err != nil {
 			return err
 		}
@@ -88,33 +92,20 @@ func discordMainWrapper() error {
 		shardID = 0
 	}
 
-	portStr := os.Getenv("PORT")
-	port := ""
-
-	num, err := strconv.Atoi(portStr)
-
-	if err != nil || num < 1024 || num > 65535 {
-		log.Printf("[Info] Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
-		port = DefaultPort
-	} else {
-		port = portStr
-	}
-
-	url := os.Getenv("SERVER_URL")
+	url := os.Getenv("HOST")
 	if url == "" {
-		log.Printf("[Info] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
+		log.Printf("[Info] No valid HOST provided. Defaulting to %s\n", DefaultURL)
 		url = DefaultURL
 	}
 
-	extPort := os.Getenv("EXT_PORT")
-	if extPort == "" {
-		log.Print("[Info] No EXT_PORT provided. Defaulting to PORT\n")
-	} else if extPort == "protocol" {
-		log.Print("[Info] EXT_PORT set to protocol. Not adding port to url\n")
+	internalPort := os.Getenv("PORT")
+	if internalPort == "" {
+		log.Printf("[Info] No PORT provided. Defaulting to %s\n", discord.DefaultPort)
+		internalPort = discord.DefaultPort
 	} else {
-		num, err := strconv.Atoi(extPort)
+		num, err := strconv.Atoi(internalPort)
 		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
-			return errors.New("invalid EXT_PORT (range [1024-65535]) provided")
+			return errors.New("invalid PORT (outside range [1024-65535] or 80/443) provided")
 		}
 	}
 
@@ -148,11 +139,12 @@ func discordMainWrapper() error {
 		}
 		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
+
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, port, extPort, emojiGuildID, numShards, shardID, storageClient)
+	bot := discord.MakeAndStartBot(VERSION, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
 
 	go discord.MessagesServer("5000", bot)
 

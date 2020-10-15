@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strings"
 
@@ -68,6 +69,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s to a color\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)
@@ -79,6 +85,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s by name\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)

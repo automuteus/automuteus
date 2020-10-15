@@ -25,6 +25,17 @@ type GuildState struct {
 	GameRunning bool
 
 	guildSettings *storage.GuildSettings
+
+	userSettingsUpdateChannel chan storage.UserSettingsUpdate
+
+	logger *log.Logger
+}
+
+func (guild *GuildState) Log(l string) {
+	guild.logger.Print(l)
+}
+func (guild *GuildState) Logln(l string) {
+	guild.logger.Println(l)
 }
 
 type EmojiCollection struct {
@@ -66,7 +77,7 @@ func (guild *GuildState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.S
 func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	g, err := s.State.Guild(guild.guildSettings.GuildID)
 	if err != nil {
-		log.Println(err)
+		guild.Logln(err.Error())
 		return
 	}
 
@@ -78,24 +89,29 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 			for color, e := range guild.StatusEmojis[true] {
 				if e.ID == m.Emoji.ID {
 					idMatched = true
-					log.Printf("Player %s reacted with color %s", m.UserID, game.GetColorStringForInt(color))
+					guild.Log(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
 					//the user doesn't exist in our userdata cache; add them
 					_, added := guild.checkCacheAndAddUser(g, s, m.UserID)
 					if !added {
-						log.Println("No users found in Discord for userID " + m.UserID)
+						guild.Logln("No users found in Discord for userID " + m.UserID)
 					}
 
 					playerData := guild.AmongUsData.GetByColor(game.GetColorStringForInt(color))
 					if playerData != nil {
 						guild.UserData.UpdatePlayerData(m.UserID, playerData)
+						guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+							UserID: m.UserID,
+							Type:   storage.GAME_NAME,
+							Value:  playerData.Name,
+						}
 					} else {
-						log.Println("I couldn't find any player data for that color; is your capture linked?")
+						guild.Logln("I couldn't find any player data for that color; is your capture linked?")
 					}
 
 					//then remove the player's reaction if we matched, or if we didn't
 					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
 					if err != nil {
-						log.Println(err)
+						guild.Logln(err.Error())
 					}
 					break
 				}
@@ -103,7 +119,7 @@ func (bot *Bot) handleReactionGameStartAdd(guild *GuildState, s *discordgo.Sessi
 			if !idMatched {
 				//log.Println(m.Emoji.Name)
 				if m.Emoji.Name == "❌" {
-					log.Printf("Removing player %s", m.UserID)
+					guild.Logln("Removing player " + m.UserID)
 					guild.UserData.ClearPlayerData(m.UserID)
 					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
 					if err != nil {

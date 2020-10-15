@@ -3,8 +3,11 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +19,8 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 )
+
+const DefaultPort = "8123"
 
 type GameOrLobbyCode struct {
 	gameCode    string
@@ -109,8 +114,7 @@ func (sm *SessionManager) RegisterGuildSecondSession(guildID string) {
 
 type Bot struct {
 	url                     string
-	socketPort              string
-	extPort                 string
+	internalPort            string
 	AllConns                map[string]string
 	AllGuilds               map[string]*GuildState
 	LinkCodes               map[GameOrLobbyCode]string
@@ -133,6 +137,8 @@ type Bot struct {
 	StorageInterface storage.StorageInterface
 
 	UserSettings *storage.UserSettingsCollection
+
+	logPath string
 }
 
 func (bot *Bot) PushGuildSocketUpdate(guildID string, status SocketStatus) {
@@ -163,7 +169,7 @@ var Version string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface) *Bot {
+func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface, logPath string) *Bot {
 	Version = version
 
 	var altDiscordSession *discordgo.Session = nil
@@ -194,8 +200,7 @@ func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID st
 
 	bot := Bot{
 		url:                     url,
-		socketPort:              port,
-		extPort:                 extPort,
+		internalPort:            internalPort,
 		AllConns:                make(map[string]string),
 		AllGuilds:               make(map[string]*GuildState),
 		LinkCodes:               make(map[GameOrLobbyCode]string),
@@ -209,6 +214,7 @@ func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID st
 		SessionManager:          NewSessionManager(dg, altDiscordSession),
 		StorageInterface:        storageClient,
 		UserSettings:            storageClient.GetAllUserSettings(),
+		logPath:                 logPath,
 	}
 
 	dg.AddHandler(bot.voiceStateChange())
@@ -238,13 +244,13 @@ func MakeAndStartBot(version, token, token2, url, port, extPort, emojiGuildID st
 
 	// Wait here until CTRL-C or other term signal is received.
 
-	bot.Run()
+	bot.Run(internalPort)
 
 	return &bot
 }
 
-func (bot *Bot) Run() {
-	go bot.socketioServer(bot.socketPort)
+func (bot *Bot) Run(port string) {
+	go bot.socketioServer(port)
 }
 
 func (bot *Bot) Close() {
@@ -413,15 +419,16 @@ func (bot *Bot) socketioServer(port string) {
 func MessagesServer(port string, bot *Bot) {
 
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
-		bot.ChannelsMapLock.RLock()
-		for _, v := range bot.GlobalBroadcastChannels {
-			*v <- BroadcastMessage{
-				Type: GRACEFUL_SHUTDOWN,
-				Data: 30,
+		if r.Method == http.MethodPost {
+			bot.ChannelsMapLock.RLock()
+			for _, v := range bot.GlobalBroadcastChannels {
+				*v <- BroadcastMessage{
+					Type: GRACEFUL_SHUTDOWN,
+					Data: 30,
+				}
 			}
+			bot.ChannelsMapLock.RUnlock()
 		}
-		bot.ChannelsMapLock.RUnlock()
-
 	})
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
@@ -566,9 +573,9 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 								paired, userID, name := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
 								if paired {
 									log.Println("Successfully linked discord user to player using matching names!")
-									user := bot.UserSettings.GetUser(userID)
-									if user == nil {
-										user = &storage.UserSettings{
+									user, found := bot.UserSettings.GetUser(userID)
+									if !found {
+										user = storage.UserSettings{
 											UserID:    userID,
 											UserName:  name,
 											GameNames: []string{player.Name},
@@ -578,7 +585,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 										user.GameNames = append(user.GameNames, player.Name)
 									}
 									bot.UserSettings.UpdateUser(userID, user)
-									err := bot.StorageInterface.WriteUserSettings(userID, user)
+									err := bot.StorageInterface.WriteUserSettings(userID, &user)
 									if err != nil {
 										log.Println(err)
 									}
@@ -708,22 +715,35 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 		}
 
-		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-		bot.AllGuilds[m.ID] = &GuildState{
-			guildSettings: gs,
+		userSettingsUpdateChannel := make(chan storage.UserSettingsUpdate)
 
+		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
+
+		f, err := os.Create(path.Join(bot.logPath, m.Guild.ID+"_log.txt"))
+		w := io.MultiWriter(os.Stdout)
+		if err != nil {
+			log.Println("Couldn't create logger for " + m.Guild.ID + "; only using stdout for logging")
+		} else {
+			w = io.MultiWriter(f, os.Stdout)
+		}
+		bot.AllGuilds[m.ID] = &GuildState{
 			Linked: false,
 
-			UserData:     MakeUserDataSet(),
-			Tracking:     MakeTracking(),
+			UserData: MakeUserDataSet(),
+			Tracking: MakeTracking(),
+
 			GameStateMsg: MakeGameStateMessage(),
 
 			StatusEmojis:  emptyStatusEmojis(),
 			SpecialEmojis: map[string]Emoji{},
 
+			AmongUsData: game.NewAmongUsData(),
 			GameRunning: false,
 
-			AmongUsData: game.NewAmongUsData(),
+			guildSettings:             gs,
+			userSettingsUpdateChannel: userSettingsUpdateChannel,
+
+			logger: log.New(w, fmt.Sprintf("[%s | %s] ", m.Guild.ID, m.Guild.Name), log.LstdFlags|log.Lmsgprefix),
 		}
 
 		if emojiGuildID == "" {
@@ -757,6 +777,28 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 		go bot.updatesListener()(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates, &globalUpdates)
 
+		go bot.userSettingsUpdateWorker(userSettingsUpdateChannel)
+	}
+}
+
+func (bot *Bot) userSettingsUpdateWorker(channel chan storage.UserSettingsUpdate) {
+	for {
+		select {
+		case update := <-channel:
+			log.Println("Storage worker received update: " + update.UserID)
+			user, found := bot.UserSettings.GetUser(update.UserID)
+			if found {
+				if update.Type == storage.GAME_NAME {
+					user.GameNames = append(user.GameNames, update.Value)
+				}
+				bot.UserSettings.UpdateUser(update.UserID, user)
+				err := bot.StorageInterface.WriteUserSettings(update.UserID, &user)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+
+		}
 	}
 }
 
