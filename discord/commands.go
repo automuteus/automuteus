@@ -188,7 +188,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		break
 	case Log:
-		guild.Logln(fmt.Sprintf("%s", args))
+		guild.Logln(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))

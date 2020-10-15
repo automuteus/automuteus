@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	version = "dev"
+	version = "2.4.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -148,7 +148,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version + "-" + commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
 
 	go discord.MessagesServer("5000", bot)
 
