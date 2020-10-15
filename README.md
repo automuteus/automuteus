@@ -71,7 +71,7 @@ Example:
 `docker run -p 8123:8123 -e DISCORD_BOT_TOKEN=<YourTokenHere> denverquane/amongusdiscord`
 
 ## unRAID
-AutoMuteUs is available in Community Applications for unRAID. Install the Community Applications plugin for unRAID then search for AutoMuteUs in the Apps section. Fill out the template with the Docker Environment Variables that are detailed here and in the template.
+AutoMuteUs is now available in Community Applications for unRAID. Install the Community Applications plugin for unRAID then search for AutoMuteUs in the Apps section. Fill out the template with the Docker Environment Variables that are detailed here and in the template.
 
 ## Environment Variables
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
