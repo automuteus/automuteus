@@ -11,8 +11,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const download32URL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x32.exe"
-const download64URL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture-x64.exe"
+const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
 const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
@@ -91,7 +90,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Type:  "",
 		Title: "You just started a game!",
 		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? [32-bit here](%s), [64-bit here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, download32URL, download64URL, dotNet32Url, dotNet64Url),
+			"Don't have the capture installed? [here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNet32Url, dotNet64Url),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,
