@@ -24,9 +24,10 @@ Works in conjunction with [amonguscapture](https://github.com/denverquane/amongu
 
 Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
 
-# Requirements
+# Basic Requirements
 
-1. This program must be run on a Windows PC. The program **CANNOT** be run directly on mobile phones.
+0. **The Capture application only supports the NON-BETA OFFICIAL STEAM release of the game**
+1. This program must be run on a Windows PC, in Heroku, or in a Docker instance. The program **CANNOT** be run directly on mobile phones.
 2. You need a minimum of 12 open emoji slots on your server. The bot uses player emojis to link discord users to in-game player colors; it will add them automatically, but you need at least 12 slots (25 recommended).
 3. You must run the discord bot, and the capture portion (See Easiest installation below) at the same time. Easiest installation covers running the bot
 portion locally, but feel free to use Heroku or Docker or the like to host the bot remotely.
@@ -64,6 +65,13 @@ Congrats, if you followed the instructions correctly, the bot should now be runn
 2. Clone the repository using `git clone https://github.com/denverquane/amongusdiscord`.
 3. Navigate to the directory with `cd amongusdiscord`, and then build the executable using `go build -o amongusdiscord.exe main.go`.
 4. Proceed to steps 2-5 of the `Easiest` install section above.
+
+## Remote Hosted Bot Requirements
+
+Remote usage (Capture app and bot app running on seperate networks) is possible with AutoMuteUs however it is recommended only for those familiar with advanced networking topics such as Static IPs, Dynamic DNS, and Port Mappings. If you are not already comfortable with these topics it is not recommended that you attempt to set up remote use. If you wish to have remote users run the capture app then you will need the following:
+1. The computer hosting the bot must have a static IP on your local network (pregerably outside your DHCP pool, or have a reserved IP address).
+2. You must create a port mapping on your router to map port 8123 to your bot host (UniFi users please note that the current UniFi controller does not enable new port mappings by default)
+3. Unless you have a static IP from your ISP you will need a dynamic DNS service such as DuckDNS, Afraid, or No-IP. You will also need that service set up to automatically update your IP when it changes.
 
 ## Docker
 You can also run the discord portion using docker if you prefer, it simply needs the port `8123` exposed, and you should provide your `DISCORD_BOT_TOKEN` as an env variable.
