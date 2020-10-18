@@ -2,7 +2,7 @@
 
 2. Click "Bot" on the left panel, then click the button on the right to Add Bot.
 
-3. Scroll up to where the Bot Icon is displayed. **Copy the `Token` on the right, and paste it to a safe location.** We will need it later in the installation steps; this is the `DISCORD_BOT_TOKEN` in the `final.txt` file.
+3. Scroll up to where the Bot Icon is displayed. **Copy the `Token` on the right, and paste it to a safe location.** We will need it later in the installation steps; this is the `DISCORD_BOT_TOKEN` in the `config.txt` file.
 
 4. On the left panel, click "OAuth2", and then check the box marked `bot` under `Scopes`. Then scroll down to `Bot Permissions`, and check the box marked `Administrator` in the future, we will refine the permissions, but for now it is easiest with Admin permissions.
 
