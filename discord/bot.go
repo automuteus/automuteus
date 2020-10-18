@@ -119,25 +119,37 @@ type Bot struct {
 
 func (bot *Bot) PushGuildSocketUpdate(guildID string, status SocketStatus) {
 	bot.ChannelsMapLock.RLock()
-	*(bot.SocketUpdateChannels)[guildID] <- status
+	channel := *(bot.SocketUpdateChannels)[guildID]
+	if channel != nil {
+		channel <- status
+	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildPlayerUpdate(guildID string, status game.Player) {
 	bot.ChannelsMapLock.RLock()
-	*(bot.PlayerUpdateChannels)[guildID] <- status
+	channel := *(bot.PlayerUpdateChannels)[guildID]
+	if channel != nil {
+		channel <- status
+	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildPhaseUpdate(guildID string, status game.Phase) {
 	bot.ChannelsMapLock.RLock()
-	*(bot.GamePhaseUpdateChannels)[guildID] <- status
+	channel := *(bot.GamePhaseUpdateChannels)[guildID]
+	if channel != nil {
+		channel <- status
+	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildLobbyUpdate(guildID string, status LobbyStatus) {
 	bot.ChannelsMapLock.RLock()
-	*(bot.LobbyUpdateChannels)[guildID] <- status
+	channel := *(bot.LobbyUpdateChannels)[guildID]
+	if channel != nil {
+		channel <- status
+	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
@@ -397,9 +409,11 @@ func MessagesServer(port string, bots []*Bot) {
 		for _, bot := range bots {
 			bot.ChannelsMapLock.RLock()
 			for _, v := range bot.GlobalBroadcastChannels {
-				*v <- BroadcastMessage{
-					Type: GRACEFUL_SHUTDOWN,
-					Data: 30,
+				if v != nil {
+					*v <- BroadcastMessage{
+						Type: GRACEFUL_SHUTDOWN,
+						Data: 30,
+					}
 				}
 			}
 			bot.ChannelsMapLock.RUnlock()

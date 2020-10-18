@@ -90,7 +90,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Type:  "",
 		Title: "You just started a game!",
 		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? [here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNet32Url, dotNet64Url),
+			"Don't have the capture installed? Latest version [here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNet32Url, dotNet64Url),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,
