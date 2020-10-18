@@ -29,6 +29,9 @@ func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 
 	// clear any existing game state message
 	guild.AmongUsData.SetRoomRegion("", "")
+
+	// clear activity
+	s.UpdateStatus(0, "")
 }
 
 func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
@@ -182,6 +185,16 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 		}
 		guild.GameStateMsg.AddReaction(s, "❌")
 	}
+
+	// set status to "WATCHING Among Us"
+	status := &discordgo.UpdateStatusData{
+		Game: &discordgo.Game{
+			Name: "Among Us",
+			Type: discordgo.GameTypeWatching,
+		},
+	}
+
+	s.UpdateStatusComplex(*status)
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
