@@ -48,9 +48,9 @@ Usage/Commands sections below! If you prefer text instructions over videos, foll
 Now follow either the `Easiest` install, or the `Install From Source`:
 
 ## Easiest:
-1. [Download the latest release executable (`.exe`) and `final.txt`](https://github.com/denverquane/amongusdiscord/releases) for this discord bot.
-If you don't see one for the current version, then simply create a new text document called `final.txt`, and put `DISCORD_BOT_TOKEN = ` as the contents.
-2. Paste the Bot Token you obtained in the pre-installation into the `final.txt` file, after the `=` sign for the `DISCORD_BOT_TOKEN`.
+1. [Download the latest release executable (`.exe`)](https://github.com/denverquane/amongusdiscord/releases) for this discord bot.
+2. Paste the Bot Token you obtained in the pre-installation into the `config.txt` file, after the `=` sign for the `DISCORD_BOT_TOKEN`.
+If you don't see the config file, then simply create a new text document called `config.txt`, and put `DISCORD_BOT_TOKEN = ` as the contents.
 3. Run the executable from step 1, either by double-clicking or using `./amongusdiscord.exe` in a terminal window.
 4. [Download the latest `amonguscapture.exe`](https://github.com/denverquane/amonguscapture/releases). If you are running the Discord bot remotely,
 you can add a `host.txt` file in the same folder with the contents `http://<host>:<port>` to point to that instance, but this is totally optional.
