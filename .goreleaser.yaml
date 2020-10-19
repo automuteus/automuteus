@@ -9,3 +9,5 @@ archives:
   - format: binary
     replacements:
       "386": 32bit
+checksum:
+  disable: true
