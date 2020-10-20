@@ -67,8 +67,8 @@ func (usc *UserSettingsCollection) PairByName(name string) string {
 
 func (us *UserSettings) attemptPairingByMatchingNames(name string) bool {
 	name = strings.ReplaceAll(strings.ToLower(name), " ", "")
-	for _, name := range us.GameNames {
-		if strings.ReplaceAll(strings.ToLower(name), " ", "") == strings.ReplaceAll(strings.ToLower(name), " ", "") {
+	for _, otherName := range us.GameNames {
+		if strings.ReplaceAll(strings.ToLower(otherName), " ", "") == strings.ReplaceAll(strings.ToLower(name), " ", "") {
 			return true
 		}
 	}
