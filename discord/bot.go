@@ -21,6 +21,7 @@ import (
 )
 
 const DefaultPort = "8123"
+const TimeoutSecs = 600
 
 type GameOrLobbyCode struct {
 	gameCode    string
@@ -286,6 +287,8 @@ func (bot *Bot) guildIDForCode(code string) string {
 }
 
 func (bot *Bot) socketioServer(port string) {
+	inactiveWorkerChannels := make(map[string]chan bool)
+
 	server, err := socketio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -293,10 +296,16 @@ func (bot *Bot) socketioServer(port string) {
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
 		log.Println("connected:", s.ID())
+		inactiveWorkerChannels[s.ID()] = make(chan bool)
+		go bot.InactiveGameWorker(s, inactiveWorkerChannels[s.ID()])
 		return nil
 	})
 	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
 		log.Printf("Received connection code: \"%s\"", msg)
+		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+			v <- true
+		}
+
 		guildID := bot.guildIDForCode(msg)
 		if guildID == "" {
 			log.Printf("No guild has the current connect code of %s\n", msg)
@@ -318,6 +327,9 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
+		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+			v <- true
+		}
 		lobby := game.Lobby{}
 		err := json.Unmarshal([]byte(msg), &lobby)
 		if err != nil {
@@ -358,6 +370,9 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
+		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+			v <- true
+		}
 		phase, err := strconv.Atoi(msg)
 		if err != nil {
 			log.Println(err)
@@ -372,6 +387,9 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "player", func(s socketio.Conn, msg string) {
 		log.Println("player received from capture: ", msg)
+		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+			v <- true
+		}
 		player := game.Player{}
 		err := json.Unmarshal([]byte(msg), &player)
 		if err != nil {
@@ -390,31 +408,7 @@ func (bot *Bot) socketioServer(port string) {
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
 		log.Println("Client connection closed: ", reason)
 
-		previousGid := bot.AllConns[s.ID()]
-		delete(bot.AllConns, s.ID())
-		bot.LinkCodeLock.Lock()
-		for i, v := range bot.LinkCodes {
-			//delete the association between the link code and the guild
-			if v == previousGid {
-				delete(bot.LinkCodes, i)
-				break
-			}
-		}
-		bot.LinkCodeLock.Unlock()
-
-		for gid, guild := range bot.AllGuilds {
-			if gid == previousGid {
-				bot.LinkCodeLock.Lock()
-				guild.Linked = false
-				bot.LinkCodeLock.Unlock()
-				bot.PushGuildSocketUpdate(gid, SocketStatus{
-					GuildID:   gid,
-					Connected: false,
-				})
-
-				log.Printf("Deassociated websocket id %s with guildID %s\n", s.ID(), gid)
-			}
-		}
+		bot.PurgeConnection(s.ID())
 	})
 	go server.Serve()
 	defer server.Close()
@@ -428,8 +422,56 @@ func (bot *Bot) socketioServer(port string) {
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-func MessagesServer(port string, bot *Bot) {
+func (bot *Bot) PurgeConnection(socketID string) {
 
+	previousGid := bot.AllConns[socketID]
+	delete(bot.AllConns, socketID)
+	//bot.LinkCodeLock.Lock()
+	//for i, v := range bot.LinkCodes {
+	//	//delete the association between the link code and the guild
+	//	if v == previousGid {
+	//		delete(bot.LinkCodes, i)
+	//		break
+	//	}
+	//}
+	//bot.LinkCodeLock.Unlock()
+
+	for gid, guild := range bot.AllGuilds {
+		if gid == previousGid {
+			bot.LinkCodeLock.Lock()
+			guild.Linked = false
+			bot.LinkCodeLock.Unlock()
+			bot.PushGuildSocketUpdate(gid, SocketStatus{
+				GuildID:   gid,
+				Connected: false,
+			})
+
+			log.Printf("Deassociated websocket id %s with guildID %s\n", socketID, gid)
+		}
+	}
+	log.Print("Done purging")
+}
+
+func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan bool) {
+	timer := time.NewTimer(time.Second * TimeoutSecs)
+	for {
+		select {
+		case <-timer.C:
+			log.Printf("Socket ID %s timed out with no new messages after %d seconds\n", socket.ID(), TimeoutSecs)
+			socket.Close()
+			bot.PurgeConnection(socket.ID())
+			timer.Stop()
+			return
+		case b := <-c:
+			if b {
+				//received true; the socket is alive
+				timer.Reset(time.Second * TimeoutSecs)
+			}
+		}
+	}
+}
+
+func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			bot.ChannelsMapLock.RLock()
@@ -585,9 +627,11 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 							if updated {
 								data := guild.AmongUsData.GetByName(player.Name)
 								paired, userID, name := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
+
 								if paired {
 									log.Println("Successfully linked discord user to player using matching names!")
 									user, found := bot.UserSettings.GetUser(userID)
+									already := false
 									if !found {
 										user = storage.UserSettings{
 											UserID:    userID,
@@ -595,13 +639,23 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 											GameNames: []string{player.Name},
 										}
 									} else {
-										//TODO this shouldn't technically be append, this should check for duplicates...
-										user.GameNames = append(user.GameNames, player.Name)
+										for _, v := range user.GameNames {
+											if v == player.Name {
+												already = true
+												break
+											}
+										}
+										if !already {
+											user.GameNames = append(user.GameNames, player.Name)
+										}
 									}
-									bot.UserSettings.UpdateUser(userID, user)
-									err := bot.StorageInterface.WriteUserSettings(userID, &user)
-									if err != nil {
-										log.Println(err)
+									//if the name was already found/listed, don't bother writing
+									if !already {
+										bot.UserSettings.UpdateUser(userID, user)
+										err := bot.StorageInterface.WriteUserSettings(userID, &user)
+										if err != nil {
+											log.Println(err)
+										}
 									}
 								} else {
 									log.Println("Attempting to link via cached user names")
@@ -801,17 +855,34 @@ func (bot *Bot) userSettingsUpdateWorker(channel chan storage.UserSettingsUpdate
 		case update := <-channel:
 			log.Println("Storage worker received update: " + update.UserID)
 			user, found := bot.UserSettings.GetUser(update.UserID)
+			already := false
 			if found {
 				if update.Type == storage.GAME_NAME {
-					user.GameNames = append(user.GameNames, update.Value)
+					for _, v := range user.GameNames {
+						if v == update.Value {
+							already = true
+							break
+						}
+					}
+					if !already {
+						user.GameNames = append(user.GameNames, update.Value)
+					}
 				}
+			} else {
+				user = storage.UserSettings{
+					UserID: update.UserID,
+					//TODO no good way to get ahold of this username :/
+					UserName:  "",
+					GameNames: []string{update.Value},
+				}
+			}
+			if !already {
 				bot.UserSettings.UpdateUser(update.UserID, user)
 				err := bot.StorageInterface.WriteUserSettings(update.UserID, &user)
 				if err != nil {
 					log.Println(err)
 				}
 			}
-
 		}
 	}
 }

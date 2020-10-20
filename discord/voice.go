@@ -66,7 +66,10 @@ func (guild *GuildState) verifyVoiceStateChanges(s *discordgo.Session) *discordg
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && userData.IsLinked()
 		mute, deaf := guild.guildSettings.GetVoiceState(userData.IsAlive(), tracked, guild.AmongUsData.GetPhase())
-		if userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
+
+		//still have to check if the player is linked
+		//(music bots are untracked so mute/deafen = false, but they dont have playerdata...)
+		if userData.IsLinked() && userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
 			userData.SetPendingVoiceUpdate(false)
 
 			guild.UserData.UpdateUserData(voiceState.UserID, userData)
