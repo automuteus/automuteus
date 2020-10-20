@@ -33,6 +33,7 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		fallthrough
 	case "cp":
 		isValid = CommandPrefixSetting(s, m, guild, args)
+		break
 	case "defaulttrackedchannel":
 		fallthrough
 	case "channel":
@@ -41,6 +42,7 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		fallthrough
 	case "dtc":
 		isValid = SettingDefaultTrackedChannel(s, m, guild, args)
+		break
 	case "adminuserids":
 		fallthrough
 	case "admins":
@@ -53,6 +55,7 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		fallthrough
 	case "a":
 		isValid = SettingAdminUserIDs(s, m, guild, args)
+		break
 	case "permissionroleids":
 		fallthrough
 	case "roles":
@@ -65,6 +68,7 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		fallthrough
 	case "r":
 		isValid = SettingPermissionRoleIDs(s, m, guild, args)
+		break
 	case "applynicknames":
 		fallthrough
 	case "nicknames":
@@ -73,20 +77,24 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		fallthrough
 	case "an":
 		isValid = SettingApplyNicknames(s, m, guild, args)
+		break
 	case "unmutedeadduringtasks":
 		fallthrough
 	case "unmute":
 		fallthrough
 	case "uddt":
 		isValid = SettingUnmuteDeadDuringTasks(s, m, guild, args)
+		break
 	case "delays":
 		fallthrough
 	case "d":
 		isValid = SettingDelays(s, m, guild, args)
+		break
 	case "voicerules":
 		fallthrough
 	case "vr":
 		isValid = SettingVoiceRules(s, m, guild, args)
+		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n"+
 			"Valid settings include `commandPrefix`, `defaultTrackedChannel`, `adminUserIDs`, `applyNicknames`, `unmuteDeadDuringTasks`, `delays` and `voiceRules`.", args[1]))
@@ -192,6 +200,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 		}
 		return false
 	}
+	newAdminIDs := []string{}
 	// users the user mentioned in their message
 	var userIDs []string
 
@@ -205,78 +214,21 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
 			continue
 		}
-		// check if id is already in array
-		for _, IDinSlice := range userIDs {
-			if ID == IDinSlice {
-				// this user is mentioned more than once, ignore it
-				ID = "already in list"
-				break
-			}
-		}
-		if ID != "already in list" {
-			userIDs = append(userIDs, ID)
-		}
+		userIDs = append(userIDs, ID)
 	}
 
-	// the index of admins to remove from adminUserIDs
-	var removeAdmins []int
-	isValid := false
-
 	for _, ID := range userIDs {
-		// can't use guild.HasAdminPermissions() because we also need index
-		for index, adminID := range adminIDs {
-			if ID == adminID {
-				// add ID to IDs to be deleted
-				removeAdmins = append(removeAdmins, index)
-				ID = "" // indicate to other loop this ID has been dealt with
-				break
-			}
-		}
 		if ID != "" {
-			adminIDs = append(adminIDs, ID)
+			newAdminIDs = append(newAdminIDs, ID)
 			// mention user without pinging
 			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
 				Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
 				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
 			})
-			isValid = true
 		}
 	}
 
-	if len(removeAdmins) == 0 {
-		return isValid
-	}
-
-	// remove the values from guild.GuildData.adminUserIDs by creating a
-	// new array with only the admins the user didn't remove, and replacing the
-	// current array with that one
-	var newAdminList []string
-	currentIndex := 0
-	nextIndexToRemove := removeAdmins[0]
-	currentIndexInRemoveAdmins := 0
-
-	for currentIndex < len(adminIDs) {
-		if currentIndex != nextIndexToRemove {
-			// user didn't remove this admin, add it to the list
-			newAdminList = append(newAdminList, adminIDs[currentIndex])
-		} else {
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@%s> is no longer a bot admin, RIP", adminIDs[currentIndex]),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
-			currentIndexInRemoveAdmins++
-			if currentIndexInRemoveAdmins < len(removeAdmins) {
-				nextIndexToRemove = removeAdmins[currentIndexInRemoveAdmins]
-			} else {
-				// reached the end of removeAdmins
-				newAdminList = append(newAdminList, adminIDs[currentIndex+1:]...)
-				break
-			}
-		}
-		currentIndex++
-	}
-
-	guild.guildSettings.SetAdminUserIDs(newAdminList)
+	guild.guildSettings.SetAdminUserIDs(newAdminIDs)
 	return true
 }
 
@@ -316,6 +268,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 		return false
 	}
 
+	newRoleIDs := []string{}
 	// roles the user mentioned in their message
 	var roleIDs []string
 
@@ -329,76 +282,21 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
 			continue
 		}
-		// check if id is already in array
-		for _, IDinSlice := range roleIDs {
-			if ID == IDinSlice {
-				// this role is mentioned more than once, ignore it
-				ID = "already in list"
-				break
-			}
-		}
-		if ID != "already in list" {
-			roleIDs = append(roleIDs, ID)
-		}
+		roleIDs = append(roleIDs, ID)
 	}
 
-	// index of roles to get adminated (or is it admin-ed...)
-	var removeRoles []int
-	isValid := false
-
 	for _, ID := range roleIDs {
-		// can't use guild.HasRolePermissions() because we also need index
-		for index, adminRoleID := range oldRoleIDs {
-			if ID == adminRoleID {
-				// add ID to IDs to be deleted
-				removeRoles = append(removeRoles, index)
-				ID = "" // indicate to other loop this ID has been dealt with
-				break
-			}
-		}
 		if ID != "" {
-			oldRoleIDs = append(oldRoleIDs, ID)
+			newRoleIDs = append(newRoleIDs, ID)
 			// mention user without pinging
 			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
 				Content:         fmt.Sprintf("<@&%s>s are now bot admins!", ID),
 				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
 			})
-			isValid = true
 		}
 	}
 
-	if len(removeRoles) == 0 {
-		return isValid
-	}
-
-	// same process as removeAdminIDs
-	var newAdminRoleList []string
-	currentIndex := 0
-	nextIndexToRemove := removeRoles[0]
-	currentIndexInRemoveAdminRoles := 0
-
-	for currentIndex < len(oldRoleIDs) {
-		if currentIndex != nextIndexToRemove {
-			// user didn't remove this role, add it to the list
-			newAdminRoleList = append(newAdminRoleList, oldRoleIDs[currentIndex])
-		} else {
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@&%s>s are no longer a bot admins.", oldRoleIDs[currentIndex]),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
-			currentIndexInRemoveAdminRoles++
-			if currentIndexInRemoveAdminRoles < len(removeRoles) {
-				nextIndexToRemove = removeRoles[currentIndexInRemoveAdminRoles]
-			} else {
-				// reached the end of removeRoles
-				newAdminRoleList = append(newAdminRoleList, oldRoleIDs[currentIndex+1:]...)
-				break
-			}
-		}
-		currentIndex++
-	}
-
-	guild.guildSettings.SetPermissionRoleIDs(newAdminRoleList)
+	guild.guildSettings.SetPermissionRoleIDs(newRoleIDs)
 	return true
 }
 
