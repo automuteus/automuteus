@@ -927,7 +927,8 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 					// prefix is sent by mistake
 					return
 				} else {
-					s.ChannelMessageSend(m.ChannelID, helpResponse(Version, prefix))
+					embed := helpResponse(Version, prefix, AllCommands)
+					s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 				}
 			} else {
 				args := strings.Split(contents, " ")
