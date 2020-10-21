@@ -144,36 +144,36 @@ type Bot struct {
 
 func (bot *Bot) PushGuildSocketUpdate(guildID string, status SocketStatus) {
 	bot.ChannelsMapLock.RLock()
-	channel := *(bot.SocketUpdateChannels)[guildID]
+	channel := bot.SocketUpdateChannels[guildID]
 	if channel != nil {
-		channel <- status
+		*channel <- status
 	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildPlayerUpdate(guildID string, status game.Player) {
 	bot.ChannelsMapLock.RLock()
-	channel := *(bot.PlayerUpdateChannels)[guildID]
+	channel := bot.PlayerUpdateChannels[guildID]
 	if channel != nil {
-		channel <- status
+		*channel <- status
 	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildPhaseUpdate(guildID string, status game.Phase) {
 	bot.ChannelsMapLock.RLock()
-	channel := *(bot.GamePhaseUpdateChannels)[guildID]
+	channel := bot.GamePhaseUpdateChannels[guildID]
 	if channel != nil {
-		channel <- status
+		*channel <- status
 	}
 	bot.ChannelsMapLock.RUnlock()
 }
 
 func (bot *Bot) PushGuildLobbyUpdate(guildID string, status LobbyStatus) {
 	bot.ChannelsMapLock.RLock()
-	channel := *(bot.LobbyUpdateChannels)[guildID]
+	channel := bot.LobbyUpdateChannels[guildID]
 	if channel != nil {
-		channel <- status
+		*channel <- status
 	}
 	bot.ChannelsMapLock.RUnlock()
 }
