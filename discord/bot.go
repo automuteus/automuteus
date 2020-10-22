@@ -21,7 +21,6 @@ import (
 )
 
 const DefaultPort = "8123"
-const TimeoutSecs = 10
 
 type GameOrLobbyCode struct {
 	gameCode    string
@@ -141,6 +140,8 @@ type Bot struct {
 	UserSettings *storage.UserSettingsCollection
 
 	logPath string
+
+	captureTimeout int
 }
 
 func (bot *Bot) PushGuildSocketUpdate(guildID string, status SocketStatus) {
@@ -183,7 +184,7 @@ var Version string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface, logPath string) *Bot {
+func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
 	Version = version
 
 	var altDiscordSession *discordgo.Session = nil
@@ -229,6 +230,7 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		StorageInterface:        storageClient,
 		UserSettings:            storageClient.GetAllUserSettings(),
 		logPath:                 logPath,
+		captureTimeout:          timeoutSecs,
 	}
 
 	dg.AddHandler(bot.voiceStateChange())
@@ -467,12 +469,12 @@ func (bot *Bot) PurgeConnection(socketID string) {
 }
 
 func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
-	timer := time.NewTimer(time.Second * TimeoutSecs)
+	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 	guildID := ""
 	for {
 		select {
 		case <-timer.C:
-			log.Printf("Socket ID %s timed out with no new messages after %d seconds\n", socket.ID(), TimeoutSecs)
+			log.Printf("Socket ID %s timed out with no new messages after %d seconds\n", socket.ID(), bot.captureTimeout)
 			socket.Close()
 			bot.PurgeConnection(socket.ID())
 
@@ -481,7 +483,7 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 					*v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    1,
-						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", TimeoutSecs),
+						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", bot.captureTimeout),
 					}
 				}
 			}
@@ -501,7 +503,7 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 			if b != "" {
 				guildID = b
 				//received true; the socket is alive
-				timer.Reset(time.Second * TimeoutSecs)
+				timer.Reset(time.Second * time.Duration(bot.captureTimeout))
 			}
 		}
 	}

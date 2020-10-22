@@ -94,6 +94,8 @@ This is used to provide the linking URI to the capture, via the Direct Message t
 **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
 - `CONFIG_PATH`: Alternate filesystem path for guild and user config files. Defaults to `./`
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
+- `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 600 seconds.
+### HIGHLY advanced. Probably don't ever touch these ;)
 - `NUM_SHARDS`: Num shards provided to the Discord API.
 - `SHARD_ID`: Shard ID used to identify with the Discord API. Needs to be strictly less than `NUM_SHARDS`
 

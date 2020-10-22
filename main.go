@@ -24,6 +24,7 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
+const DefaultSocketTimeoutSecs = 600
 
 func main() {
 	err := discordMainWrapper()
@@ -47,7 +48,7 @@ func discordMainWrapper() error {
 				log.Println("Issue creating sample config.txt")
 				return err
 			}
-			_, err = f.WriteString("DISCORD_BOT_TOKEN = \n")
+			_, err = f.WriteString("DISCORD_BOT_TOKEN=\n")
 			f.Close()
 		}
 	}
@@ -113,6 +114,16 @@ func discordMainWrapper() error {
 		}
 	}
 
+	captureTimeout := DefaultSocketTimeoutSecs
+	captureTimeoutStr := os.Getenv("CAPTURE_TIMEOUT")
+	if captureTimeoutStr != "" {
+		num, err := strconv.Atoi(captureTimeoutStr)
+		if err != nil || num < 0 {
+			return errors.New("invalid or non-numeric CAPTURE_TIMOUT provided")
+		}
+	}
+	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
+
 	var storageClient storage.StorageInterface
 	dbSuccess := false
 
@@ -148,12 +159,13 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath, captureTimeout)
 
 	go discord.MessagesServer("5000", bot)
 
 	<-sc
 	bot.GracefulClose(30, "**Bot has been terminated, so I'm killing your game in 30 seconds!**")
+	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 30 seconds")
 	time.Sleep(time.Second * time.Duration(30))
 
 	bot.Close()
