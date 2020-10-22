@@ -502,9 +502,10 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 		case b := <-c:
 			if b != "" {
 				guildID = b
-				//received true; the socket is alive
-				timer.Reset(time.Second * time.Duration(bot.captureTimeout))
 			}
+			//received true; the socket is alive
+			log.Printf("Bot inactivity timer has been reset to %d seconds\n", bot.captureTimeout)
+			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
 		}
 	}
 }

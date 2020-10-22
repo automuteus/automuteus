@@ -24,7 +24,8 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
-const DefaultSocketTimeoutSecs = 600
+const DefaultServicePort = "5000"
+const DefaultSocketTimeoutSecs = 3600
 
 func main() {
 	err := discordMainWrapper()
@@ -114,6 +115,17 @@ func discordMainWrapper() error {
 		}
 	}
 
+	servicePort := os.Getenv("SERVICE_PORT")
+	if servicePort == "" {
+		log.Printf("[Info] No SERVICE_PORT provided. Defaulting to %s\n", DefaultServicePort)
+		servicePort = DefaultServicePort
+	} else {
+		num, err := strconv.Atoi(servicePort)
+		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
+			return errors.New("invalid SERVICE_PORT (outside range [1024-65535] or 80/443) provided")
+		}
+	}
+
 	captureTimeout := DefaultSocketTimeoutSecs
 	captureTimeoutStr := os.Getenv("CAPTURE_TIMEOUT")
 	if captureTimeoutStr != "" {
@@ -161,12 +173,12 @@ func discordMainWrapper() error {
 
 	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath, captureTimeout)
 
-	go discord.MessagesServer("5000", bot)
+	go discord.MessagesServer(servicePort, bot)
 
 	<-sc
-	bot.GracefulClose(30, "**Bot has been terminated, so I'm killing your game in 30 seconds!**")
-	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 30 seconds")
-	time.Sleep(time.Second * time.Duration(30))
+	bot.GracefulClose(5, "**Bot has been terminated, so I'm killing your game in 5 seconds!**")
+	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 5 seconds")
+	time.Sleep(time.Second * time.Duration(5))
 
 	bot.Close()
 	storageClient.Close()

@@ -92,6 +92,7 @@ If you play in larger groups of 8+ people, this is recommended to not be rate-li
 - `HOST`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com:8123`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.
 **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
+- `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000
 - `CONFIG_PATH`: Alternate filesystem path for guild and user config files. Defaults to `./`
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 600 seconds.
