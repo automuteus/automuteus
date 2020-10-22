@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
@@ -88,9 +90,22 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	var embed = discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
-		Title: "You just started a game!",
-		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? Latest version [here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNet32Url, dotNet64Url),
+		Title: locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "message_handlers.handleNewGameMessage.embed.Title",
+				Other: "You just started a game!",
+			}),
+		Description: locale.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.handleNewGameMessage.embed.Description",
+				Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n"+
+					"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n"+
+					"Don't have .NET Core installed? [32-bit here]({{.dotNet32Url}}), [64-bit here]({{.dotNet64Url}})\n\nTo link your capture manually:",
+			},
+			map[string]interface{}{
+				"hyperlink": hyperlink,
+				"downloadURL": downloadURL,
+				"dotNet32Url": dotNet32Url,
+				"dotNet64Url": dotNet64Url,
+			}),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,
@@ -100,12 +115,18 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
-				Name:   "URL",
+				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+						ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
+						Other: "URL",
+					}),
 				Value:  minimalUrl,
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   "Code",
+				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
+					Other: "Code",
+				}),
 				Value:  connectCode,
 				Inline: true,
 			},
