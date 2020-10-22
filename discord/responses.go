@@ -7,25 +7,96 @@ import (
 	"log"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
-
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
+	
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func helpResponse(version, CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (v%s):\n", version))
-	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
-	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s refresh` or `%s r`: Remake the bot's status message entirely, in case it ends up too far up in the chat.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s unlink` or `%s u`: Manually unlink a player. Ex: `%s u @player`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s settings` or `%s s`: View and change settings for the bot, such as the command prefix or mute behavior\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s force` or `%s f`: Force a transition to a stage if you encounter a problem in the state. Ex: `%s f task` or `%s f d`(discuss)\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s pause` or `%s p`: Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**\n", CommandPrefix, CommandPrefix))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.Title",
+			Other: "Among Us Bot Commands (v{{.version}}):\n",
+		},
+		map[string]interface{}{
+			"version": version,
+		}))
+	buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+			ID:    "responses.helpResponse.SubTitle",
+			Other: "Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n",
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.help",
+			Other: "`{{.CommandPrefix}} help` or `{{.CommandPrefix}} h`: Print help info and command usage.\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.new",
+			Other: "`{{.CommandPrefix}} new` or `{{.CommandPrefix}} n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `{{.CommandPrefix}} new CODE eu`. Also works for restarting.\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.refresh",
+			Other: "`{{.CommandPrefix}} refresh` or `{{.CommandPrefix}} r`: Remake the bot's status message entirely, in case it ends up too far up in the chat.\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.end",
+			Other: "`{{.CommandPrefix}} end` or `{{.CommandPrefix}} e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.track",
+			Other: "`{{.CommandPrefix}} track` or `{{.CommandPrefix}} t`: Instruct bot to only use the provided voice channel for automute. Ex: {{.CommandPrefix}}s t <vc_name>`\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.link",
+			Other: "`{{.CommandPrefix}} link` or `{{.CommandPrefix}} l`: Manually link a player to their in-game name or color. Ex: `{{.CommandPrefix}} l @player cyan` or `{{.CommandPrefix}} l @player bob`\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.unlink",
+			Other: "`{{.CommandPrefix}} unlink` or `{{.CommandPrefix}} u`: Manually unlink a player. Ex: {{.CommandPrefix}}s u @player`\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.settings",
+			Other: "`{{.CommandPrefix}} settings` or `{{.CommandPrefix}} s`: View and change settings for the bot, such as the command prefix or mute behavior\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.force",
+			Other: "`{{.CommandPrefix}} force` or `{{.CommandPrefix}} f`: Force a transition to a stage if you encounter a problem in the state. Ex: `{{.CommandPrefix}} f task` or `{{.CommandPrefix}} f d`(discuss)\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
+	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.about.pause",
+			Other: "`{{.CommandPrefix}} pause` or `{{.CommandPrefix}} p`: Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": CommandPrefix,
+		}))
 
 	return buf.String()
 }
@@ -103,22 +174,34 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   "Room Code",
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
+				Other: "Room Code",
+			}),
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   "Region",
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Region",
+				Other: "Region",
+			}),
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
-		Name:   "Tracking",
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Tracking",
+				Other: "Tracking",
+			}),
 		Value:  str,
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
-		Name:   "Players Linked",
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
+				Other: "Players Linked",
+			}),
 		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
 		Inline: false,
 	}
@@ -145,13 +228,23 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 		desc = g.makeDescription()
 		color = 3066993
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
+		desc = locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.menuMessage.notLinked.Description",
+				Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
+			},
+			map[string]interface{}{
+				"alarmFormattedStart": alarmFormatted,
+				"alarmFormattedEnd": alarmFormatted,
+			})
 	}
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       "Main Menu",
+		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.menuMessage.Title",
+				Other: "Main Menu",
+			}),
 		Description: desc,
 		Timestamp:   "",
 		Footer:      nil,
@@ -188,17 +281,34 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 		desc = g.makeDescription()
 		color = 3066993
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
+		desc = locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.notLinked.Description",
+				Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
+			},
+			map[string]interface{}{
+				"alarmFormattedStart": alarmFormatted,
+				"alarmFormattedEnd": alarmFormatted,
+			})
 	}
 
+	emojiLeave := "❌"
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       "Lobby",
+		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.Title",
+				Other: "Lobby",
+			}),
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
-			Text:         "React to this message with your in-game color! (or ❌ to leave)",
+			Text:  locale.LocalizeMessage(&i18n.Message{
+					ID:    "responses.lobbyMessage.Footer.Text",
+					Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
+				},
+				map[string]interface{}{
+					"emojiLeave": emojiLeave,
+				}),
 			IconURL:      "",
 			ProxyIconURL: "",
 		},
@@ -256,22 +366,46 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 func (guild *GuildState) makeDescription() string {
 	buf := bytes.NewBuffer([]byte{})
 	if !guild.GameRunning {
-		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.PersistentGuildData.CommandPrefix + " p`!**\n\n")
+		buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.makeDescription.GameNotRunning",
+			Other: "\n**Bot is Paused! Unpause with `{{.CommandPrefix}} p`!**\n\n",
+		},
+		map[string]interface{}{
+			"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+		}))
 	}
 
 	author := guild.GameStateMsg.leaderID
 	if author != "" {
-		buf.WriteString("<@" + author + "> is running an Among Us game!\nThe game is happening in ")
+		buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.makeDescription.author",
+			Other: "<@{{.author}}> is running an Among Us game!\nThe game is happening in ",
+		},
+		map[string]interface{}{
+			"author": author,
+		}))
 	}
 
 	if len(guild.Tracking.tracking) == 0 {
-		buf.WriteString("any voice channel!")
+		buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+			ID:    "responses.makeDescription.anyVoiceChannel",
+			Other: "any voice channel!",
+		}))
 	} else {
 		t, err := guild.Tracking.FindAnyTrackedChannel(false)
 		if err != nil {
-			buf.WriteString("an invalid voice channel!")
+			buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.makeDescription.invalidVoiceChannel",
+				Other: "an invalid voice channel!",
+			}))
 		} else {
-			buf.WriteString("the **" + t.channelName + "** voice channel!")
+			buf.WriteString(locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.makeDescription.voiceChannelName",
+				Other: "the **{{.channelName}}** voice channel!",
+			},
+			map[string]interface{}{
+				"channelName": t.channelName,
+			}))
 		}
 	}
 
