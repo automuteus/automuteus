@@ -14,7 +14,7 @@ import (
 
 func helpResponse(version, CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (v%s):\n", version))
+	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (%s):\n", version))
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))

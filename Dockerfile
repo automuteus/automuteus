@@ -1,7 +1,7 @@
 FROM golang:1.15-alpine AS builder
 
 # Git is required for getting the dependencies.
-RUN apk add --no-cache git
+RUN apk add git
 
 WORKDIR /src
 
@@ -14,8 +14,11 @@ RUN go mod download
 COPY ./ ./
 
 # Build the executable to `/app`. Mark the build as statically linked.
-RUN CGO_ENABLED=0 go build \
-    -installsuffix 'static' \
+RUN export TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
+    export COMMIT=$(git rev-parse --short HEAD) && \
+    CGO_ENABLED=0 \
+    go build -installsuffix 'static' \
+    -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
     -o /app .
 
 FROM alpine AS final
