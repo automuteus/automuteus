@@ -58,18 +58,20 @@ func LoadTranslations() *i18n.Bundle {
 }
 
 func LocalizeSimpleMessage(message *i18n.Message) string {
-	bundle := GetBundle()
-	localizer := i18n.NewLocalizer(bundle, lang)
-	return localizer.MustLocalize(&i18n.LocalizeConfig{
-		DefaultMessage: message,
-	})
+	return LocalizeMessage(message, nil)
 }
 
 func LocalizeMessage(message *i18n.Message, templateData map[string]interface{}) string {
 	bundle := GetBundle()
 	localizer := i18n.NewLocalizer(bundle, lang)
-	return localizer.MustLocalize(&i18n.LocalizeConfig{
+	msg, err := localizer.Localize(&i18n.LocalizeConfig{
 		DefaultMessage: message,
 		TemplateData:   templateData,
 	})
+
+	if err != nil {
+		log.Printf("[Warning] %s", err)
+	}
+
+	return msg
 }
