@@ -167,7 +167,10 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		} else {
 			phase := getPhaseFromString(args[1])
 			if phase == game.UNINITIALIZED {
-				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
+				s.ChannelMessageSend(m.ChannelID, locale.LocalizeSimpleMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Force.UNINITIALIZED",
+					Other: "Sorry, I didn't understand the game phase you tried to force",
+				}))
 			} else {
 				//TODO this is ugly, but only for debug really
 				bot.PushGuildPhaseUpdate(m.GuildID, phase)
