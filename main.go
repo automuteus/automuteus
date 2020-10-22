@@ -153,6 +153,9 @@ func discordMainWrapper() error {
 	go discord.MessagesServer("5000", bot)
 
 	<-sc
+	bot.GracefulClose(30, "**Bot has been terminated, so I'm killing your game in 30 seconds!**")
+	time.Sleep(time.Second * time.Duration(30))
+
 	bot.Close()
 	storageClient.Close()
 	return nil

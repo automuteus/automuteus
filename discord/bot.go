@@ -21,7 +21,7 @@ import (
 )
 
 const DefaultPort = "8123"
-const TimeoutSecs = 600
+const TimeoutSecs = 10
 
 type GameOrLobbyCode struct {
 	gameCode    string
@@ -36,8 +36,9 @@ const (
 )
 
 type BroadcastMessage struct {
-	Type BcastMsgType
-	Data int
+	Type    BcastMsgType
+	Data    int
+	Message string
 }
 
 type LobbyStatus struct {
@@ -266,6 +267,19 @@ func (bot *Bot) Run(port string) {
 	go bot.socketioServer(port)
 }
 
+func (bot *Bot) GracefulClose(seconds int, message string) {
+	bot.ChannelsMapLock.RLock()
+	for _, v := range bot.GlobalBroadcastChannels {
+		if v != nil {
+			*v <- BroadcastMessage{
+				Type:    GRACEFUL_SHUTDOWN,
+				Data:    seconds,
+				Message: message,
+			}
+		}
+	}
+	bot.ChannelsMapLock.RUnlock()
+}
 func (bot *Bot) Close() {
 	bot.SessionManager.Close()
 }
@@ -287,7 +301,7 @@ func (bot *Bot) guildIDForCode(code string) string {
 }
 
 func (bot *Bot) socketioServer(port string) {
-	inactiveWorkerChannels := make(map[string]chan bool)
+	inactiveWorkerChannels := make(map[string]chan string)
 
 	server, err := socketio.NewServer(nil)
 	if err != nil {
@@ -296,15 +310,12 @@ func (bot *Bot) socketioServer(port string) {
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
 		log.Println("connected:", s.ID())
-		inactiveWorkerChannels[s.ID()] = make(chan bool)
+		inactiveWorkerChannels[s.ID()] = make(chan string)
 		go bot.InactiveGameWorker(s, inactiveWorkerChannels[s.ID()])
 		return nil
 	})
 	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
 		log.Printf("Received connection code: \"%s\"", msg)
-		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
-			v <- true
-		}
 
 		guildID := bot.guildIDForCode(msg)
 		if guildID == "" {
@@ -315,6 +326,9 @@ func (bot *Bot) socketioServer(port string) {
 		if guild, ok := bot.AllGuilds[guildID]; ok {
 			bot.AllConns[s.ID()] = guildID
 			guild.Linked = true
+			if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+				v <- guildID
+			}
 
 			bot.PushGuildSocketUpdate(guildID, SocketStatus{
 				GuildID:   guildID,
@@ -327,9 +341,6 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
-		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
-			v <- true
-		}
 		lobby := game.Lobby{}
 		err := json.Unmarshal([]byte(msg), &lobby)
 		if err != nil {
@@ -345,6 +356,9 @@ func (bot *Bot) socketioServer(port string) {
 			}
 
 			if guildID != "" {
+				if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+					v <- guildID
+				}
 				if _, ok := bot.AllGuilds[guildID]; ok { // Game is connected -> update its room code
 					log.Println("Received room code", msg, "for guild", guildID, "from capture")
 				} else {
@@ -370,14 +384,14 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
-		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
-			v <- true
-		}
 		phase, err := strconv.Atoi(msg)
 		if err != nil {
 			log.Println(err)
 		} else {
 			if gid, ok := bot.AllConns[s.ID()]; ok && gid != "" {
+				if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+					v <- gid
+				}
 				log.Println("Pushing phase event to channel")
 				bot.PushGuildPhaseUpdate(gid, game.Phase(phase))
 			} else {
@@ -387,15 +401,15 @@ func (bot *Bot) socketioServer(port string) {
 	})
 	server.OnEvent("/", "player", func(s socketio.Conn, msg string) {
 		log.Println("player received from capture: ", msg)
-		if v, ok := inactiveWorkerChannels[s.ID()]; ok {
-			v <- true
-		}
 		player := game.Player{}
 		err := json.Unmarshal([]byte(msg), &player)
 		if err != nil {
 			log.Println(err)
 		} else {
 			if gid, ok := bot.AllConns[s.ID()]; ok && gid != "" {
+				if v, ok := inactiveWorkerChannels[s.ID()]; ok {
+					v <- gid
+				}
 				bot.PushGuildPlayerUpdate(gid, player)
 			} else {
 				log.Println("This websocket is not associated with any guilds")
@@ -452,18 +466,40 @@ func (bot *Bot) PurgeConnection(socketID string) {
 	log.Print("Done purging")
 }
 
-func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan bool) {
+func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 	timer := time.NewTimer(time.Second * TimeoutSecs)
+	guildID := ""
 	for {
 		select {
 		case <-timer.C:
 			log.Printf("Socket ID %s timed out with no new messages after %d seconds\n", socket.ID(), TimeoutSecs)
 			socket.Close()
 			bot.PurgeConnection(socket.ID())
+
+			if v, ok := bot.GlobalBroadcastChannels[guildID]; ok {
+				if v != nil {
+					*v <- BroadcastMessage{
+						Type:    GRACEFUL_SHUTDOWN,
+						Data:    1,
+						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", TimeoutSecs),
+					}
+				}
+			}
+			//
+			//bot.LinkCodeLock.Lock()
+			//for i, v := range bot.LinkCodes {
+			//	//delete the association between the link code and the guild
+			//	if v == guildID {
+			//		delete(bot.LinkCodes, i)
+			//		break
+			//	}
+			//}
+			//bot.LinkCodeLock.Unlock()
 			timer.Stop()
 			return
 		case b := <-c:
-			if b {
+			if b != "" {
+				guildID = b
 				//received true; the socket is alive
 				timer.Reset(time.Second * TimeoutSecs)
 			}
@@ -478,8 +514,9 @@ func MessagesServer(port string, bot *Bot) {
 			for _, v := range bot.GlobalBroadcastChannels {
 				if v != nil {
 					*v <- BroadcastMessage{
-						Type: GRACEFUL_SHUTDOWN,
-						Data: 30,
+						Type:    GRACEFUL_SHUTDOWN,
+						Data:    30,
+						Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
 					}
 				}
 			}
@@ -696,9 +733,18 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 			case worldUpdate := <-*globalUpdates:
 				if guild, ok := bot.AllGuilds[guildID]; ok {
 					if worldUpdate.Type == GRACEFUL_SHUTDOWN {
-						log.Printf("Received graceful shutdown message, shutting down in %d seconds", worldUpdate.Data)
+						go bot.gracefulShutdownWorker(dg, guild, worldUpdate.Data, worldUpdate.Message)
 
-						go bot.gracefulShutdownWorker(dg, guild, worldUpdate.Data)
+						bot.LinkCodeLock.Lock()
+						for i, v := range bot.LinkCodes {
+							//delete the association between the link code and the guild
+							if v == guildID {
+								delete(bot.LinkCodes, i)
+								break
+							}
+						}
+						bot.LinkCodeLock.Unlock()
+						guild.Linked = false
 					}
 				}
 
@@ -713,9 +759,11 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 	}
 }
 
-func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, guild *GuildState, seconds int) {
+func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, guild *GuildState, seconds int, message string) {
 	if guild.GameStateMsg.message != nil {
-		sendMessage(s, guild.GameStateMsg.message.ChannelID, fmt.Sprintf("**I need to go offline to upgrade! Your game/lobby will be ended in %d seconds!**", seconds))
+		log.Printf("**Received graceful shutdown message, shutting down in %d seconds**", seconds)
+
+		sendMessage(s, guild.GameStateMsg.message.ChannelID, message)
 	}
 
 	time.Sleep(time.Duration(seconds) * time.Second)

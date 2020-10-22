@@ -40,10 +40,15 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
 
-	//TODO don't always recreate if we're already connected...
-
 	connectCode := generateConnectCode(m.GuildID)
 	bot.LinkCodeLock.Lock()
+	//delete any previous links
+	for i, v := range bot.LinkCodes {
+		if v == m.GuildID {
+			delete(bot.LinkCodes, i)
+		}
+	}
+
 	bot.LinkCodes[GameOrLobbyCode{
 		gameCode:    room,
 		connectCode: connectCode,
