@@ -1,6 +1,9 @@
 package game
 
-import "strings"
+import (
+	"strings"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+)
 
 // Phase type
 type Phase int
@@ -38,9 +41,20 @@ var PhaseNames = map[Phase]PhaseNameString{
 	MENU:    "MENU",
 }
 
+var PhaseMessages = map[Phase]*i18n.Message{
+	LOBBY:   &i18n.Message{ ID: "state.phase.LOBBY", Other: "LOBBY" /* string(PhaseNames[LOBBY]) */ },
+	TASKS:   &i18n.Message{ ID: "state.phase.TASKS", Other: "TASKS" /* string(PhaseNames[TASKS]) */ },
+	DISCUSS: &i18n.Message{ ID: "state.phase.DISCUSSION", Other: "DISCUSSION" /* string(PhaseNames[DISCUSS]) */ },
+	MENU:    &i18n.Message{ ID: "state.phase.MENU", Other: "MENU" /* string(PhaseNames[MENU]) */ },
+}
+
 // ToString for a phase
 func (phase *Phase) ToString() PhaseNameString {
 	return PhaseNames[*phase]
+}
+
+func (phase *Phase) ToLocale() *i18n.Message {
+	return PhaseMessages[*phase]
 }
 
 // Player struct

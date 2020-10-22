@@ -31,3 +31,7 @@
 "responses.makeDescription.voiceChannelName" = "the **{{.channelName}}** voice channel!"
 "responses.menuMessage.Title" = "Main Menu"
 "responses.menuMessage.notLinked.Description" = "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}"
+"state.phase.DISCUSSION" = "DISCUSSION"
+"state.phase.LOBBY" = "LOBBY"
+"state.phase.MENU" = "MENU"
+"state.phase.TASKS" = "TASKS"

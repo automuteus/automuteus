@@ -347,7 +347,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       string(phase.ToString()),
+		Title:       locale.LocalizeSimpleMessage(phase.ToLocale()),
 		Description: guild.makeDescription(),
 		Timestamp:   "",
 		Color:       color,
