@@ -6,10 +6,6 @@ other = "У пользователя нет прав для выполнения
 hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
 other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
 
-["commands.HandleCommand.Force.UNINITIALIZED"]
-hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
-other = "Извините, я не понял тип фазы игры, который вы пытались установить"
-
 ["commands.HandleCommand.Link"]
 hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
 other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
@@ -76,7 +72,7 @@ other = "Код Комнаты"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "Отслеживание"
+other = "Отслеживает"
 
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-8ebb2406e3b631b677937d1edb7f2b620adfebf5"
@@ -121,3 +117,28 @@ other = "МЕНЮ"
 ["state.phase.TASKS"]
 hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
 other = "ЗАДАЧИ"
+
+["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Неизвестно"
+
+["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Неизвестно"
+
+
+["tracking.ToStatusString.anyVoiceChannel"]
+hash = "sha1-9027bdbf87393b60e86fab37eab7a874cde292c9"
+other = "Любой голосовой канал"
+
+["tracking.ToStatusString.ghosts"]
+hash = "sha1-8fbb2ebf4bd65358776901fc4c87394e7c577897"
+other = "призраки"
+
+["tracking.ToStatusString.or"]
+hash = "sha1-1758356db21759f7c5a0da9b4dd1db8fd6feab3f"
+other = "или"
+
+["userDataSet.ToEmojiEmbedFields.Unlinked"]
+hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
+other = "Не привязан"
