@@ -6,7 +6,6 @@ import (
 	"sync"
 	
 	"github.com/denverquane/amongusdiscord/locale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // Tracking struct
@@ -49,10 +48,7 @@ func (tracking *Tracking) ToStatusString() string {
 	defer tracking.lock.RUnlock()
 
 	if len(tracking.tracking) == 0 {
-		return locale.LocalizeSimpleMessage(&i18n.Message{
-			ID:    "tracking.ToStatusString.anyVoiceChannel",
-			Other: "Any Voice Channel",
-		})
+		return locale.LocalizeSimpleMessage("tracking.ToStatusString.anyVoiceChannel", "Any Voice Channel")
 	}
 
 	buf := bytes.NewBuffer([]byte{})
@@ -60,16 +56,10 @@ func (tracking *Tracking) ToStatusString() string {
 	for _, v := range tracking.tracking {
 		buf.WriteString(fmt.Sprintf("%s ", v.channelName))
 		if v.forGhosts {
-			buf.WriteString(fmt.Sprintf(" (%s) ", locale.LocalizeSimpleMessage(&i18n.Message{
-				ID:    "tracking.ToStatusString.ghosts",
-				Other: "ghosts",
-			})))
+			buf.WriteString(fmt.Sprintf(" (%s) ", locale.LocalizeSimpleMessage("tracking.ToStatusString.ghosts", "ghosts")))
 		}
 		if i < len(tracking.tracking)-1 {
-			buf.WriteString(fmt.Sprintf("%s ", locale.LocalizeSimpleMessage(&i18n.Message{
-				ID:    "tracking.ToStatusString.or",
-				Other: "or",
-			})))
+			buf.WriteString(fmt.Sprintf("%s ", locale.LocalizeSimpleMessage("tracking.ToStatusString.or", "or")))
 		}
 		i++
 	}

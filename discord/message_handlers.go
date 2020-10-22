@@ -90,10 +90,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	var embed = discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
-		Title: locale.LocalizeSimpleMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.embed.Title",
-				Other: "You just started a game!",
-			}),
+		Title: locale.LocalizeSimpleMessage("message_handlers.handleNewGameMessage.embed.Title", "You just started a game!"),
 		Description: locale.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.embed.Description",
 				Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n"+
@@ -115,18 +112,12 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
-				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
-						ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
-						Other: "URL",
-					}),
+				Name:   locale.LocalizeSimpleMessage("message_handlers.handleNewGameMessage.embed.Fields.URL", "URL"),
 				Value:  minimalUrl,
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
-					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
-					Other: "Code",
-				}),
+				Name:   locale.LocalizeSimpleMessage("message_handlers.handleNewGameMessage.embed.Fields.Code", "Code"),
 				Value:  connectCode,
 				Inline: true,
 			},
