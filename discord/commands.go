@@ -1,12 +1,13 @@
 package discord
 
 import (
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/locale"
 	"log"
 	"strings"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type CommandType int
@@ -65,7 +66,13 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 	case Track:
 		if len(args[1:]) == 0 {
 			//TODO print usage of this command specifically
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "commands.HandleCommand.Track",
+				Other: "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage",
+			},
+			map[string]interface{}{
+				"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+			}))
 		} else {
 			// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
 			forGhosts := false
@@ -91,7 +98,13 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 	case Link:
 		if len(args[1:]) < 2 {
 			//TODO print usage of this command specifically
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "commands.HandleCommand.Link",
+				Other: "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage",
+			},
+			map[string]interface{}{
+				"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+			}))
 		} else {
 			guild.linkPlayerResponse(s, m.GuildID, args[1:])
 
@@ -101,7 +114,13 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 
 	case Unlink:
 		if len(args[1:]) == 0 {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Unlink",
+					Other: "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage",
+				},
+				map[string]interface{}{
+					"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+				}))
 		} else {
 
 			userID, err := extractUserIDFromMention(args[1])
@@ -138,11 +157,20 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 
 	case Force:
 		if len(args[1:]) < 1 {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You used this command incorrectly! Please refer to `%s help` for proper command usage", guild.PersistentGuildData.CommandPrefix))
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Force",
+					Other: "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage",
+				},
+				 map[string]interface{}{
+					"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+				}))
 		}
 		phase := getPhaseFromString(args[1])
 		if phase == game.UNINITIALIZED {
-			s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "commands.HandleCommand.Force.UNINITIALIZED",
+				Other: "Sorry, I didn't understand the game phase you tried to force",
+			}))
 		} else {
 			//TODO this is ugly, but only for debug really
 			bot.PushGuildPhaseUpdate(m.GuildID, phase)
@@ -173,7 +201,13 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", guild.PersistentGuildData.CommandPrefix))
+		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.HandleCommand.default",
+			Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
+		},
+		map[string]interface{}{
+			"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+		}))
 
 	}
 }

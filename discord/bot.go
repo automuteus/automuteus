@@ -13,8 +13,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/locale"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type GameOrLobbyCode struct {
@@ -756,7 +758,10 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 			perms = guild.HasAdminPermissions(m.Author.ID) || guild.HasRolePermissions(s, m.Author.ID)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "bot.handleMessageCreate.noPerms",
+				Other: "User does not have the required permissions to execute this command!",
+			}))
 		} else {
 			oldLen := len(contents)
 			contents = strings.Replace(contents, guild.PersistentGuildData.CommandPrefix+" ", "", 1)

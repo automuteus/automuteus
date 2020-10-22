@@ -1,0 +1,7 @@
+"bot.handleMessageCreate.noPerms" = "User does not have the required permissions to execute this command!"
+"commands.HandleCommand.Force" = "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage"
+"commands.HandleCommand.Force.UNINITIALIZED" = "Sorry, I didn't understand the game phase you tried to force"
+"commands.HandleCommand.Link" = "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage"
+"commands.HandleCommand.Track" = "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage"
+"commands.HandleCommand.Unlink" = "You used this command incorrectly! Please refer to `{{.CommandPrefix}} help` for proper command usage"
+"commands.HandleCommand.default" = "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands"
