@@ -7,7 +7,6 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - format: binary
-    replacements:
-      "386": 32bit
+    name_template: "{{ .ProjectName }}_{{ .Os }}"
 checksum:
   disable: true
