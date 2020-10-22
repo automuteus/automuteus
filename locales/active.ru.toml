@@ -28,7 +28,7 @@ other = "Извините, я не понял эту команду! См. сп�
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-9ea00e63168ae819e726eef2e249f3d7cad5cdfa"
-other = "Нажмите на следующую ссылку, чтобы связать свой захват: \\n {{.hyperlink}}\\n\\nУ вас еще не установлен захват? Новейшая версия [здесь]({{.downloadURL}})\\nУ вас не установлено .NET Core?? [32-bit здесь]({{.dotNet32Url}}), [64-bit здесь]({{.dotNet64Url}})\\n\\nЧтобы связать ваш захват вручную:"
+other = "Нажмите на следующую ссылку, чтобы связать свой захват: \n <{{.hyperlink}}>\n\nУ вас еще не установлен захват? Новейшая версия [здесь]({{.downloadURL}})\nУ вас не установлено .NET Core?? [32-bit здесь]({{.dotNet32Url}}), [64-bit здесь]({{.dotNet64Url}})\n\nЧтобы связать ваш захват вручную:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -44,11 +44,11 @@ other = "Вы только что начали игру!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-a04a86f4f34d0742d3db74303f0335d3309a83cc"
-other = "Возникли проблемы или есть предложения? Присоединяйтесь к discord по адресу <https://discord.gg/ZkqZSWF>!\\n"
+other = "Возникли проблемы или есть предложения? Присоединяйтесь к discord по адресу <https://discord.gg/ZkqZSWF>!\n"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-480b159e5a9e1731f251059573f82cba81742e95"
-other = "Among Us Команды Бота (v{{.version}}):\\n"
+other = "Among Us Команды Бота (v{{.version}}):\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
@@ -80,7 +80,7 @@ other = "Отслеживание"
 
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-8ebb2406e3b631b677937d1edb7f2b620adfebf5"
-other = "\\n**Бот на паузе! Возобновить `{{.CommandPrefix}} p`!**\\n\\n"
+other = "\n**Бот на паузе! Возобновить `{{.CommandPrefix}} p`!**\n\n"
 
 ["responses.makeDescription.anyVoiceChannel"]
 hash = "sha1-5aa3c66a8466d31f7c0ac91e0697f9656ecf9254"
@@ -88,7 +88,7 @@ other = "любой голосовой канал!"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> запускает игру Among Us!\\nИгра идёт в "
+other = "<@{{.author}}> запускает игру Among Us!\nИгра идёт в "
 
 ["responses.makeDescription.invalidVoiceChannel"]
 hash = "sha1-ec58046373e92bd342fc072db2b4e6f607dbea58"
@@ -104,7 +104,7 @@ other = "Главное меню"
 
 ["responses.menuMessage.notLinked.Description"]
 hash = "sha1-1cea4f02fde437405dd0f3eee9acdf2ea1b06cd2"
-other = "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}"
+other = "{{.alarmFormattedStart}}**Захват не связан! Нажмите на ссылку в вашем ЛС, чтобы подключиться!**{{.alarmFormattedEnd}}"
 
 ["state.phase.DISCUSSION"]
 hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
