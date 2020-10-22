@@ -10,6 +10,7 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // when querying for the member list we need to specify a size
@@ -99,8 +100,14 @@ func getPhaseFromString(input string) game.Phase {
 
 // GetRoomAndRegionFromArgs does what it sounds like
 func getRoomAndRegionFromArgs(args []string) (string, string) {
-	roomUnprovided := locale.LocalizeSimpleMessage("helpers.getRoomAndRegionFromArgs.roomUnprovided", "Unprovided")
-	regionUnprovided := locale.LocalizeSimpleMessage("helpers.getRoomAndRegionFromArgs.regionUnprovided", "Unprovided")
+	roomUnprovided := locale.LocalizeSimpleMessage(&i18n.Message{
+		ID:    "helpers.getRoomAndRegionFromArgs.roomUnprovided",
+		Other: "Unprovided",
+	})
+	regionUnprovided := locale.LocalizeSimpleMessage(&i18n.Message{
+		ID:    "helpers.getRoomAndRegionFromArgs.regionUnprovided",
+		Other: "Unprovided",
+	})
 
 	if len(args) == 0 {
 		return roomUnprovided, regionUnprovided

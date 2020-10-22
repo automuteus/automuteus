@@ -57,11 +57,8 @@ func LoadTranslations() *i18n.Bundle {
 	return bundle
 }
 
-func LocalizeSimpleMessage(ID string, translate string) string {
-	return LocalizeMessage(&i18n.Message{
-		ID:    ID,
-		Other: translate,
-	}, nil)
+func LocalizeSimpleMessage(message *i18n.Message) string {
+	return LocalizeMessage(message, nil)
 }
 
 func LocalizeMessage(message *i18n.Message, templateData map[string]interface{}) string {

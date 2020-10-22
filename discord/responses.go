@@ -23,7 +23,10 @@ func helpResponse(version, CommandPrefix string) string {
 		map[string]interface{}{
 			"version": version,
 		}))
-	buf.WriteString(locale.LocalizeSimpleMessage("responses.helpResponse.SubTitle", "Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n"))
+	buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+			ID:    "responses.helpResponse.SubTitle",
+			Other: "Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n",
+		}))
 	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
 			ID:    "responses.helpResponse.about.help",
 			Other: "`{{.CommandPrefix}} help` or `{{.CommandPrefix}} h`: Print help info and command usage.\n",
@@ -171,22 +174,34 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage("responses.lobbyMetaEmbedFields.RoomCode", "Room Code"),
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
+				Other: "Room Code",
+			}),
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage("responses.lobbyMetaEmbedFields.Region", "Region"),
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Region",
+				Other: "Region",
+			}),
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage("responses.lobbyMetaEmbedFields.Tracking", "Tracking"),
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Tracking",
+				Other: "Tracking",
+			}),
 		Value:  str,
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage("responses.lobbyMetaEmbedFields.PlayersLinked", "Players Linked"),
+		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
+				Other: "Players Linked",
+			}),
 		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
 		Inline: false,
 	}
@@ -226,7 +241,10 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       locale.LocalizeSimpleMessage("responses.menuMessage.Title", "Main Menu"),
+		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.menuMessage.Title",
+				Other: "Main Menu",
+			}),
 		Description: desc,
 		Timestamp:   "",
 		Footer:      nil,
@@ -277,7 +295,10 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       locale.LocalizeSimpleMessage("responses.lobbyMessage.Title", "Lobby"),
+		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.Title",
+				Other: "Lobby",
+			}),
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
@@ -366,11 +387,17 @@ func (guild *GuildState) makeDescription() string {
 	}
 
 	if len(guild.Tracking.tracking) == 0 {
-		buf.WriteString(locale.LocalizeSimpleMessage("responses.makeDescription.anyVoiceChannel", "any voice channel!"))
+		buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+			ID:    "responses.makeDescription.anyVoiceChannel",
+			Other: "any voice channel!",
+		}))
 	} else {
 		t, err := guild.Tracking.FindAnyTrackedChannel(false)
 		if err != nil {
-			buf.WriteString(locale.LocalizeSimpleMessage("responses.makeDescription.invalidVoiceChannel", "an invalid voice channel!"))
+			buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.makeDescription.invalidVoiceChannel",
+				Other: "an invalid voice channel!",
+			}))
 		} else {
 			buf.WriteString(locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.makeDescription.voiceChannelName",

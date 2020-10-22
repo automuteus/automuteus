@@ -9,6 +9,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type UserDataSet struct {
@@ -158,7 +160,10 @@ func (uds *UserDataSet) ToEmojiEmbedFields(nameColorMap map[string]int, nameAliv
 			emoji := emojis[nameAliveMap[name]][color]
 			unsorted[color] = &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("%s", name),
-				Value:  fmt.Sprintf("%s **%s**", emoji.FormatForInline(), locale.LocalizeSimpleMessage("userDataSet.ToEmojiEmbedFields.Unlinked", "Unlinked")),
+				Value:  fmt.Sprintf("%s **%s**", emoji.FormatForInline(), locale.LocalizeSimpleMessage(&i18n.Message{
+					ID:    "userDataSet.ToEmojiEmbedFields.Unlinked",
+					Other: "Unlinked",
+				})),
 				Inline: true,
 			}
 		}
