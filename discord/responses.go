@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strings"
 
@@ -14,91 +15,71 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func helpResponse(version, CommandPrefix string) string {
-	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.Title",
-			Other: "Among Us Bot Commands (v{{.version}}):\n",
-		},
-		map[string]interface{}{
-			"version": version,
-		}))
-	buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
-			ID:    "responses.helpResponse.SubTitle",
-			Other: "Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n",
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.help",
-			Other: "`{{.CommandPrefix}} help` or `{{.CommandPrefix}} h`: Print help info and command usage.\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.new",
-			Other: "`{{.CommandPrefix}} new` or `{{.CommandPrefix}} n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `{{.CommandPrefix}} new CODE eu`. Also works for restarting.\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.refresh",
-			Other: "`{{.CommandPrefix}} refresh` or `{{.CommandPrefix}} r`: Remake the bot's status message entirely, in case it ends up too far up in the chat.\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.end",
-			Other: "`{{.CommandPrefix}} end` or `{{.CommandPrefix}} e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.track",
-			Other: "`{{.CommandPrefix}} track` or `{{.CommandPrefix}} t`: Instruct bot to only use the provided voice channel for automute. Ex: {{.CommandPrefix}}s t <vc_name>`\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.link",
-			Other: "`{{.CommandPrefix}} link` or `{{.CommandPrefix}} l`: Manually link a player to their in-game name or color. Ex: `{{.CommandPrefix}} l @player cyan` or `{{.CommandPrefix}} l @player bob`\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.unlink",
-			Other: "`{{.CommandPrefix}} unlink` or `{{.CommandPrefix}} u`: Manually unlink a player. Ex: {{.CommandPrefix}}s u @player`\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.settings",
-			Other: "`{{.CommandPrefix}} settings` or `{{.CommandPrefix}} s`: View and change settings for the bot, such as the command prefix or mute behavior\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.force",
-			Other: "`{{.CommandPrefix}} force` or `{{.CommandPrefix}} f`: Force a transition to a stage if you encounter a problem in the state. Ex: `{{.CommandPrefix}} f task` or `{{.CommandPrefix}} f d`(discuss)\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
-	buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.about.pause",
-			Other: "`{{.CommandPrefix}} pause` or `{{.CommandPrefix}} p`: Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**\n",
-		},
-		map[string]interface{}{
-			"CommandPrefix": CommandPrefix,
-		}))
+func helpResponse(version, CommandPrefix string, commands []Command) discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.helpResponse.Title",
+				Other: "Among Us Bot Commands (v{{.version}}):\n",
+			},
+			map[string]interface{}{
+				"version": version,
+			}),
+		Description: locale.LocalizeSimpleMessage(&i18n.Message{
+				ID:    "responses.helpResponse.SubTitle",
+				Other: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
+			}),
+		Timestamp:   "",
+		Color:       15844367, //GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
 
-	return buf.String()
+	fields := make([]*discordgo.MessageEmbedField, len(commands)-2)
+	for i, v := range commands {
+		if v.cmdType != Help && v.cmdType != Null {
+			fields[i-1] = &discordgo.MessageEmbedField{
+				Name:   v.command + " `" + CommandPrefix + " help " + v.command + "`",
+				Value:  v.shortDesc,
+				Inline: true,
+			}
+		}
+	}
+
+	embed.Fields = fields
+	return embed
+}
+
+func settingResponse(settings []Setting) discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Settings",
+		Description: "Available Settings",
+		Timestamp:   "",
+		Color:       15844367, //GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
+
+	fields := make([]*discordgo.MessageEmbedField, len(settings))
+	for i, v := range settings {
+		fields[i] = &discordgo.MessageEmbedField{
+			Name:   v.name,
+			Value:  v.shortDesc,
+			Inline: true,
+		}
+	}
+
+	embed.Fields = fields
+	return embed
 }
 
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
@@ -116,7 +97,7 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 
 func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
 
-	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	g, err := s.State.Guild(GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -139,6 +120,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s to a color\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)
@@ -150,6 +136,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s by name\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)
