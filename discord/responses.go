@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strings"
 
@@ -12,22 +13,62 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 )
 
-func helpResponse(version, CommandPrefix string) string {
-	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (v%s):\n", version))
-	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
-	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s refresh` or `%s r`: Remake the bot's status message entirely, in case it ends up too far up in the chat.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s end` or `%s e`: End the game entirely, and stop tracking players. Unmutes all and resets state.\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s track` or `%s t`: Instruct bot to only use the provided voice channel for automute. Ex: `%s t <vc_name>`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s link` or `%s l`: Manually link a player to their in-game name or color. Ex: `%s l @player cyan` or `%s l @player bob`\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s unlink` or `%s u`: Manually unlink a player. Ex: `%s u @player`\n", CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s settings` or `%s s`: View and change settings for the bot, such as the command prefix or mute behavior\n", CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s force` or `%s f`: Force a transition to a stage if you encounter a problem in the state. Ex: `%s f task` or `%s f d`(discuss)\n", CommandPrefix, CommandPrefix, CommandPrefix, CommandPrefix))
-	buf.WriteString(fmt.Sprintf("`%s pause` or `%s p`: Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**\n", CommandPrefix, CommandPrefix))
+func helpResponse(version, CommandPrefix string, commands []Command) discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       fmt.Sprintf("AutoMuteUs Bot Commands (v%s):\n", version),
+		Description: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
+		Timestamp:   "",
+		Color:       15844367, //GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
 
-	return buf.String()
+	fields := make([]*discordgo.MessageEmbedField, len(commands)-2)
+	for i, v := range commands {
+		if v.cmdType != Help && v.cmdType != Null {
+			fields[i-1] = &discordgo.MessageEmbedField{
+				Name:   v.command + " `" + CommandPrefix + " help " + v.command + "`",
+				Value:  v.shortDesc,
+				Inline: true,
+			}
+		}
+	}
+
+	embed.Fields = fields
+	return embed
+}
+
+func settingResponse(settings []Setting) discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Settings",
+		Description: "Available Settings",
+		Timestamp:   "",
+		Color:       15844367, //GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
+
+	fields := make([]*discordgo.MessageEmbedField, len(settings))
+	for i, v := range settings {
+		fields[i] = &discordgo.MessageEmbedField{
+			Name:   v.name,
+			Value:  v.shortDesc,
+			Inline: true,
+		}
+	}
+
+	embed.Fields = fields
+	return embed
 }
 
 func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
@@ -45,7 +86,7 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 
 func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
 
-	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	g, err := s.State.Guild(GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -68,6 +109,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s to a color\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)
@@ -79,6 +125,11 @@ func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string
 		if playerData != nil {
 			found := guild.UserData.UpdatePlayerData(userID, playerData)
 			if found {
+				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
+					UserID: userID,
+					Type:   storage.GAME_NAME,
+					Value:  playerData.Name,
+				}
 				log.Printf("Successfully linked %s by name\n", userID)
 			} else {
 				log.Printf("No player was found with id %s\n", userID)
@@ -256,7 +307,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 func (guild *GuildState) makeDescription() string {
 	buf := bytes.NewBuffer([]byte{})
 	if !guild.GameRunning {
-		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.PersistentGuildData.CommandPrefix + " p`!**\n\n")
+		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.CommandPrefix() + " p`!**\n\n")
 	}
 
 	author := guild.GameStateMsg.leaderID
