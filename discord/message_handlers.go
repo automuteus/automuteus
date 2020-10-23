@@ -87,7 +87,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	var embed = discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
-		Title: locale.LocalizeSimpleMessage(&i18n.Message{
+		Title: locale.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.embed.Title",
 				Other: "You just started a game!",
 			}),
@@ -112,7 +112,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
-				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
 						Other: "URL",
 					}),
@@ -120,7 +120,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+				Name:   locale.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
 					Other: "Code",
 				}),

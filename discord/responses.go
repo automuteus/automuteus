@@ -26,7 +26,7 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 			map[string]interface{}{
 				"version": version,
 			}),
-		Description: locale.LocalizeSimpleMessage(&i18n.Message{
+		Description: locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.helpResponse.SubTitle",
 				Other: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
 			}),
@@ -165,7 +165,7 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+		Name:   locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
 				Other: "Room Code",
 			}),
@@ -173,7 +173,7 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+		Name:   locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.Region",
 				Other: "Region",
 			}),
@@ -181,7 +181,7 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+		Name:   locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.Tracking",
 				Other: "Tracking",
 			}),
@@ -189,7 +189,7 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeSimpleMessage(&i18n.Message{
+		Name:   locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
 				Other: "Players Linked",
 			}),
@@ -232,7 +232,7 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+		Title:       locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.menuMessage.Title",
 				Other: "Main Menu",
 			}),
@@ -286,7 +286,7 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       locale.LocalizeSimpleMessage(&i18n.Message{
+		Title:       locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMessage.Title",
 				Other: "Lobby",
 			}),
@@ -338,7 +338,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       locale.LocalizeSimpleMessage(phase.ToLocale()),
+		Title:       locale.LocalizeMessage(phase.ToLocale()),
 		Description: guild.makeDescription(),
 		Timestamp:   "",
 		Color:       color,
@@ -362,7 +362,7 @@ func (guild *GuildState) makeDescription() string {
 			Other: "\n**Bot is Paused! Unpause with `{{.CommandPrefix}} p`!**\n\n",
 		},
 		map[string]interface{}{
-			"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+			"CommandPrefix": guild.CommandPrefix(),
 		}))
 	}
 
@@ -378,14 +378,14 @@ func (guild *GuildState) makeDescription() string {
 	}
 
 	if len(guild.Tracking.tracking) == 0 {
-		buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+		buf.WriteString(locale.LocalizeMessage(&i18n.Message{
 			ID:    "responses.makeDescription.anyVoiceChannel",
 			Other: "any voice channel!",
 		}))
 	} else {
 		t, err := guild.Tracking.FindAnyTrackedChannel(false)
 		if err != nil {
-			buf.WriteString(locale.LocalizeSimpleMessage(&i18n.Message{
+			buf.WriteString(locale.LocalizeMessage(&i18n.Message{
 				ID:    "responses.makeDescription.invalidVoiceChannel",
 				Other: "an invalid voice channel!",
 			}))

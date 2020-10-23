@@ -485,7 +485,13 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 					*v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    1,
-						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", bot.captureTimeout),
+						Message: locale.LocalizeMessage(&i18n.Message{
+								ID:    "bot.InactiveGameWorker.Message",
+								Other: "**I haven't received any messages from your capture in {{.captureTimeout}} seconds, so I'm ending the game!**",
+							},
+							map[string]interface{}{
+								"captureTimeout": bot.captureTimeout,
+							}),
 					}
 				}
 			}
@@ -515,13 +521,20 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
+			captureTimeout := 30
 			bot.ChannelsMapLock.RLock()
 			for _, v := range bot.GlobalBroadcastChannels {
 				if v != nil {
 					*v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    30,
-						Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
+						Message: locale.LocalizeMessage(&i18n.Message{
+								ID:    "bot.InactiveGameWorker.Message",
+								Other: "I'm being shut down in {{.captureTimeout}} seconds, and will be closing your active game!",
+							},
+							map[string]interface{}{
+								"captureTimeout": captureTimeout,
+							}),
 					}
 				}
 			}
@@ -966,7 +979,7 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 			perms = guild.HasAdminPerms(m.Member) || guild.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeSimpleMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
 				ID:    "bot.handleMessageCreate.noPerms",
 				Other: "User does not have the required permissions to execute this command!",
 			}))

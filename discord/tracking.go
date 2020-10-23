@@ -49,7 +49,7 @@ func (tracking *Tracking) ToStatusString() string {
 	defer tracking.lock.RUnlock()
 
 	if len(tracking.tracking) == 0 {
-		return locale.LocalizeSimpleMessage(&i18n.Message{
+		return locale.LocalizeMessage(&i18n.Message{
 			ID:    "tracking.ToStatusString.anyVoiceChannel",
 			Other: "Any Voice Channel",
 		})
@@ -60,13 +60,13 @@ func (tracking *Tracking) ToStatusString() string {
 	for _, v := range tracking.tracking {
 		buf.WriteString(fmt.Sprintf("%s ", v.channelName))
 		if v.forGhosts {
-			buf.WriteString(fmt.Sprintf(" (%s) ", locale.LocalizeSimpleMessage(&i18n.Message{
+			buf.WriteString(fmt.Sprintf(" (%s) ", locale.LocalizeMessage(&i18n.Message{
 				ID:    "tracking.ToStatusString.ghosts",
 				Other: "ghosts",
 			})))
 		}
 		if i < len(tracking.tracking)-1 {
-			buf.WriteString(fmt.Sprintf("%s ", locale.LocalizeSimpleMessage(&i18n.Message{
+			buf.WriteString(fmt.Sprintf("%s ", locale.LocalizeMessage(&i18n.Message{
 				ID:    "tracking.ToStatusString.or",
 				Other: "or",
 			})))

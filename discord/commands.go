@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -212,14 +213,16 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		if len(args[1:]) == 0 {
 			embed := helpResponse(Version, prefix, AllCommands)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-
 		} else {
 			cmd = GetCommand(args[1])
 			if cmd.cmdType != Null {
 				embed := ConstructEmbedForCommand(prefix, cmd)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "I didn't recognize that command! View `help` for all available commands!")
+				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Help.notFound",
+					Other: "I didn't recognize that command! View `help` for all available commands!",
+				}))
 			}
 		}
 		break
@@ -306,7 +309,7 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		} else {
 			phase := getPhaseFromString(args[1])
 			if phase == game.UNINITIALIZED {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeSimpleMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Force.UNINITIALIZED",
 					Other: "Sorry, I didn't understand the game phase you tried to force",
 				}))
@@ -340,16 +343,18 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 		guild.GameRunning = !guild.GameRunning
 		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
 		break
+
 	case Log:
 		guild.Logln(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
 		break
+
 	default:
 		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
 			ID:    "commands.HandleCommand.default",
 			Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
 		},
 		map[string]interface{}{
-			"CommandPrefix": guild.PersistentGuildData.CommandPrefix,
+			"CommandPrefix": prefix,
 		}))
 	}
 }
