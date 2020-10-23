@@ -135,9 +135,7 @@ type Bot struct {
 
 	SessionManager SessionManager
 
-	StorageInterface storage.StorageInterface
-
-	UserSettings *storage.UserSettingsCollection
+	StorageInterface storage.RedisCache
 
 	logPath string
 
@@ -184,7 +182,7 @@ var Version string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient storage.RedisCache, logPath string, timeoutSecs int) *Bot {
 	Version = version
 
 	var altDiscordSession *discordgo.Session = nil
@@ -228,7 +226,6 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		ChannelsMapLock:         sync.RWMutex{},
 		SessionManager:          NewSessionManager(dg, altDiscordSession),
 		StorageInterface:        storageClient,
-		UserSettings:            storageClient.GetAllUserSettings(),
 		logPath:                 logPath,
 		captureTimeout:          timeoutSecs,
 	}
@@ -661,9 +658,14 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 									log.Println("No player data found for " + player.Name)
 								}
 
+								//if any discord user has this name, make sure to update their data
 								guild.UserData.UpdatePlayerMappingByName(player.Name, data)
 							}
 
+							//TODO this control flow needs to be improved and simplified, for sure
+							//Fetch all the cache mappings for the in-game name in question (in-game -> discord hash).
+							//Hash the users in VC who aren't linked
+							//then iterate over the cache mappings, and see if any of the usernames match. This works across servers...
 							if updated {
 								data := guild.AmongUsData.GetByName(player.Name)
 								paired, userID, name := guild.UserData.AttemptPairingByMatchingNames(player.Name, data)
@@ -816,22 +818,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 		var gs *storage.GuildSettings = nil
 
-		data, err := bot.StorageInterface.GetGuildSettings(m.Guild.ID)
+		gs, err := bot.StorageInterface.InitGuildSettings(m.Guild.ID, m.Guild.Name)
 		if err != nil {
-			log.Printf("Couldn't load guild data for %s from storageDriver; using default config instead\n", m.Guild.ID)
-			log.Printf("Exact error: %s", err)
-		} else {
-			gs = data
-		}
-		if gs == nil {
-			gs = storage.MakeGuildSettings(m.Guild.ID, m.Guild.Name)
-			err := bot.StorageInterface.WriteGuildSettings(m.ID, gs)
-			if err != nil {
-				log.Printf("Error writing %s guild settings to storage interface: %s\n", m.Guild.ID, err)
-			} else {
-				log.Printf("Successfully wrote %s guild settings to Storage interface!", m.Guild.ID)
-			}
-
+			log.Println(err)
 		}
 
 		userSettingsUpdateChannel := make(chan storage.UserSettingsUpdate)

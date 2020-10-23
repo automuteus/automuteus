@@ -136,42 +136,25 @@ func discordMainWrapper() error {
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 
-	var storageClient storage.StorageInterface
-	dbSuccess := false
+	var redisClient storage.RedisCache
 
-	authPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	projectID := os.Getenv("FIRESTORE_PROJECT_ID")
-	if authPath != "" && projectID != "" {
-		log.Println("GOOGLE_APPLICATION_CREDENTIALS variable is set; attempting to use Firestore as the Storage Driver")
-		storageClient = &storage.FirestoreDriver{}
-		err = storageClient.Init(projectID)
+	redisAddr := os.Getenv("REDIS_ADDRESS")
+	if redisAddr != "" {
+		err := redisClient.Init(storage.RedisParameters{
+			Addr:     redisAddr,
+			Username: "",
+			Password: "",
+		})
 		if err != nil {
-			log.Printf("Failed to create Firestore client with error: %s", err)
-		} else {
-			dbSuccess = true
-			log.Println("Success in initializing Firestore client as the Storage Driver")
+			log.Println(err)
 		}
-	}
-
-	if !dbSuccess {
-		storageClient = &storage.FilesystemDriver{}
-		configPath := os.Getenv("CONFIG_PATH")
-		if configPath == "" {
-			configPath = "./"
-		}
-		log.Printf("Using %s as the base path for config", configPath)
-		err := storageClient.Init(configPath)
-		if err != nil {
-			log.Fatalf("Failed to create Filesystem Storage Driver with error: %s", err)
-		}
-		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, redisClient, logPath, captureTimeout)
 
 	go discord.MessagesServer(servicePort, bot)
 
@@ -181,6 +164,6 @@ func discordMainWrapper() error {
 	time.Sleep(time.Second * time.Duration(5))
 
 	bot.Close()
-	storageClient.Close()
+	redisClient.Close()
 	return nil
 }
