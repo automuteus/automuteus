@@ -56,7 +56,7 @@ func (gs *GuildSettings) HasAdminPerms(mem *discordgo.Member) bool {
 }
 
 func (gs *GuildSettings) HasRolePerms(mem *discordgo.Member) bool {
-	if len(gs.PermissionRoleIDs) == 0 || mem.User == nil {
+	if len(gs.PermissionRoleIDs) == 0 {
 		return false
 	}
 
