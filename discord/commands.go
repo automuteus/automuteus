@@ -186,7 +186,7 @@ func GetCommand(arg string) Command {
 	arg = strings.ToLower(arg)
 	for _, cmd := range AllCommands {
 		if len(arg) == 1 {
-			if cmd.command[0] == arg[0] {
+			if cmd.cmdType != Null && cmd.command[0] == arg[0] {
 				return cmd
 			}
 		} else {
