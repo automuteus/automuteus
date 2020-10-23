@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -18,14 +18,14 @@ import (
 )
 
 var (
-	version = "dev"
+	version = "2.4.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
-//TODO if running in shard mode, we don't want to use the default port. Each shard should prob run on their own port
-const DefaultPort = "8123"
-const DefaultURL = "http://localhost"
+const DefaultURL = "http://localhost:8123"
+const DefaultServicePort = "5000"
+const DefaultSocketTimeoutSecs = 3600
 
 func main() {
 	err := discordMainWrapper()
@@ -39,24 +39,29 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("config.txt")
+	err := godotenv.Load("final.txt")
 	if err != nil {
-		err = godotenv.Load("final.txt")
-		if err != nil {
-			log.Println("Can't open config file, hopefully you're running in docker and have provided the DISCORD_BOT_TOKEN...")
+		err = godotenv.Load("config.txt")
+		if err != nil && os.Getenv("DISCORD_BOT_TOKEN") == "" {
+			log.Println("Can't open config file and missing DISCORD_BOT_TOKEN; creating config.txt for you to use for your config")
 			f, err := os.Create("config.txt")
 			if err != nil {
 				log.Println("Issue creating sample config.txt")
 				return err
 			}
-			_, err = f.WriteString("DISCORD_BOT_TOKEN = \n")
+			_, err = f.WriteString("DISCORD_BOT_TOKEN=\n")
 			f.Close()
 		}
 	}
 
+	logPath := os.Getenv("LOG_PATH")
+	if logPath == "" {
+		logPath = "./"
+	}
+
 	logEntry := os.Getenv("DISABLE_LOG_FILE")
 	if logEntry == "" {
-		file, err := os.Create("logs.txt")
+		file, err := os.Create(path.Join(logPath, "logs.txt"))
 		if err != nil {
 			return err
 		}
@@ -83,45 +88,53 @@ func discordMainWrapper() error {
 	if err != nil {
 		numShards = 1
 	}
-	ports := make([]string, numShards)
-	tempPort := strings.ReplaceAll(os.Getenv("PORT"), " ", "")
-	portStrings := strings.Split(tempPort, ",")
-	if len(ports) == 0 || len(tempPort) == 0 {
-		num, err := strconv.Atoi(tempPort)
 
-		if err != nil || num < 1024 || num > 65535 {
-			log.Printf("[Info] Invalid or no particular PORT (range [1024-65535]) provided. Defaulting to %s\n", DefaultPort)
-			ports[0] = DefaultPort
-		}
-	} else if len(portStrings) == numShards {
-		for i := 0; i < numShards; i++ {
-			num, err := strconv.Atoi(portStrings[i])
-			if err != nil || num < 0 || num > 65535 {
-				return errors.New("invalid or no particular PORT (range [0-65535]) provided")
-			}
-			ports[i] = portStrings[i]
-		}
-	} else {
-		return errors.New("the number of shards does not match the number of ports provided")
+	shardIDStr := os.Getenv("SHARD_ID")
+	shardID, err := strconv.Atoi(shardIDStr)
+	if shardID >= numShards {
+		return errors.New("you specified a shardID higher than or equal to the total number of shards")
+	}
+	if err != nil {
+		shardID = 0
 	}
 
-	url := os.Getenv("SERVER_URL")
+	url := os.Getenv("HOST")
 	if url == "" {
-		log.Printf("[Info] No valid SERVER_URL provided. Defaulting to %s\n", DefaultURL)
+		log.Printf("[Info] No valid HOST provided. Defaulting to %s\n", DefaultURL)
 		url = DefaultURL
 	}
 
-	extPort := os.Getenv("EXT_PORT")
-	if extPort == "" {
-		log.Print("[Info] No EXT_PORT provided. Defaulting to PORT\n")
-	} else if extPort == "protocol" {
-		log.Print("[Info] EXT_PORT set to protocol. Not adding port to url\n")
+	internalPort := os.Getenv("PORT")
+	if internalPort == "" {
+		log.Printf("[Info] No PORT provided. Defaulting to %s\n", discord.DefaultPort)
+		internalPort = discord.DefaultPort
 	} else {
-		num, err := strconv.Atoi(extPort)
+		num, err := strconv.Atoi(internalPort)
 		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
-			return errors.New("invalid EXT_PORT (range [1024-65535]) provided")
+			return errors.New("invalid PORT (outside range [1024-65535] or 80/443) provided")
 		}
 	}
+
+	servicePort := os.Getenv("SERVICE_PORT")
+	if servicePort == "" {
+		log.Printf("[Info] No SERVICE_PORT provided. Defaulting to %s\n", DefaultServicePort)
+		servicePort = DefaultServicePort
+	} else {
+		num, err := strconv.Atoi(servicePort)
+		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
+			return errors.New("invalid SERVICE_PORT (outside range [1024-65535] or 80/443) provided")
+		}
+	}
+
+	captureTimeout := DefaultSocketTimeoutSecs
+	captureTimeoutStr := os.Getenv("CAPTURE_TIMEOUT")
+	if captureTimeoutStr != "" {
+		num, err := strconv.Atoi(captureTimeoutStr)
+		if err != nil || num < 0 {
+			return errors.New("invalid or non-numeric CAPTURE_TIMOUT provided")
+		}
+	}
+	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 
 	var storageClient storage.StorageInterface
 	dbSuccess := false
@@ -153,22 +166,21 @@ func discordMainWrapper() error {
 		}
 		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
+
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bots := make([]*discord.Bot, numShards)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, storageClient, logPath, captureTimeout)
 
-	for i := 0; i < numShards; i++ {
-		bots[i] = discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, ports[i], extPort, emojiGuildID, numShards, i, storageClient)
-	}
-
-	go discord.MessagesServer("5000", bots)
+	go discord.MessagesServer(servicePort, bot)
 
 	<-sc
-	for i := 0; i < numShards; i++ {
-		bots[i].Close()
-	}
+	bot.GracefulClose(5, "**Bot has been terminated, so I'm killing your game in 5 seconds!**")
+	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 5 seconds")
+	time.Sleep(time.Second * time.Duration(5))
+
+	bot.Close()
 	storageClient.Close()
 	return nil
 }

@@ -31,6 +31,8 @@ func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
 	guild.AmongUsData.SetRoomRegion("", "")
 }
 
+var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
+
 func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
@@ -38,37 +40,32 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
 
-	//TODO don't always recreate if we're already connected...
-
-	connectCode := generateConnectCode(guild.PersistentGuildData.GuildID)
-	log.Println(connectCode)
+	connectCode := generateConnectCode(m.GuildID)
 	bot.LinkCodeLock.Lock()
+	//delete any previous links
+	for i, v := range bot.LinkCodes {
+		if v == m.GuildID {
+			delete(bot.LinkCodes, i)
+		}
+	}
+
 	bot.LinkCodes[GameOrLobbyCode{
 		gameCode:    room,
 		connectCode: connectCode,
-	}] = guild.PersistentGuildData.GuildID
+	}] = m.GuildID
 
 	bot.LinkCodeLock.Unlock()
 
 	var hyperlink string
 	var minimalUrl string
-	urlregex := regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
+
 	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]
 		port := ":" + match[urlregex.SubexpIndex("port")]
 
 		if port == ":" {
-			if bot.extPort != "" {
-				if bot.extPort == "protocol" {
-					port = ""
-				} else {
-					port = ":" + bot.extPort
-				}
-			} else {
-				//if no port explicitly provided via config, use the default
-				port = ":" + bot.socketPort
-			}
+			port = ":" + bot.internalPort
 		}
 
 		insecure := "?insecure"
@@ -81,8 +78,8 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
 		minimalUrl = fmt.Sprintf("%s%s%s", protocol, host, port)
 	} else {
-		hyperlink = "Invalid Server URL (missing `http://`? Or do you have a trailing `/`?)"
-		minimalUrl = "Invalid Server URL"
+		hyperlink = "Invalid HOST provided (should resemble something like `http://localhost:8123`)"
+		minimalUrl = "Invalid HOST provided"
 	}
 
 	var embed = discordgo.MessageEmbed{
@@ -112,6 +109,8 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		},
 	}
 
+	guild.Logln("Generated URL for connection: " + hyperlink)
+
 	sendMessageDM(s, m.Author.ID, &embed)
 
 	channels, err := s.GuildChannels(m.GuildID)
@@ -119,15 +118,16 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		log.Println(err)
 	}
 
+	defaultTracked := guild.guildSettings.GetDefaultTrackedChannel()
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			if channel.ID == guild.PersistentGuildData.DefaultTrackedChannel || strings.ToLower(channel.Name) == strings.ToLower(guild.PersistentGuildData.DefaultTrackedChannel) {
+			if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
 				initialTracking = append(initialTracking, TrackingChannel{
 					channelID:   channel.ID,
 					channelName: channel.Name,
 					forGhosts:   false,
 				})
-				log.Printf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name)
+				guild.Log(fmt.Sprintf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name))
 			}
 		}
 		for _, v := range g.VoiceStates {
@@ -142,7 +142,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 							channelName: channel.Name,
 							forGhosts:   false,
 						})
-						log.Printf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name)
+						guild.Log(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name))
 					}
 				}
 
@@ -174,7 +174,7 @@ func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discord
 
 	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, m.Author.ID)
 
-	log.Println("Added self game state message")
+	guild.Logln("Added self game state message")
 
 	if guild.AmongUsData.GetPhase() != game.MENU {
 		for _, e := range guild.StatusEmojis[true] {

@@ -5,7 +5,11 @@ package storage
 // likely be easily extended into other DBs or storage connections
 type StorageInterface interface {
 	Init(string) error
-	GetGuildData(string) (map[string]interface{}, error)
-	WriteGuildData(string, map[string]interface{}) error
+	GetGuildSettings(string) (*GuildSettings, error)
+	WriteGuildSettings(string, *GuildSettings) error
+
+	GetAllUserSettings() *UserSettingsCollection
+	WriteUserSettings(string, *UserSettings) error
+
 	Close() error
 }
