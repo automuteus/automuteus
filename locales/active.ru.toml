@@ -2,25 +2,17 @@
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "У пользователя нет прав для выполнения этой команды!"
 
-["commands.HandleCommand.Force"]
-hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
-other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
-
-["commands.HandleCommand.Link"]
-hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
-other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
-
-["commands.HandleCommand.Track"]
-hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
-other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
-
-["commands.HandleCommand.Unlink"]
-hash = "sha1-4e5be938295a853d7e1838be5f148991bfec65ce"
-other = "Вы неправильно использовали эту команду! Пожалуйста, обратитесь к `{{.CommandPrefix}} help` для правильного использования команды"
-
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
 other = "Извините, я не понял эту команду! См. справку `{{.CommandPrefix}} help` для команд"
+
+["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Неизвестно"
+
+["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Неизвестно"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-9ea00e63168ae819e726eef2e249f3d7cad5cdfa"
@@ -30,6 +22,10 @@ other = "Нажмите на следующую ссылку, чтобы свя�
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
 other = "Код"
 
+["responses.helpResponse.SubTitle"]
+hash = "sha1-39ce38361220190aec26a7032110f711deeba26d"
+other = "Возникли проблемы или есть предложения? Присоединяйтесь к discord по адресу <https://discord.gg/ZkqZSWF>!"
+
 ["message_handlers.handleNewGameMessage.embed.Fields.URL"]
 hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
 other = "URL"
@@ -37,10 +33,6 @@ other = "URL"
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "Вы только что начали игру!"
-
-["responses.helpResponse.SubTitle"]
-hash = "sha1-a04a86f4f34d0742d3db74303f0335d3309a83cc"
-other = "Возникли проблемы или есть предложения? Присоединяйтесь к discord по адресу <https://discord.gg/ZkqZSWF>!\n"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-480b159e5a9e1731f251059573f82cba81742e95"
@@ -118,15 +110,6 @@ other = "МЕНЮ"
 hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
 other = "ЗАДАЧИ"
 
-["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Неизвестно"
-
-["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Неизвестно"
-
-
 ["tracking.ToStatusString.anyVoiceChannel"]
 hash = "sha1-9027bdbf87393b60e86fab37eab7a874cde292c9"
 other = "Любой голосовой канал"
@@ -141,4 +124,44 @@ other = "или"
 
 ["userDataSet.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Не привязан"
+other = "ззх"
+
+["bot.InactiveGameWorker.Message"]
+hash = "sha1-5a9a2a4729ff1261cafc4fbdb4b1b27c49dbf567"
+other = "Я выключаюсь через {{.captureTimeout}} секунд и закрою вашу активную игру!"
+
+["commands.HandleCommand.Force.UNINITIALIZED"]
+hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
+other = "Извините, я не понял тип фазы игры, который вы пытались установить"
+
+["commands.HandleCommand.Help.notFound"]
+hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
+other = "Я не распознал эту команду! Просмтри `help` для всех доступных команд!"
+
+["settings.ConstructEmbedForSetting.Fields.Aliases"]
+hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
+other = "Псевдонимы"
+
+["settings.ConstructEmbedForSetting.Fields.Arguments"]
+hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
+other = "Аргументы"
+
+["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
+hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
+other = "Текущее Значение"
+
+["settings.ConstructEmbedForSetting.Fields.Example"]
+hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
+other = "Пример"
+
+["settings.HandleSettingsCommand.default"]
+hash = "sha1-451dd9251e50d405eb16864f016eecc0ed8caa96"
+other = "Прости, `{{.Аргумент}}` не является допустимым параметром!\n"
+
+["settings.SettingDefaultTrackedChannel.withChannelName"]
+hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
+other = "Голосовой канал по умолчанию изменен на `{{.channelName}}`. Теперь можно использовать его!"
+
+["settings.SettingDefaultTrackedChannel.withoutChannelID"]
+hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
+other = "Не удалось найти голосовой канал `{{.channelName}}`! Введите название или ID и убедитесь, что бот может его видеть."
