@@ -10,39 +10,42 @@ import (
 const EditDelaySeconds = 1
 
 type GameStateMessage struct {
-	message  *discordgo.Message
-	leaderID string //who started the game
-	lock     sync.RWMutex
+	MessageID        string `json:"messageID"`
+	MessageChannelID string `json:"messageChannelID"`
+	MessageAuthorID  string `json:"messageAuthorID"`
+	LeaderID         string `json:"leaderID"`
+	lock             sync.RWMutex
 
 	deferredEdit *discordgo.MessageEmbed
 }
 
 func MakeGameStateMessage() GameStateMessage {
 	return GameStateMessage{
-		message:  nil,
-		leaderID: "",
-		lock:     sync.RWMutex{},
+		MessageID:        "",
+		MessageChannelID: "",
+		LeaderID:         "",
+		lock:             sync.RWMutex{},
 	}
 }
 
 func (gsm *GameStateMessage) Exists() bool {
 	gsm.lock.RLock()
 	defer gsm.lock.RUnlock()
-	return gsm.message != nil
+	return gsm.MessageID != ""
 }
 
 func (gsm *GameStateMessage) AddReaction(s *discordgo.Session, emoji string) {
 	gsm.lock.Lock()
-	if gsm.message != nil {
-		addReaction(s, gsm.message.ChannelID, gsm.message.ID, emoji)
+	if gsm.MessageID != "" {
+		addReaction(s, gsm.MessageChannelID, gsm.MessageID, emoji)
 	}
 	gsm.lock.Unlock()
 }
 
 func (gsm *GameStateMessage) RemoveAllReactions(s *discordgo.Session) {
 	gsm.lock.Lock()
-	if gsm.message != nil {
-		removeAllReactions(s, gsm.message.ChannelID, gsm.message.ID)
+	if gsm.MessageID != "" {
+		removeAllReactions(s, gsm.MessageChannelID, gsm.MessageID)
 	}
 	gsm.lock.Unlock()
 }
@@ -56,9 +59,10 @@ func (gsm *GameStateMessage) AddAllReactions(s *discordgo.Session, emojis []Emoj
 
 func (gsm *GameStateMessage) Delete(s *discordgo.Session) {
 	gsm.lock.Lock()
-	if gsm.message != nil {
-		go deleteMessage(s, gsm.message.ChannelID, gsm.message.ID)
-		gsm.message = nil
+	if gsm.MessageID != "" {
+		go deleteMessage(s, gsm.MessageChannelID, gsm.MessageID)
+		gsm.MessageID = ""
+		gsm.MessageChannelID = ""
 	}
 	gsm.lock.Unlock()
 }
@@ -80,8 +84,8 @@ func (gsm *GameStateMessage) EditWorker(s *discordgo.Session, delay int) {
 	time.Sleep(time.Duration(delay) * time.Second)
 
 	gsm.lock.Lock()
-	if gsm.message != nil {
-		editMessageEmbed(s, gsm.message.ChannelID, gsm.message.ID, gsm.deferredEdit)
+	if gsm.MessageID != "" {
+		editMessageEmbed(s, gsm.MessageChannelID, gsm.MessageID, gsm.deferredEdit)
 	}
 	gsm.deferredEdit = nil
 	gsm.lock.Unlock()
@@ -89,16 +93,22 @@ func (gsm *GameStateMessage) EditWorker(s *discordgo.Session, delay int) {
 
 func (gsm *GameStateMessage) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
 	gsm.lock.Lock()
-	gsm.leaderID = authorID
-	gsm.message = sendMessageEmbed(s, channelID, me)
+	gsm.LeaderID = authorID
+	msg := sendMessageEmbed(s, channelID, me)
+	if msg != nil {
+		gsm.MessageAuthorID = msg.Author.ID
+		gsm.MessageChannelID = msg.ChannelID
+		gsm.MessageID = msg.ID
+	}
+
 	gsm.lock.Unlock()
 }
 
 func (gsm *GameStateMessage) SameChannel(channelID string) bool {
 	gsm.lock.RLock()
 	defer gsm.lock.RUnlock()
-	if gsm.message != nil {
-		return gsm.message.ChannelID == channelID
+	if gsm.MessageID != "" {
+		return gsm.MessageChannelID == channelID
 	}
 	return false
 }
@@ -106,9 +116,9 @@ func (gsm *GameStateMessage) SameChannel(channelID string) bool {
 func (gsm *GameStateMessage) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
 	gsm.lock.RLock()
 	defer gsm.lock.RUnlock()
-	if gsm.message == nil {
+	if gsm.MessageID != "" {
 		return false
 	}
 
-	return m.ChannelID == gsm.message.ChannelID && m.MessageID == gsm.message.ID && m.UserID != gsm.message.Author.ID
+	return m.ChannelID == gsm.MessageChannelID && m.MessageID == gsm.MessageID && m.UserID != gsm.MessageAuthorID
 }

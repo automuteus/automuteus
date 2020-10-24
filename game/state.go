@@ -38,7 +38,7 @@ var PhaseNames = map[Phase]PhaseNameString{
 	MENU:    "MENU",
 }
 
-// ToString for a phase
+// ToString for a Phase
 func (phase *Phase) ToString() PhaseNameString {
 	return PhaseNames[*phase]
 }

@@ -11,8 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/storage"
-
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
 )
@@ -136,11 +134,11 @@ func discordMainWrapper() error {
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 
-	var redisClient storage.RedisCache
+	var redisClient discord.DatabaseInterface
 
 	redisAddr := os.Getenv("REDIS_ADDRESS")
 	if redisAddr != "" {
-		err := redisClient.Init(storage.RedisParameters{
+		err := redisClient.Init(discord.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: "",
@@ -154,7 +152,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, redisClient, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, logPath, captureTimeout)
 
 	go discord.MessagesServer(servicePort, bot)
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 
 	"github.com/denverquane/amongusdiscord/game"
 
@@ -15,25 +14,27 @@ const downloadURL = "https://github.com/denverquane/amonguscapture/releases/late
 const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
-func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
-	guild.AmongUsData.SetAllAlive()
-	guild.AmongUsData.SetPhase(game.LOBBY)
+func (bot *Bot) endGame(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session) {
+	aud.SetAllAlive()
+	aud.UpdatePhase(game.LOBBY)
+
+	sett := bot.StorageInterface.GetDiscordSettings(dgs.GuildID)
 
 	// apply the unmute/deafen to users who have state linked to them
-	guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
+	dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
 
-	//clear the tracking and make sure all users are unlinked
-	guild.clearGameTracking(s)
+	//clear the Tracking and make sure all users are unlinked
+	dgs.clearGameTracking(s)
 
-	guild.GameRunning = false
+	dgs.Running = false
 
 	// clear any existing game state message
-	guild.AmongUsData.SetRoomRegion("", "")
+	aud.SetRoomRegion("", "")
 }
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
 
-func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
+func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
@@ -41,20 +42,11 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	//if !guild.GameStateMsg.Exists() {
 
 	connectCode := generateConnectCode(m.GuildID)
-	bot.LinkCodeLock.Lock()
-	//delete any previous links
-	for i, v := range bot.LinkCodes {
-		if v == m.GuildID {
-			delete(bot.LinkCodes, i)
-		}
-	}
 
-	bot.LinkCodes[GameOrLobbyCode{
-		gameCode:    room,
-		connectCode: connectCode,
-	}] = m.GuildID
+	dgs.ConnectCode = connectCode
 
-	bot.LinkCodeLock.Unlock()
+	//TODO kill channel for this goroutine
+	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode)
 
 	var hyperlink string
 	var minimalUrl string
@@ -109,7 +101,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		},
 	}
 
-	guild.Logln("Generated URL for connection: " + hyperlink)
+	log.Println("Generated URL for connection: " + hyperlink)
 
 	sendMessageDM(s, m.Author.ID, &embed)
 
@@ -118,18 +110,18 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		log.Println(err)
 	}
 
-	defaultTracked := guild.guildSettings.GetDefaultTrackedChannel()
+	//defaultTracked := guild.guildSettings.GetDefaultTrackedChannel()
 	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
-				initialTracking = append(initialTracking, TrackingChannel{
-					channelID:   channel.ID,
-					channelName: channel.Name,
-					forGhosts:   false,
-				})
-				guild.Log(fmt.Sprintf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name))
-			}
-		}
+		//if channel.Type == discordgo.ChannelTypeGuildVoice {
+		//	if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
+		//		initialTracking = append(initialTracking, TrackingChannel{
+		//			ChannelID:   channel.ID,
+		//			ChannelName: channel.Name,
+		//			forGhosts:   false,
+		//		})
+		//		guild.Log(fmt.Sprintf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name))
+		//	}
+		//}
 		for _, v := range g.VoiceStates {
 			//if the user is detected in a voice channel
 			if v.UserID == m.Author.ID {
@@ -138,11 +130,10 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 				if channel.Type == discordgo.ChannelTypeGuildVoice {
 					if channel.ID == v.ChannelID {
 						initialTracking = append(initialTracking, TrackingChannel{
-							channelID:   channel.ID,
-							channelName: channel.Name,
-							forGhosts:   false,
+							ChannelID:   channel.ID,
+							ChannelName: channel.Name,
 						})
-						guild.Log(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name))
+						log.Print(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for Tracking", channel.Name))
 					}
 				}
 
@@ -151,36 +142,39 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		}
 	}
 
-	guild.handleGameStartMessage(s, m, room, region, initialTracking, g)
+	bot.handleGameStartMessage(dgs, aud, s, m, room, region, initialTracking, g)
 }
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
-	guild.AmongUsData.SetRoomRegion(room, region)
+func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
+	aud.SetRoomRegion(room, region)
 
-	guild.clearGameTracking(s)
+	dgs.clearGameTracking(s)
 
-	guild.GameRunning = true
+	dgs.Running = true
 
 	for _, channel := range channels {
-		if channel.channelName != "" {
-			guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+		if channel.ChannelName != "" {
+			dgs.Tracking = TrackingChannel{
+				ChannelID:   channel.ChannelID,
+				ChannelName: channel.ChannelName,
+			}
 			for _, v := range g.VoiceStates {
-				if v.ChannelID == channel.channelID {
-					guild.checkCacheAndAddUser(g, s, v.UserID)
+				if v.ChannelID == channel.ChannelID {
+					dgs.checkCacheAndAddUser(g, s, v.UserID)
 				}
 			}
 		}
 	}
 
-	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, m.Author.ID)
+	dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(aud, dgs), m.ChannelID, m.Author.ID)
 
-	guild.Logln("Added self game state message")
+	log.Println("Added self game state message")
 
-	if guild.AmongUsData.GetPhase() != game.MENU {
-		for _, e := range guild.StatusEmojis[true] {
-			guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+	if aud.GetPhase() != game.MENU {
+		for _, e := range bot.StatusEmojis[true] {
+			dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
 		}
-		guild.GameStateMsg.AddReaction(s, "❌")
+		dgs.GameStateMsg.AddReaction(s, "❌")
 	}
 }
 

@@ -198,15 +198,17 @@ func GetCommand(arg string) Command {
 	return AllCommands[Null]
 }
 
-func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discordgo.Guild, storageInterface storage.StorageInterface, m *discordgo.MessageCreate, args []string) {
-	prefix := guild.CommandPrefix()
+func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session, g *discordgo.Guild, m *discordgo.MessageCreate, args []string) {
+	prefix := sett.CommandPrefix
 	cmd := GetCommand(args[0])
 
 	if cmd.cmdType != Null {
-		guild.Log(fmt.Sprintf("\"%s\" command typed by user %s\n", cmd.command, m.Author.ID))
+		log.Print(fmt.Sprintf("\"%s\" command typed by user %s\n", cmd.command, m.Author.ID))
 	}
-	switch cmd.cmdType {
+	dgs := bot.StorageInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
+	aud := bot.StorageInterface.GetAmongUsData(dgs.ConnectCode)
 
+	switch cmd.cmdType {
 	case Help:
 		if len(args[1:]) == 0 {
 			embed := helpResponse(Version, prefix, AllCommands)
@@ -228,24 +230,16 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			embed := ConstructEmbedForCommand(prefix, cmd)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
-			// have to explicitly check for true. Otherwise, processing the 2-word VC names gets really ugly...
-			forGhosts := false
-			endIdx := len(args)
-			if args[len(args)-1] == "true" || args[len(args)-1] == "t" {
-				forGhosts = true
-				endIdx--
-			}
-
-			channelName := strings.Join(args[1:endIdx], " ")
+			channelName := strings.Join(args[1:], " ")
 
 			channels, err := s.GuildChannels(m.GuildID)
 			if err != nil {
 				log.Println(err)
 			}
 
-			guild.trackChannelResponse(channelName, channels, forGhosts)
+			dgs.trackChannel(channelName, channels)
 
-			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
 		}
 		break
 
@@ -254,9 +248,8 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			embed := ConstructEmbedForCommand(prefix, cmd)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
-			guild.linkPlayerResponse(s, m.GuildID, args[1:])
-
-			guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+			dgs.linkPlayer(s, aud, args[1:])
+			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
 		}
 		break
 
@@ -270,14 +263,14 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			if err != nil {
 				log.Println(err)
 			} else {
-				guild.Log(fmt.Sprintf("Removing player %s", userID))
-				guild.UserData.ClearPlayerData(userID)
+				log.Print(fmt.Sprintf("Removing player %s", userID))
+				dgs.UserData.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
-				guild.verifyVoiceStateChanges(s)
+				dgs.verifyVoiceStateChanges(s, sett, aud.GetPhase())
 
 				//update the state message to reflect the player leaving
-				guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+				dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
 			}
 		}
 		break
@@ -285,15 +278,15 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 	case New:
 		room, region := getRoomAndRegionFromArgs(args[1:])
 
-		bot.handleNewGameMessage(guild, s, m, g, room, region)
+		bot.handleNewGameMessage(dgs, aud, s, m, g, room, region)
 		break
 
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.handleGameEndMessage(guild, s)
+		bot.endGame(dgs, aud, s)
 
-		//have to explicitly delete here, because if we use the default delete below, the channelID
+		//have to explicitly delete here, because if we use the default delete below, the ChannelID
 		//for the game state message doesn't exist anymore...
 		deleteMessage(s, m.ChannelID, m.Message.ID)
 		break
@@ -307,40 +300,42 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			if phase == game.UNINITIALIZED {
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
 			} else {
-				//TODO this is ugly, but only for debug really
-				bot.PushGuildPhaseUpdate(m.GuildID, phase)
+				log.Print("FORCE IS BROKEN!")
 			}
 		}
 		break
 
 	case Refresh:
-		guild.GameStateMsg.Delete(s) //delete the old message
+		dgs.GameStateMsg.Delete(s) //delete the old message
 
 		//create a new instance of the new one
-		guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, guild.GameStateMsg.leaderID)
+		dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(aud, dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 		//add the emojis to the refreshed message if in the right stage
-		if guild.AmongUsData.GetPhase() != game.MENU {
-			for _, e := range guild.StatusEmojis[true] {
-				guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+		if aud.GetPhase() != game.MENU {
+			for _, e := range bot.StatusEmojis[true] {
+				dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
 			}
-			guild.GameStateMsg.AddReaction(s, "❌")
+			dgs.GameStateMsg.AddReaction(s, "❌")
 		}
 		break
 
 	case Settings:
-		HandleSettingsCommand(s, m, guild, storageInterface, args)
-		return // to prevent the user's message from being deleted
+		HandleSettingsCommand(s, m, sett, args)
+		//return // to prevent the user's message from being deleted
+		break
 
 	case Pause:
-		guild.GameRunning = !guild.GameRunning
-		guild.GameStateMsg.Edit(s, gameStateResponse(guild))
+		dgs.Running = !dgs.Running
+		dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
 		break
 	case Log:
-		guild.Logln(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
+		log.Println(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))
-
+		break
 	}
+
+	bot.StorageInterface.SetDiscordGameState(m.GuildID, dgs)
 }

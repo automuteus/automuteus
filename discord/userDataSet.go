@@ -11,13 +11,13 @@ import (
 )
 
 type UserDataSet struct {
-	userDataSet map[string]UserData
+	UserDataSet map[string]UserData `json:"userData"`
 	lock        sync.RWMutex
 }
 
 func MakeUserDataSet() UserDataSet {
 	return UserDataSet{
-		userDataSet: map[string]UserData{},
+		UserDataSet: map[string]UserData{},
 		lock:        sync.RWMutex{},
 	}
 }
@@ -25,7 +25,7 @@ func MakeUserDataSet() UserDataSet {
 func (uds *UserDataSet) Size() int {
 	uds.lock.RLock()
 	defer uds.lock.RUnlock()
-	return len(uds.userDataSet)
+	return len(uds.UserDataSet)
 }
 
 func (uds *UserDataSet) GetCountLinked() int {
@@ -34,7 +34,7 @@ func (uds *UserDataSet) GetCountLinked() int {
 
 	LinkedPlayerCount := 0
 
-	for _, v := range uds.userDataSet {
+	for _, v := range uds.UserDataSet {
 		if v.IsLinked() {
 			LinkedPlayerCount++
 		}
@@ -44,13 +44,13 @@ func (uds *UserDataSet) GetCountLinked() int {
 
 func (uds *UserDataSet) AddFullUser(user UserData) {
 	uds.lock.Lock()
-	uds.userDataSet[user.GetID()] = user
+	uds.UserDataSet[user.GetID()] = user
 	uds.lock.Unlock()
 }
 
 func (uds *UserDataSet) UpdateUserData(userID string, data UserData) {
 	uds.lock.Lock()
-	uds.userDataSet[userID] = data
+	uds.UserDataSet[userID] = data
 	uds.lock.Unlock()
 }
 
@@ -58,9 +58,9 @@ func (uds *UserDataSet) UpdatePlayerData(userID string, data *game.PlayerData) b
 	uds.lock.Lock()
 	defer uds.lock.Unlock()
 
-	if v, ok := uds.userDataSet[userID]; ok {
+	if v, ok := uds.UserDataSet[userID]; ok {
 		v.SetPlayerData(data)
-		uds.userDataSet[userID] = v
+		uds.UserDataSet[userID] = v
 		return true
 	}
 	return false
@@ -69,10 +69,10 @@ func (uds *UserDataSet) UpdatePlayerData(userID string, data *game.PlayerData) b
 func (uds *UserDataSet) UpdatePlayerMappingByName(name string, data *game.PlayerData) {
 	uds.lock.Lock()
 	defer uds.lock.Unlock()
-	for userID, v := range uds.userDataSet {
+	for userID, v := range uds.UserDataSet {
 		if v.GetPlayerName() == name {
 			v.SetPlayerData(data)
-			uds.userDataSet[userID] = v
+			uds.UserDataSet[userID] = v
 			return
 		}
 	}
@@ -82,11 +82,11 @@ func (uds *UserDataSet) AttemptPairingByMatchingNames(name string, data *game.Pl
 	uds.lock.Lock()
 	defer uds.lock.Unlock()
 	name = strings.ReplaceAll(strings.ToLower(name), " ", "")
-	for userID, v := range uds.userDataSet {
+	for userID, v := range uds.UserDataSet {
 		if !v.IsLinked() {
 			if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
 				v.SetPlayerData(data)
-				uds.userDataSet[userID] = v
+				uds.UserDataSet[userID] = v
 				return true, userID, v.user.userName
 			}
 		}
@@ -96,19 +96,19 @@ func (uds *UserDataSet) AttemptPairingByMatchingNames(name string, data *game.Pl
 
 func (uds *UserDataSet) ClearPlayerData(userID string) {
 	uds.lock.Lock()
-	if v, ok := uds.userDataSet[userID]; ok {
+	if v, ok := uds.UserDataSet[userID]; ok {
 		v.SetPlayerData(nil)
-		uds.userDataSet[userID] = v
+		uds.UserDataSet[userID] = v
 	}
 	uds.lock.Unlock()
 }
 
 func (uds *UserDataSet) ClearPlayerDataByPlayerName(playerName string) {
 	uds.lock.Lock()
-	for i, v := range uds.userDataSet {
+	for i, v := range uds.UserDataSet {
 		if v.GetPlayerName() == playerName {
 			v.SetPlayerData(nil)
-			uds.userDataSet[i] = v
+			uds.UserDataSet[i] = v
 		}
 	}
 	uds.lock.Unlock()
@@ -116,9 +116,9 @@ func (uds *UserDataSet) ClearPlayerDataByPlayerName(playerName string) {
 
 func (uds *UserDataSet) ClearAllPlayerData() {
 	uds.lock.Lock()
-	for i, v := range uds.userDataSet {
+	for i, v := range uds.UserDataSet {
 		v.SetPlayerData(nil)
-		uds.userDataSet[i] = v
+		uds.UserDataSet[i] = v
 	}
 	uds.lock.Unlock()
 }
@@ -127,7 +127,7 @@ func (uds *UserDataSet) GetUser(userID string) (UserData, error) {
 	uds.lock.RLock()
 	defer uds.lock.RUnlock()
 
-	if v, ok := uds.userDataSet[userID]; ok {
+	if v, ok := uds.UserDataSet[userID]; ok {
 		return v, nil
 	}
 	return UserData{}, errors.New(fmt.Sprintf("No user found with ID %s", userID))
@@ -141,7 +141,7 @@ func (uds *UserDataSet) ToEmojiEmbedFields(nameColorMap map[string]int, nameAliv
 	num := 0
 
 	for name, color := range nameColorMap {
-		for _, player := range uds.userDataSet {
+		for _, player := range uds.UserDataSet {
 			if player.IsLinked() && player.GetPlayerName() == name {
 				emoji := emojis[player.IsAlive()][color]
 				unsorted[color] = &discordgo.MessageEmbedField{

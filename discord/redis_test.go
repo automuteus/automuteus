@@ -1,4 +1,4 @@
-package storage
+package discord
 
 import (
 	"log"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestRedisDriver(t *testing.T) {
-	r := &RedisCache{}
+	r := &DatabaseInterface{}
 	err := r.Init(RedisParameters{
 		Addr:     "192.168.1.8:6379",
 		Username: "",

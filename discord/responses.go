@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/storage"
-	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -71,87 +69,19 @@ func settingResponse(settings []Setting) discordgo.MessageEmbed {
 	return embed
 }
 
-func (guild *GuildState) trackChannelResponse(channelName string, allChannels []*discordgo.Channel, forGhosts bool) string {
-	for _, c := range allChannels {
-		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
-
-			guild.Tracking.AddTrackedChannel(c.ID, c.Name, forGhosts)
-
-			log.Println(fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts))
-			return fmt.Sprintf("Now tracking \"%s\" Voice Channel for Automute (for ghosts? %v)!", c.Name, forGhosts)
-		}
-	}
-	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
-}
-
-func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, GuildID string, args []string) {
-
-	g, err := s.State.Guild(GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	userID := getMemberFromString(s, GuildID, args[0])
-	if userID == "" {
-		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
-	}
-
-	_, added := guild.checkCacheAndAddUser(g, s, userID)
-	if !added {
-		log.Println("No users found in Discord for userID " + userID)
-	}
-
-	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
-
-	if game.IsColorString(combinedArgs) {
-		playerData := guild.AmongUsData.GetByColor(combinedArgs)
-		if playerData != nil {
-			found := guild.UserData.UpdatePlayerData(userID, playerData)
-			if found {
-				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
-					UserID: userID,
-					Type:   storage.GAME_NAME,
-					Value:  playerData.Name,
-				}
-				log.Printf("Successfully linked %s to a color\n", userID)
-			} else {
-				log.Printf("No player was found with id %s\n", userID)
-			}
-		}
-		return
-	} else {
-		playerData := guild.AmongUsData.GetByName(combinedArgs)
-		if playerData != nil {
-			found := guild.UserData.UpdatePlayerData(userID, playerData)
-			if found {
-				guild.userSettingsUpdateChannel <- storage.UserSettingsUpdate{
-					UserID: userID,
-					Type:   storage.GAME_NAME,
-					Value:  playerData.Name,
-				}
-				log.Printf("Successfully linked %s by name\n", userID)
-			} else {
-				log.Printf("No player was found with id %s\n", userID)
-			}
-		}
-	}
-}
-
 // TODO:
-func gameStateResponse(guild *GuildState) *discordgo.MessageEmbed {
+func (bot *Bot) gameStateResponse(aud *game.AmongUsData, dgs *DiscordGameState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(guild *GuildState) *discordgo.MessageEmbed{
+	messages := map[game.Phase]func(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed{
 		game.MENU:    menuMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
-	return messages[guild.AmongUsData.GetPhase()](guild)
+	return messages[aud.Phase](aud, dgs, bot.StatusEmojis)
 }
 
-func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
-	str := tracking.ToStatusString()
+func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
 		Name:   "Room Code",
@@ -165,7 +95,7 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
 		Name:   "Tracking",
-		Value:  str,
+		Value:  tracking.ToStatusString(),
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
@@ -185,18 +115,15 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 	Height:   200,
 }
 
-func menuMessage(g *GuildState) *discordgo.MessageEmbed {
-	alarmFormatted := ":x:"
-	if v, ok := g.SpecialEmojis["alarm"]; ok {
-		alarmFormatted = v.FormatForInline()
-	}
+func menuMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+
 	color := 15158332 //red
 	desc := ""
-	if g.Linked {
-		desc = g.makeDescription()
+	if dgs.Linked {
+		desc = dgs.makeDescription()
 		color = 3066993
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
+		desc = "❌**No capture linked! Click the link in your DMs to connect!**❌"
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -217,26 +144,23 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 	return &msg
 }
 
-func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
+func lobbyMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region := g.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(&g.Tracking, room, region, g.AmongUsData.NumDetectedPlayers(), g.UserData.GetCountLinked())
+	room, region := aud.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, aud.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
 
-	listResp := g.UserData.ToEmojiEmbedFields(g.AmongUsData.NameColorMappings(), g.AmongUsData.NameAliveMappings(), g.StatusEmojis)
+	listResp := dgs.UserData.ToEmojiEmbedFields(aud.NameColorMappings(), aud.NameAliveMappings(), emojis)
 	listResp = append(gameInfoFields, listResp...)
 
 	alarmFormatted := ":x:"
-	if v, ok := g.SpecialEmojis["alarm"]; ok {
-		alarmFormatted = v.FormatForInline()
-	}
 	color := 15158332 //red
 	desc := ""
-	if g.Linked {
-		desc = g.makeDescription()
+	if dgs.Linked {
+		desc = dgs.makeDescription()
 		color = 3066993
 	} else {
 		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
@@ -264,17 +188,17 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 	return &msg
 }
 
-func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
+func gamePlayMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region := guild.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(&guild.Tracking, room, region, guild.AmongUsData.NumDetectedPlayers(), guild.UserData.GetCountLinked())
-	listResp := guild.UserData.ToEmojiEmbedFields(guild.AmongUsData.NameColorMappings(), guild.AmongUsData.NameAliveMappings(), guild.StatusEmojis)
+	room, region := aud.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, aud.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
+	listResp := dgs.UserData.ToEmojiEmbedFields(aud.NameColorMappings(), aud.NameAliveMappings(), emojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	phase := guild.AmongUsData.GetPhase()
+	phase := aud.GetPhase()
 
 	switch phase {
 	case game.TASKS:
@@ -289,7 +213,7 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 		URL:         "",
 		Type:        "",
 		Title:       string(phase.ToString()),
-		Description: guild.makeDescription(),
+		Description: dgs.makeDescription(),
 		Timestamp:   "",
 		Color:       color,
 		Footer:      nil,
@@ -304,27 +228,18 @@ func gamePlayMessage(guild *GuildState) *discordgo.MessageEmbed {
 	return &msg
 }
 
-func (guild *GuildState) makeDescription() string {
+func (dgs *DiscordGameState) makeDescription() string {
 	buf := bytes.NewBuffer([]byte{})
-	if !guild.GameRunning {
-		buf.WriteString("\n**Bot is Paused! Unpause with `" + guild.CommandPrefix() + " p`!**\n\n")
+	if !dgs.Running {
+		buf.WriteString("\n**Bot is Paused!**\n\n")
 	}
 
-	author := guild.GameStateMsg.leaderID
+	author := dgs.GameStateMsg.LeaderID
 	if author != "" {
 		buf.WriteString("<@" + author + "> is running an Among Us game!\nThe game is happening in ")
 	}
 
-	if len(guild.Tracking.tracking) == 0 {
-		buf.WriteString("any voice channel!")
-	} else {
-		t, err := guild.Tracking.FindAnyTrackedChannel(false)
-		if err != nil {
-			buf.WriteString("an invalid voice channel!")
-		} else {
-			buf.WriteString("the **" + t.channelName + "** voice channel!")
-		}
-	}
+	buf.WriteString(dgs.Tracking.ToDescString())
 
 	return buf.String()
 }

@@ -11,6 +11,14 @@ type UserSettings struct {
 	GameNames []string `json:"gameNames"`
 }
 
+func MakeUserSettings(userID, userName string) *UserSettings {
+	return &UserSettings{
+		UserID:    userID,
+		UserName:  userName,
+		GameNames: nil,
+	}
+}
+
 type UserSettingsUpdate struct {
 	UserID string
 	Type   int
