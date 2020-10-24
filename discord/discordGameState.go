@@ -55,6 +55,15 @@ func NewDiscordGameState(guildID string) *DiscordGameState {
 	}
 }
 
+func (dgs *DiscordGameState) Reset() {
+	dgs.ConnectCode = ""
+	dgs.Linked = false
+	dgs.Running = false
+	dgs.UserData = MakeUserDataSet()
+	dgs.Tracking = TrackingChannel{}
+	dgs.GameStateMsg = MakeGameStateMessage()
+}
+
 func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
 	if g == nil {
 		return UserData{}, false

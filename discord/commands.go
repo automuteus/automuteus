@@ -286,6 +286,8 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 		bot.endGame(dgs, aud, s)
 
+		bot.StorageInterface.DeleteDiscordGameState(dgs)
+
 		//have to explicitly delete here, because if we use the default delete below, the ChannelID
 		//for the game state message doesn't exist anymore...
 		deleteMessage(s, m.ChannelID, m.Message.ID)

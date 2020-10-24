@@ -15,21 +15,23 @@ const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
 func (bot *Bot) endGame(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session) {
-	aud.SetAllAlive()
-	aud.UpdatePhase(game.LOBBY)
+	if aud != nil {
+		aud.SetAllAlive()
+		aud.UpdatePhase(game.LOBBY)
+		aud.SetRoomRegion("", "")
+	}
 
-	sett := bot.StorageInterface.GetDiscordSettings(dgs.GuildID)
+	if dgs != nil {
+		sett := bot.StorageInterface.GetDiscordSettings(dgs.GuildID)
 
-	// apply the unmute/deafen to users who have state linked to them
-	dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
+		// apply the unmute/deafen to users who have state linked to them
+		dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
 
-	//clear the Tracking and make sure all users are unlinked
-	dgs.clearGameTracking(s)
+		//clear the Tracking and make sure all users are unlinked
+		dgs.clearGameTracking(s)
 
-	dgs.Running = false
-
-	// clear any existing game state message
-	aud.SetRoomRegion("", "")
+		dgs.Running = false
+	}
 }
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
@@ -40,13 +42,25 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsDat
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
+	if dgs.ConnectCode != "" {
+		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
+			v <- true
+		}
+		bot.StorageInterface.DeleteDiscordGameState(dgs)
+		dgs.Reset()
+	}
 
 	connectCode := generateConnectCode(m.GuildID)
 
 	dgs.ConnectCode = connectCode
 
-	//TODO kill channel for this goroutine
-	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode)
+	killChan := make(chan bool)
+
+	bot.ChannelsMapLock.Lock()
+	bot.RedisSubscriberKillChannels[connectCode] = killChan
+	bot.ChannelsMapLock.Unlock()
+
+	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode, killChan)
 
 	var hyperlink string
 	var minimalUrl string

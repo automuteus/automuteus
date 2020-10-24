@@ -93,13 +93,13 @@ func (rd *DatabaseInterface) publish(topic, message string) {
 	}
 }
 
-func (rd *DatabaseInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player <-chan *redis.Message) {
+func (rd *DatabaseInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player *redis.PubSub) {
 	connect := rd.client.Subscribe(ctx, connectUpdateKey(connectCode))
 	lob := rd.client.Subscribe(ctx, lobbyUpdateKey(connectCode))
 	phas := rd.client.Subscribe(ctx, phaseUpdateKey(connectCode))
 	play := rd.client.Subscribe(ctx, playerUpdateKey(connectCode))
 
-	return connect.Channel(), lob.Channel(), phas.Channel(), play.Channel()
+	return connect, lob, phas, play
 }
 
 func (di *DatabaseInterface) GetAmongUsData(connectCode string) *game.AmongUsData {
@@ -246,6 +246,35 @@ func (di *DatabaseInterface) SetDiscordGameState(guildID string, data *DiscordGa
 		if err != nil {
 			log.Println(err)
 		}
+	}
+}
+
+func (di *DatabaseInterface) DeleteDiscordGameState(dgs *DiscordGameState) {
+	guildID := dgs.GuildID
+	connCode := dgs.ConnectCode
+	if guildID == "" || connCode == "" {
+		log.Println("Can't delete DGS with null guildID or null ConnCode")
+	}
+	data := di.GetDiscordGameState(guildID, "", "", connCode)
+	key := discordKey(guildID, connCode)
+
+	//delete all the pointers to the underlying -actual- discord data
+	err := di.client.Del(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID)).Err()
+	if err != nil {
+		log.Println(err)
+	}
+	err = di.client.Del(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
+	if err != nil {
+		log.Println(err)
+	}
+	err = di.client.Del(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode)).Err()
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = di.client.Del(ctx, key).Err()
+	if err != nil {
+		log.Println(err)
 	}
 }
 

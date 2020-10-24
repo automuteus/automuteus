@@ -51,7 +51,9 @@ type Bot struct {
 
 	StatusEmojis AlivenessEmojis
 
-	GlobalBroadcastChannels map[string]*chan BroadcastMessage
+	GlobalBroadcastChannels map[string]chan BroadcastMessage
+
+	RedisSubscriberKillChannels map[string]chan bool
 
 	ChannelsMapLock sync.RWMutex
 
@@ -103,12 +105,13 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		GlobalBroadcastChannels: make(map[string]*chan BroadcastMessage),
-		ChannelsMapLock:         sync.RWMutex{},
-		SessionManager:          NewSessionManager(dg, altDiscordSession),
-		StorageInterface:        storageClient,
-		logPath:                 logPath,
-		captureTimeout:          timeoutSecs,
+		RedisSubscriberKillChannels: make(map[string]chan bool),
+		GlobalBroadcastChannels:     make(map[string]chan BroadcastMessage),
+		ChannelsMapLock:             sync.RWMutex{},
+		SessionManager:              NewSessionManager(dg, altDiscordSession),
+		StorageInterface:            storageClient,
+		logPath:                     logPath,
+		captureTimeout:              timeoutSecs,
 	}
 
 	dg.AddHandler(bot.voiceStateChange)
@@ -136,8 +139,6 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		}
 	}
 
-	// Wait here until CTRL-C or other term signal is received.
-
 	bot.Run(internalPort)
 
 	return &bot
@@ -150,14 +151,16 @@ func (bot *Bot) Run(port string) {
 func (bot *Bot) GracefulClose(seconds int, message string) {
 	bot.ChannelsMapLock.RLock()
 	for _, v := range bot.GlobalBroadcastChannels {
-		if v != nil {
-			*v <- BroadcastMessage{
-				Type:    GRACEFUL_SHUTDOWN,
-				Data:    seconds,
-				Message: message,
-			}
+		v <- BroadcastMessage{
+			Type:    GRACEFUL_SHUTDOWN,
+			Data:    seconds,
+			Message: message,
 		}
 	}
+	for _, v := range bot.RedisSubscriberKillChannels {
+		v <- true
+	}
+
 	bot.ChannelsMapLock.RUnlock()
 }
 func (bot *Bot) Close() {
@@ -245,17 +248,7 @@ func (bot *Bot) socketioServer(port string) {
 
 func (bot *Bot) PurgeConnection(socketID string) {
 
-	//connCode := bot.ConnsToGames[socketID]
 	delete(bot.ConnsToGames, socketID)
-	//bot.LinkCodeLock.Lock()
-	//for i, v := range bot.LinkCodes {
-	//	//delete the association between the link code and the guild
-	//	if v == previousGid {
-	//		delete(bot.LinkCodes, i)
-	//		break
-	//	}
-	//}
-	//bot.LinkCodeLock.Unlock()
 
 	//TODO purge all the data in the database here
 
@@ -273,23 +266,13 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 
 			if v, ok := bot.GlobalBroadcastChannels[guildID]; ok {
 				if v != nil {
-					*v <- BroadcastMessage{
+					v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    1,
 						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", bot.captureTimeout),
 					}
 				}
 			}
-			//
-			//bot.LinkCodeLock.Lock()
-			//for i, v := range bot.LinkCodes {
-			//	//delete the association between the link code and the guild
-			//	if v == guildID {
-			//		delete(bot.LinkCodes, i)
-			//		break
-			//	}
-			//}
-			//bot.LinkCodeLock.Unlock()
 			timer.Stop()
 			return
 		case b := <-c:
@@ -308,13 +291,12 @@ func MessagesServer(port string, bot *Bot) {
 		if r.Method == http.MethodPost {
 			bot.ChannelsMapLock.RLock()
 			for _, v := range bot.GlobalBroadcastChannels {
-				if v != nil {
-					*v <- BroadcastMessage{
-						Type:    GRACEFUL_SHUTDOWN,
-						Data:    30,
-						Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
-					}
+				v <- BroadcastMessage{
+					Type:    GRACEFUL_SHUTDOWN,
+					Data:    30,
+					Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
 				}
+
 			}
 			bot.ChannelsMapLock.RUnlock()
 		}
@@ -335,11 +317,11 @@ func MessagesServer(port string, bot *Bot) {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
+func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
 	connection, lobby, phase, player := bot.StorageInterface.SubscribeToGame(connectCode)
 	for {
 		select {
-		case gameMessage := <-connection:
+		case gameMessage := <-connection.Channel():
 			log.Println(gameMessage)
 			aud := bot.StorageInterface.GetAmongUsData(connectCode)
 			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
@@ -352,7 +334,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 			dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(aud, dgs))
 			bot.StorageInterface.SetDiscordGameState(guildID, dgs)
 			break
-		case gameMessage := <-lobby:
+		case gameMessage := <-lobby.Channel():
 			aud := bot.StorageInterface.GetAmongUsData(connectCode)
 			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			var lobby game.Lobby
@@ -364,7 +346,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 			bot.processLobby(aud, dgs, bot.SessionManager.GetPrimarySession(), lobby)
 			bot.StorageInterface.SetAmongUsData(connectCode, aud)
 			break
-		case gameMessage := <-phase:
+		case gameMessage := <-phase.Channel():
 			aud := bot.StorageInterface.GetAmongUsData(connectCode)
 			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			sett := bot.StorageInterface.GetDiscordSettings(guildID)
@@ -380,7 +362,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 				bot.StorageInterface.SetDiscordGameState(guildID, dgs)
 			}
 			break
-		case gameMessage := <-player:
+		case gameMessage := <-player.Channel():
 			aud := bot.StorageInterface.GetAmongUsData(connectCode)
 			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			sett := bot.StorageInterface.GetDiscordSettings(guildID)
@@ -395,6 +377,27 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 				bot.StorageInterface.SetDiscordGameState(guildID, dgs)
 			}
 			break
+		case k := <-killChan:
+			if k {
+				log.Println("Redis subscriber received kill signal, closing all pubsubs")
+				err := connection.Close()
+				if err != nil {
+					log.Println(err)
+				}
+				err = lobby.Close()
+				if err != nil {
+					log.Println(err)
+				}
+				err = phase.Close()
+				if err != nil {
+					log.Println(err)
+				}
+				err = player.Close()
+				if err != nil {
+					log.Println(err)
+				}
+				return
+			}
 		}
 	}
 }
@@ -498,44 +501,36 @@ func (bot *Bot) processLobby(aud *game.AmongUsData, dgs *DiscordGameState, s *di
 	dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
 }
 
-//func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, lobbyUpdates *chan LobbyStatus, globalUpdates *chan BroadcastMessage) {
-//	return func(dg *discordgo.Session, guildID string, socketUpdates *chan SocketStatus, phaseUpdates *chan game.Phase, playerUpdates *chan game.Player, lobbyUpdates *chan LobbyStatus, globalUpdates *chan BroadcastMessage) {
-//		for {
-//			select {
-//
-//			case worldUpdate := <-*globalUpdates:
-//				if guild, ok := bot.AllGuilds[guildID]; ok {
-//					if worldUpdate.Type == GRACEFUL_SHUTDOWN {
-//						go bot.gracefulShutdownWorker(dg, guild, worldUpdate.Data, worldUpdate.Message)
-//
-//						bot.LinkCodeLock.Lock()
-//						for i, v := range bot.LinkCodes {
-//							//delete the association between the link code and the guild
-//							if v == guildID {
-//								delete(bot.LinkCodes, i)
-//								break
-//							}
-//						}
-//						bot.LinkCodeLock.Unlock()
-//						guild.Linked = false
-//					}
-//				}
-//			}
-//		}
-//	}
-//}
-//
-//func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, dgs *DiscordGameState, seconds int, message string) {
-//	if dgs.GameStateMsg.MessageID != "" {
-//		log.Printf("**Received graceful shutdown message, shutting down in %d seconds**", seconds)
-//
-//		sendMessage(s, dgs.GameStateMsg.MessageChannelID, message)
-//	}
-//
-//	time.Sleep(time.Duration(seconds) * time.Second)
-//
-//	bot.endGame(dgs, s)
-//}
+func (bot *Bot) updatesListener(dg *discordgo.Session, guildID string, globalUpdates chan BroadcastMessage) {
+	for {
+		select {
+		case worldUpdate := <-globalUpdates:
+			for i, connCode := range bot.ConnsToGames {
+				if worldUpdate.Type == GRACEFUL_SHUTDOWN {
+					aud := bot.StorageInterface.GetAmongUsData(connCode)
+					dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connCode)
+					go bot.gracefulShutdownWorker(dg, dgs, aud, worldUpdate.Data, worldUpdate.Message)
+					dgs.Linked = false
+					delete(bot.ConnsToGames, i)
+				}
+			}
+		}
+	}
+}
+
+func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, dgs *DiscordGameState, aud *game.AmongUsData, seconds int, message string) {
+	if dgs.GameStateMsg.MessageID != "" {
+		log.Printf("**Received graceful shutdown message, shutting down in %d seconds**", seconds)
+
+		sendMessage(s, dgs.GameStateMsg.MessageChannelID, message)
+	}
+
+	time.Sleep(time.Duration(seconds) * time.Second)
+
+	bot.endGame(dgs, aud, s)
+
+	bot.StorageInterface.DeleteDiscordGameState(dgs)
+}
 
 // Gets called whenever a voice state change occurs
 func (bot *Bot) voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
@@ -586,7 +581,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		globalUpdates := make(chan BroadcastMessage)
 
 		bot.ChannelsMapLock.Lock()
-		bot.GlobalBroadcastChannels[m.Guild.ID] = &globalUpdates
+		bot.GlobalBroadcastChannels[m.Guild.ID] = globalUpdates
 		bot.ChannelsMapLock.Unlock()
 
 		dsg := NewDiscordGameState(m.Guild.ID)
@@ -594,7 +589,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		//put an empty entry in Redis
 		bot.StorageInterface.SetDiscordGameState(m.Guild.ID, dsg)
 
-		//go bot.updatesListener()(s, m.Guild.ID, &socketUpdates, &phaseUpdates, &playerUpdates, &lobbyUpdates, &globalUpdates)
+		go bot.updatesListener(s, m.Guild.ID, globalUpdates)
 	}
 }
 
