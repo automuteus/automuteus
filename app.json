@@ -37,6 +37,10 @@
       "CONFIG_PATH": {
         "description": "Alternate filesystem path for guild config files. Defaults to ./",
         "required": false
+      },
+      "BOT_LANG": {
+        "description": "The bot localization language in Discord. By default en.",
+        "required": false
       }
     }
   }
