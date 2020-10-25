@@ -5,6 +5,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -145,7 +146,7 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 	}
 }
 
-func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
+func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
 	// if no arg passed, send them list of possible settings to change
 	if len(args) == 1 {
 		embed := settingResponse(AllSettings)
@@ -227,10 +228,10 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, set
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n", args[1]))
 	}
 	if isValid {
-		//err := storageInterface.WriteGuildSettings(m.GuildID, guild.guildSettings)
-		//if err != nil {
-		//	log.Println(err)
-		//}
+		err := bot.StorageInterface.SetGuildSettings(m.GuildID, sett)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 

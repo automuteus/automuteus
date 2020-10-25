@@ -6,15 +6,11 @@ import (
 )
 
 type UserSettings struct {
-	UserID    string   `json:"userID"`
-	UserName  string   `json:"username"`
 	GameNames []string `json:"gameNames"`
 }
 
-func MakeUserSettings(userID, userName string) *UserSettings {
+func MakeUserSettings() *UserSettings {
 	return &UserSettings{
-		UserID:    userID,
-		UserName:  userName,
 		GameNames: nil,
 	}
 }

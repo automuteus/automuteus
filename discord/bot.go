@@ -59,7 +59,9 @@ type Bot struct {
 
 	SessionManager *SessionManager
 
-	StorageInterface *DatabaseInterface
+	RedisInterface *RedisInterface
+
+	StorageInterface *storage.StorageInterface
 
 	logPath string
 
@@ -70,7 +72,7 @@ var Version string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, storageClient *DatabaseInterface, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
 	Version = version
 
 	var altDiscordSession *discordgo.Session = nil
@@ -109,7 +111,8 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		GlobalBroadcastChannels:     make(map[string]chan BroadcastMessage),
 		ChannelsMapLock:             sync.RWMutex{},
 		SessionManager:              NewSessionManager(dg, altDiscordSession),
-		StorageInterface:            storageClient,
+		RedisInterface:              redisInterface,
+		StorageInterface:            storageInterface,
 		logPath:                     logPath,
 		captureTimeout:              timeoutSecs,
 	}
@@ -165,6 +168,7 @@ func (bot *Bot) GracefulClose(seconds int, message string) {
 }
 func (bot *Bot) Close() {
 	bot.SessionManager.Close()
+	bot.RedisInterface.Close()
 }
 
 func (bot *Bot) socketioServer(port string) {
@@ -185,7 +189,7 @@ func (bot *Bot) socketioServer(port string) {
 		log.Printf("Received connection code: \"%s\"", msg)
 
 		bot.ConnsToGames[s.ID()] = msg
-		bot.StorageInterface.PublishConnectUpdate(msg, "true")
+		bot.RedisInterface.PublishConnectUpdate(msg, "true")
 	})
 	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
@@ -195,7 +199,7 @@ func (bot *Bot) socketioServer(port string) {
 			log.Println(err)
 		} else {
 			if cCode, ok := bot.ConnsToGames[s.ID()]; ok {
-				bot.StorageInterface.PublishLobbyUpdate(cCode, msg)
+				bot.RedisInterface.PublishLobbyUpdate(cCode, msg)
 			}
 		}
 	})
@@ -206,7 +210,7 @@ func (bot *Bot) socketioServer(port string) {
 			log.Println(err)
 		} else {
 			if cCode, ok := bot.ConnsToGames[s.ID()]; ok {
-				bot.StorageInterface.PublishPhaseUpdate(cCode, msg)
+				bot.RedisInterface.PublishPhaseUpdate(cCode, msg)
 			}
 		}
 	})
@@ -218,7 +222,7 @@ func (bot *Bot) socketioServer(port string) {
 			log.Println(err)
 		} else {
 			if cCode, ok := bot.ConnsToGames[s.ID()]; ok {
-				bot.StorageInterface.PublishPlayerUpdate(cCode, msg)
+				bot.RedisInterface.PublishPlayerUpdate(cCode, msg)
 			}
 		}
 	})
@@ -229,7 +233,7 @@ func (bot *Bot) socketioServer(port string) {
 		log.Println("Client connection closed: ", reason)
 
 		if cCode, ok := bot.ConnsToGames[s.ID()]; ok {
-			bot.StorageInterface.PublishConnectUpdate(cCode, "false")
+			bot.RedisInterface.PublishConnectUpdate(cCode, "false")
 		}
 
 		bot.PurgeConnection(s.ID())
@@ -318,13 +322,13 @@ func MessagesServer(port string, bot *Bot) {
 }
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
-	connection, lobby, phase, player := bot.StorageInterface.SubscribeToGame(connectCode)
+	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
 	for {
 		select {
 		case gameMessage := <-connection.Channel():
 			log.Println(gameMessage)
-			aud := bot.StorageInterface.GetAmongUsData(connectCode)
-			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
+			aud := bot.RedisInterface.GetAmongUsData(connectCode)
+			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			if gameMessage.Payload == "true" {
 				dgs.Linked = true
 			} else {
@@ -332,11 +336,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			}
 			dgs.ConnectCode = connectCode
 			dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(aud, dgs))
-			bot.StorageInterface.SetDiscordGameState(guildID, dgs)
+			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			break
 		case gameMessage := <-lobby.Channel():
-			aud := bot.StorageInterface.GetAmongUsData(connectCode)
-			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
+			aud := bot.RedisInterface.GetAmongUsData(connectCode)
+			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			var lobby game.Lobby
 			err := json.Unmarshal([]byte(gameMessage.Payload), &lobby)
 			if err != nil {
@@ -344,12 +348,12 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				break
 			}
 			bot.processLobby(aud, dgs, bot.SessionManager.GetPrimarySession(), lobby)
-			bot.StorageInterface.SetAmongUsData(connectCode, aud)
+			bot.RedisInterface.SetAmongUsData(connectCode, aud)
 			break
 		case gameMessage := <-phase.Channel():
-			aud := bot.StorageInterface.GetAmongUsData(connectCode)
-			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
-			sett := bot.StorageInterface.GetDiscordSettings(guildID)
+			aud := bot.RedisInterface.GetAmongUsData(connectCode)
+			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			var phase game.Phase
 			err := json.Unmarshal([]byte(gameMessage.Payload), &phase)
 			if err != nil {
@@ -357,15 +361,15 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				break
 			}
 			updatedDGS := bot.processTransition(aud, dgs, sett, phase)
-			bot.StorageInterface.SetAmongUsData(connectCode, aud)
+			bot.RedisInterface.SetAmongUsData(connectCode, aud)
 			if updatedDGS {
-				bot.StorageInterface.SetDiscordGameState(guildID, dgs)
+				bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			}
 			break
 		case gameMessage := <-player.Channel():
-			aud := bot.StorageInterface.GetAmongUsData(connectCode)
-			dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connectCode)
-			sett := bot.StorageInterface.GetDiscordSettings(guildID)
+			aud := bot.RedisInterface.GetAmongUsData(connectCode)
+			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			var player game.Player
 			err := json.Unmarshal([]byte(gameMessage.Payload), &player)
 			if err != nil {
@@ -374,7 +378,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			}
 			updatedDGS := bot.processPlayer(aud, dgs, sett, player)
 			if updatedDGS {
-				bot.StorageInterface.SetDiscordGameState(guildID, dgs)
+				bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			}
 			break
 		case k := <-killChan:
@@ -507,8 +511,8 @@ func (bot *Bot) updatesListener(dg *discordgo.Session, guildID string, globalUpd
 		case worldUpdate := <-globalUpdates:
 			for i, connCode := range bot.ConnsToGames {
 				if worldUpdate.Type == GRACEFUL_SHUTDOWN {
-					aud := bot.StorageInterface.GetAmongUsData(connCode)
-					dgs := bot.StorageInterface.GetDiscordGameState(guildID, "", "", connCode)
+					aud := bot.RedisInterface.GetAmongUsData(connCode)
+					dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connCode)
 					go bot.gracefulShutdownWorker(dg, dgs, aud, worldUpdate.Data, worldUpdate.Message)
 					dgs.Linked = false
 					delete(bot.ConnsToGames, i)
@@ -529,26 +533,26 @@ func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, dgs *DiscordGameSta
 
 	bot.endGame(dgs, aud, s)
 
-	bot.StorageInterface.DeleteDiscordGameState(dgs)
+	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
 
 // Gets called whenever a voice state change occurs
 func (bot *Bot) voiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-	sett := bot.StorageInterface.GetDiscordSettings(m.GuildID)
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	bot.handleVoiceStateChange(sett, s, m)
 }
 
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
 func (bot *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	sett := bot.StorageInterface.GetDiscordSettings(m.GuildID)
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	bot.handleMessageCreate(sett, s, m)
 }
 
 //this function is called whenever a reaction is created in a guild
 func (bot *Bot) reactionCreate(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 
-	sett := bot.StorageInterface.GetDiscordSettings(m.GuildID)
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	bot.handleReactionGameStartAdd(sett, s, m)
 }
 
@@ -587,7 +591,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		dsg := NewDiscordGameState(m.Guild.ID)
 
 		//put an empty entry in Redis
-		bot.StorageInterface.SetDiscordGameState(m.Guild.ID, dsg)
+		bot.RedisInterface.SetDiscordGameState(m.Guild.ID, dsg)
 
 		go bot.updatesListener(s, m.Guild.ID, globalUpdates)
 	}
@@ -656,13 +660,13 @@ func (bot *Bot) handleReactionGameStartAdd(sett *storage.GuildSettings, s *disco
 		return
 	}
 
-	dgs := bot.StorageInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
+	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
 
 	if dgs != nil && dgs.GameStateMsg.Exists() {
 		//verify that the user is reacting to the state/status message
 		if dgs.GameStateMsg.IsReactionTo(m) {
 			idMatched := false
-			aud := bot.StorageInterface.GetAmongUsData(dgs.ConnectCode)
+			aud := bot.RedisInterface.GetAmongUsData(dgs.ConnectCode)
 			//completely ignore any reactions if a game isn't going
 			if aud == nil {
 				return
@@ -717,12 +721,12 @@ func (bot *Bot) handleReactionGameStartAdd(sett *storage.GuildSettings, s *disco
 //relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(sett *storage.GuildSettings, s *discordgo.Session, m *discordgo.VoiceStateUpdate) bool {
-	//dgs := bot.StorageInterface.
-	dgs := bot.StorageInterface.GetDiscordGameState(m.GuildID, "", m.ChannelID, "")
+	//dgs := bot.RedisInterface.
+	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, "", m.ChannelID, "")
 	if dgs == nil {
 		return false
 	}
-	aud := bot.StorageInterface.GetAmongUsData(dgs.ConnectCode)
+	aud := bot.RedisInterface.GetAmongUsData(dgs.ConnectCode)
 	if aud == nil {
 		return false
 	}

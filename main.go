@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"github.com/denverquane/amongusdiscord/storage"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"path"
@@ -26,6 +28,8 @@ const DefaultServicePort = "5000"
 const DefaultSocketTimeoutSecs = 3600
 
 func main() {
+	//seed the rand generator (used for making connection codes)
+	rand.Seed(time.Now().Unix())
 	err := discordMainWrapper()
 	if err != nil {
 		log.Println("Program exited with the following error:")
@@ -134,11 +138,20 @@ func discordMainWrapper() error {
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 
-	var redisClient discord.DatabaseInterface
+	var redisClient discord.RedisInterface
+	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDRESS")
 	if redisAddr != "" {
-		err := redisClient.Init(discord.RedisParameters{
+		err := redisClient.Init(storage.RedisParameters{
+			Addr:     redisAddr,
+			Username: "",
+			Password: "",
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		err = storageInterface.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: "",
@@ -152,7 +165,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
 
 	go discord.MessagesServer(servicePort, bot)
 

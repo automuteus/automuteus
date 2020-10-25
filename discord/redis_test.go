@@ -6,7 +6,7 @@ import (
 )
 
 func TestRedisDriver(t *testing.T) {
-	r := &DatabaseInterface{}
+	r := &RedisInterface{}
 	err := r.Init(RedisParameters{
 		Addr:     "192.168.1.8:6379",
 		Username: "",

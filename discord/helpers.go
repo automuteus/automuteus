@@ -3,12 +3,12 @@ package discord
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
-	"strings"
-	"time"
-
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"log"
+	"math/rand"
+	"strings"
 )
 
 // when querying for the member list we need to specify a size
@@ -164,9 +164,8 @@ func getRoleFromString(s *discordgo.Session, GuildID string, input string) strin
 func generateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
-	//add some "randomness" with the current time
-	h.Write([]byte(time.Now().String()))
-	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
-	//TODO replace common problematic characters?
-	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
+
+	//add some randomness
+	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
+	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 }

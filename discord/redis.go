@@ -11,25 +11,19 @@ import (
 
 var ctx = context.Background()
 
-type DatabaseInterface struct {
+type RedisInterface struct {
 	client *redis.Client
 }
 
-type RedisParameters struct {
-	Addr     string
-	Username string
-	Password string
-}
-
-func (rd *DatabaseInterface) Init(params interface{}) error {
-	redisParams := params.(RedisParameters)
+func (redisInterface *RedisInterface) Init(params interface{}) error {
+	redisParams := params.(storage.RedisParameters)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisParams.Addr,
 		Username: redisParams.Username,
 		Password: redisParams.Password,
 		DB:       0, // use default DB
 	})
-	rd.client = rdb
+	redisInterface.client = rdb
 	return nil
 }
 
@@ -69,42 +63,42 @@ func discordKey(guildID, id string) string {
 	return "amongusdiscord:discord:" + guildID + ":" + id
 }
 
-func (rd *DatabaseInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
-	rd.publish(lobbyUpdateKey(connectCode), lobbyJson)
+func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
+	redisInterface.publish(lobbyUpdateKey(connectCode), lobbyJson)
 }
 
-func (rd *DatabaseInterface) PublishPhaseUpdate(connectCode, phase string) {
-	rd.publish(phaseUpdateKey(connectCode), phase)
+func (redisInterface *RedisInterface) PublishPhaseUpdate(connectCode, phase string) {
+	redisInterface.publish(phaseUpdateKey(connectCode), phase)
 }
 
-func (rd *DatabaseInterface) PublishPlayerUpdate(connectCode, playerJson string) {
-	rd.publish(playerUpdateKey(connectCode), playerJson)
+func (redisInterface *RedisInterface) PublishPlayerUpdate(connectCode, playerJson string) {
+	redisInterface.publish(playerUpdateKey(connectCode), playerJson)
 }
 
-func (rd *DatabaseInterface) PublishConnectUpdate(connectCode, connect string) {
-	rd.publish(connectUpdateKey(connectCode), connect)
+func (redisInterface *RedisInterface) PublishConnectUpdate(connectCode, connect string) {
+	redisInterface.publish(connectUpdateKey(connectCode), connect)
 }
 
-func (rd *DatabaseInterface) publish(topic, message string) {
+func (redisInterface *RedisInterface) publish(topic, message string) {
 	log.Printf("Publishing %s to %s\n", message, topic)
-	err := rd.client.Publish(ctx, topic, message).Err()
+	err := redisInterface.client.Publish(ctx, topic, message).Err()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (rd *DatabaseInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player *redis.PubSub) {
-	connect := rd.client.Subscribe(ctx, connectUpdateKey(connectCode))
-	lob := rd.client.Subscribe(ctx, lobbyUpdateKey(connectCode))
-	phas := rd.client.Subscribe(ctx, phaseUpdateKey(connectCode))
-	play := rd.client.Subscribe(ctx, playerUpdateKey(connectCode))
+func (redisInterface *RedisInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player *redis.PubSub) {
+	connect := redisInterface.client.Subscribe(ctx, connectUpdateKey(connectCode))
+	lob := redisInterface.client.Subscribe(ctx, lobbyUpdateKey(connectCode))
+	phas := redisInterface.client.Subscribe(ctx, phaseUpdateKey(connectCode))
+	play := redisInterface.client.Subscribe(ctx, playerUpdateKey(connectCode))
 
 	return connect, lob, phas, play
 }
 
-func (di *DatabaseInterface) GetAmongUsData(connectCode string) *game.AmongUsData {
+func (redisInterface *RedisInterface) GetAmongUsData(connectCode string) *game.AmongUsData {
 	key := gameKey(connectCode)
-	jsonStr, err := di.client.Get(ctx, key).Result()
+	jsonStr, err := redisInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		aud := game.NewAmongUsData()
 		jBytes, err := json.Marshal(&aud)
@@ -112,7 +106,7 @@ func (di *DatabaseInterface) GetAmongUsData(connectCode string) *game.AmongUsDat
 			log.Println(err)
 			return nil
 		} else {
-			err := di.client.Set(ctx, key, jBytes, 0).Err()
+			err := redisInterface.client.Set(ctx, key, jBytes, 0).Err()
 			if err != nil {
 				log.Println(err)
 				return nil
@@ -135,37 +129,37 @@ func (di *DatabaseInterface) GetAmongUsData(connectCode string) *game.AmongUsDat
 	}
 }
 
-func (di *DatabaseInterface) SetAmongUsData(connectCode string, data *game.AmongUsData) {
+func (redisInterface *RedisInterface) SetAmongUsData(connectCode string, data *game.AmongUsData) {
 	key := gameKey(connectCode)
 	jBytes, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	err = di.client.Set(ctx, key, jBytes, 0).Err()
+	err = redisInterface.client.Set(ctx, key, jBytes, 0).Err()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 //need at least one of these fields to fetch
-func (di *DatabaseInterface) GetDiscordGameState(guildID, textChannel, voiceChannel, connectCode string) *DiscordGameState {
-	key := di.CheckPointer(discordKeyConnectCodePtr(guildID, connectCode))
+func (redisInterface *RedisInterface) GetDiscordGameState(guildID, textChannel, voiceChannel, connectCode string) *DiscordGameState {
+	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(guildID, connectCode))
 	if key == "" {
-		key = di.CheckPointer(discordKeyTextChannelPtr(guildID, textChannel))
+		key = redisInterface.CheckPointer(discordKeyTextChannelPtr(guildID, textChannel))
 		if key == "" {
-			key = di.CheckPointer(discordKeyVoiceChannelPtr(guildID, voiceChannel))
+			key = redisInterface.CheckPointer(discordKeyVoiceChannelPtr(guildID, voiceChannel))
 		}
 	}
 
-	jsonStr, err := di.client.Get(ctx, key).Result()
+	jsonStr, err := redisInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		dgs := NewDiscordGameState(guildID)
 		//this is a little silly, but it works...
 		dgs.ConnectCode = connectCode
 		dgs.GameStateMsg.MessageChannelID = textChannel
 		dgs.Tracking.ChannelID = voiceChannel
-		di.SetDiscordGameState(guildID, dgs)
+		redisInterface.SetDiscordGameState(guildID, dgs)
 		return dgs
 	} else if err != nil {
 		log.Println(err)
@@ -182,8 +176,8 @@ func (di *DatabaseInterface) GetDiscordGameState(guildID, textChannel, voiceChan
 	}
 }
 
-func (di *DatabaseInterface) CheckPointer(pointer string) string {
-	key, err := di.client.Get(ctx, pointer).Result()
+func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
+	key, err := redisInterface.client.Get(ctx, pointer).Result()
 	if err != nil {
 		return ""
 	} else {
@@ -191,15 +185,15 @@ func (di *DatabaseInterface) CheckPointer(pointer string) string {
 	}
 }
 
-func (di *DatabaseInterface) SetDiscordGameState(guildID string, data *DiscordGameState) {
+func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *DiscordGameState) {
 	if data == nil {
 		return
 	}
-	key := di.CheckPointer(discordKeyConnectCodePtr(guildID, data.ConnectCode))
+	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(guildID, data.ConnectCode))
 	if key == "" {
-		key = di.CheckPointer(discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID))
+		key = redisInterface.CheckPointer(discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID))
 		if key == "" {
-			key = di.CheckPointer(discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID))
+			key = redisInterface.CheckPointer(discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID))
 		}
 	}
 
@@ -219,14 +213,14 @@ func (di *DatabaseInterface) SetDiscordGameState(guildID string, data *DiscordGa
 	}
 
 	log.Printf("Setting %s to JSON", key)
-	err = di.client.Set(ctx, key, jBytes, 0).Err()
+	err = redisInterface.client.Set(ctx, key, jBytes, 0).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
 	if data.ConnectCode != "" {
 		log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
-		err = di.client.Set(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode), key, 0).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -234,7 +228,7 @@ func (di *DatabaseInterface) SetDiscordGameState(guildID string, data *DiscordGa
 
 	if data.Tracking.ChannelID != "" {
 		log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
-		err = di.client.Set(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key, 0).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -242,46 +236,42 @@ func (di *DatabaseInterface) SetDiscordGameState(guildID string, data *DiscordGa
 
 	if data.GameStateMsg.MessageChannelID != "" {
 		log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
-		err = di.client.Set(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key, 0).Err()
 		if err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func (di *DatabaseInterface) DeleteDiscordGameState(dgs *DiscordGameState) {
+func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameState) {
 	guildID := dgs.GuildID
 	connCode := dgs.ConnectCode
 	if guildID == "" || connCode == "" {
 		log.Println("Can't delete DGS with null guildID or null ConnCode")
 	}
-	data := di.GetDiscordGameState(guildID, "", "", connCode)
+	data := redisInterface.GetDiscordGameState(guildID, "", "", connCode)
 	key := discordKey(guildID, connCode)
 
 	//delete all the pointers to the underlying -actual- discord data
-	err := di.client.Del(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID)).Err()
+	err := redisInterface.client.Del(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID)).Err()
 	if err != nil {
 		log.Println(err)
 	}
-	err = di.client.Del(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
+	err = redisInterface.client.Del(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
 	if err != nil {
 		log.Println(err)
 	}
-	err = di.client.Del(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode)).Err()
+	err = redisInterface.client.Del(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode)).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = di.client.Del(ctx, key).Err()
+	err = redisInterface.client.Del(ctx, key).Err()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (di *DatabaseInterface) GetDiscordSettings(guildID string) *storage.GuildSettings {
-	return storage.MakeGuildSettings(guildID, "")
-}
-
-func (rd *DatabaseInterface) Close() error {
-	return rd.client.Close()
+func (redisInterface *RedisInterface) Close() error {
+	return redisInterface.client.Close()
 }

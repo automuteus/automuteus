@@ -22,7 +22,7 @@ func (bot *Bot) endGame(dgs *DiscordGameState, aud *game.AmongUsData, s *discord
 	}
 
 	if dgs != nil {
-		sett := bot.StorageInterface.GetDiscordSettings(dgs.GuildID)
+		sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
 
 		// apply the unmute/deafen to users who have state linked to them
 		dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
@@ -46,7 +46,7 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsDat
 		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
 			v <- true
 		}
-		bot.StorageInterface.DeleteDiscordGameState(dgs)
+		bot.RedisInterface.DeleteDiscordGameState(dgs)
 		dgs.Reset()
 	}
 

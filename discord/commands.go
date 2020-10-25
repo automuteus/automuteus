@@ -205,8 +205,8 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by user %s\n", cmd.command, m.Author.ID))
 	}
-	dgs := bot.StorageInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
-	aud := bot.StorageInterface.GetAmongUsData(dgs.ConnectCode)
+	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
+	aud := bot.RedisInterface.GetAmongUsData(dgs.ConnectCode)
 
 	switch cmd.cmdType {
 	case Help:
@@ -286,7 +286,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 		bot.endGame(dgs, aud, s)
 
-		bot.StorageInterface.DeleteDiscordGameState(dgs)
+		bot.RedisInterface.DeleteDiscordGameState(dgs)
 
 		//have to explicitly delete here, because if we use the default delete below, the ChannelID
 		//for the game state message doesn't exist anymore...
@@ -323,7 +323,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Settings:
-		HandleSettingsCommand(s, m, sett, args)
+		bot.HandleSettingsCommand(s, m, sett, args)
 		//return // to prevent the user's message from being deleted
 		break
 
@@ -339,5 +339,5 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 	}
 
-	bot.StorageInterface.SetDiscordGameState(m.GuildID, dgs)
+	bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
 }
