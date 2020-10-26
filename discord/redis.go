@@ -3,7 +3,6 @@ package discord
 import (
 	"context"
 	"encoding/json"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -44,23 +43,27 @@ func connectUpdateKey(connCode string) string {
 }
 
 func gameKey(connCode string) string {
-	return "amongusdiscord:game:" + connCode
+	return "automuteus:game:" + connCode
 }
 
 func discordKeyTextChannelPtr(guildID, channelID string) string {
-	return "amongusdiscord:discord:" + guildID + ":pointer:text:" + channelID
+	return "automuteus:discord:" + guildID + ":pointer:text:" + channelID
 }
 
 func discordKeyVoiceChannelPtr(guildID, channelID string) string {
-	return "amongusdiscord:discord:" + guildID + ":pointer:voice:" + channelID
+	return "automuteus:discord:" + guildID + ":pointer:voice:" + channelID
 }
 
 func discordKeyConnectCodePtr(guildID, code string) string {
-	return "amongusdiscord:discord:" + guildID + ":pointer:code:" + code
+	return "automuteus:discord:" + guildID + ":pointer:code:" + code
 }
 
 func discordKey(guildID, id string) string {
-	return "amongusdiscord:discord:" + guildID + ":" + id
+	return "automuteus:discord:" + guildID + ":" + id
+}
+
+func usernameCacheHash(username string) string {
+	return "automuteus:username:" + username
 }
 
 func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
@@ -96,52 +99,6 @@ func (redisInterface *RedisInterface) SubscribeToGame(connectCode string) (conne
 	return connect, lob, phas, play
 }
 
-func (redisInterface *RedisInterface) GetAmongUsData(connectCode string) *game.AmongUsData {
-	key := gameKey(connectCode)
-	jsonStr, err := redisInterface.client.Get(ctx, key).Result()
-	if err == redis.Nil {
-		aud := game.NewAmongUsData()
-		jBytes, err := json.Marshal(&aud)
-		if err != nil {
-			log.Println(err)
-			return nil
-		} else {
-			err := redisInterface.client.Set(ctx, key, jBytes, 0).Err()
-			if err != nil {
-				log.Println(err)
-				return nil
-			} else {
-				return &aud
-			}
-		}
-	} else if err != nil {
-		log.Println(err)
-		return nil
-	} else {
-		aud := game.AmongUsData{}
-		err := json.Unmarshal([]byte(jsonStr), &aud)
-		if err != nil {
-			log.Println(err)
-			return nil
-		} else {
-			return &aud
-		}
-	}
-}
-
-func (redisInterface *RedisInterface) SetAmongUsData(connectCode string, data *game.AmongUsData) {
-	key := gameKey(connectCode)
-	jBytes, err := json.Marshal(data)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	err = redisInterface.client.Set(ctx, key, jBytes, 0).Err()
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 //need at least one of these fields to fetch
 func (redisInterface *RedisInterface) GetDiscordGameState(guildID, textChannel, voiceChannel, connectCode string) *DiscordGameState {
 	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(guildID, connectCode))
@@ -157,7 +114,7 @@ func (redisInterface *RedisInterface) GetDiscordGameState(guildID, textChannel, 
 		dgs := NewDiscordGameState(guildID)
 		//this is a little silly, but it works...
 		dgs.ConnectCode = connectCode
-		dgs.GameStateMsg.MessageChannelID = textChannel
+		//dgs.GameStateMsg.MessageChannelID = textChannel
 		dgs.Tracking.ChannelID = voiceChannel
 		redisInterface.SetDiscordGameState(guildID, dgs)
 		return dgs
@@ -270,6 +227,23 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func (redisInterface *RedisInterface) GetUsernameLinks(username string) []string {
+	hash := usernameCacheHash(username)
+
+	uids, err := redisInterface.client.HKeys(ctx, hash).Result()
+	if err != nil && err != redis.Nil {
+		log.Println(err)
+		return []string{}
+	}
+	return uids
+}
+
+func (redisInterface *RedisInterface) AddUsernameLink(username, userID string) error {
+	hash := usernameCacheHash(username)
+
+	return redisInterface.client.HSet(ctx, hash, userID, "").Err()
 }
 
 func (redisInterface *RedisInterface) Close() error {

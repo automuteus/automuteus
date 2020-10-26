@@ -116,7 +116,7 @@ func (gsm *GameStateMessage) SameChannel(channelID string) bool {
 func (gsm *GameStateMessage) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
 	gsm.lock.RLock()
 	defer gsm.lock.RUnlock()
-	if gsm.MessageID != "" {
+	if !gsm.Exists() {
 		return false
 	}
 

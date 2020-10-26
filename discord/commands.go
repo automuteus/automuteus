@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
@@ -23,6 +24,9 @@ const (
 	Settings
 	Pause
 	Log
+	ShowMe
+	ForgetMe
+	DebugState
 	Null
 )
 
@@ -34,6 +38,7 @@ type Command struct {
 	desc      string
 	args      string
 	aliases   []string
+	secret    bool
 }
 
 //note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
@@ -46,6 +51,7 @@ var AllCommands = []Command{
 		desc:      "Display bot help message, or see info about a command",
 		args:      "None, or optional command to see info for",
 		aliases:   []string{"h"},
+		secret:    false,
 	},
 	{
 		cmdType:   Track,
@@ -55,24 +61,27 @@ var AllCommands = []Command{
 		desc:      "Tell the bot which voice channel you'll be playing in",
 		args:      "<voice channel name>",
 		aliases:   []string{"t"},
+		secret:    false,
 	},
 	{
 		cmdType:   Link,
 		command:   "link",
 		example:   "link @Soup red",
-		shortDesc: "Link a Discord user",
-		desc:      "Manually link a Discord user to their in-game color or name",
-		args:      "<discord user> <in-game color or name>",
+		shortDesc: "Link a Discord User",
+		desc:      "Manually link a Discord User to their in-game color or name",
+		args:      "<discord User> <in-game color or name>",
 		aliases:   []string{"l"},
+		secret:    false,
 	},
 	{
 		cmdType:   Unlink,
 		command:   "unlink",
 		example:   "unlink @Soup",
-		shortDesc: "Unlink a Discord user",
-		desc:      "Manually unlink a Discord user from their in-game player",
-		args:      "<discord user>",
+		shortDesc: "Unlink a Discord User",
+		desc:      "Manually unlink a Discord User from their in-game player",
+		args:      "<discord User>",
 		aliases:   []string{"u"},
+		secret:    false,
 	},
 	{
 		cmdType:   New,
@@ -82,6 +91,7 @@ var AllCommands = []Command{
 		desc:      "Start a new game",
 		args:      "None",
 		aliases:   []string{"n"},
+		secret:    false,
 	},
 	{
 		cmdType:   End,
@@ -91,6 +101,7 @@ var AllCommands = []Command{
 		desc:      "End the current game",
 		args:      "None",
 		aliases:   []string{"e"},
+		secret:    false,
 	},
 	{
 		cmdType:   Force,
@@ -100,6 +111,7 @@ var AllCommands = []Command{
 		desc:      "Force the bot to transition to another game stage, if it doesn't transition properly",
 		args:      "<phase name> (task, discuss, or lobby / t,d, or l)",
 		aliases:   []string{"f"},
+		secret:    false,
 	},
 	{
 		cmdType:   Refresh,
@@ -109,6 +121,7 @@ var AllCommands = []Command{
 		desc:      "Recreate the bot status message if it ends up too far in the chat",
 		args:      "None",
 		aliases:   []string{"r"},
+		secret:    false,
 	},
 	{
 		cmdType:   Settings,
@@ -118,6 +131,7 @@ var AllCommands = []Command{
 		desc:      "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
 		args:      "<setting> <value>",
 		aliases:   []string{"s"},
+		secret:    false,
 	},
 	{
 		cmdType:   Pause,
@@ -127,6 +141,7 @@ var AllCommands = []Command{
 		desc:      "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
 		args:      "None",
 		aliases:   []string{"p"},
+		secret:    false,
 	},
 	{
 		cmdType:   Log,
@@ -136,6 +151,37 @@ var AllCommands = []Command{
 		desc:      "Log if something bad happened, so you can find the event in your logs later",
 		args:      "<message>",
 		aliases:   []string{"log"},
+		secret:    false,
+	},
+	{
+		cmdType:   ShowMe,
+		command:   "showme",
+		example:   "showme",
+		shortDesc: "Show player settings",
+		desc:      "Send all the player data for the User issuing the command",
+		args:      "None",
+		aliases:   []string{"showme"},
+		secret:    false,
+	},
+	{
+		cmdType:   ForgetMe,
+		command:   "forgetme",
+		example:   "forgetme",
+		shortDesc: "Delete player settings",
+		desc:      "Delete all the data associated with the User issuing the command",
+		args:      "None",
+		aliases:   []string{"forgetme"},
+		secret:    false,
+	},
+	{
+		cmdType:   DebugState,
+		command:   "debugstate",
+		example:   "debugstate",
+		shortDesc: "View the full state of the Discord Guild Data",
+		desc:      "View the full state of the Discord Guild Data",
+		args:      "None",
+		aliases:   []string{"debugstate"},
+		secret:    true,
 	},
 	{
 		cmdType:   Null,
@@ -145,11 +191,15 @@ var AllCommands = []Command{
 		desc:      "",
 		args:      "",
 		aliases:   []string{""},
+		secret:    true,
 	},
 }
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
 func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed {
+	if cmd.cmdType == Settings {
+		return settingResponse(prefix, AllSettings)
+	}
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
@@ -203,10 +253,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	cmd := GetCommand(args[0])
 
 	if cmd.cmdType != Null {
-		log.Print(fmt.Sprintf("\"%s\" command typed by user %s\n", cmd.command, m.Author.ID))
+		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
 	}
 	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
-	aud := bot.RedisInterface.GetAmongUsData(dgs.ConnectCode)
 
 	switch cmd.cmdType {
 	case Help:
@@ -239,7 +288,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 			dgs.trackChannel(channelName, channels)
 
-			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
+			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
 		}
 		break
 
@@ -248,8 +297,8 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			embed := ConstructEmbedForCommand(prefix, cmd)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
-			dgs.linkPlayer(s, aud, args[1:])
-			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
+			bot.linkPlayer(s, dgs, args[1:])
+			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
 		}
 		break
 
@@ -267,10 +316,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				dgs.UserData.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
-				dgs.verifyVoiceStateChanges(s, sett, aud.GetPhase())
+				dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
 
 				//update the state message to reflect the player leaving
-				dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
+				dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
 			}
 		}
 		break
@@ -278,13 +327,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case New:
 		room, region := getRoomAndRegionFromArgs(args[1:])
 
-		bot.handleNewGameMessage(dgs, aud, s, m, g, room, region)
+		bot.handleNewGameMessage(dgs, s, m, g, room, region)
 		break
 
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.endGame(dgs, aud, s)
+		bot.endGame(dgs, s)
 
 		bot.RedisInterface.DeleteDiscordGameState(dgs)
 
@@ -311,10 +360,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		dgs.GameStateMsg.Delete(s) //delete the old message
 
 		//create a new instance of the new one
-		dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(aud, dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
+		dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 		//add the emojis to the refreshed message if in the right stage
-		if aud.GetPhase() != game.MENU {
+		if dgs.AmongUsData.GetPhase() != game.MENU {
 			for _, e := range bot.StatusEmojis[true] {
 				dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
 			}
@@ -324,15 +373,49 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Settings:
 		bot.HandleSettingsCommand(s, m, sett, args)
-		//return // to prevent the user's message from being deleted
+		//return // to prevent the User's message from being deleted
 		break
 
 	case Pause:
 		dgs.Running = !dgs.Running
-		dgs.GameStateMsg.Edit(s, bot.gameStateResponse(aud, dgs))
+		dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
 		break
 	case Log:
 		log.Println(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
+		break
+	case ShowMe:
+		if m.Author != nil {
+			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
+			if sett == nil {
+				s.ChannelMessageSend(m.ChannelID, "I don't have any data stored for you!")
+			} else {
+				embed := sett.ToEmbed()
+				sendMessageDM(s, m.Author.ID, embed)
+			}
+		}
+		break
+	case ForgetMe:
+		if m.Author != nil {
+			err := bot.StorageInterface.DeleteUserSettings(m.Author.ID)
+			if err != nil {
+				log.Println(err)
+			} else {
+				s.ChannelMessageSend(m.ChannelID, "Successfully deleted all player data for <@"+m.Author.ID+">")
+			}
+		}
+		break
+
+	case DebugState:
+		if m.Author != nil {
+			state := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", dgs.ConnectCode)
+			if state != nil {
+				jBytes, err := json.MarshalIndent(state, "", "  ")
+				if err != nil {
+					log.Println(err)
+				}
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```\n%s\n```", jBytes))
+			}
+		}
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))

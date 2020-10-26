@@ -38,13 +38,13 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 		newParams := struct {
 			Deaf bool   `json:"deaf"`
 			Mute bool   `json:"mute"`
-			Nick string `json:"nick"`
+			Nick string `json:"Nick"`
 		}{params.Deaf, params.Mute, params.Nick}
-		log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
+		log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v Nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
 
 		_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
 		if err != nil {
-			log.Println("Failed to change nickname for user: move the bot up in your Roles")
+			log.Println("Failed to change nickname for User: move the bot up in your Roles")
 			log.Println(err)
 			guildMemberUpdateNoNick(s, params)
 		}
@@ -52,7 +52,7 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 }
 
 func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
-	log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
+	log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
 	newParams := struct {
 		Deaf bool `json:"deaf"`
 		Mute bool `json:"mute"`
@@ -128,7 +128,7 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 }
 
 func getMemberFromString(s *discordgo.Session, GuildID string, input string) string {
-	// find which member the user was referencing in their message
+	// find which member the User was referencing in their message
 	// TODO increase performance by caching member list for when function called more than once
 	// first check if is mentionned
 	ID, err := extractUserIDFromMention(input)
@@ -146,7 +146,7 @@ func getMemberFromString(s *discordgo.Session, GuildID string, input string) str
 }
 
 func getRoleFromString(s *discordgo.Session, GuildID string, input string) string {
-	// find which role the user was referencing in their message
+	// find which role the User was referencing in their message
 	// first check if is mentionned
 	ID, err := extractRoleIDFromMention(input)
 	if err == nil {

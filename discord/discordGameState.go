@@ -37,10 +37,12 @@ type DiscordGameState struct {
 	Linked  bool `json:"linked"`
 	Running bool `json:"running"`
 
-	UserData UserDataSet     `json:"userDataSet"`
+	UserData UserDataSet     `json:"userData"`
 	Tracking TrackingChannel `json:"tracking"`
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
+
+	AmongUsData game.AmongUsData `json:"amongUsData"`
 }
 
 func NewDiscordGameState(guildID string) *DiscordGameState {
@@ -49,9 +51,10 @@ func NewDiscordGameState(guildID string) *DiscordGameState {
 		ConnectCode:  "",
 		Linked:       false,
 		Running:      false,
-		UserData:     MakeUserDataSet(),
+		UserData:     UserDataSet{},
 		Tracking:     TrackingChannel{},
 		GameStateMsg: MakeGameStateMessage(),
+		AmongUsData:  game.NewAmongUsData(),
 	}
 }
 
@@ -59,9 +62,10 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.ConnectCode = ""
 	dgs.Linked = false
 	dgs.Running = false
-	dgs.UserData = MakeUserDataSet()
+	dgs.UserData = map[string]UserData{}
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
+	dgs.AmongUsData = game.NewAmongUsData()
 }
 
 func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
@@ -87,7 +91,7 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 }
 
 func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
-	//clear the discord user links to underlying player data
+	//clear the discord User links to underlying player data
 	dgs.UserData.ClearAllPlayerData()
 
 	//reset all the Tracking channels
@@ -96,7 +100,7 @@ func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
 	dgs.GameStateMsg.Delete(s)
 }
 
-func (dgs *DiscordGameState) linkPlayer(s *discordgo.Session, aud *game.AmongUsData, args []string) {
+func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []string) {
 	g, err := s.State.Guild(dgs.GuildID)
 	if err != nil {
 		log.Println(err)
@@ -110,36 +114,28 @@ func (dgs *DiscordGameState) linkPlayer(s *discordgo.Session, aud *game.AmongUsD
 
 	_, added := dgs.checkCacheAndAddUser(g, s, userID)
 	if !added {
-		log.Println("No users found in Discord for userID " + userID)
+		log.Println("No users found in Discord for UserID " + userID)
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
+	var playerData game.PlayerData
+	found := false
 	if game.IsColorString(combinedArgs) {
-		playerData, found := aud.GetByColor(combinedArgs)
-		if found {
-			found = dgs.UserData.UpdatePlayerData(userID, &playerData)
-			if found {
-				//TODO update in DB
-				//TODO update GSM
-				log.Printf("Successfully linked %s to a color\n", userID)
-			} else {
-				log.Printf("No player was found with id %s\n", userID)
-			}
-		}
-		return
+		playerData, found = dgs.AmongUsData.GetByColor(combinedArgs)
+
 	} else {
-		playerData, found := aud.GetByName(combinedArgs)
+		playerData, found = dgs.AmongUsData.GetByName(combinedArgs)
+	}
+	if found {
+		found, _, _ = dgs.UserData.AttemptPairingByMatchingNames(playerData)
 		if found {
-			found = dgs.UserData.UpdatePlayerData(userID, &playerData)
-			if found {
-				//TODO update in DB
-				//TODO update GSM
-				log.Printf("Successfully linked %s by name\n", userID)
-			} else {
-				log.Printf("No player was found with id %s\n", userID)
-			}
+			log.Printf("Successfully linked %s to a color\n", userID)
+			bot.RedisInterface.SetDiscordGameState(dgs.GuildID, dgs)
+		} else {
+			log.Printf("No player was found with id %s\n", userID)
 		}
 	}
+	return
 }
 
 func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel) string {
@@ -153,4 +149,43 @@ func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*dis
 		}
 	}
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
+}
+
+func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*discordgo.MessageEmbedField {
+	unsorted := make([]*discordgo.MessageEmbedField, 12)
+	num := 0
+
+	for _, player := range dgs.AmongUsData.PlayerData {
+		for _, userData := range dgs.UserData {
+			if userData.InGameName == player.Name {
+				emoji := emojis[player.IsAlive][player.Color]
+				unsorted[player.Color] = &discordgo.MessageEmbedField{
+					Name:   fmt.Sprintf("%s", player.Name),
+					Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), userData.GetID()),
+					Inline: true,
+				}
+				break
+			}
+		}
+		//no player matched; unlinked player
+		if unsorted[player.Color] == nil {
+			emoji := emojis[player.IsAlive][player.Color]
+			unsorted[player.Color] = &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("%s", player.Name),
+				Value:  fmt.Sprintf("%s **Unlinked**", emoji.FormatForInline()),
+				Inline: true,
+			}
+		}
+		num++
+	}
+
+	sorted := make([]*discordgo.MessageEmbedField, num)
+	num = 0
+	for i := 0; i < 12; i++ {
+		if unsorted[i] != nil {
+			sorted[num] = unsorted[i]
+			num++
+		}
+	}
+	return sorted
 }

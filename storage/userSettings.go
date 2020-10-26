@@ -1,6 +1,10 @@
 package storage
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"log"
 	"strings"
 	"sync"
 )
@@ -12,6 +16,34 @@ type UserSettings struct {
 func MakeUserSettings() *UserSettings {
 	return &UserSettings{
 		GameNames: nil,
+	}
+}
+
+func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
+	jBytes, err := json.MarshalIndent(userSettings, "", "  ")
+	if err != nil {
+		log.Println(err)
+	}
+
+	return &discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "Your Data",
+		Description: "Here's all the data I have for you",
+		Timestamp:   "",
+		Color:       3066993, //GREEN
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "Settings",
+				Value:  fmt.Sprintf("```\n%s\n```", jBytes),
+				Inline: true,
+			},
+		},
 	}
 }
 

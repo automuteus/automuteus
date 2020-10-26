@@ -14,12 +14,10 @@ const downloadURL = "https://github.com/denverquane/amonguscapture/releases/late
 const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
-func (bot *Bot) endGame(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session) {
-	if aud != nil {
-		aud.SetAllAlive()
-		aud.UpdatePhase(game.LOBBY)
-		aud.SetRoomRegion("", "")
-	}
+func (bot *Bot) endGame(dgs *DiscordGameState, s *discordgo.Session) {
+	dgs.AmongUsData.SetAllAlive()
+	dgs.AmongUsData.UpdatePhase(game.LOBBY)
+	dgs.AmongUsData.SetRoomRegion("", "")
 
 	if dgs != nil {
 		sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
@@ -36,13 +34,13 @@ func (bot *Bot) endGame(dgs *DiscordGameState, aud *game.AmongUsData, s *discord
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
 
-func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
+func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
-	if dgs.ConnectCode != "" {
+	if dgs.GameStateMsg.MessageChannelID != "" {
 		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
 			v <- true
 		}
@@ -137,7 +135,7 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsDat
 		//	}
 		//}
 		for _, v := range g.VoiceStates {
-			//if the user is detected in a voice channel
+			//if the User is detected in a voice channel
 			if v.UserID == m.Author.ID {
 
 				//once we find the channel by ID
@@ -156,11 +154,11 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, aud *game.AmongUsDat
 		}
 	}
 
-	bot.handleGameStartMessage(dgs, aud, s, m, room, region, initialTracking, g)
+	bot.handleGameStartMessage(dgs, s, m, room, region, initialTracking, g)
 }
 
-func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, aud *game.AmongUsData, s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
-	aud.SetRoomRegion(room, region)
+func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
+	dgs.AmongUsData.SetRoomRegion(room, region)
 
 	dgs.clearGameTracking(s)
 
@@ -180,11 +178,11 @@ func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, aud *game.AmongUsD
 		}
 	}
 
-	dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(aud, dgs), m.ChannelID, m.Author.ID)
+	dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, m.Author.ID)
 
 	log.Println("Added self game state message")
 
-	if aud.GetPhase() != game.MENU {
+	if dgs.AmongUsData.GetPhase() != game.MENU {
 		for _, e := range bot.StatusEmojis[true] {
 			dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
 		}

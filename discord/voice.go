@@ -56,7 +56,7 @@ func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett 
 		userData, err := dgs.UserData.GetUser(voiceState.UserID)
 
 		if err != nil {
-			//the user doesn't exist in our userdata cache; add them
+			//the User doesn't exist in our userdata cache; add them
 			added := false
 			userData, added = dgs.checkCacheAndAddUser(g, s, voiceState.UserID)
 			if !added {
@@ -66,13 +66,14 @@ func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett 
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
 
+		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && userData.IsLinked()
-		mute, deaf := sett.GetVoiceState(userData.IsAlive(), tracked, phase)
+		tracked = tracked && linked
+		mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
 
 		//still have to check if the player is linked
 		//(music bots are untracked so mute/deafen = false, but they dont have playerdata...)
-		if userData.IsLinked() && userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
+		if linked && userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
 			userData.SetPendingVoiceUpdate(false)
 
 			dgs.UserData.UpdateUserData(voiceState.UserID, userData)
@@ -97,7 +98,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 
 		userData, err := dgs.UserData.GetUser(voiceState.UserID)
 		if err != nil {
-			//the user doesn't exist in our userdata cache; add them
+			//the User doesn't exist in our userdata cache; add them
 			added := false
 			userData, added = dgs.checkCacheAndAddUser(g, sm.GetPrimarySession(), voiceState.UserID)
 			if !added {
@@ -106,28 +107,30 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 		}
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
+
+		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && userData.IsLinked()
-		shouldMute, shouldDeaf := sett.GetVoiceState(userData.IsAlive(), tracked, phase)
+		tracked = tracked && linked
+		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
 
 		nick := userData.GetPlayerName()
 		if !sett.GetApplyNicknames() {
 			nick = ""
 		}
 
-		//only issue a change if the user isn't in the right state already
+		//only issue a change if the User isn't in the right state already
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
-		if userData.IsLinked() && shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
+		if linked && shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
 
 			//only issue the req to discord if we're not waiting on another one
 			if !userData.IsPendingVoiceUpdate() {
 				priority := 0
 
 				if handlePriority != NoPriority {
-					if handlePriority == AlivePriority && userData.IsAlive() {
+					if handlePriority == AlivePriority && auData.IsAlive {
 						priority++
-					} else if handlePriority == DeadPriority && !userData.IsAlive() {
+					} else if handlePriority == DeadPriority && !auData.IsAlive {
 						priority++
 					}
 				}
@@ -140,7 +143,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 				})
 			}
 
-		} else if userData.IsLinked() {
+		} else if linked {
 			if shouldMute {
 				log.Print(fmt.Sprintf("Not muting %s because they're already muted\n", userData.GetUserName()))
 			} else {
@@ -164,7 +167,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 			log.Print(fmt.Sprintf("User %s has higher priority: %d\n", p.patchParams.Userdata.GetID(), p.priority))
 		} else if waitForHigherPriority {
 			//wait for all the other users to get muted/unmuted completely, first
-			//log.Println("Waiting for high priority user changes first")
+			//log.Println("Waiting for high priority User changes first")
 			wg.Wait()
 			waitForHigherPriority = false
 		}

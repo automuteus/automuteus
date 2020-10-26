@@ -16,7 +16,7 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 		URL:         "",
 		Type:        "",
 		Title:       fmt.Sprintf("AutoMuteUs Bot Commands (v%s):\n", version),
-		Description: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
+		Description: fmt.Sprintf("Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!\nType `%s help <command>` to see more details on a command!", CommandPrefix),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -26,14 +26,14 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 		Author:      nil,
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, len(commands)-2)
-	for i, v := range commands {
-		if v.cmdType != Help && v.cmdType != Null {
-			fields[i-1] = &discordgo.MessageEmbedField{
-				Name:   v.command + " `" + CommandPrefix + " help " + v.command + "`",
+	fields := make([]*discordgo.MessageEmbedField, 0)
+	for _, v := range commands {
+		if !v.secret && v.cmdType != Help && v.cmdType != Null {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   v.command,
 				Value:  v.shortDesc,
 				Inline: true,
-			}
+			})
 		}
 	}
 
@@ -41,12 +41,12 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 	return embed
 }
 
-func settingResponse(settings []Setting) discordgo.MessageEmbed {
+func settingResponse(cp string, settings []Setting) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       "Settings",
-		Description: "Available Settings",
+		Description: "Type `" + cp + " settings <setting>` to change a setting from those listed below",
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -70,15 +70,15 @@ func settingResponse(settings []Setting) discordgo.MessageEmbed {
 }
 
 // TODO:
-func (bot *Bot) gameStateResponse(aud *game.AmongUsData, dgs *DiscordGameState) *discordgo.MessageEmbed {
+func (bot *Bot) gameStateResponse(dgs *DiscordGameState) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed{
+	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed{
 		game.MENU:    menuMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
-	return messages[aud.Phase](aud, dgs, bot.StatusEmojis)
+	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis)
 }
 
 func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
@@ -115,7 +115,7 @@ var Thumbnail = discordgo.MessageEmbedThumbnail{
 	Height:   200,
 }
 
-func menuMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 
 	color := 15158332 //red
 	desc := ""
@@ -144,16 +144,16 @@ func menuMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessE
 	return &msg
 }
 
-func lobbyMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region := aud.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, aud.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
+	room, region := dgs.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
 
-	listResp := dgs.UserData.ToEmojiEmbedFields(aud.NameColorMappings(), aud.NameAliveMappings(), emojis)
+	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
 
 	alarmFormatted := ":x:"
@@ -188,17 +188,17 @@ func lobbyMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis Aliveness
 	return &msg
 }
 
-func gamePlayMessage(aud *game.AmongUsData, dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region := aud.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, aud.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
-	listResp := dgs.UserData.ToEmojiEmbedFields(aud.NameColorMappings(), aud.NameAliveMappings(), emojis)
+	room, region := dgs.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
+	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	phase := aud.GetPhase()
+	phase := dgs.AmongUsData.GetPhase()
 
 	switch phase {
 	case game.TASKS:

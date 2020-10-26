@@ -48,26 +48,16 @@ func (storageInterface *StorageInterface) GetUserSettings(userID string) *UserSe
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		s := MakeUserSettings()
-		jBytes, err := json.Marshal(s)
-		if err != nil {
-			log.Println(err)
-			return MakeUserSettings()
-		}
-		err = storageInterface.client.Set(ctx, key, jBytes, 0).Err()
-		if err != nil {
-			log.Println(err)
-		}
-		return s
+		return nil
 	} else if err != nil {
 		log.Println(err)
-		return MakeUserSettings()
+		return nil
 	} else {
 		s := UserSettings{}
 		err := json.Unmarshal([]byte(j), &s)
 		if err != nil {
 			log.Println(err)
-			return MakeUserSettings()
+			return nil
 		}
 		return &s
 	}
@@ -76,12 +66,18 @@ func (storageInterface *StorageInterface) GetUserSettings(userID string) *UserSe
 func (storageInterface *StorageInterface) SetUserSettings(userID string, userSettings *UserSettings) error {
 	key := userSettingsKey(HashUserID(userID))
 
-	jbytes, err := json.Marshal(userSettings)
+	jbytes, err := json.MarshalIndent(userSettings, "", "  ")
 	if err != nil {
 		return err
 	}
 	err = storageInterface.client.Set(ctx, key, jbytes, 0).Err()
 	return err
+}
+
+func (storageInterface *StorageInterface) DeleteUserSettings(userID string) error {
+	key := userSettingsKey(HashUserID(userID))
+
+	return storageInterface.client.Del(ctx, key).Err()
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *GuildSettings {
@@ -90,7 +86,7 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		s := MakeGuildSettings()
-		jBytes, err := json.Marshal(s)
+		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
 			log.Println(err)
 			return MakeGuildSettings()
@@ -117,7 +113,7 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *GuildSettings) error {
 	key := guildSettingsKey(HashGuildID(guildID))
 
-	jbytes, err := json.Marshal(guildSettings)
+	jbytes, err := json.MarshalIndent(guildSettings, "", "  ")
 	if err != nil {
 		return err
 	}

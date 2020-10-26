@@ -65,7 +65,7 @@ func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
 	return old
 }
 
-func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated bool) {
+func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
 	auData.lock.RLock()
 	phase := auData.Phase
 	auData.lock.RUnlock()
@@ -104,7 +104,7 @@ func (auData *AmongUsData) ClearAllPlayerData() {
 	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool) {
+func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerData) {
 	auData.lock.Lock()
 	defer auData.lock.Unlock()
 
@@ -115,7 +115,7 @@ func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool) {
 			IsAlive: !update.IsDead,
 		}
 		log.Printf("Added new player instance for %s\n", update.Name)
-		return true, false
+		return true, false, auData.PlayerData[update.Name]
 	}
 	playerData := auData.PlayerData[update.Name]
 	isUpdate := playerData.isDifferent(update)
@@ -130,26 +130,7 @@ func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool) {
 		log.Printf("Updated %s", p.ToString())
 	}
 
-	return isUpdate, isAliveUpdate
-}
-
-func (auData *AmongUsData) NameColorMappings() map[string]int {
-	ret := make(map[string]int)
-	auData.lock.RLock()
-	for i, v := range auData.PlayerData {
-		ret[i] = v.Color
-	}
-	auData.lock.RUnlock()
-	return ret
-}
-func (auData *AmongUsData) NameAliveMappings() map[string]bool {
-	ret := make(map[string]bool)
-	auData.lock.RLock()
-	for i, v := range auData.PlayerData {
-		ret[i] = v.IsAlive
-	}
-	auData.lock.RUnlock()
-	return ret
+	return isUpdate, isAliveUpdate, auData.PlayerData[update.Name]
 }
 
 func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
@@ -162,7 +143,7 @@ func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
 			return playerData, true
 		}
 	}
-	return PlayerData{}, false
+	return UnlinkedPlayer, false
 }
 
 func (auData *AmongUsData) GetByName(text string) (PlayerData, bool) {
@@ -175,5 +156,5 @@ func (auData *AmongUsData) GetByName(text string) (PlayerData, bool) {
 			return playerData, true
 		}
 	}
-	return PlayerData{}, false
+	return UnlinkedPlayer, false
 }
