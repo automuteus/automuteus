@@ -159,6 +159,8 @@ func discordMainWrapper() error {
 		if err != nil {
 			log.Println(err)
 		}
+	} else {
+		return errors.New("no Redis Address specified; exiting")
 	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")

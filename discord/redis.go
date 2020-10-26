@@ -171,14 +171,14 @@ func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *
 		return
 	}
 
-	log.Printf("Setting %s to JSON", key)
+	//log.Printf("Setting %s to JSON", key)
 	err = redisInterface.client.Set(ctx, key, jBytes, 0).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
 	if data.ConnectCode != "" {
-		log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
+		//log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
 		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode), key, 0).Err()
 		if err != nil {
 			log.Println(err)
@@ -186,7 +186,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *
 	}
 
 	if data.Tracking.ChannelID != "" {
-		log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
+		//log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
 		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key, 0).Err()
 		if err != nil {
 			log.Println(err)
@@ -194,7 +194,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *
 	}
 
 	if data.GameStateMsg.MessageChannelID != "" {
-		log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
+		//log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
 		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key, 0).Err()
 		if err != nil {
 			log.Println(err)

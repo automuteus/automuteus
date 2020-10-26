@@ -27,6 +27,7 @@ const (
 	ShowMe
 	ForgetMe
 	DebugState
+	Ascii
 	Null
 )
 
@@ -181,6 +182,16 @@ var AllCommands = []Command{
 		desc:      "View the full state of the Discord Guild Data",
 		args:      "None",
 		aliases:   []string{"debugstate"},
+		secret:    true,
+	},
+	{
+		cmdType:   Ascii,
+		command:   "ascii",
+		example:   "ascii",
+		shortDesc: "Print an ASCII crewmate",
+		desc:      "Print an ASCII crewmate",
+		args:      "None",
+		aliases:   []string{"ascii"},
 		secret:    true,
 	},
 	{
@@ -413,9 +424,12 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				}
-				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```\n%s\n```", jBytes))
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 			}
 		}
+		break
+	case Ascii:
+		s.ChannelMessageSend(m.ChannelID, AsciiCrewmate)
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))
