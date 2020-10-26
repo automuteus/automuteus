@@ -53,7 +53,7 @@ func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett 
 	}
 
 	for _, voiceState := range g.VoiceStates {
-		userData, err := dgs.UserData.GetUser(voiceState.UserID)
+		userData, err := dgs.GetUser(voiceState.UserID)
 
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
@@ -66,17 +66,17 @@ func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett 
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
 
-		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
+		auData, linked := dgs.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 		mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
 
 		//still have to check if the player is linked
 		//(music bots are untracked so mute/deafen = false, but they dont have playerdata...)
-		if linked && userData.IsPendingVoiceUpdate() && voiceState.Mute == mute && voiceState.Deaf == deaf {
-			userData.SetPendingVoiceUpdate(false)
+		if linked && !userData.IsVoiceChangeReady() && voiceState.Mute == mute && voiceState.Deaf == deaf {
+			userData.SetVoiceChangeReady(true)
 
-			dgs.UserData.UpdateUserData(voiceState.UserID, userData)
+			dgs.UpdateUserData(voiceState.UserID, userData)
 		}
 	}
 	return g
@@ -95,8 +95,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 	heap.Init(priorityQueue)
 
 	for _, voiceState := range g.VoiceStates {
-
-		userData, err := dgs.UserData.GetUser(voiceState.UserID)
+		userData, err := dgs.GetUser(voiceState.UserID)
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
 			added := false
@@ -108,7 +107,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
 
-		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
+		auData, linked := dgs.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
@@ -121,10 +120,9 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 		//only issue a change if the User isn't in the right state already
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
-		if linked && shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName()) {
-
+		if linked && (shouldMute != voiceState.Mute || shouldDeaf != voiceState.Deaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName())) {
 			//only issue the req to discord if we're not waiting on another one
-			if !userData.IsPendingVoiceUpdate() {
+			if userData.IsVoiceChangeReady() {
 				priority := 0
 
 				if handlePriority != NoPriority {
@@ -158,6 +156,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
 		time.Sleep(time.Second * time.Duration(delay))
 	}
+	log.Printf("Mute queue length: %d", priorityQueue.Len())
 
 	for priorityQueue.Len() > 0 {
 		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
@@ -175,16 +174,14 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 		wg.Add(1)
 
 		//wait until it goes through
-		p.patchParams.Userdata.SetPendingVoiceUpdate(true)
+		p.patchParams.Userdata.SetVoiceChangeReady(false)
 
-		dgs.UserData.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
+		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		//we can issue mutes/deafens from ANY session, not just the primary
 		go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
 	}
 	wg.Wait()
-
-	return
 }
 
 func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {

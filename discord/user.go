@@ -16,9 +16,9 @@ type User struct {
 
 // UserData struct
 type UserData struct {
-	User               User   `json:"User"`
-	PendingVoiceUpdate bool   `json:"PendingVoiceUpdate"`
-	InGameName         string `json:"PlayerName"`
+	User             User   `json:"User"`
+	VoiceChangeReady bool   `json:"VoiceChangeReady"`
+	InGameName       string `json:"PlayerName"`
 }
 
 func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
@@ -30,30 +30,30 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 			Discriminator: dUser.Discriminator,
 			OriginalNick:  nick,
 		},
-		PendingVoiceUpdate: false,
-		InGameName:         game.UnlinkedPlayerName,
+		VoiceChangeReady: true,
+		InGameName:       game.UnlinkedPlayerName,
 	}
 }
 
-func (user *UserData) IsPendingVoiceUpdate() bool {
-	return user.PendingVoiceUpdate
+func (user *UserData) IsVoiceChangeReady() bool {
+	return user.VoiceChangeReady
 }
 
-func (user *UserData) SetPendingVoiceUpdate(is bool) {
-	user.PendingVoiceUpdate = is
+func (user *UserData) SetVoiceChangeReady(is bool) {
+	user.VoiceChangeReady = is
 }
 
 func (user *UserData) GetNickName() string {
 	return user.User.Nick
 }
 
-func (user *UserData) GetOriginalNickName() string {
-	return user.User.OriginalNick
-}
-
-func (user *UserData) NicknamesMatch() bool {
-	return user.User.Nick == user.User.OriginalNick
-}
+//func (user *UserData) GetOriginalNickName() string {
+//	return user.User.OriginalNick
+//}
+//
+//func (user *UserData) NicknamesMatch() bool {
+//	return user.User.Nick == user.User.OriginalNick
+//}
 
 func (user *UserData) GetUserName() string {
 	return user.User.UserName
@@ -70,9 +70,3 @@ func (user *UserData) GetPlayerName() string {
 func (user *UserData) Link(player game.PlayerData) {
 	user.InGameName = player.Name
 }
-
-//
-//// AmongUsPlayerMatch determines if a player is in the game
-//func (user *UserData) AmongUsPlayerMatch(player game.Player) bool {
-//	return user.AuData.Color == player.Color && user.AuData.Name == player.Name
-//}

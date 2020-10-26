@@ -43,6 +43,8 @@ type DiscordGameState struct {
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
 	AmongUsData game.AmongUsData `json:"amongUsData"`
+
+	NeedsUpload bool `json:"updated"`
 }
 
 func NewDiscordGameState(guildID string) *DiscordGameState {
@@ -55,6 +57,7 @@ func NewDiscordGameState(guildID string) *DiscordGameState {
 		Tracking:     TrackingChannel{},
 		GameStateMsg: MakeGameStateMessage(),
 		AmongUsData:  game.NewAmongUsData(),
+		NeedsUpload:  true, //making a new dgs means it's not up-to-date in Redis...
 	}
 }
 
@@ -66,6 +69,7 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
 	dgs.AmongUsData = game.NewAmongUsData()
+	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
@@ -76,7 +80,7 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 	for _, v := range g.Members {
 		if v.User.ID == userID {
 			user := MakeUserDataFromDiscordUser(v.User, v.Nick)
-			dgs.UserData.AddFullUser(user)
+			dgs.AddFullUser(user)
 			return user, true
 		}
 	}
@@ -86,56 +90,18 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 		return UserData{}, false
 	}
 	user := MakeUserDataFromDiscordUser(mem.User, mem.Nick)
-	dgs.UserData.AddFullUser(user)
+	dgs.AddFullUser(user)
 	return user, true
 }
 
 func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
 	//clear the discord User links to underlying player data
-	dgs.UserData.ClearAllPlayerData()
+	dgs.ClearAllPlayerData()
 
 	//reset all the Tracking channels
 	dgs.Tracking = TrackingChannel{}
 
-	dgs.GameStateMsg.Delete(s)
-}
-
-func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []string) {
-	g, err := s.State.Guild(dgs.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	userID := getMemberFromString(s, dgs.GuildID, args[0])
-	if userID == "" {
-		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
-	}
-
-	_, added := dgs.checkCacheAndAddUser(g, s, userID)
-	if !added {
-		log.Println("No users found in Discord for UserID " + userID)
-	}
-
-	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
-	var playerData game.PlayerData
-	found := false
-	if game.IsColorString(combinedArgs) {
-		playerData, found = dgs.AmongUsData.GetByColor(combinedArgs)
-
-	} else {
-		playerData, found = dgs.AmongUsData.GetByName(combinedArgs)
-	}
-	if found {
-		found, _, _ = dgs.UserData.AttemptPairingByMatchingNames(playerData)
-		if found {
-			log.Printf("Successfully linked %s to a color\n", userID)
-			bot.RedisInterface.SetDiscordGameState(dgs.GuildID, dgs)
-		} else {
-			log.Printf("No player was found with id %s\n", userID)
-		}
-	}
-	return
+	dgs.Delete(s)
 }
 
 func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel) string {
@@ -143,6 +109,7 @@ func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*dis
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
+			dgs.NeedsUpload = true
 
 			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
 			return fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name)
@@ -188,4 +155,49 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*disco
 		}
 	}
 	return sorted
+}
+
+func (dgs *DiscordGameState) ClearAmongUsData(name string) {
+	dgs.AmongUsData.SClearPlayerData(name)
+	dgs.NeedsUpload = true
+}
+
+func (dgs *DiscordGameState) UpdateAmongUsData(player game.Player) (bool, bool, game.PlayerData) {
+	dgs.NeedsUpload = true
+	return dgs.AmongUsData.SUpdatePlayer(player)
+}
+
+func (dgs *DiscordGameState) GetPhase() game.Phase {
+	return dgs.AmongUsData.SGetPhase()
+}
+
+func (dgs *DiscordGameState) UpdatePhase(phase game.Phase) game.Phase {
+	dgs.NeedsUpload = true
+	return dgs.AmongUsData.SUpdatePhase(phase)
+}
+
+func (dgs *DiscordGameState) SetRoomRegion(room, region string) {
+	dgs.NeedsUpload = true
+	dgs.AmongUsData.SSetRoomRegion(room, region)
+}
+
+func (dgs *DiscordGameState) GetByColor(text string) (game.PlayerData, bool) {
+	return dgs.AmongUsData.SGetByColor(text)
+}
+
+func (dgs *DiscordGameState) GetByName(name string) (game.PlayerData, bool) {
+	return dgs.AmongUsData.SGetByName(name)
+}
+
+func (dgs *DiscordGameState) SetAllAlive() {
+	dgs.AmongUsData.SSetAllAlive()
+	dgs.NeedsUpload = true
+}
+
+func (dgs *DiscordGameState) GetRoomRegion() (string, string) {
+	return dgs.AmongUsData.SGetRoomRegion()
+}
+
+func (dgs *DiscordGameState) GetNumDetectedPlayers() int {
+	return dgs.AmongUsData.SNumDetectedPlayers()
 }

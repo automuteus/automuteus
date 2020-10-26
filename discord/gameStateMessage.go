@@ -2,21 +2,13 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"sync"
-	"time"
 )
-
-//TODO up this for a full public rollout
-const EditDelaySeconds = 1
 
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
 	MessageChannelID string `json:"messageChannelID"`
 	MessageAuthorID  string `json:"messageAuthorID"`
 	LeaderID         string `json:"leaderID"`
-	lock             sync.RWMutex
-
-	deferredEdit *discordgo.MessageEmbed
 }
 
 func MakeGameStateMessage() GameStateMessage {
@@ -24,101 +16,68 @@ func MakeGameStateMessage() GameStateMessage {
 		MessageID:        "",
 		MessageChannelID: "",
 		LeaderID:         "",
-		lock:             sync.RWMutex{},
 	}
 }
 
-func (gsm *GameStateMessage) Exists() bool {
-	gsm.lock.RLock()
-	defer gsm.lock.RUnlock()
-	return gsm.MessageID != ""
+func (dgs *DiscordGameState) Exists() bool {
+	return dgs.GameStateMsg.MessageID != ""
 }
 
-func (gsm *GameStateMessage) AddReaction(s *discordgo.Session, emoji string) {
-	gsm.lock.Lock()
-	if gsm.MessageID != "" {
-		addReaction(s, gsm.MessageChannelID, gsm.MessageID, emoji)
+func (dgs *DiscordGameState) AddReaction(s *discordgo.Session, emoji string) {
+	if dgs.GameStateMsg.MessageID != "" {
+		addReaction(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
 	}
-	gsm.lock.Unlock()
 }
 
-func (gsm *GameStateMessage) RemoveAllReactions(s *discordgo.Session) {
-	gsm.lock.Lock()
-	if gsm.MessageID != "" {
-		removeAllReactions(s, gsm.MessageChannelID, gsm.MessageID)
+func (dgs *DiscordGameState) RemoveAllReactions(s *discordgo.Session) {
+	if dgs.GameStateMsg.MessageID != "" {
+		removeAllReactions(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 	}
-	gsm.lock.Unlock()
 }
 
-func (gsm *GameStateMessage) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
+func (dgs *DiscordGameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
 	for _, e := range emojis {
-		gsm.AddReaction(s, e.FormatForReaction())
+		dgs.AddReaction(s, e.FormatForReaction())
 	}
-	gsm.AddReaction(s, "❌")
+	dgs.AddReaction(s, "❌")
 }
 
-func (gsm *GameStateMessage) Delete(s *discordgo.Session) {
-	gsm.lock.Lock()
-	if gsm.MessageID != "" {
-		go deleteMessage(s, gsm.MessageChannelID, gsm.MessageID)
-		gsm.MessageID = ""
-		gsm.MessageChannelID = ""
+func (dgs *DiscordGameState) Delete(s *discordgo.Session) {
+	if dgs.GameStateMsg.MessageID != "" {
+		go deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		dgs.GameStateMsg.MessageID = ""
+		dgs.GameStateMsg.MessageChannelID = ""
+		dgs.NeedsUpload = true
 	}
-	gsm.lock.Unlock()
 }
 
-func (gsm *GameStateMessage) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) {
-	gsm.lock.Lock()
-	//the worker is already waiting to update the message, so just swap the message in-place
-	if gsm.deferredEdit != nil {
-		gsm.deferredEdit = me //swap with the newer message
-	} else {
-		gsm.deferredEdit = me
-		//the edit is empty, so there isn't a worker waiting to update it
-		go gsm.EditWorker(s, EditDelaySeconds)
-	}
-	gsm.lock.Unlock()
+//TODO bring back deferred edit
+func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) {
+	editMessageEmbed(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, me)
 }
 
-func (gsm *GameStateMessage) EditWorker(s *discordgo.Session, delay int) {
-	time.Sleep(time.Duration(delay) * time.Second)
-
-	gsm.lock.Lock()
-	if gsm.MessageID != "" {
-		editMessageEmbed(s, gsm.MessageChannelID, gsm.MessageID, gsm.deferredEdit)
-	}
-	gsm.deferredEdit = nil
-	gsm.lock.Unlock()
-}
-
-func (gsm *GameStateMessage) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
-	gsm.lock.Lock()
-	gsm.LeaderID = authorID
+func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
+	dgs.GameStateMsg.LeaderID = authorID
 	msg := sendMessageEmbed(s, channelID, me)
 	if msg != nil {
-		gsm.MessageAuthorID = msg.Author.ID
-		gsm.MessageChannelID = msg.ChannelID
-		gsm.MessageID = msg.ID
+		dgs.GameStateMsg.MessageAuthorID = msg.Author.ID
+		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
+		dgs.GameStateMsg.MessageID = msg.ID
 	}
-
-	gsm.lock.Unlock()
+	dgs.NeedsUpload = true
 }
 
-func (gsm *GameStateMessage) SameChannel(channelID string) bool {
-	gsm.lock.RLock()
-	defer gsm.lock.RUnlock()
-	if gsm.MessageID != "" {
-		return gsm.MessageChannelID == channelID
+func (dgs *DiscordGameState) SameChannel(channelID string) bool {
+	if dgs.GameStateMsg.MessageID != "" {
+		return dgs.GameStateMsg.MessageChannelID == channelID
 	}
 	return false
 }
 
-func (gsm *GameStateMessage) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
-	gsm.lock.RLock()
-	defer gsm.lock.RUnlock()
-	if !gsm.Exists() {
+func (dgs *DiscordGameState) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
+	if !dgs.Exists() {
 		return false
 	}
 
-	return m.ChannelID == gsm.MessageChannelID && m.MessageID == gsm.MessageID && m.UserID != gsm.MessageAuthorID
+	return m.ChannelID == dgs.GameStateMsg.MessageChannelID && m.MessageID == dgs.GameStateMsg.MessageID && m.UserID != dgs.GameStateMsg.MessageAuthorID
 }

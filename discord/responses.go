@@ -150,8 +150,8 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region := dgs.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
+	room, region := dgs.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.GetNumDetectedPlayers(), dgs.GetCountLinked())
 
 	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
@@ -191,14 +191,14 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region := dgs.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.NumDetectedPlayers(), dgs.UserData.GetCountLinked())
+	room, region := dgs.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.GetNumDetectedPlayers(), dgs.GetCountLinked())
 	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	phase := dgs.AmongUsData.GetPhase()
+	phase := dgs.GetPhase()
 
 	switch phase {
 	case game.TASKS:

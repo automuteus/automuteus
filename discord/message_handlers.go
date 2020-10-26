@@ -15,9 +15,9 @@ const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
 func (bot *Bot) endGame(dgs *DiscordGameState, s *discordgo.Session) {
-	dgs.AmongUsData.SetAllAlive()
-	dgs.AmongUsData.UpdatePhase(game.LOBBY)
-	dgs.AmongUsData.SetRoomRegion("", "")
+	dgs.SetAllAlive()
+	dgs.UpdatePhase(game.LOBBY)
+	dgs.SetRoomRegion("", "")
 
 	if dgs != nil {
 		sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
@@ -148,9 +148,7 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session
 						log.Print(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for Tracking", channel.Name))
 					}
 				}
-
 			}
-
 		}
 	}
 
@@ -158,7 +156,7 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session
 }
 
 func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
-	dgs.AmongUsData.SetRoomRegion(room, region)
+	dgs.SetRoomRegion(room, region)
 
 	dgs.clearGameTracking(s)
 
@@ -178,15 +176,15 @@ func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, s *discordgo.Sessi
 		}
 	}
 
-	dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, m.Author.ID)
+	dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, m.Author.ID)
 
 	log.Println("Added self game state message")
 
-	if dgs.AmongUsData.GetPhase() != game.MENU {
+	if dgs.GetPhase() != game.MENU {
 		for _, e := range bot.StatusEmojis[true] {
-			dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
+			dgs.AddReaction(s, e.FormatForReaction())
 		}
-		dgs.GameStateMsg.AddReaction(s, "❌")
+		dgs.AddReaction(s, "❌")
 	}
 }
 

@@ -334,7 +334,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				dgs.Linked = false
 			}
 			dgs.ConnectCode = connectCode
-			dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			break
 		case gameMessage := <-lobby.Channel():
@@ -349,16 +349,13 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			break
 		case gameMessage := <-phase.Channel():
-			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
-			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			var phase game.Phase
 			err := json.Unmarshal([]byte(gameMessage.Payload), &phase)
 			if err != nil {
 				log.Println(err)
 				break
 			}
-			bot.processTransition(dgs, sett, phase)
-			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
+			bot.processTransition(guildID, connectCode, phase)
 			break
 		case gameMessage := <-player.Channel():
 			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
@@ -398,60 +395,74 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 }
 func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings, player game.Player) {
 	if player.Name != "" {
-
 		if player.Disconnected || player.Action == game.LEFT {
 			log.Println("I detected that " + player.Name + " disconnected or left! " +
 				"I'm removing their linked game data; they will need to relink")
 
-			dgs.UserData.ClearPlayerDataByPlayerName(player.Name)
-			dgs.AmongUsData.ClearPlayerData(player.Name)
-			dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+			dgs.ClearPlayerDataByPlayerName(player.Name)
+			dgs.ClearAmongUsData(player.Name)
+			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 			return
 		} else {
-			updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
+			updated, isAliveUpdated, data := dgs.UpdateAmongUsData(player)
 
 			if player.Action == game.JOINED {
 				log.Println("Detected a player joined, refreshing User data mappings")
-				_, _, _ = dgs.UserData.AttemptPairingByMatchingNames(data)
+				paired := dgs.AttemptPairingByMatchingNames(data)
+				//try pairing via the cached usernames
+				if !paired {
+					uids := bot.RedisInterface.GetUidMappings(dgs.GuildID, player.Name)
+					paired = dgs.AttemptPairingByUserIDs(data, uids)
+				}
+
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 			} else if updated {
-				_, _, _ = dgs.UserData.AttemptPairingByMatchingNames(data)
+				paired := dgs.AttemptPairingByMatchingNames(data)
+				//try pairing via the cached usernames
+				if !paired {
+					uids := bot.RedisInterface.GetUidMappings(dgs.GuildID, player.Name)
+					paired = dgs.AttemptPairingByUserIDs(data, uids)
+				}
 				//log.Println("Player update received caused an update in cached state")
-				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
+				if isAliveUpdated && dgs.GetPhase() == game.TASKS {
 					if sett.GetUnmuteDeadDuringTasks() {
 						// unmute players even if in tasks because unmuteDeadDuringTasks is true
 						dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.TASKS)
-						dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 					} else {
 						log.Println("NOT updating the discord status message; would leak info")
 					}
 				} else {
-					dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 				}
 			} else {
-				//log.Println("Player update received did not cause an update in cached state")
+				//No changes occurred; no reason to update
 			}
 		}
-
 	}
 }
 
-func (bot *Bot) processTransition(dgs *DiscordGameState, sett *storage.GuildSettings, phase game.Phase) bool {
-	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
+func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase) {
+	dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
+	defer bot.RedisInterface.SetDiscordGameState(guildID, dgs)
+
+	sett := bot.StorageInterface.GetGuildSettings(guildID)
+	oldPhase := dgs.UpdatePhase(phase)
 	if oldPhase == phase {
-		return false
+		return
 	}
 
 	switch phase {
 	case game.MENU:
-		dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		dgs.GameStateMsg.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
-		return false //this doesn't change the DGS from OUR perspective
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+		dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
+		break
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, phase)
-		dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		dgs.GameStateMsg.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
-		return true
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+		dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
+		break
 	case game.TASKS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		//when going from discussion to tasks, we should mute alive players FIRST
@@ -460,23 +471,22 @@ func (bot *Bot) processTransition(dgs *DiscordGameState, sett *storage.GuildSett
 			priority = NoPriority
 		}
 		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, priority, phase)
-		dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		return true
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+		break
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 
-		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgs.AmongUsData.GetPhase())
+		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgs.GetPhase())
 
-		dgs.GameStateMsg.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		return true
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+		break
 	}
-	return false
 }
 
 func (bot *Bot) processLobby(dgs *DiscordGameState, s *discordgo.Session, lobby game.Lobby) {
-	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
+	dgs.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
 
-	dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+	dgs.Edit(s, bot.gameStateResponse(dgs))
 }
 
 func (bot *Bot) updatesListener(dg *discordgo.Session, guildID string, globalUpdates chan BroadcastMessage) {
@@ -621,9 +631,9 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	}
 
 	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
-	if dgs != nil && dgs.GameStateMsg.Exists() {
+	if dgs != nil && dgs.Exists() {
 		//verify that the User is reacting to the state/status message
-		if dgs.GameStateMsg.IsReactionTo(m) {
+		if dgs.IsReactionTo(m) {
 			sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 			idMatched := false
 			for color, e := range bot.StatusEmojis[true] {
@@ -636,10 +646,14 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 						log.Println("No users found in Discord for UserID " + m.UserID)
 						idMatched = false
 					} else {
-						auData, found := dgs.AmongUsData.GetByColor(game.GetColorStringForInt(color))
+						auData, found := dgs.GetByColor(game.GetColorStringForInt(color))
 						if found {
 							user.Link(auData)
-							dgs.UserData.UpdateUserData(m.UserID, user)
+							dgs.UpdateUserData(m.UserID, user)
+							err := bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
+							if err != nil {
+								log.Println(err)
+							}
 						} else {
 							log.Println("I couldn't find any player data for that color; is your capture linked?")
 							idMatched = false
@@ -659,7 +673,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				//log.Println(m.Emoji.Name)
 				if m.Emoji.Name == "❌" {
 					log.Println("Removing player " + m.UserID)
-					dgs.UserData.ClearPlayerData(m.UserID)
+					dgs.ClearPlayerData(m.UserID)
 					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
 					if err != nil {
 						log.Println(err)
@@ -669,11 +683,11 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			}
 			//make sure to update any voice changes if they occurred
 			if idMatched {
-				bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
-				dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgs.AmongUsData.GetPhase())
-				dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+				dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgs.GetPhase())
+				dgs.Edit(s, bot.gameStateResponse(dgs))
 			}
 		}
+		bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
 	}
 }
 
@@ -689,29 +703,29 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 
-	g := dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
+	g := dgs.verifyVoiceStateChanges(s, sett, dgs.GetPhase())
 
 	if g == nil {
 		return
 	}
 
 	//fetch the userData from our userData data cache
-	userData, err := dgs.UserData.GetUser(m.UserID)
+	userData, err := dgs.GetUser(m.UserID)
 	if err != nil {
 		//the User doesn't exist in our userdata cache; add them
 		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
 	}
 	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
 
-	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
+	auData, found := dgs.GetByName(userData.InGameName)
 	//only actually tracked if we're in a tracked channel AND linked to a player
 	tracked = tracked && found
-	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
+	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
-	if found && !userData.IsPendingVoiceUpdate() && (mute != m.Mute || deaf != m.Deaf) {
-		userData.SetPendingVoiceUpdate(true)
+	if found && userData.IsVoiceChangeReady() && (mute != m.Mute || deaf != m.Deaf) {
+		userData.SetVoiceChangeReady(false)
 
-		dgs.UserData.UpdateUserData(m.UserID, userData)
+		dgs.UpdateUserData(m.UserID, userData)
 
 		nick := userData.GetPlayerName()
 		if !sett.GetApplyNicknames() {
@@ -720,4 +734,47 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 	}
+	bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
+}
+
+func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []string) {
+	g, err := s.State.Guild(dgs.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	userID := getMemberFromString(s, dgs.GuildID, args[0])
+	if userID == "" {
+		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
+	}
+
+	_, added := dgs.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for UserID " + userID)
+	}
+
+	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
+	var auData game.PlayerData
+	found := false
+	if game.IsColorString(combinedArgs) {
+		auData, found = dgs.GetByColor(combinedArgs)
+
+	} else {
+		auData, found = dgs.GetByName(combinedArgs)
+	}
+	if found {
+		found = dgs.AttemptPairingByMatchingNames(auData)
+		if found {
+			log.Printf("Successfully linked %s to a color\n", userID)
+			bot.RedisInterface.SetDiscordGameState(dgs.GuildID, dgs)
+			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			log.Printf("No player was found with id %s\n", userID)
+		}
+	}
+	return
 }

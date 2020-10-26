@@ -62,8 +62,8 @@ func discordKey(guildID, id string) string {
 	return "automuteus:discord:" + guildID + ":" + id
 }
 
-func usernameCacheHash(username string) string {
-	return "automuteus:username:" + username
+func usernameCacheHash(guildID, username string) string {
+	return "automuteus:discord:" + guildID + ":username:" + username
 }
 
 func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
@@ -143,7 +143,7 @@ func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
 }
 
 func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *DiscordGameState) {
-	if data == nil {
+	if data == nil || !data.NeedsUpload {
 		return
 	}
 	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(guildID, data.ConnectCode))
@@ -155,13 +155,15 @@ func (redisInterface *RedisInterface) SetDiscordGameState(guildID string, data *
 	}
 
 	//connectCode is the 1 sole key we should ever rely on for tracking games. Because we generate it ourselves
-	//randomly, it's unique to every single game, and the capture and bot both agree on the linkage
+	//randomly, it's unique to every single game, and the capture and bot BOTH agree on the linkage
 	if key == "" && data.ConnectCode == "" {
-		log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
+		//log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
 		return
 	} else {
 		key = discordKey(guildID, data.ConnectCode)
 	}
+
+	data.NeedsUpload = false
 
 	jBytes, err := json.Marshal(data)
 	if err != nil {
@@ -229,10 +231,11 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	}
 }
 
-func (redisInterface *RedisInterface) GetUsernameLinks(username string) []string {
-	hash := usernameCacheHash(username)
+func (redisInterface *RedisInterface) GetUidMappings(guildID, username string) []string {
+	hash := usernameCacheHash(guildID, username)
 
 	uids, err := redisInterface.client.HKeys(ctx, hash).Result()
+	log.Println(uids)
 	if err != nil && err != redis.Nil {
 		log.Println(err)
 		return []string{}
@@ -240,8 +243,10 @@ func (redisInterface *RedisInterface) GetUsernameLinks(username string) []string
 	return uids
 }
 
-func (redisInterface *RedisInterface) AddUsernameLink(username, userID string) error {
-	hash := usernameCacheHash(username)
+func (redisInterface *RedisInterface) AddUsernameLink(guildID, userID, userName string) error {
+	hash := usernameCacheHash(guildID, userName)
+
+	log.Println("Associating " + userID + " with " + userName + " and SET in Redis")
 
 	return redisInterface.client.HSet(ctx, hash, userID, "").Err()
 }

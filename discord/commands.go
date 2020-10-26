@@ -288,7 +288,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 			dgs.trackChannel(channelName, channels)
 
-			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs))
 		}
 		break
 
@@ -298,7 +298,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			bot.linkPlayer(s, dgs, args[1:])
-			dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs))
 		}
 		break
 
@@ -313,13 +313,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				log.Println(err)
 			} else {
 				log.Print(fmt.Sprintf("Removing player %s", userID))
-				dgs.UserData.ClearPlayerData(userID)
+				dgs.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
-				dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
+				dgs.verifyVoiceStateChanges(s, sett, dgs.GetPhase())
 
 				//update the state message to reflect the player leaving
-				dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+				dgs.Edit(s, bot.gameStateResponse(dgs))
 			}
 		}
 		break
@@ -357,17 +357,17 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Refresh:
-		dgs.GameStateMsg.Delete(s) //delete the old message
+		dgs.Delete(s) //delete the old message
 
 		//create a new instance of the new one
-		dgs.GameStateMsg.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
+		dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 		//add the emojis to the refreshed message if in the right stage
-		if dgs.AmongUsData.GetPhase() != game.MENU {
+		if dgs.GetPhase() != game.MENU {
 			for _, e := range bot.StatusEmojis[true] {
-				dgs.GameStateMsg.AddReaction(s, e.FormatForReaction())
+				dgs.AddReaction(s, e.FormatForReaction())
 			}
-			dgs.GameStateMsg.AddReaction(s, "❌")
+			dgs.AddReaction(s, "❌")
 		}
 		break
 
@@ -378,7 +378,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Pause:
 		dgs.Running = !dgs.Running
-		dgs.GameStateMsg.Edit(s, bot.gameStateResponse(dgs))
+		dgs.Edit(s, bot.gameStateResponse(dgs))
 		break
 	case Log:
 		log.Println(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))

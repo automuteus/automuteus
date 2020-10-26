@@ -3,7 +3,6 @@ package game
 import (
 	"log"
 	"strings"
-	"sync"
 )
 
 type AmongUsData struct {
@@ -13,8 +12,6 @@ type AmongUsData struct {
 	Phase  Phase  `json:"phase"`
 	Room   string `json:"room"`
 	Region string `json:"region"`
-
-	lock sync.RWMutex
 }
 
 func NewAmongUsData() AmongUsData {
@@ -23,52 +20,41 @@ func NewAmongUsData() AmongUsData {
 		Phase:      MENU,
 		Room:       "",
 		Region:     "",
-		lock:       sync.RWMutex{},
 	}
 }
 
-func (auData *AmongUsData) SetRoomRegion(room, region string) {
-	auData.lock.Lock()
+func (auData *AmongUsData) SSetRoomRegion(room, region string) {
 	auData.Room = room
 	auData.Region = region
-	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) GetRoomRegion() (string, string) {
-	auData.lock.RLock()
-	defer auData.lock.RUnlock()
+func (auData *AmongUsData) SGetRoomRegion() (string, string) {
 	return auData.Room, auData.Region
 }
 
-func (auData *AmongUsData) SetAllAlive() {
-	auData.lock.Lock()
+func (auData *AmongUsData) SSetAllAlive() {
 	for i, v := range auData.PlayerData {
 		v.IsAlive = true
 		auData.PlayerData[i] = v
 	}
-	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
-	auData.lock.Lock()
+func (auData *AmongUsData) SUpdatePhase(phase Phase) (old Phase) {
 	old = auData.Phase
 	auData.Phase = phase
-	auData.lock.Unlock()
 
 	if old != phase {
 		if phase == LOBBY || (phase == TASKS && old == LOBBY) {
-			auData.SetAllAlive()
+			auData.SSetAllAlive()
 		} else if phase == MENU {
-			auData.SetRoomRegion("", "")
+			auData.SSetRoomRegion("", "")
 		}
 	}
 	return old
 }
 
-func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
-	auData.lock.RLock()
+func (auData *AmongUsData) SUpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
 	phase := auData.Phase
-	auData.lock.RUnlock()
 
 	if phase == LOBBY && player.IsDead {
 		player.IsDead = false
@@ -80,33 +66,23 @@ func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated 
 	return auData.applyPlayerUpdate(player)
 }
 
-func (auData *AmongUsData) NumDetectedPlayers() int {
-	auData.lock.RLock()
-	defer auData.lock.RUnlock()
+func (auData *AmongUsData) SNumDetectedPlayers() int {
 	return len(auData.PlayerData)
 }
 
-func (auData *AmongUsData) GetPhase() Phase {
-	auData.lock.RLock()
-	defer auData.lock.RUnlock()
+func (auData *AmongUsData) SGetPhase() Phase {
 	return auData.Phase
 }
 
-func (auData *AmongUsData) ClearPlayerData(name string) {
-	auData.lock.Lock()
+func (auData *AmongUsData) SClearPlayerData(name string) {
 	delete(auData.PlayerData, name)
-	auData.lock.Unlock()
 }
 
-func (auData *AmongUsData) ClearAllPlayerData() {
-	auData.lock.Lock()
+func (auData *AmongUsData) SClearAllPlayerData() {
 	auData.PlayerData = map[string]PlayerData{}
-	auData.lock.Unlock()
 }
 
 func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerData) {
-	auData.lock.Lock()
-	defer auData.lock.Unlock()
 
 	if _, ok := auData.PlayerData[update.Name]; !ok {
 		auData.PlayerData[update.Name] = PlayerData{
@@ -127,16 +103,14 @@ func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerD
 			IsAlive: !update.IsDead,
 		}
 		auData.PlayerData[update.Name] = p
-		log.Printf("Updated %s", p.ToString())
+		log.Printf("NeedsUpload %s", p.ToString())
 	}
 
 	return isUpdate, isAliveUpdate, auData.PlayerData[update.Name]
 }
 
-func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
+func (auData *AmongUsData) SGetByColor(text string) (PlayerData, bool) {
 	text = strings.ToLower(text)
-	auData.lock.RLock()
-	defer auData.lock.RUnlock()
 
 	for _, playerData := range auData.PlayerData {
 		if GetColorStringForInt(playerData.Color) == text {
@@ -146,10 +120,8 @@ func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
 	return UnlinkedPlayer, false
 }
 
-func (auData *AmongUsData) GetByName(text string) (PlayerData, bool) {
+func (auData *AmongUsData) SGetByName(text string) (PlayerData, bool) {
 	text = strings.ToLower(text)
-	auData.lock.RLock()
-	defer auData.lock.RUnlock()
 
 	for _, playerData := range auData.PlayerData {
 		if strings.ReplaceAll(strings.ToLower(playerData.Name), " ", "") == strings.ReplaceAll(strings.ToLower(text), " ", "") {

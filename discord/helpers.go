@@ -38,7 +38,7 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 		newParams := struct {
 			Deaf bool   `json:"deaf"`
 			Mute bool   `json:"mute"`
-			Nick string `json:"Nick"`
+			Nick string `json:"nick"`
 		}{params.Deaf, params.Mute, params.Nick}
 		log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v Nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
 

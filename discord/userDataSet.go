@@ -10,14 +10,14 @@ import (
 
 type UserDataSet map[string]UserData
 
-func (uds UserDataSet) Size() int {
-	return len(uds)
+func (dgs *DiscordGameState) UserDataSize() int {
+	return len(dgs.UserData)
 }
 
-func (uds UserDataSet) GetCountLinked() int {
+func (dgs *DiscordGameState) GetCountLinked() int {
 	LinkedPlayerCount := 0
 
-	for _, v := range uds {
+	for _, v := range dgs.UserData {
 		if v.InGameName != game.UnlinkedPlayerName {
 			LinkedPlayerCount++
 		}
@@ -25,53 +25,72 @@ func (uds UserDataSet) GetCountLinked() int {
 	return LinkedPlayerCount
 }
 
-func (uds *UserDataSet) AddFullUser(user UserData) {
-	(*uds)[user.GetID()] = user
-}
-
-func (uds *UserDataSet) UpdateUserData(userID string, data UserData) {
-	(*uds)[userID] = data
-}
-
-func (uds *UserDataSet) AttemptPairingByMatchingNames(data game.PlayerData) (bool, string, string) {
+func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData) bool {
 	name := strings.ReplaceAll(strings.ToLower(data.Name), " ", "")
-	for userID, v := range *uds {
+	for userID, v := range dgs.UserData {
 		if v.InGameName == game.UnlinkedPlayerName {
 			if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
 				v.Link(data)
-				(*uds)[userID] = v
-				return true, userID, v.User.UserName
+				dgs.UserData[userID] = v
+				dgs.NeedsUpload = true
+				return true
 			}
 		}
 	}
-	return false, "", ""
+	return false
 }
 
-func (uds *UserDataSet) ClearPlayerData(userID string) {
-	if v, ok := (*uds)[userID]; ok {
-		v.InGameName = game.UnlinkedPlayerName
-		(*uds)[userID] = v
+func (dgs *DiscordGameState) UpdateUserData(userID string, data UserData) {
+	dgs.UserData[userID] = data
+	dgs.NeedsUpload = true
+}
+
+func (dgs *DiscordGameState) AddFullUser(user UserData) {
+	dgs.UserData[user.GetID()] = user
+	dgs.NeedsUpload = true
+}
+
+func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs []string) bool {
+	for _, userID := range userIDs {
+		if v, ok := dgs.UserData[userID]; ok {
+			v.Link(data)
+			dgs.UserData[userID] = v
+			dgs.NeedsUpload = true
+			return true
+		}
 	}
+	return false
 }
 
-func (uds *UserDataSet) ClearPlayerDataByPlayerName(playerName string) {
-	for i, v := range *uds {
+func (dgs *DiscordGameState) ClearPlayerData(userID string) {
+	if v, ok := dgs.UserData[userID]; ok {
+		v.InGameName = game.UnlinkedPlayerName
+		dgs.UserData[userID] = v
+	}
+	dgs.NeedsUpload = true
+}
+
+func (dgs *DiscordGameState) ClearPlayerDataByPlayerName(playerName string) {
+	for i, v := range dgs.UserData {
 		if v.GetPlayerName() == playerName {
 			v.InGameName = game.UnlinkedPlayerName
-			(*uds)[i] = v
+			dgs.UserData[i] = v
+			dgs.NeedsUpload = true
+			return
 		}
 	}
 }
 
-func (uds *UserDataSet) ClearAllPlayerData() {
-	for i, v := range *uds {
+func (dgs *DiscordGameState) ClearAllPlayerData() {
+	for i, v := range dgs.UserData {
 		v.InGameName = game.UnlinkedPlayerName
-		(*uds)[i] = v
+		dgs.UserData[i] = v
 	}
+	dgs.NeedsUpload = true
 }
 
-func (uds *UserDataSet) GetUser(userID string) (UserData, error) {
-	if v, ok := (*uds)[userID]; ok {
+func (dgs *DiscordGameState) GetUser(userID string) (UserData, error) {
+	if v, ok := dgs.UserData[userID]; ok {
 		return v, nil
 	}
 	return UserData{}, errors.New(fmt.Sprintf("No User found with ID %s", userID))
