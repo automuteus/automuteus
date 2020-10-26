@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/botProfilePicture.jpg" width="196">
+    <img src="assets/AutoMuteUsBanner_cropped.png" width="800">
 </p>
 
 <p align="center">
@@ -14,7 +14,11 @@
     </a>
 </p>
 
-# AmongUsAutoMute (BETA) 
+<p align="center">
+    Banner and Bot profile picture courtesy of <a href=https://aspen-cyborg.tumblr.com/>Smiles</a>!
+</p>
+
+# AutoMuteUs (BETA) 
 
 Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!
 
@@ -69,7 +73,7 @@ Congrats, if you followed the instructions correctly, the bot should now be runn
 ## Remote Hosted Bot Requirements
 
 Remote usage (Capture app and bot app running on seperate networks) is possible with AutoMuteUs however it is recommended only for those familiar with advanced networking topics such as Static IPs, Dynamic DNS, and Port Mappings. If you are not already comfortable with these topics it is not recommended that you attempt to set up remote use. If you wish to have remote users run the capture app then you will need the following:
-1. The computer hosting the bot must have a static IP on your local network (pregerably outside your DHCP pool, or have a reserved IP address).
+1. The computer hosting the bot must have a static IP on your local network (preferably outside your DHCP pool, or have a reserved IP address).
 2. You must create a port mapping on your router to map port 8123 to your bot host (UniFi users please note that the current UniFi controller does not enable new port mappings by default)
 3. Unless you have a static IP from your ISP you will need a dynamic DNS service such as DuckDNS, Afraid, or No-IP. You will also need that service set up to automatically update your IP when it changes.
 
@@ -88,21 +92,17 @@ If you play in larger groups of 8+ people, this is recommended to not be rate-li
 
 ### Advanced. Only configure these variables if you know what you're doing
 - `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
-- `PORT`: The *internal* port the Bot will use for incoming Socket.io communications. Defaults to 8123.
-- `HOST`: The externally-accessible URL for *this* instance of the discord bot. For example, `http://test.com:8123`.
+- `PORT`: The **internal** port the Bot will use for incoming Socket.io communications. Defaults to 8123.
+- `HOST`: The **externally-accessible URL** for the discord bot. For example, `http://test.com:8123`.
 This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.
 **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
 - `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000
 - `CONFIG_PATH`: Alternate filesystem path for guild and user config files. Defaults to `./`
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 600 seconds.
-### HIGHLY advanced. Probably don't ever touch these ;)
+### HIGHLY advanced. Probably don't ever touch these!
 - `NUM_SHARDS`: Num shards provided to the Discord API.
 - `SHARD_ID`: Shard ID used to identify with the Discord API. Needs to be strictly less than `NUM_SHARDS`
-
-## Google Firestore Config (Optional)
-- `GOOGLE_APPLICATION_CREDENTIALS`: Path to credentials JSON file used to access the Google Firestore API and create/update config documents. If specified, be sure to specify the following PROJECT_ID below as well.
-- `FIRESTORE_PROJECT_ID`: The specific Project ID for the Firestore operations you intend this bot to use.
 
 ## Deploy to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
@@ -132,8 +132,6 @@ Get Playing!
 
 If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
 
-If you need to add more players to the tracking list, they can be added using the reaction emojis once back in the lobby. Or, manually using `.au link @player color`.
-
 # Bot Commands
 The Discord Bot uses the `.au` prefix for any commands
 
@@ -152,6 +150,8 @@ The Discord Bot uses the `.au` prefix for any commands
 |`.au log`||message|Issue a small log message that will help you find the message later, if a problem occurs|`.au log Something bad happened`|
 
 # Similar Projects
+
+- [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).
 
 - [AmongUsBot](https://github.com/alpharaoh/AmongUsBot): Without their original Python program
 with a lot of the OCR/Discord functionality, I never would have even thought of this idea! Not currently maintained
