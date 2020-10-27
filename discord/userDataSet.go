@@ -32,7 +32,6 @@ func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData)
 			if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
 				v.Link(data)
 				dgs.UserData[userID] = v
-				dgs.NeedsUpload = true
 				return true
 			}
 		}
@@ -42,12 +41,10 @@ func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData)
 
 func (dgs *DiscordGameState) UpdateUserData(userID string, data UserData) {
 	dgs.UserData[userID] = data
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) AddFullUser(user UserData) {
 	dgs.UserData[user.GetID()] = user
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs []string) bool {
@@ -55,7 +52,6 @@ func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userI
 		if v, ok := dgs.UserData[userID]; ok {
 			v.Link(data)
 			dgs.UserData[userID] = v
-			dgs.NeedsUpload = true
 			return true
 		}
 	}
@@ -67,7 +63,6 @@ func (dgs *DiscordGameState) ClearPlayerData(userID string) {
 		v.InGameName = game.UnlinkedPlayerName
 		dgs.UserData[userID] = v
 	}
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) ClearPlayerDataByPlayerName(playerName string) {
@@ -75,7 +70,6 @@ func (dgs *DiscordGameState) ClearPlayerDataByPlayerName(playerName string) {
 		if v.GetPlayerName() == playerName {
 			v.InGameName = game.UnlinkedPlayerName
 			dgs.UserData[i] = v
-			dgs.NeedsUpload = true
 			return
 		}
 	}
@@ -86,7 +80,6 @@ func (dgs *DiscordGameState) ClearAllPlayerData() {
 		v.InGameName = game.UnlinkedPlayerName
 		dgs.UserData[i] = v
 	}
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) GetUser(userID string) (UserData, error) {

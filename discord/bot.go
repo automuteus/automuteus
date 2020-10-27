@@ -327,26 +327,28 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 		select {
 		case gameMessage := <-connection.Channel():
 			log.Println(gameMessage)
-			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 			if gameMessage.Payload == "true" {
 				dgs.Linked = true
 			} else {
 				dgs.Linked = false
 			}
 			dgs.ConnectCode = connectCode
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
 			break
 		case gameMessage := <-lobby.Channel():
-			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
+
 			var lobby game.Lobby
 			err := json.Unmarshal([]byte(gameMessage.Payload), &lobby)
 			if err != nil {
 				log.Println(err)
 				break
 			}
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 			bot.processLobby(dgs, bot.SessionManager.GetPrimarySession(), lobby)
-			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 			break
 		case gameMessage := <-phase.Channel():
 			var phase game.Phase
@@ -358,7 +360,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			bot.processTransition(guildID, connectCode, phase)
 			break
 		case gameMessage := <-player.Channel():
-			dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
 			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			var player game.Player
 			err := json.Unmarshal([]byte(gameMessage.Payload), &player)
@@ -366,8 +367,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				log.Println(err)
 				break
 			}
+
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 			bot.processPlayer(dgs, sett, player)
-			bot.RedisInterface.SetDiscordGameState(guildID, dgs)
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 			break
 		case k := <-killChan:
 			if k {
@@ -443,23 +446,27 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 }
 
 func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase) {
-	dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connectCode)
-	defer bot.RedisInterface.SetDiscordGameState(guildID, dgs)
-
 	sett := bot.StorageInterface.GetGuildSettings(guildID)
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 	oldPhase := dgs.UpdatePhase(phase)
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	if oldPhase == phase {
 		return
 	}
 
 	switch phase {
 	case game.MENU:
+		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connectCode)
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
 		break
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, phase)
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+		dgs = bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connectCode)
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 		break
@@ -470,14 +477,21 @@ func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase)
 		if oldPhase == game.LOBBY {
 			priority = NoPriority
 		}
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, priority, phase)
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+		dgs = bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connectCode)
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		break
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
 		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgs.GetPhase())
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
+		dgs = bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connectCode)
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		break
 	}
@@ -489,16 +503,18 @@ func (bot *Bot) processLobby(dgs *DiscordGameState, s *discordgo.Session, lobby 
 	dgs.Edit(s, bot.gameStateResponse(dgs))
 }
 
-func (bot *Bot) updatesListener(dg *discordgo.Session, guildID string, globalUpdates chan BroadcastMessage) {
+func (bot *Bot) updatesListener(s *discordgo.Session, guildID string, globalUpdates chan BroadcastMessage) {
 	for {
 		select {
 		case worldUpdate := <-globalUpdates:
 			bot.ChannelsMapLock.Lock()
 			for i, connCode := range bot.ConnsToGames {
 				if worldUpdate.Type == GRACEFUL_SHUTDOWN {
-					dgs := bot.RedisInterface.GetDiscordGameState(guildID, "", "", connCode)
-					go bot.gracefulShutdownWorker(dg, dgs, worldUpdate.Data, worldUpdate.Message)
+
+					go bot.gracefulShutdownWorker(guildID, connCode, s, worldUpdate.Data, worldUpdate.Message)
+					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connCode)
 					dgs.Linked = false
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 					delete(bot.ConnsToGames, i)
 				}
 			}
@@ -507,7 +523,8 @@ func (bot *Bot) updatesListener(dg *discordgo.Session, guildID string, globalUpd
 	}
 }
 
-func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, dgs *DiscordGameState, seconds int, message string) {
+func (bot *Bot) gracefulShutdownWorker(guildID, connCode string, s *discordgo.Session, seconds int, message string) {
+	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connCode)
 	if dgs.GameStateMsg.MessageID != "" {
 		log.Printf("**Received graceful shutdown message, shutting down in %d seconds**", seconds)
 
@@ -516,7 +533,7 @@ func (bot *Bot) gracefulShutdownWorker(s *discordgo.Session, dgs *DiscordGameSta
 
 	time.Sleep(time.Duration(seconds) * time.Second)
 
-	bot.endGame(dgs, s)
+	bot.endGame(dgs.GuildID, dgs.GameStateMsg.MessageChannelID, dgs.Tracking.ChannelID, dgs.ConnectCode, s)
 
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
@@ -556,7 +573,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		dsg := NewDiscordGameState(m.Guild.ID)
 
 		//put an empty entry in Redis
-		bot.RedisInterface.SetDiscordGameState(m.Guild.ID, dsg)
+		bot.RedisInterface.SetDiscordGameState(dsg, nil)
 
 		go bot.updatesListener(s, m.Guild.ID, globalUpdates)
 	}
@@ -630,11 +647,15 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
+	//TODO this loop is slow and will block the lock
+	//TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
+	//TODO voicechangeready gets blocked (probably by the lock taking too long...)
+
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 	if dgs != nil && dgs.Exists() {
 		//verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(m) {
-			sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 			idMatched := false
 			for color, e := range bot.StatusEmojis[true] {
 				if e.ID == m.Emoji.ID {
@@ -650,10 +671,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 						if found {
 							user.Link(auData)
 							dgs.UpdateUserData(m.UserID, user)
-							err := bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
-							if err != nil {
-								log.Println(err)
-							}
+							go bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
 						} else {
 							log.Println("I couldn't find any player data for that color; is your capture linked?")
 							idMatched = false
@@ -661,12 +679,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					}
 
 					//then remove the player's reaction if we matched, or if we didn't
-					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
-					if err != nil {
-						log.Println(err)
-					}
+					go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
 					break
-
 				}
 			}
 			if !idMatched {
@@ -674,10 +688,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				if m.Emoji.Name == "❌" {
 					log.Println("Removing player " + m.UserID)
 					dgs.ClearPlayerData(m.UserID)
-					err := s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
-					if err != nil {
-						log.Println(err)
-					}
+					go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
 					idMatched = true
 				}
 			}
@@ -687,25 +698,24 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				dgs.Edit(s, bot.gameStateResponse(dgs))
 			}
 		}
-		bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
 	}
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 //voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
 //relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-
-	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, "", m.ChannelID, "")
-	if dgs == nil {
-		return
-	}
-
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, "", m.ChannelID, "")
 
 	g := dgs.verifyVoiceStateChanges(s, sett, dgs.GetPhase())
 
 	if g == nil {
+		if lock != nil {
+			lock.Release()
+		}
 		return
 	}
 
@@ -734,7 +744,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 	}
-	bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []string) {
@@ -767,7 +777,6 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 		found = dgs.AttemptPairingByMatchingNames(auData)
 		if found {
 			log.Printf("Successfully linked %s to a color\n", userID)
-			bot.RedisInterface.SetDiscordGameState(dgs.GuildID, dgs)
 			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {
 				log.Println(err)

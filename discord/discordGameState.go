@@ -43,8 +43,6 @@ type DiscordGameState struct {
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
 	AmongUsData game.AmongUsData `json:"amongUsData"`
-
-	NeedsUpload bool `json:"updated"`
 }
 
 func NewDiscordGameState(guildID string) *DiscordGameState {
@@ -57,7 +55,6 @@ func NewDiscordGameState(guildID string) *DiscordGameState {
 		Tracking:     TrackingChannel{},
 		GameStateMsg: MakeGameStateMessage(),
 		AmongUsData:  game.NewAmongUsData(),
-		NeedsUpload:  true, //making a new dgs means it's not up-to-date in Redis...
 	}
 }
 
@@ -69,7 +66,6 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
 	dgs.AmongUsData = game.NewAmongUsData()
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
@@ -109,7 +105,6 @@ func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*dis
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
-			dgs.NeedsUpload = true
 
 			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
 			return fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name)
@@ -159,11 +154,9 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*disco
 
 func (dgs *DiscordGameState) ClearAmongUsData(name string) {
 	dgs.AmongUsData.SClearPlayerData(name)
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) UpdateAmongUsData(player game.Player) (bool, bool, game.PlayerData) {
-	dgs.NeedsUpload = true
 	return dgs.AmongUsData.SUpdatePlayer(player)
 }
 
@@ -172,12 +165,10 @@ func (dgs *DiscordGameState) GetPhase() game.Phase {
 }
 
 func (dgs *DiscordGameState) UpdatePhase(phase game.Phase) game.Phase {
-	dgs.NeedsUpload = true
 	return dgs.AmongUsData.SUpdatePhase(phase)
 }
 
 func (dgs *DiscordGameState) SetRoomRegion(room, region string) {
-	dgs.NeedsUpload = true
 	dgs.AmongUsData.SSetRoomRegion(room, region)
 }
 
@@ -191,7 +182,6 @@ func (dgs *DiscordGameState) GetByName(name string) (game.PlayerData, bool) {
 
 func (dgs *DiscordGameState) SetAllAlive() {
 	dgs.AmongUsData.SSetAllAlive()
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) GetRoomRegion() (string, string) {

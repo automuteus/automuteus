@@ -14,29 +14,31 @@ const downloadURL = "https://github.com/denverquane/amonguscapture/releases/late
 const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
 const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
-func (bot *Bot) endGame(dgs *DiscordGameState, s *discordgo.Session) {
+func (bot *Bot) endGame(guildID, channelID, voiceChannel, connCode string, s *discordgo.Session) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, channelID, voiceChannel, connCode)
+
 	dgs.SetAllAlive()
 	dgs.UpdatePhase(game.LOBBY)
 	dgs.SetRoomRegion("", "")
 
-	if dgs != nil {
-		sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
+	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
 
-		// apply the unmute/deafen to users who have state linked to them
-		dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
+	// apply the unmute/deafen to users who have state linked to them
+	dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
 
-		//clear the Tracking and make sure all users are unlinked
-		dgs.clearGameTracking(s)
+	//clear the Tracking and make sure all users are unlinked
+	dgs.clearGameTracking(s)
 
-		dgs.Running = false
-	}
+	dgs.Running = false
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
 
-func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
+func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 	//if !guild.GameStateMsg.Exists() {
@@ -51,6 +53,8 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session
 	connectCode := generateConnectCode(m.GuildID)
 
 	dgs.ConnectCode = connectCode
+
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	killChan := make(chan bool)
 
@@ -152,10 +156,11 @@ func (bot *Bot) handleNewGameMessage(dgs *DiscordGameState, s *discordgo.Session
 		}
 	}
 
-	bot.handleGameStartMessage(dgs, s, m, room, region, initialTracking, g)
+	bot.handleGameStartMessage(s, m, room, region, initialTracking, g, connectCode)
 }
 
-func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
+func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild, connCode string) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", connCode)
 	dgs.SetRoomRegion(room, region)
 
 	dgs.clearGameTracking(s)
@@ -186,6 +191,7 @@ func (bot *Bot) handleGameStartMessage(dgs *DiscordGameState, s *discordgo.Sessi
 		}
 		dgs.AddReaction(s, "❌")
 	}
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord

@@ -156,14 +156,13 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
 
-	alarmFormatted := ":x:"
 	color := 15158332 //red
 	desc := ""
 	if dgs.Linked {
 		desc = dgs.makeDescription()
 		color = 3066993
 	} else {
-		desc = fmt.Sprintf("%s**No capture linked! Click the link in your DMs to connect!**%s", alarmFormatted, alarmFormatted)
+		desc = fmt.Sprintf("❌**No capture linked! Click the link in your DMs to connect!**❌")
 	}
 
 	msg := discordgo.MessageEmbed{

@@ -47,7 +47,6 @@ func (dgs *DiscordGameState) Delete(s *discordgo.Session) {
 		go deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		dgs.GameStateMsg.MessageID = ""
 		dgs.GameStateMsg.MessageChannelID = ""
-		dgs.NeedsUpload = true
 	}
 }
 
@@ -64,7 +63,6 @@ func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.M
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
 		dgs.GameStateMsg.MessageID = msg.ID
 	}
-	dgs.NeedsUpload = true
 }
 
 func (dgs *DiscordGameState) SameChannel(channelID string) bool {

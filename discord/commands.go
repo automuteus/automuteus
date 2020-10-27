@@ -161,7 +161,7 @@ var AllCommands = []Command{
 		shortDesc: "Show player settings",
 		desc:      "Send all the player data for the User issuing the command",
 		args:      "None",
-		aliases:   []string{"showme"},
+		aliases:   []string{"sm"},
 		secret:    false,
 	},
 	{
@@ -171,7 +171,7 @@ var AllCommands = []Command{
 		shortDesc: "Delete player settings",
 		desc:      "Delete all the data associated with the User issuing the command",
 		args:      "None",
-		aliases:   []string{"forgetme"},
+		aliases:   []string{"fm"},
 		secret:    false,
 	},
 	{
@@ -181,7 +181,7 @@ var AllCommands = []Command{
 		shortDesc: "View the full state of the Discord Guild Data",
 		desc:      "View the full state of the Discord Guild Data",
 		args:      "None",
-		aliases:   []string{"debugstate"},
+		aliases:   []string{"ds"},
 		secret:    true,
 	},
 	{
@@ -253,6 +253,12 @@ func GetCommand(arg string) Command {
 		} else {
 			if arg == cmd.command {
 				return cmd
+			} else {
+				for _, al := range cmd.aliases {
+					if arg == al {
+						return cmd
+					}
+				}
 			}
 		}
 	}
@@ -266,7 +272,6 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
 	}
-	dgs := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", "")
 
 	switch cmd.cmdType {
 	case Help:
@@ -297,7 +302,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				log.Println(err)
 			}
 
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 			dgs.trackChannel(channelName, channels)
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 			dgs.Edit(s, bot.gameStateResponse(dgs))
 		}
@@ -308,7 +315,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			embed := ConstructEmbedForCommand(prefix, cmd)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 			bot.linkPlayer(s, dgs, args[1:])
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 			dgs.Edit(s, bot.gameStateResponse(dgs))
 		}
 		break
@@ -324,10 +334,12 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				log.Println(err)
 			} else {
 				log.Print(fmt.Sprintf("Removing player %s", userID))
+				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 				dgs.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
 				dgs.verifyVoiceStateChanges(s, sett, dgs.GetPhase())
+				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				//update the state message to reflect the player leaving
 				dgs.Edit(s, bot.gameStateResponse(dgs))
@@ -338,14 +350,16 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case New:
 		room, region := getRoomAndRegionFromArgs(args[1:])
 
-		bot.handleNewGameMessage(dgs, s, m, g, room, region)
+		bot.handleNewGameMessage(s, m, g, room, region)
 		break
 
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.endGame(dgs, s)
+		bot.endGame(m.GuildID, m.ChannelID, "", "", s)
 
+		//only need read-only for deletion (the delete method is locking)
+		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, m.ChannelID, "", "")
 		bot.RedisInterface.DeleteDiscordGameState(dgs)
 
 		//have to explicitly delete here, because if we use the default delete below, the ChannelID
@@ -368,6 +382,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Refresh:
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 		dgs.Delete(s) //delete the old message
 
 		//create a new instance of the new one
@@ -380,6 +395,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			}
 			dgs.AddReaction(s, "❌")
 		}
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 		break
 
 	case Settings:
@@ -388,7 +404,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Pause:
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
 		dgs.Running = !dgs.Running
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 		dgs.Edit(s, bot.gameStateResponse(dgs))
 		break
 	case Log:
@@ -418,7 +437,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case DebugState:
 		if m.Author != nil {
-			state := bot.RedisInterface.GetDiscordGameState(m.GuildID, m.ChannelID, "", dgs.ConnectCode)
+			state := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, m.ChannelID, "", "")
 			if state != nil {
 				jBytes, err := json.MarshalIndent(state, "", "  ")
 				if err != nil {
@@ -435,6 +454,4 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))
 		break
 	}
-
-	bot.RedisInterface.SetDiscordGameState(m.GuildID, dgs)
 }
