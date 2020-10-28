@@ -103,7 +103,6 @@ func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerD
 			IsAlive: !update.IsDead,
 		}
 		auData.PlayerData[update.Name] = p
-		log.Printf("NeedsUpload %s", p.ToString())
 	}
 
 	return isUpdate, isAliveUpdate, auData.PlayerData[update.Name]

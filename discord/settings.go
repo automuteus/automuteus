@@ -155,7 +155,7 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 			log.Println(err)
 			return
 		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```\n%s\n```", jBytes))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
@@ -328,28 +328,33 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	// users the User mentioned in their message
 	var userIDs []string
 
-	for _, userName := range args[2:] {
-		if userName == "" || userName == " " {
-			// User added a double space by accident, ignore it
-			continue
-		}
-		ID := getMemberFromString(s, m.GuildID, userName)
-		if ID == "" {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
-			continue
-		}
-		userIDs = append(userIDs, ID)
-	}
+	if args[2] != "clear" && args[2] != "c" {
 
-	for _, ID := range userIDs {
-		if ID != "" {
-			newAdminIDs = append(newAdminIDs, ID)
-			// mention User without pinging
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
+		for _, userName := range args[2:] {
+			if userName == "" || userName == " " {
+				// User added a double space by accident, ignore it
+				continue
+			}
+			ID := getMemberFromString(s, m.GuildID, userName)
+			if ID == "" {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
+				continue
+			}
+			userIDs = append(userIDs, ID)
 		}
+
+		for _, ID := range userIDs {
+			if ID != "" {
+				newAdminIDs = append(newAdminIDs, ID)
+				// mention User without pinging
+				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+					Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
+					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				})
+			}
+		}
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "Clearing all AdminUserIDs!")
 	}
 
 	sett.SetAdminUserIDs(newAdminIDs)
@@ -368,11 +373,11 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
 				if index == 0 {
-					listOfRoles += "<&" + ID + ">"
+					listOfRoles += "<@&" + ID + ">"
 				} else if index == adminRoleCount-1 {
-					listOfRoles += " and <&" + ID + ">"
+					listOfRoles += " and <@&" + ID + ">"
 				} else {
-					listOfRoles += ", <&" + ID + ">"
+					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
 			embed := ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs])
@@ -385,28 +390,32 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	// roles the User mentioned in their message
 	var roleIDs []string
 
-	for _, roleName := range args[2:] {
-		if roleName == "" || roleName == " " {
-			// User added a double space by accident, ignore it
-			continue
+	if args[2] != "clear" && args[2] != "c" {
+		for _, roleName := range args[2:] {
+			if roleName == "" || roleName == " " {
+				// User added a double space by accident, ignore it
+				continue
+			}
+			ID := getRoleFromString(s, m.GuildID, roleName)
+			if ID == "" {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
+				continue
+			}
+			roleIDs = append(roleIDs, ID)
 		}
-		ID := getRoleFromString(s, m.GuildID, roleName)
-		if ID == "" {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
-			continue
-		}
-		roleIDs = append(roleIDs, ID)
-	}
 
-	for _, ID := range roleIDs {
-		if ID != "" {
-			newRoleIDs = append(newRoleIDs, ID)
-			// mention User without pinging
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@&%s>s are now bot admins!", ID),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
+		for _, ID := range roleIDs {
+			if ID != "" {
+				newRoleIDs = append(newRoleIDs, ID)
+				// mention User without pinging
+				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+					Content:         fmt.Sprintf("<@&%s>s are now bot admins!", ID),
+					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				})
+			}
 		}
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "Clearing all PermissionRoleIDs!")
 	}
 
 	sett.SetPermissionRoleIDs(newRoleIDs)

@@ -414,7 +414,7 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 				paired := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
 				if !paired {
-					uids := bot.RedisInterface.GetUidMappings(dgs.GuildID, player.Name)
+					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 					paired = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
@@ -423,7 +423,8 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 				paired := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
 				if !paired {
-					uids := bot.RedisInterface.GetUidMappings(dgs.GuildID, player.Name)
+					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+
 					paired = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 				//log.Println("Player update received caused an update in cached state")

@@ -28,8 +28,8 @@ func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       "Your Data",
-		Description: "Here's all the data I have for you",
+		Title:       "Your Settings",
+		Description: "Here's all the settings I have for you",
 		Timestamp:   "",
 		Color:       3066993, //GREEN
 		Image:       nil,
@@ -40,7 +40,7 @@ func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
 				Name:   "Settings",
-				Value:  fmt.Sprintf("```\n%s\n```", jBytes),
+				Value:  fmt.Sprintf("```JSON\n%s\n```", jBytes),
 				Inline: true,
 			},
 		},

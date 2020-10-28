@@ -47,9 +47,10 @@ func (dgs *DiscordGameState) AddFullUser(user UserData) {
 	dgs.UserData[user.GetID()] = user
 }
 
-func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs []string) bool {
-	for _, userID := range userIDs {
-		if v, ok := dgs.UserData[userID]; ok {
+func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs map[string]interface{}) bool {
+	for userID := range userIDs {
+		//only attempt to link players that aren't paired already
+		if v, ok := dgs.UserData[userID]; ok && v.GetPlayerName() == game.UnlinkedPlayerName {
 			v.Link(data)
 			dgs.UserData[userID] = v
 			return true

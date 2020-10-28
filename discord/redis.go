@@ -65,8 +65,8 @@ func discordKey(guildID, id string) string {
 	return "automuteus:discord:" + guildID + ":" + id
 }
 
-func usernameCacheHash(guildID, username string) string {
-	return "automuteus:discord:" + guildID + ":username:" + username
+func cacheHash(guildID string) string {
+	return "automuteus:discord:" + guildID + ":cache"
 }
 
 func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
@@ -262,24 +262,73 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	}
 }
 
-func (redisInterface *RedisInterface) GetUidMappings(guildID, username string) []string {
-	hash := usernameCacheHash(guildID, username)
+func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key string) map[string]interface{} {
+	cacheHash := cacheHash(guildID)
 
-	uids, err := redisInterface.client.HKeys(ctx, hash).Result()
-	log.Println(uids)
-	if err != nil && err != redis.Nil {
+	value, err := redisInterface.client.HGet(ctx, cacheHash, key).Result()
+	if err != nil {
 		log.Println(err)
-		return []string{}
+		return map[string]interface{}{}
 	}
-	return uids
+	var ret map[string]interface{}
+	err = json.Unmarshal([]byte(value), &ret)
+	if err != nil {
+		log.Println(err)
+		return map[string]interface{}{}
+	}
+
+	log.Println(ret)
+	return ret
 }
 
 func (redisInterface *RedisInterface) AddUsernameLink(guildID, userID, userName string) error {
-	hash := usernameCacheHash(guildID, userName)
+	err := redisInterface.appendToHashedEntry(guildID, userID, userName)
+	if err != nil {
+		return err
+	}
+	return redisInterface.appendToHashedEntry(guildID, userName, userID)
+}
 
-	log.Println("Associating " + userID + " with " + userName + " and SET in Redis")
+func (redisInterface *RedisInterface) DeleteLinksByUserID(guildID, userID string) error {
 
-	return redisInterface.client.HSet(ctx, hash, userID, "").Err()
+	//over all the usernames associated with just this userID, delete the underlying mapping of username->userID
+	usernames := redisInterface.GetUsernameOrUserIDMappings(guildID, userID)
+	for username := range usernames {
+		err := redisInterface.deleteHashSubEntry(guildID, username, userID)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	//now delete the userID->username list entirely
+	cacheHash := cacheHash(guildID)
+	return redisInterface.client.HDel(ctx, cacheHash, userID).Err()
+}
+
+func (redisInterface *RedisInterface) appendToHashedEntry(guildID, key, value string) error {
+	resp := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+
+	resp[value] = struct{}{}
+
+	return redisInterface.setUsernameOrUserIDMappings(guildID, key, resp)
+}
+
+func (redisInterface *RedisInterface) deleteHashSubEntry(guildID, key, entry string) error {
+	entries := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+
+	delete(entries, entry)
+	return redisInterface.setUsernameOrUserIDMappings(guildID, key, entries)
+}
+
+func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key string, values map[string]interface{}) error {
+	cacheHash := cacheHash(guildID)
+
+	jBytes, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+
+	return redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
 }
 
 func (redisInterface *RedisInterface) Close() error {

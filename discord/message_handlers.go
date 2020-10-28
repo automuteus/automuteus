@@ -11,8 +11,6 @@ import (
 )
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
-const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
-const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
 
 func (bot *Bot) endGame(guildID, channelID, voiceChannel, connCode string, s *discordgo.Session) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, channelID, voiceChannel, connCode)
@@ -95,7 +93,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		Type:  "",
 		Title: "You just started a game!",
 		Description: fmt.Sprintf("Click the following link to link your capture: \n <%s>\n\n"+
-			"Don't have the capture installed? Latest version [here](%s)\nDon't have .NET Core installed? [32-bit here](%s), [64-bit here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL, dotNet32Url, dotNet64Url),
+			"Don't have the capture installed? Latest version [here](%s)\n\nTo link your capture manually:", hyperlink, downloadURL),
 		Timestamp: "",
 		Color:     3066993, //GREEN
 		Image:     nil,

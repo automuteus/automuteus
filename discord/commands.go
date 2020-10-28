@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -417,11 +418,24 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		if m.Author != nil {
 			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
 			if sett == nil {
-				s.ChannelMessageSend(m.ChannelID, "I don't have any data stored for you!")
+				s.ChannelMessageSend(m.ChannelID, "I don't have any settings stored for you!")
 			} else {
 				embed := sett.ToEmbed()
 				sendMessageDM(s, m.Author.ID, embed)
 			}
+
+			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
+			if len(cached) == 0 {
+				s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for you!")
+			} else {
+				buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+				for n := range cached {
+					buf.WriteString(fmt.Sprintf("%s\n", n))
+				}
+				buf.WriteString("```")
+				s.ChannelMessageSend(m.ChannelID, buf.String())
+			}
+
 		}
 		break
 	case ForgetMe:
@@ -430,7 +444,12 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if err != nil {
 				log.Println(err)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "Successfully deleted all player data for <@"+m.Author.ID+">")
+				err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, m.Author.ID)
+				if err != nil {
+					log.Println(err)
+				} else {
+					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all player data for <@"+m.Author.ID+">")
+				}
 			}
 		}
 		break
