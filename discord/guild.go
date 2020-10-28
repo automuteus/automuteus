@@ -163,8 +163,8 @@ func (guild *GuildState) EmptyAdminAndRolePerms() bool {
 	return guild.guildSettings.EmptyAdminAndRolePerms()
 }
 
-func (guild *GuildState) HasAdminPerms(mem *discordgo.Member) bool {
-	return guild.guildSettings.HasAdminPerms(mem)
+func (guild *GuildState) HasAdminPerms(user *discordgo.User) bool {
+	return guild.guildSettings.HasAdminPerms(user)
 }
 
 func (guild *GuildState) HasRolePerms(mem *discordgo.Member) bool {

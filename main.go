@@ -25,7 +25,7 @@ var (
 
 const DefaultURL = "http://localhost:8123"
 const DefaultServicePort = "5000"
-const DefaultSocketTimeoutSecs = 3600
+const DefaultSocketTimeoutSecs = 36000
 
 func main() {
 	err := discordMainWrapper()

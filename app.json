@@ -21,12 +21,8 @@
         "description": "The port the Bot will use for incoming Socket.io communications from the capture client. Defaults to 8123.",
         "required": false
       },
-      "EXT_PORT": {
-        "description": "The port to use for the capture url. Must be a valid port number, or \"protocol\" to not include a port in the url. Defaults to PORT.",
-        "required": false
-      },
-      "SERVER_URL": {
-        "description": "The externally-accessible URL for this instance of the discord bot. For example, http://test.com. This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing .au new (in conjunction with the PORT above). You must specify http:// or https:// accordingly as part of the URL",
+      "HOST": {
+        "description": "The externally-accessible URL for *this* instance of the discord bot. For example, `https://<REPLACE_THIS_PART>.herokuapp.com:443`.",
         "required": false
       },
       "GOVERSION": {
@@ -36,6 +32,14 @@
       },
       "CONFIG_PATH": {
         "description": "Alternate filesystem path for guild config files. Defaults to ./",
+        "required": false
+      },
+      "LOG_PATH": {
+        "description": "Filesystem path for log files. Defaults to `./`",
+        "required": false
+      },
+      "CAPTURE_TIMEOUT": {
+        "description": "How many seconds of no capture events received before the Bot terminates the associated game/connection. Defaults to 600 seconds.",
         "required": false
       }
     }

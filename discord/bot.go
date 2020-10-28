@@ -961,7 +961,7 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 		//either BOTH the admin/roles are empty, or the user fulfills EITHER perm "bucket"
 		perms := guild.EmptyAdminAndRolePerms()
 		if !perms {
-			perms = guild.HasAdminPerms(m.Member) || guild.HasRolePerms(m.Member)
+			perms = guild.HasAdminPerms(m.Author) || guild.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
 			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
