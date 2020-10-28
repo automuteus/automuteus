@@ -172,8 +172,6 @@ func (bot *Bot) Close() {
 }
 
 func (bot *Bot) socketioServer(port string) {
-	inactiveWorkerChannels := make(map[string]chan string)
-
 	server, err := socketio.NewServer(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -181,8 +179,6 @@ func (bot *Bot) socketioServer(port string) {
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
 		log.Println("connected:", s.ID())
-		inactiveWorkerChannels[s.ID()] = make(chan string)
-		go bot.InactiveGameWorker(s, inactiveWorkerChannels[s.ID()])
 		return nil
 	})
 	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
@@ -308,8 +304,8 @@ func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
 			"activeConnections": len(bot.ConnsToGames),
-			//"activeGames":       len(bot.LinkCodes), //probably an inaccurate metric
-			//"totalGuilds":       len(bot.AllGuilds),
+			"totalGuilds":       len(bot.GlobalBroadcastChannels), //probably an inaccurate metric
+			"activeGames":       len(bot.RedisSubscriberKillChannels),
 		}
 		jsonBytes, err := json.Marshal(data)
 		if err != nil {

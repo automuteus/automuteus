@@ -15,6 +15,11 @@ const downloadURL = "https://github.com/denverquane/amonguscapture/releases/late
 func (bot *Bot) endGame(guildID, channelID, voiceChannel, connCode string, s *discordgo.Session) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, channelID, voiceChannel, connCode)
 
+	if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
+		v <- true
+	}
+	delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
+
 	dgs.SetAllAlive()
 	dgs.UpdatePhase(game.LOBBY)
 	dgs.SetRoomRegion("", "")
@@ -44,6 +49,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
 			v <- true
 		}
+		delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
 		bot.RedisInterface.DeleteDiscordGameState(dgs)
 		dgs.Reset()
 	}

@@ -13,6 +13,11 @@ import (
 
 var ctx = context.Background()
 
+const LockTimeoutSecs = 5
+
+//for TTL of Discord Game State (shouldn't need to last more than 12 hours)
+const SecsIn12Hrs = 43200
+
 type RedisInterface struct {
 	client *redis.Client
 }
@@ -122,7 +127,7 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(guildID, textC
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(guildID, textChannel, voiceChannel, connectCode string) (*redislock.Lock, *DiscordGameState) {
 	key := redisInterface.getDiscordGameStateKey(guildID, textChannel, voiceChannel, connectCode)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", time.Second, nil)
+	lock, err := locker.Obtain(key+":lock", LockTimeoutSecs*time.Second, nil)
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
 	} else if err != nil {
@@ -193,14 +198,14 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 
 	//log.Printf("Setting %s to JSON", key)
-	err = redisInterface.client.Set(ctx, key, jBytes, 0).Err()
+	err = redisInterface.client.Set(ctx, key, jBytes, SecsIn12Hrs*time.Second).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
 	if data.ConnectCode != "" {
 		//log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
-		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, SecsIn12Hrs*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -208,7 +213,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.Tracking.ChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, SecsIn12Hrs*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -216,7 +221,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.GameStateMsg.MessageChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, 0).Err()
+		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, SecsIn12Hrs*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -233,7 +238,7 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	key := discordKey(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", time.Second, nil)
+	lock, err := locker.Obtain(key+":lock", LockTimeoutSecs*time.Second, nil)
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
 	} else if err != nil {

@@ -119,11 +119,18 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Messa
 
 	color := 15158332 //red
 	desc := ""
+	var footer *discordgo.MessageEmbedFooter
 	if dgs.Linked {
 		desc = dgs.makeDescription()
 		color = 3066993
+		footer = &discordgo.MessageEmbedFooter{
+			Text:         "(Enter a game lobby in Among Us to start the match)",
+			IconURL:      "",
+			ProxyIconURL: "",
+		}
 	} else {
 		desc = "❌**No capture linked! Click the link in your DMs to connect!**❌"
+		footer = nil
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -132,7 +139,7 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Messa
 		Title:       "Main Menu",
 		Description: desc,
 		Timestamp:   "",
-		Footer:      nil,
+		Footer:      footer,
 		Color:       color,
 		Image:       nil,
 		Thumbnail:   nil,
