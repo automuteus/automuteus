@@ -2,7 +2,12 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"log"
+	"sync"
+	"time"
 )
+
+const DeferredEditSeconds = 1
 
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
@@ -50,9 +55,33 @@ func (dgs *DiscordGameState) Delete(s *discordgo.Session) {
 	}
 }
 
-//TODO bring back deferred edit
+var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
+var DeferredEditsLock = sync.Mutex{}
+
 func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) {
-	editMessageEmbed(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, me)
+	DeferredEditsLock.Lock()
+
+	//if it isn't found, then start the worker to wait to start it
+	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
+		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+	}
+	//whether or not it's found, replace the contents with the new message
+	DeferredEdits[dgs.GameStateMsg.MessageID] = me
+	DeferredEditsLock.Unlock()
+}
+
+func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
+	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
+
+	DeferredEditsLock.Lock()
+	me := DeferredEdits[messageID]
+	delete(DeferredEdits, messageID)
+	DeferredEditsLock.Unlock()
+
+	if me != nil {
+		log.Println("Editing msg")
+		editMessageEmbed(s, channelID, messageID, me)
+	}
 }
 
 func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {

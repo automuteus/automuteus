@@ -16,21 +16,27 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 		URL:         "",
 		Type:        "",
 		Title:       fmt.Sprintf("AutoMuteUs Bot Commands (v%s):\n", version),
-		Description: fmt.Sprintf("Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!\nType `%s help <command>` to see more details on a command!", CommandPrefix),
+		Description: fmt.Sprintf("[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `%s help <command>` to see more details on a command!", CommandPrefix),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL:      "https://github.com/denverquane/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
+			ProxyURL: "",
+			Width:    0,
+			Height:   0,
+		},
+		Video:    nil,
+		Provider: nil,
+		Author:   nil,
+		Footer:   nil,
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
 		if !v.secret && v.cmdType != Help && v.cmdType != Null {
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   v.command,
+				Name:   v.emoji + " " + v.command,
 				Value:  v.shortDesc,
 				Inline: true,
 			})
