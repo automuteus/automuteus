@@ -22,6 +22,7 @@ const (
 	UnmuteDead
 	Delays
 	VoiceRules
+	NullSetting
 )
 
 type Setting struct {
@@ -51,7 +52,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Default tracked voice channel",
 		desc:        "Change the default tracked voice channel",
 		args:        "<voice channel name>",
-		aliases:     []string{"channel", "vc", "dtc"},
+		aliases:     []string{"tracked", "channel", "vc", "dtc"},
 	},
 	{
 		settingType: AdminUserIDs,
@@ -78,7 +79,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Bot renames Discord users",
 		desc:        "Specify if the bot should rename Discord users to match their in-game names or not",
 		args:        "<true/false>",
-		aliases:     []string{"nicknames", "nickname", "an"},
+		aliases:     []string{"nick", "nicknames", "nickname", "an"},
 	},
 	{
 		settingType: UnmuteDead,
@@ -105,7 +106,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Mute/deafen rules",
 		desc:        "Specify mute/deafen rules for the game, depending on the stage and the alive/deadness of players. Example given would mute dead players during the tasks stage",
 		args:        "<mute/deaf> <game phase> <dead/alive> <true/false>",
-		aliases:     []string{"vr"},
+		aliases:     []string{"voice", "vr"},
 	},
 }
 
@@ -147,8 +148,22 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 	}
 }
 
+func getSetting(arg string) SettingType {
+	for _, set := range AllSettings {
+		if arg == set.name {
+			return set.settingType
+		}
+
+		for _, alias := range set.aliases {
+			if arg == alias {
+				return set.settingType
+			}
+		}
+	}
+	return NullSetting
+}
+
 func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
-	// if no arg passed, send them list of possible settings to change
 	if len(args) == 1 {
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -160,73 +175,31 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	}
 	// if command invalid, no need to reapply changes to json file
 	isValid := false
-	switch args[1] {
-	case "commandprefix":
-		fallthrough
-	case "prefix":
-		fallthrough
-	case "cp":
+
+	settType := getSetting(args[1])
+	switch settType {
+	case Prefix:
 		isValid = CommandPrefixSetting(s, m, sett, args)
 		break
-	case "defaulttrackedchannel":
-		fallthrough
-	case "channel":
-		fallthrough
-	case "vc":
-		fallthrough
-	case "dtc":
+	case TrackedChannel:
 		isValid = SettingDefaultTrackedChannel(s, m, sett, args)
 		break
-	case "adminuserids":
-		fallthrough
-	case "admins":
-		fallthrough
-	case "admin":
-		fallthrough
-	case "auid":
-		fallthrough
-	case "aui":
-		fallthrough
-	case "a":
+	case AdminUserIDs:
 		isValid = SettingAdminUserIDs(s, m, sett, args)
 		break
-	case "permissionroleids":
-		fallthrough
-	case "roles":
-		fallthrough
-	case "role":
-		fallthrough
-	case "prid":
-		fallthrough
-	case "pri":
-		fallthrough
-	case "r":
+	case RoleIDs:
 		isValid = SettingPermissionRoleIDs(s, m, sett, args)
 		break
-	case "applynicknames":
-		fallthrough
-	case "nicknames":
-		fallthrough
-	case "nickname":
-		fallthrough
-	case "an":
+	case Nicknames:
 		isValid = SettingApplyNicknames(s, m, sett, args)
 		break
-	case "unmutedeadduringtasks":
-		fallthrough
-	case "unmute":
-		fallthrough
-	case "uddt":
+	case UnmuteDead:
 		isValid = SettingUnmuteDeadDuringTasks(s, m, sett, args)
 		break
-	case "delays":
-		fallthrough
-	case "d":
+	case Delays:
 		isValid = SettingDelays(s, m, sett, args)
 		break
-	case "voicerules":
-		fallthrough
-	case "vr":
+	case VoiceRules:
 		isValid = SettingVoiceRules(s, m, sett, args)
 		break
 	default:

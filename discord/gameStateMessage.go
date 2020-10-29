@@ -47,7 +47,7 @@ func (dgs *DiscordGameState) AddAllReactions(s *discordgo.Session, emojis []Emoj
 	dgs.AddReaction(s, "❌")
 }
 
-func (dgs *DiscordGameState) Delete(s *discordgo.Session) {
+func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 	if dgs.GameStateMsg.MessageID != "" {
 		go deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		dgs.GameStateMsg.MessageID = ""

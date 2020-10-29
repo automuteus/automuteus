@@ -66,7 +66,7 @@ func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett 
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
 
-		auData, linked := dgs.GetByName(userData.InGameName)
+		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 		mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
@@ -107,7 +107,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 
 		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
 
-		auData, linked := dgs.GetByName(userData.InGameName)
+		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
@@ -156,7 +156,7 @@ func (dgs *DiscordGameState) handleTrackedMembers(sm *SessionManager, sett *stor
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
 		time.Sleep(time.Second * time.Duration(delay))
 	}
-	log.Printf("Mute queue length: %d", priorityQueue.Len())
+	//log.Printf("Mute queue length: %d", priorityQueue.Len())
 
 	for priorityQueue.Len() > 0 {
 		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)

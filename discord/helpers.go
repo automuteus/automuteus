@@ -169,3 +169,70 @@ func generateConnectCode(guildID string) string {
 	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 }
+
+// sendMessage provides a single interface to send a message to a channel via discord
+func sendMessage(s *discordgo.Session, channelID string, message string) *discordgo.Message {
+	msg, err := s.ChannelMessageSend(channelID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	dmChannel, err := s.UserChannelCreate(userID)
+	if err != nil {
+		log.Println(err)
+	}
+	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return m
+}
+
+func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageSendEmbed(channelID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+// editMessage provides a single interface to edit a message in a channel via discord
+func editMessage(s *discordgo.Session, channelID string, messageID string, message string) *discordgo.Message {
+	msg, err := s.ChannelMessageEdit(channelID, messageID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
+	err := s.ChannelMessageDelete(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
+	err := s.MessageReactionAdd(channelID, messageID, emojiID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
+	err := s.MessageReactionsRemoveAll(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
+}

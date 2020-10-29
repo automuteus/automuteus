@@ -113,14 +113,6 @@ func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerC
 	return gameInfoFields
 }
 
-// Thumbnail for the bot
-var Thumbnail = discordgo.MessageEmbedThumbnail{
-	URL:      "https://github.com/denverquane/amongusdiscord/blob/master/assets/botProfilePicture.jpg?raw=true",
-	ProxyURL: "",
-	Width:    200,
-	Height:   200,
-}
-
 func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 
 	color := 15158332 //red
@@ -163,8 +155,8 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
-	room, region := dgs.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.GetNumDetectedPlayers(), dgs.GetCountLinked())
+	room, region := dgs.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked())
 
 	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
@@ -203,14 +195,14 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
-	room, region := dgs.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.GetNumDetectedPlayers(), dgs.GetCountLinked())
+	room, region := dgs.AmongUsData.GetRoomRegion()
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked())
 	listResp := dgs.ToEmojiEmbedFields(emojis)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
 
-	phase := dgs.GetPhase()
+	phase := dgs.AmongUsData.GetPhase()
 
 	switch phase {
 	case game.TASKS:

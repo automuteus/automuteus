@@ -13,7 +13,7 @@ import (
 
 var ctx = context.Background()
 
-const LockTimeoutSecs = 5
+const LockTimeoutSecs = 10
 
 //for TTL of Discord Game State (shouldn't need to last more than 12 hours)
 const SecsIn12Hrs = 43200
@@ -124,15 +124,18 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(guildID, textC
 	return redisInterface.getDiscordGameState(guildID, textChannel, voiceChannel, connectCode)
 }
 
+//TODO can fail to obtain the lock when voice state changes happen. This is expected, but need to gracefully handle it
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(guildID, textChannel, voiceChannel, connectCode string) (*redislock.Lock, *DiscordGameState) {
 	key := redisInterface.getDiscordGameStateKey(guildID, textChannel, voiceChannel, connectCode)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", LockTimeoutSecs*time.Second, nil)
+	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, nil)
 	if err == redislock.ErrNotObtained {
-		fmt.Println("Could not obtain lock!")
+		return nil, nil
 	} else if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return nil, nil
 	}
+	//log.Println("LOCKING " + key)
 
 	return lock, redisInterface.getDiscordGameState(guildID, textChannel, voiceChannel, connectCode)
 }
@@ -174,18 +177,25 @@ func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
 }
 
 func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState, lock *redislock.Lock) {
-	if lock != nil {
-		defer lock.Release()
-	}
 	if data == nil {
+		if lock != nil {
+			//log.Println("UNLOCKING")
+			lock.Release()
+		}
 		return
 	}
 
 	key := redisInterface.getDiscordGameStateKey(data.GuildID, data.GameStateMsg.MessageChannelID, data.Tracking.ChannelID, data.ConnectCode)
+	//log.Println("unlock " + key)
+
 	//connectCode is the 1 sole key we should ever rely on for tracking games. Because we generate it ourselves
 	//randomly, it's unique to every single game, and the capture and bot BOTH agree on the linkage
 	if key == "" && data.ConnectCode == "" {
-		log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
+		//log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
+		if lock != nil {
+			//log.Println("UNLOCKING")
+			lock.Release()
+		}
 		return
 	} else {
 		key = discordKey(data.GuildID, data.ConnectCode)
@@ -194,6 +204,10 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	jBytes, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
+		if lock != nil {
+			//log.Println("UNLOCKING")
+			lock.Release()
+		}
 		return
 	}
 
@@ -201,6 +215,11 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	err = redisInterface.client.Set(ctx, key, jBytes, SecsIn12Hrs*time.Second).Err()
 	if err != nil {
 		log.Println(err)
+	}
+
+	if lock != nil {
+		//log.Println("UNLOCKING")
+		lock.Release()
 	}
 
 	if data.ConnectCode != "" {

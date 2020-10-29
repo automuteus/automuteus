@@ -34,8 +34,9 @@ type DiscordGameState struct {
 
 	ConnectCode string `json:"connectCode"`
 
-	Linked  bool `json:"linked"`
-	Running bool `json:"running"`
+	Linked     bool `json:"linked"`
+	Running    bool `json:"running"`
+	Subscribed bool `json:"subscribed"`
 
 	UserData UserDataSet     `json:"userData"`
 	Tracking TrackingChannel `json:"tracking"`
@@ -51,6 +52,7 @@ func NewDiscordGameState(guildID string) *DiscordGameState {
 		ConnectCode:  "",
 		Linked:       false,
 		Running:      false,
+		Subscribed:   false,
 		UserData:     UserDataSet{},
 		Tracking:     TrackingChannel{},
 		GameStateMsg: MakeGameStateMessage(),
@@ -97,7 +99,7 @@ func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
 	//reset all the Tracking channels
 	dgs.Tracking = TrackingChannel{}
 
-	dgs.Delete(s)
+	dgs.DeleteGameStateMsg(s)
 }
 
 func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel) string {
@@ -150,44 +152,4 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*disco
 		}
 	}
 	return sorted
-}
-
-func (dgs *DiscordGameState) ClearAmongUsData(name string) {
-	dgs.AmongUsData.SClearPlayerData(name)
-}
-
-func (dgs *DiscordGameState) UpdateAmongUsData(player game.Player) (bool, bool, game.PlayerData) {
-	return dgs.AmongUsData.SUpdatePlayer(player)
-}
-
-func (dgs *DiscordGameState) GetPhase() game.Phase {
-	return dgs.AmongUsData.SGetPhase()
-}
-
-func (dgs *DiscordGameState) UpdatePhase(phase game.Phase) game.Phase {
-	return dgs.AmongUsData.SUpdatePhase(phase)
-}
-
-func (dgs *DiscordGameState) SetRoomRegion(room, region string) {
-	dgs.AmongUsData.SSetRoomRegion(room, region)
-}
-
-func (dgs *DiscordGameState) GetByColor(text string) (game.PlayerData, bool) {
-	return dgs.AmongUsData.SGetByColor(text)
-}
-
-func (dgs *DiscordGameState) GetByName(name string) (game.PlayerData, bool) {
-	return dgs.AmongUsData.SGetByName(name)
-}
-
-func (dgs *DiscordGameState) SetAllAlive() {
-	dgs.AmongUsData.SSetAllAlive()
-}
-
-func (dgs *DiscordGameState) GetRoomRegion() (string, string) {
-	return dgs.AmongUsData.SGetRoomRegion()
-}
-
-func (dgs *DiscordGameState) GetNumDetectedPlayers() int {
-	return dgs.AmongUsData.SNumDetectedPlayers()
 }

@@ -23,37 +23,37 @@ func NewAmongUsData() AmongUsData {
 	}
 }
 
-func (auData *AmongUsData) SSetRoomRegion(room, region string) {
+func (auData *AmongUsData) SetRoomRegion(room, region string) {
 	auData.Room = room
 	auData.Region = region
 }
 
-func (auData *AmongUsData) SGetRoomRegion() (string, string) {
+func (auData *AmongUsData) GetRoomRegion() (string, string) {
 	return auData.Room, auData.Region
 }
 
-func (auData *AmongUsData) SSetAllAlive() {
+func (auData *AmongUsData) SetAllAlive() {
 	for i, v := range auData.PlayerData {
 		v.IsAlive = true
 		auData.PlayerData[i] = v
 	}
 }
 
-func (auData *AmongUsData) SUpdatePhase(phase Phase) (old Phase) {
+func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
 	old = auData.Phase
 	auData.Phase = phase
 
 	if old != phase {
 		if phase == LOBBY || (phase == TASKS && old == LOBBY) {
-			auData.SSetAllAlive()
+			auData.SetAllAlive()
 		} else if phase == MENU {
-			auData.SSetRoomRegion("", "")
+			auData.SetRoomRegion("", "")
 		}
 	}
 	return old
 }
 
-func (auData *AmongUsData) SUpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
+func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
 	phase := auData.Phase
 
 	if phase == LOBBY && player.IsDead {
@@ -66,19 +66,19 @@ func (auData *AmongUsData) SUpdatePlayer(player Player) (updated, isAliveUpdated
 	return auData.applyPlayerUpdate(player)
 }
 
-func (auData *AmongUsData) SNumDetectedPlayers() int {
+func (auData *AmongUsData) GetNumDetectedPlayers() int {
 	return len(auData.PlayerData)
 }
 
-func (auData *AmongUsData) SGetPhase() Phase {
+func (auData *AmongUsData) GetPhase() Phase {
 	return auData.Phase
 }
 
-func (auData *AmongUsData) SClearPlayerData(name string) {
+func (auData *AmongUsData) ClearPlayerData(name string) {
 	delete(auData.PlayerData, name)
 }
 
-func (auData *AmongUsData) SClearAllPlayerData() {
+func (auData *AmongUsData) ClearAllPlayerData() {
 	auData.PlayerData = map[string]PlayerData{}
 }
 
@@ -108,7 +108,7 @@ func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerD
 	return isUpdate, isAliveUpdate, auData.PlayerData[update.Name]
 }
 
-func (auData *AmongUsData) SGetByColor(text string) (PlayerData, bool) {
+func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
 	text = strings.ToLower(text)
 
 	for _, playerData := range auData.PlayerData {
@@ -119,7 +119,7 @@ func (auData *AmongUsData) SGetByColor(text string) (PlayerData, bool) {
 	return UnlinkedPlayer, false
 }
 
-func (auData *AmongUsData) SGetByName(text string) (PlayerData, bool) {
+func (auData *AmongUsData) GetByName(text string) (PlayerData, bool) {
 	text = strings.ToLower(text)
 
 	for _, playerData := range auData.PlayerData {

@@ -182,8 +182,8 @@ var AllCommands = []Command{
 		cmdType:   ForgetMe,
 		command:   "forgetme",
 		example:   "forgetme",
-		shortDesc: "Delete player data",
-		desc:      "Delete all the data associated with the User issuing the command",
+		shortDesc: "DeleteGameStateMsg player data",
+		desc:      "DeleteGameStateMsg all the data associated with the User issuing the command",
 		args:      "None",
 		aliases:   []string{"fm"},
 		secret:    false,
@@ -286,6 +286,30 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
+
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+		if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
+			log.Println("State fetched is valid, but I'm not subscribed! Resubscribing now!")
+			killChan := make(chan bool)
+			go bot.SubscribeToGameByConnectCode(m.GuildID, dgs.ConnectCode, killChan)
+			dgs.Subscribed = true
+
+			if dgs.GameStateMsg.MessageID != "" && dgs.GameStateMsg.LeaderID != "" {
+				dgs.DeleteGameStateMsg(s) //delete the old message
+
+				//create a new instance of the new one
+				dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
+			}
+
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+			bot.ChannelsMapLock.Lock()
+			bot.RedisSubscriberKillChannels[dgs.ConnectCode] = killChan
+			bot.ChannelsMapLock.Unlock()
+		} else if lock != nil {
+			//log.Println("UNLOCKING")
+			lock.Release()
+		}
 	}
 
 	switch cmd.cmdType {
@@ -314,7 +338,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.endGame(m.GuildID, m.ChannelID, "", "", s)
+		bot.forceEndGame(m.GuildID, m.ChannelID, "", "", s)
 
 		//only need read-only for deletion (the delete method is locking)
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, m.ChannelID, "", "")
@@ -327,6 +351,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Pause:
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+		if lock == nil {
+			break
+		}
 		dgs.Running = !dgs.Running
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -335,19 +362,22 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Refresh:
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
-		dgs.Delete(s) //delete the old message
+		if lock == nil {
+			break
+		}
+		dgs.DeleteGameStateMsg(s) //delete the old message
 
 		//create a new instance of the new one
 		dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 		//add the emojis to the refreshed message if in the right stage
-		if dgs.GetPhase() != game.MENU {
+		if dgs.AmongUsData.GetPhase() != game.MENU {
 			for _, e := range bot.StatusEmojis[true] {
 				dgs.AddReaction(s, e.FormatForReaction())
 			}
 			dgs.AddReaction(s, "❌")
 		}
-		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 		break
 
 	case Link:
@@ -356,6 +386,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+			if lock == nil {
+				break
+			}
 			bot.linkPlayer(s, dgs, args[1:])
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -375,10 +408,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			} else {
 				log.Print(fmt.Sprintf("Removing player %s", userID))
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+				if lock == nil {
+					break
+				}
 				dgs.ClearPlayerData(userID)
 
 				//make sure that any players we remove/unlink get auto-unmuted/undeafened
-				dgs.verifyVoiceStateChanges(s, sett, dgs.GetPhase())
+				dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				//update the state message to reflect the player leaving
@@ -400,6 +436,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			}
 
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+			if lock == nil {
+				break
+			}
 			dgs.trackChannel(channelName, channels)
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
