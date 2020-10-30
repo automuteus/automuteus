@@ -145,11 +145,12 @@ func discordMainWrapper() error {
 	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDRESS")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 	if redisAddr != "" {
 		err := redisClient.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
-			Password: "",
+			Password: redisPassword,
 		})
 		if err != nil {
 			log.Println(err)
@@ -157,7 +158,7 @@ func discordMainWrapper() error {
 		err = storageInterface.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
-			Password: "",
+			Password: redisPassword,
 		})
 		if err != nil {
 			log.Println(err)
