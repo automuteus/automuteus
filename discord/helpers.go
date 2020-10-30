@@ -3,14 +3,14 @@ package discord
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
-	"strings"
-	"time"
-
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
+	"math/rand"
+	"strings"
 )
 
 // when querying for the member list we need to specify a size
@@ -42,11 +42,11 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 			Mute bool   `json:"mute"`
 			Nick string `json:"nick"`
 		}{params.Deaf, params.Mute, params.Nick}
-		log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
+		log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v Nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
 
 		_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
 		if err != nil {
-			log.Println("Failed to change nickname for user: move the bot up in your Roles")
+			log.Println("Failed to change nickname for User: move the bot up in your Roles")
 			log.Println(err)
 			guildMemberUpdateNoNick(s, params)
 		}
@@ -54,7 +54,7 @@ func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
 }
 
 func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
-	log.Printf("Issuing update request to discord for userID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
+	log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
 	newParams := struct {
 		Deaf bool `json:"deaf"`
 		Mute bool `json:"mute"`
@@ -139,7 +139,7 @@ func getRoomAndRegionFromArgs(args []string) (string, string) {
 }
 
 func getMemberFromString(s *discordgo.Session, GuildID string, input string) string {
-	// find which member the user was referencing in their message
+	// find which member the User was referencing in their message
 	// TODO increase performance by caching member list for when function called more than once
 	// first check if is mentionned
 	ID, err := extractUserIDFromMention(input)
@@ -157,7 +157,7 @@ func getMemberFromString(s *discordgo.Session, GuildID string, input string) str
 }
 
 func getRoleFromString(s *discordgo.Session, GuildID string, input string) string {
-	// find which role the user was referencing in their message
+	// find which role the User was referencing in their message
 	// first check if is mentionned
 	ID, err := extractRoleIDFromMention(input)
 	if err == nil {
@@ -175,9 +175,75 @@ func getRoleFromString(s *discordgo.Session, GuildID string, input string) strin
 func generateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
-	//add some "randomness" with the current time
-	h.Write([]byte(time.Now().String()))
-	hashed := strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
-	//TODO replace common problematic characters?
-	return strings.ReplaceAll(strings.ReplaceAll(hashed, "I", "1"), "O", "0")
+
+	//add some randomness
+	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
+	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
+}
+
+// sendMessage provides a single interface to send a message to a channel via discord
+func sendMessage(s *discordgo.Session, channelID string, message string) *discordgo.Message {
+	msg, err := s.ChannelMessageSend(channelID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	dmChannel, err := s.UserChannelCreate(userID)
+	if err != nil {
+		log.Println(err)
+	}
+	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return m
+}
+
+func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageSendEmbed(channelID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+// editMessage provides a single interface to edit a message in a channel via discord
+func editMessage(s *discordgo.Session, channelID string, messageID string, message string) *discordgo.Message {
+	msg, err := s.ChannelMessageEdit(channelID, messageID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
+	if err != nil {
+		log.Println(err)
+	}
+	return msg
+}
+
+func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
+	err := s.ChannelMessageDelete(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
+	err := s.MessageReactionAdd(channelID, messageID, emojiID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
+	err := s.MessageReactionsRemoveAll(channelID, messageID)
+	if err != nil {
+		log.Println(err)
+	}
 }

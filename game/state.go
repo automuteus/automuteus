@@ -49,7 +49,7 @@ var PhaseMessages = map[Phase]*i18n.Message{
 	MENU:    {ID: "state.phase.MENU", Other: "MENU"},
 }
 
-// ToString for a phase
+// ToString for a Phase
 func (phase *Phase) ToString() PhaseNameString {
 	return PhaseNames[*phase]
 }

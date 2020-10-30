@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,6 +26,7 @@ const (
 	UnmuteDead
 	Delays
 	VoiceRules
+	NullSetting
 )
 
 type Setting struct {
@@ -54,7 +56,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Default tracked voice channel",
 		desc:        "Change the default tracked voice channel",
 		args:        "<voice channel name>",
-		aliases:     []string{"channel", "vc", "dtc"},
+		aliases:     []string{"tracked", "channel", "vc", "dtc"},
 	},
 	{
 		settingType: AdminUserIDs,
@@ -62,7 +64,7 @@ var AllSettings = []Setting{
 		example:     "adminUserIDs @Soup @Bob",
 		shortDesc:   "Bot Admins",
 		desc:        "Specify which individual users have permissions to invoke the bot",
-		args:        "<user @ mentions>...",
+		args:        "<User @ mentions>...",
 		aliases:     []string{"admins", "admin", "auid", "aui", "a"},
 	},
 	{
@@ -81,7 +83,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Bot renames Discord users",
 		desc:        "Specify if the bot should rename Discord users to match their in-game names or not",
 		args:        "<true/false>",
-		aliases:     []string{"nicknames", "nickname", "an"},
+		aliases:     []string{"nick", "nicknames", "nickname", "an"},
 	},
 	{
 		settingType: UnmuteDead,
@@ -108,7 +110,7 @@ var AllSettings = []Setting{
 		shortDesc:   "Mute/deafen rules",
 		desc:        "Specify mute/deafen rules for the game, depending on the stage and the alive/deadness of players. Example given would mute dead players during the tasks stage",
 		args:        "<mute/deaf> <game phase> <dead/alive> <true/false>",
-		aliases:     []string{"vr"},
+		aliases:     []string{"voice", "vr"},
 	},
 }
 
@@ -162,83 +164,59 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 	}
 }
 
-func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, storageInterface storage.StorageInterface, args []string) {
-	// if no arg passed, send them list of possible settings to change
+func getSetting(arg string) SettingType {
+	for _, set := range AllSettings {
+		if arg == set.name {
+			return set.settingType
+		}
+
+		for _, alias := range set.aliases {
+			if arg == alias {
+				return set.settingType
+			}
+		}
+	}
+	return NullSetting
+}
+
+func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
 	if len(args) == 1 {
-		embed := settingResponse(AllSettings)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		jBytes, err := json.MarshalIndent(sett, "", "  ")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
 	isValid := false
-	switch args[1] {
-	case "commandprefix":
-		fallthrough
-	case "prefix":
-		fallthrough
-	case "cp":
-		isValid = CommandPrefixSetting(s, m, guild, args)
+
+	settType := getSetting(args[1])
+	switch settType {
+	case Prefix:
+		isValid = CommandPrefixSetting(s, m, sett, args)
 		break
-	case "defaulttrackedchannel":
-		fallthrough
-	case "channel":
-		fallthrough
-	case "vc":
-		fallthrough
-	case "dtc":
-		isValid = SettingDefaultTrackedChannel(s, m, guild, args)
+	case TrackedChannel:
+		isValid = SettingDefaultTrackedChannel(s, m, sett, args)
 		break
-	case "adminuserids":
-		fallthrough
-	case "admins":
-		fallthrough
-	case "admin":
-		fallthrough
-	case "auid":
-		fallthrough
-	case "aui":
-		fallthrough
-	case "a":
-		isValid = SettingAdminUserIDs(s, m, guild, args)
+	case AdminUserIDs:
+		isValid = SettingAdminUserIDs(s, m, sett, args)
 		break
-	case "permissionroleids":
-		fallthrough
-	case "roles":
-		fallthrough
-	case "role":
-		fallthrough
-	case "prid":
-		fallthrough
-	case "pri":
-		fallthrough
-	case "r":
-		isValid = SettingPermissionRoleIDs(s, m, guild, args)
+	case RoleIDs:
+		isValid = SettingPermissionRoleIDs(s, m, sett, args)
 		break
-	case "applynicknames":
-		fallthrough
-	case "nicknames":
-		fallthrough
-	case "nickname":
-		fallthrough
-	case "an":
-		isValid = SettingApplyNicknames(s, m, guild, args)
+	case Nicknames:
+		isValid = SettingApplyNicknames(s, m, sett, args)
 		break
-	case "unmutedeadduringtasks":
-		fallthrough
-	case "unmute":
-		fallthrough
-	case "uddt":
-		isValid = SettingUnmuteDeadDuringTasks(s, m, guild, args)
+	case UnmuteDead:
+		isValid = SettingUnmuteDeadDuringTasks(s, m, sett, args)
 		break
-	case "delays":
-		fallthrough
-	case "d":
-		isValid = SettingDelays(s, m, guild, args)
+	case Delays:
+		isValid = SettingDelays(s, m, sett, args)
 		break
-	case "voicerules":
-		fallthrough
-	case "vr":
-		isValid = SettingVoiceRules(s, m, guild, args)
+	case VoiceRules:
+		isValid = SettingVoiceRules(s, m, sett, args)
 		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
@@ -250,16 +228,16 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 			}))
 	}
 	if isValid {
-		err := storageInterface.WriteGuildSettings(m.GuildID, guild.guildSettings)
+		err := bot.StorageInterface.SetGuildSettings(m.GuildID, sett)
 		if err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
+func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		embed := ConstructEmbedForSetting(guild.guildSettings.GetCommandPrefix(), AllSettings[Prefix])
+		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), AllSettings[Prefix])
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
@@ -268,30 +246,30 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, guil
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, the prefix `%s` is too long (%d characters, max 10). Try something shorter.", args[2], len(args[2])))
 		return false
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
-		guild.CommandPrefix(), args[2]))
-	guild.guildSettings.SetCommandPrefix(args[2])
+	//s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
+	//	guild.CommandPrefix(), args[2]))
+	sett.SetCommandPrefix(args[2])
 	return true
 }
 
-func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
+func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		// give them both command syntax and current voice channel
-		channelList, _ := s.GuildChannels(m.GuildID)
-		for _, c := range channelList {
-			if c.ID == guild.GetDefaultTrackedChannel() {
-				embed := ConstructEmbedForSetting(guild.guildSettings.GetDefaultTrackedChannel(), AllSettings[TrackedChannel])
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-				return false
-			}
-		}
+		//channelList, _ := s.GuildChannels(m.GuildID)
+		//for _, c := range channelList {
+		//	if c.ID == guild.GetDefaultTrackedChannel() {
+		//		embed := ConstructEmbedForSetting(guild.guildSettings.GetDefaultTrackedChannel(), AllSettings[TrackedChannel])
+		//		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		//		return false
+		//	}
+		//}
 		embed := ConstructEmbedForSetting("No default tracked voice channel", AllSettings[TrackedChannel])
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
 	// now to find the channel they are referencing
 	channelID := ""
-	channelName := "" // we track name to confirm to the user they selected the right channel
+	channelName := "" // we track name to confirm to the User they selected the right channel
 	channelList, _ := s.GuildChannels(m.GuildID)
 	for _, c := range channelList {
 		// Check if channel is a voice channel
@@ -323,13 +301,13 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 			map[string]interface{}{
 				"channelName": channelName,
 			}))
-		guild.guildSettings.SetDefaultTrackedChannel(channelID)
+		sett.SetDefaultTrackedChannel(channelID)
 		return true
 	}
 }
 
-func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	adminIDs := guild.guildSettings.GetAdminUserIDs()
+func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
 		// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
@@ -353,39 +331,44 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild
 		return false
 	}
 	newAdminIDs := []string{}
-	// users the user mentioned in their message
+	// users the User mentioned in their message
 	var userIDs []string
 
-	for _, userName := range args[2:] {
-		if userName == "" || userName == " " {
-			// user added a double space by accident, ignore it
-			continue
+	if args[2] != "clear" && args[2] != "c" {
+
+		for _, userName := range args[2:] {
+			if userName == "" || userName == " " {
+				// User added a double space by accident, ignore it
+				continue
+			}
+			ID := getMemberFromString(s, m.GuildID, userName)
+			if ID == "" {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
+				continue
+			}
+			userIDs = append(userIDs, ID)
 		}
-		ID := getMemberFromString(s, m.GuildID, userName)
-		if ID == "" {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
-			continue
+
+		for _, ID := range userIDs {
+			if ID != "" {
+				newAdminIDs = append(newAdminIDs, ID)
+				// mention User without pinging
+				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+					Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
+					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				})
+			}
 		}
-		userIDs = append(userIDs, ID)
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "Clearing all AdminUserIDs!")
 	}
 
-	for _, ID := range userIDs {
-		if ID != "" {
-			newAdminIDs = append(newAdminIDs, ID)
-			// mention user without pinging
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@%s> is now a bot admin!", ID),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
-		}
-	}
-
-	guild.guildSettings.SetAdminUserIDs(newAdminIDs)
+	sett.SetAdminUserIDs(newAdminIDs)
 	return true
 }
 
-func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	oldRoleIDs := guild.guildSettings.GetPermissionRoleIDs()
+func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
@@ -396,11 +379,11 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
 				if index == 0 {
-					listOfRoles += "<&" + ID + ">"
+					listOfRoles += "<@&" + ID + ">"
 				} else if index == adminRoleCount-1 {
-					listOfRoles += " and <&" + ID + ">"
+					listOfRoles += " and <@&" + ID + ">"
 				} else {
-					listOfRoles += ", <&" + ID + ">"
+					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
 			embed := ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs])
@@ -410,39 +393,43 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 
 	newRoleIDs := []string{}
-	// roles the user mentioned in their message
+	// roles the User mentioned in their message
 	var roleIDs []string
 
-	for _, roleName := range args[2:] {
-		if roleName == "" || roleName == " " {
-			// user added a double space by accident, ignore it
-			continue
+	if args[2] != "clear" && args[2] != "c" {
+		for _, roleName := range args[2:] {
+			if roleName == "" || roleName == " " {
+				// User added a double space by accident, ignore it
+				continue
+			}
+			ID := getRoleFromString(s, m.GuildID, roleName)
+			if ID == "" {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
+				continue
+			}
+			roleIDs = append(roleIDs, ID)
 		}
-		ID := getRoleFromString(s, m.GuildID, roleName)
-		if ID == "" {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know the role `%s` is. You can pass the role ID, role name or @role", roleName))
-			continue
+
+		for _, ID := range roleIDs {
+			if ID != "" {
+				newRoleIDs = append(newRoleIDs, ID)
+				// mention User without pinging
+				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+					Content:         fmt.Sprintf("<@&%s>s are now bot admins!", ID),
+					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				})
+			}
 		}
-		roleIDs = append(roleIDs, ID)
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "Clearing all PermissionRoleIDs!")
 	}
 
-	for _, ID := range roleIDs {
-		if ID != "" {
-			newRoleIDs = append(newRoleIDs, ID)
-			// mention user without pinging
-			s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-				Content:         fmt.Sprintf("<@&%s>s are now bot admins!", ID),
-				AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-			})
-		}
-	}
-
-	guild.guildSettings.SetPermissionRoleIDs(newRoleIDs)
+	sett.SetPermissionRoleIDs(newRoleIDs)
 	return true
 }
 
-func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	applyNicknames := guild.guildSettings.GetApplyNicknames()
+func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	applyNicknames := sett.GetApplyNicknames()
 	if len(args) == 2 {
 		current := "false"
 		if applyNicknames {
@@ -458,13 +445,13 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, gui
 			s.ChannelMessageSend(m.ChannelID, "It's already true!")
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "I will now rename the players in the voice chat.")
-			guild.guildSettings.SetApplyNicknames(true)
+			sett.SetApplyNicknames(true)
 			return true
 		}
 	} else if args[2] == "false" {
 		if applyNicknames {
 			s.ChannelMessageSend(m.ChannelID, "I will no longer rename the players in the voice chat.")
-			guild.guildSettings.SetApplyNicknames(false)
+			sett.SetApplyNicknames(false)
 			return true
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "It's already false!")
@@ -475,8 +462,8 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, gui
 	return false
 }
 
-func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
-	unmuteDead := guild.guildSettings.GetUnmuteDeadDuringTasks()
+func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	unmuteDead := sett.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		current := "false"
 		if unmuteDead {
@@ -491,13 +478,13 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			s.ChannelMessageSend(m.ChannelID, "It's already true!")
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!")
-			guild.guildSettings.SetUnmuteDeadDuringTasks(true)
+			sett.SetUnmuteDeadDuringTasks(true)
 			return true
 		}
 	} else if args[2] == "false" {
 		if unmuteDead {
 			s.ChannelMessageSend(m.ChannelID, "I will no longer immediately unmute dead people. Good choice!")
-			guild.guildSettings.SetUnmuteDeadDuringTasks(false)
+			sett.SetUnmuteDeadDuringTasks(false)
 			return true
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "It's already false!")
@@ -508,15 +495,15 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 	return false
 }
 
-func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
+func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting("N/A", AllSettings[Delays])
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
-	// user passes phase name, phase name and new delay value
+	// User passes phase name, phase name and new delay value
 	if len(args) < 4 {
-		// user didn't pass 2 phases, tell them the list of game phases
+		// User didn't pass 2 phases, tell them the list of game phases
 		s.ChannelMessageSend(m.ChannelID, "The list of game phases are `Lobby`, `Tasks` and `Discussion`.\n"+
 			"You need to type both phases the game is transitioning from and to to change the delay.") // find a better wording for this at some point
 		return false
@@ -531,9 +518,9 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, guild *Guil
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("I don't know what `%s` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.", args[3]))
 		return false
 	}
-	oldDelay := guild.guildSettings.GetDelay(gamePhase1, gamePhase2)
+	oldDelay := sett.GetDelay(gamePhase1, gamePhase2)
 	if len(args) == 4 {
-		// no number was passed, user was querying the delay
+		// no number was passed, User was querying the delay
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Currently, the delay when passing from `%s` to `%s` is %d.", args[2], args[3], oldDelay))
 		return false
 	}
@@ -542,12 +529,12 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, guild *Guil
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s` is not a valid number! Please try again", args[4]))
 		return false
 	}
-	guild.guildSettings.SetDelay(gamePhase1, gamePhase2, newDelay)
+	sett.SetDelay(gamePhase1, gamePhase2, newDelay)
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The delay when passing from `%s` to `%s` changed from %d to %d.", args[2], args[3], oldDelay, newDelay))
 	return true
 }
 
-func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *GuildState, args []string) bool {
+func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting("N/A", AllSettings[VoiceRules])
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
@@ -555,7 +542,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *
 	}
 	// now for a bunch of input checking
 	if len(args) < 5 {
-		// user didn't pass enough args
+		// User didn't pass enough args
 		s.ChannelMessageSend(m.ChannelID, "You didn't pass enough arguments! Correct syntax is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`")
 		return false
 	}
@@ -578,12 +565,12 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *
 	}
 	var oldValue bool
 	if args[2] == "muted" {
-		oldValue = guild.guildSettings.GetVoiceRule(true, gamePhase, args[4])
+		oldValue = sett.GetVoiceRule(true, gamePhase, args[4])
 	} else {
-		oldValue = guild.guildSettings.GetVoiceRule(false, gamePhase, args[4])
+		oldValue = sett.GetVoiceRule(false, gamePhase, args[4])
 	}
 	if len(args) == 5 {
-		// user was only querying
+		// User was only querying
 		if oldValue {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("When in `%s` phase, %s players are currently %s.", args[3], args[4], args[2]))
 		} else {
@@ -609,9 +596,9 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, guild *
 		return false
 	}
 	if args[2] == "muted" {
-		guild.guildSettings.SetVoiceRule(true, gamePhase, args[4], newValue)
+		sett.SetVoiceRule(true, gamePhase, args[4], newValue)
 	} else {
-		guild.guildSettings.SetVoiceRule(false, gamePhase, args[4], newValue)
+		sett.SetVoiceRule(false, gamePhase, args[4], newValue)
 	}
 	if newValue {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("From now on, when in `%s` phase, %s players will be %s.", args[3], args[4], args[2]))

@@ -14,49 +14,224 @@ import (
 )
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
-const dotNet32Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x86-installer"
-const dotNet64Url = "https://dotnet.microsoft.com/download/dotnet-core/thank-you/sdk-3.1.402-windows-x64-installer"
-
-func (bot *Bot) handleGameEndMessage(guild *GuildState, s *discordgo.Session) {
-	guild.AmongUsData.SetAllAlive()
-	guild.AmongUsData.SetPhase(game.LOBBY)
-
-	// apply the unmute/deafen to users who have state linked to them
-	guild.handleTrackedMembers(&bot.SessionManager, 0, NoPriority)
-
-	//clear the tracking and make sure all users are unlinked
-	guild.clearGameTracking(s)
-
-	guild.GameRunning = false
-
-	// clear any existing game state message
-	guild.AmongUsData.SetRoomRegion("", "")
-}
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))/?$`)
 
-func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
+func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Ignore all messages created by the bot itself
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	g, err := s.State.Guild(m.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	contents := m.Content
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	prefix := sett.GetCommandPrefix()
+
+	if strings.HasPrefix(contents, prefix) {
+		//either BOTH the admin/roles are empty, or the User fulfills EITHER perm "bucket"
+		perms := sett.EmptyAdminAndRolePerms()
+		if !perms {
+			perms = sett.HasAdminPerms(m.Author) || sett.HasRolePerms(m.Member)
+		}
+		if !perms && g.OwnerID != m.Author.ID {
+			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+		} else {
+			oldLen := len(contents)
+			contents = strings.Replace(contents, prefix+" ", "", 1)
+			if len(contents) == oldLen { //didn't have a space
+				contents = strings.Replace(contents, prefix, "", 1)
+			}
+
+			if len(contents) == 0 {
+				if len(prefix) <= 1 {
+					// prevent bot from spamming help message whenever the single character
+					// prefix is sent by mistake
+					return
+				} else {
+					embed := helpResponse(Version, prefix, AllCommands)
+					s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				}
+			} else {
+				args := strings.Split(contents, " ")
+
+				for i, v := range args {
+					args[i] = strings.ToLower(v)
+				}
+				bot.HandleCommand(sett, s, g, m, args)
+			}
+		}
+	}
+}
+
+func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	// Ignore all reactions created by the bot itself
+	if m.UserID == s.State.User.ID {
+		return
+	}
+
+	g, err := s.State.Guild(m.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	//TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
+
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	gsr := GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+	}
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	if lock != nil && dgs != nil && dgs.Exists() {
+		//verify that the User is reacting to the state/status message
+		if dgs.IsReactionTo(m) {
+			idMatched := false
+			for color, e := range bot.StatusEmojis[true] {
+				if e.ID == m.Emoji.ID {
+					idMatched = true
+					log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
+					//the User doesn't exist in our userdata cache; add them
+					user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
+					if !added {
+						log.Println("No users found in Discord for UserID " + m.UserID)
+						idMatched = false
+					} else {
+						auData, found := dgs.AmongUsData.GetByColor(game.GetColorStringForInt(color))
+						if found {
+							user.Link(auData)
+							dgs.UpdateUserData(m.UserID, user)
+							go bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
+						} else {
+							log.Println("I couldn't find any player data for that color; is your capture linked?")
+							idMatched = false
+						}
+					}
+
+					//then remove the player's reaction if we matched, or if we didn't
+					go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+					break
+				}
+			}
+			if !idMatched {
+				//log.Println(m.Emoji.Name)
+				if m.Emoji.Name == "❌" {
+					log.Println("Removing player " + m.UserID)
+					dgs.ClearPlayerData(m.UserID)
+					go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
+					idMatched = true
+				}
+			}
+			//make sure to update any voice changes if they occurred
+			if idMatched {
+				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
+				dgs.Edit(s, bot.gameStateResponse(dgs))
+			}
+		}
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	}
+
+}
+
+//TODO with the Redis locking, this function acts a little weird
+//TODO if we return, then we can't properly verify that the voice changes were correctly applied (and reset the
+//VoiceChangeReady var). Can we eliminate that var completely with this new locking???
+//voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
+//relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
+//the same mute/unmute, erroneously
+func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
+	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	gsr := GameStateRequest{
+		GuildID:      m.GuildID,
+		VoiceChannel: m.ChannelID,
+	}
+
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	if lock == nil {
+		return
+	}
+
+	g, err := s.State.Guild(dgs.GuildID)
+
+	if err != nil || g == nil {
+		lock.Release()
+		return
+	}
+
+	//fetch the userData from our userData data cache
+	userData, err := dgs.GetUser(m.UserID)
+	if err != nil {
+		//the User doesn't exist in our userdata cache; add them
+		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
+	}
+
+	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
+
+	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
+	//only actually tracked if we're in a tracked channel AND linked to a player
+	tracked = tracked && found
+	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
+	//check the userdata is linked here to not accidentally undeafen music bots, for example
+	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
+		userData.SetShouldBeMuteDeaf(mute, deaf)
+
+		dgs.UpdateUserData(m.UserID, userData)
+
+		nick := userData.GetPlayerName()
+		if !sett.GetApplyNicknames() {
+			nick = ""
+		}
+
+		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
+	}
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+}
+
+func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
+
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+	})
+	if lock == nil {
+		log.Println("Couldn't obtain redis dgs lock for new game! This is really bad...")
+		return
+	}
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
-	//if !guild.GameStateMsg.Exists() {
 
-	connectCode := generateConnectCode(m.GuildID)
-	bot.LinkCodeLock.Lock()
-	//delete any previous links
-	for i, v := range bot.LinkCodes {
-		if v == m.GuildID {
-			delete(bot.LinkCodes, i)
+	if dgs.GameStateMsg.MessageChannelID != "" {
+		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
+			v <- true
 		}
+		delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
+		bot.RedisInterface.DeleteDiscordGameState(dgs)
+		dgs.Reset()
 	}
 
-	bot.LinkCodes[GameOrLobbyCode{
-		gameCode:    room,
-		connectCode: connectCode,
-	}] = m.GuildID
+	connectCode := generateConnectCode(m.GuildID)
 
-	bot.LinkCodeLock.Unlock()
+	dgs.ConnectCode = connectCode
+
+	killChan := make(chan bool)
+
+	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode, killChan)
+
+	dgs.Subscribed = true
+
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+	bot.ChannelsMapLock.Lock()
+	bot.RedisSubscriberKillChannels[connectCode] = killChan
+	bot.ChannelsMapLock.Unlock()
 
 	var hyperlink string
 	var minimalUrl string
@@ -94,14 +269,11 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Description: locale.LocalizeMessage(&i18n.Message{
 			ID: "message_handlers.handleNewGameMessage.embed.Description",
 			Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n" +
-				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n" +
-				"Don't have .NET Core installed? [32-bit here]({{.dotNet32Url}}), [64-bit here]({{.dotNet64Url}})\n\nTo link your capture manually:",
+				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n\nTo link your capture manually:",
 		},
 			map[string]interface{}{
 				"hyperlink":   hyperlink,
 				"downloadURL": downloadURL,
-				"dotNet32Url": dotNet32Url,
-				"dotNet64Url": dotNet64Url,
 			}),
 		Timestamp: "",
 		Color:     3066993, //GREEN
@@ -130,7 +302,7 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		},
 	}
 
-	guild.Logln("Generated URL for connection: " + hyperlink)
+	log.Println("Generated URL for connection: " + hyperlink)
 
 	sendMessageDM(s, m.Author.ID, &embed)
 
@@ -139,135 +311,79 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		log.Println(err)
 	}
 
-	defaultTracked := guild.guildSettings.GetDefaultTrackedChannel()
+	//defaultTracked := guild.guildSettings.GetDefaultTrackedChannel()
 	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
-				initialTracking = append(initialTracking, TrackingChannel{
-					channelID:   channel.ID,
-					channelName: channel.Name,
-					forGhosts:   false,
-				})
-				guild.Log(fmt.Sprintf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name))
-			}
-		}
+		//if channel.Type == discordgo.ChannelTypeGuildVoice {
+		//	if channel.ID == defaultTracked || strings.ToLower(channel.Name) == strings.ToLower(defaultTracked) {
+		//		initialTracking = append(initialTracking, TrackingChannel{
+		//			ChannelID:   channel.ID,
+		//			ChannelName: channel.Name,
+		//			forGhosts:   false,
+		//		})
+		//		guild.Log(fmt.Sprintf("Found initial default channel specified in config: ID %s, Name %s\n", channel.ID, channel.Name))
+		//	}
+		//}
 		for _, v := range g.VoiceStates {
-			//if the user is detected in a voice channel
+			//if the User is detected in a voice channel
 			if v.UserID == m.Author.ID {
 
 				//once we find the channel by ID
 				if channel.Type == discordgo.ChannelTypeGuildVoice {
 					if channel.ID == v.ChannelID {
 						initialTracking = append(initialTracking, TrackingChannel{
-							channelID:   channel.ID,
-							channelName: channel.Name,
-							forGhosts:   false,
+							ChannelID:   channel.ID,
+							ChannelName: channel.Name,
 						})
-						guild.Log(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for tracking", channel.Name))
+						log.Print(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for Tracking", channel.Name))
 					}
 				}
-
 			}
-
 		}
 	}
 
-	guild.handleGameStartMessage(s, m, room, region, initialTracking, g)
+	bot.handleGameStartMessage(s, m, room, region, initialTracking, g, connectCode)
 }
 
-func (guild *GuildState) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild) {
-	guild.AmongUsData.SetRoomRegion(room, region)
+func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild, connCode string) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+		ConnectCode: connCode,
+	})
+	if lock == nil {
+		log.Println("Couldn't obtain lock for DGS on game start...")
+		return
+	}
+	dgs.AmongUsData.SetRoomRegion(room, region)
 
-	guild.clearGameTracking(s)
+	dgs.clearGameTracking(s)
 
-	guild.GameRunning = true
+	dgs.Running = true
 
 	for _, channel := range channels {
-		if channel.channelName != "" {
-			guild.Tracking.AddTrackedChannel(channel.channelID, channel.channelName, channel.forGhosts)
+		if channel.ChannelName != "" {
+			dgs.Tracking = TrackingChannel{
+				ChannelID:   channel.ChannelID,
+				ChannelName: channel.ChannelName,
+			}
 			for _, v := range g.VoiceStates {
-				if v.ChannelID == channel.channelID {
-					guild.checkCacheAndAddUser(g, s, v.UserID)
+				if v.ChannelID == channel.ChannelID {
+					dgs.checkCacheAndAddUser(g, s, v.UserID)
 				}
 			}
 		}
 	}
 
-	guild.GameStateMsg.CreateMessage(s, gameStateResponse(guild), m.ChannelID, m.Author.ID)
+	dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, m.Author.ID)
 
-	guild.Logln("Added self game state message")
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	if guild.AmongUsData.GetPhase() != game.MENU {
-		for _, e := range guild.StatusEmojis[true] {
-			guild.GameStateMsg.AddReaction(s, e.FormatForReaction())
+	log.Println("Added self game state message")
+
+	if dgs.AmongUsData.GetPhase() != game.MENU {
+		for _, e := range bot.StatusEmojis[true] {
+			go dgs.AddReaction(s, e.FormatForReaction())
 		}
-		guild.GameStateMsg.AddReaction(s, "❌")
-	}
-}
-
-// sendMessage provides a single interface to send a message to a channel via discord
-func sendMessage(s *discordgo.Session, channelID string, message string) *discordgo.Message {
-	msg, err := s.ChannelMessageSend(channelID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	dmChannel, err := s.UserChannelCreate(userID)
-	if err != nil {
-		log.Println(err)
-	}
-	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return m
-}
-
-func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageSendEmbed(channelID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-// editMessage provides a single interface to edit a message in a channel via discord
-func editMessage(s *discordgo.Session, channelID string, messageID string, message string) *discordgo.Message {
-	msg, err := s.ChannelMessageEdit(channelID, messageID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
-	err := s.ChannelMessageDelete(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
-	err := s.MessageReactionAdd(channelID, messageID, emojiID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
-	err := s.MessageReactionsRemoveAll(channelID, messageID)
-	if err != nil {
-		log.Println(err)
+		dgs.AddReaction(s, "❌")
 	}
 }
