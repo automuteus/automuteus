@@ -46,7 +46,7 @@ func LoadTranslations() *i18n.Bundle {
 
 				if _, err = bundle.LoadMessageFile(path.Join(localesDir, file.Name())); err != nil {
 					if curLang != DefaultLang && fileLang != DefaultLang {
-						log.Println("[Locale] Eroor load message file: %s", err)
+						log.Println("[Locale] Eroor load message file:", err)
 					}
 				} else {
 					log.Printf("[Locale] Loaded language: %s", fileLang)
