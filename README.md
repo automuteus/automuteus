@@ -1,9 +1,6 @@
 <p align="center">
     <img src="assets/AutoMuteUsBanner_cropped.png" width="800">
 </p>
-<p align="center">
-    Banner and Bot profile picture courtesy of <a href=https://aspen-cyborg.tumblr.com/>Smiles</a>!
-</p>
 
 <p align="center">
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
@@ -27,10 +24,12 @@
 <p align="center">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/denverquane/automuteus">
 </p>
-
+<p align="center">
+    Artwork provided by <a href=https://aspen-cyborg.tumblr.com/>Smiles</a>!
+</p>
 <p align="center">
     <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot"/>
-        <img src="https://github.com/denverquane/automuteus/blob/master/assets/BotProfilePicture.png?raw=true", width=100>
+        <img src="assets/DiscordBot_Black.gif", width=180>
     </p>
 </p>
 <p align="center">
@@ -38,6 +37,7 @@
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
     </a>
 </p>
+
 
 # AutoMuteUs (BETA)
 
