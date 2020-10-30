@@ -43,10 +43,10 @@ var PhaseNames = map[Phase]PhaseNameString{
 }
 
 var PhaseMessages = map[Phase]*i18n.Message{
-	LOBBY:   &i18n.Message{ID: "state.phase.LOBBY", Other: "LOBBY" /* string(PhaseNames[LOBBY]) */},
-	TASKS:   &i18n.Message{ID: "state.phase.TASKS", Other: "TASKS" /* string(PhaseNames[TASKS]) */},
-	DISCUSS: &i18n.Message{ID: "state.phase.DISCUSSION", Other: "DISCUSSION" /* string(PhaseNames[DISCUSS]) */},
-	MENU:    &i18n.Message{ID: "state.phase.MENU", Other: "MENU" /* string(PhaseNames[MENU]) */},
+	LOBBY:   {ID: "state.phase.LOBBY", Other: "LOBBY"},
+	TASKS:   {ID: "state.phase.TASKS", Other: "TASKS"},
+	DISCUSS: {ID: "state.phase.DISCUSSION", Other: "DISCUSSION"},
+	MENU:    {ID: "state.phase.MENU", Other: "MENU"},
 }
 
 // ToString for a phase
