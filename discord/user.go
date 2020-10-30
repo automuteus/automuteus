@@ -16,9 +16,10 @@ type User struct {
 
 // UserData struct
 type UserData struct {
-	User             User   `json:"User"`
-	VoiceChangeReady bool   `json:"VoiceChangeReady"`
-	InGameName       string `json:"PlayerName"`
+	User         User   `json:"User"`
+	ShouldBeMute bool   `json:"ShouldBeMute"`
+	ShouldBeDeaf bool   `json:"ShouldBeDeaf"`
+	InGameName   string `json:"PlayerName"`
 }
 
 func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
@@ -30,21 +31,19 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 			Discriminator: dUser.Discriminator,
 			OriginalNick:  nick,
 		},
-		VoiceChangeReady: true,
-		InGameName:       game.UnlinkedPlayerName,
+		ShouldBeDeaf: false,
+		ShouldBeMute: false,
+		InGameName:   game.UnlinkedPlayerName,
 	}
-}
-
-func (user *UserData) IsVoiceChangeReady() bool {
-	return user.VoiceChangeReady
-}
-
-func (user *UserData) SetVoiceChangeReady(is bool) {
-	user.VoiceChangeReady = is
 }
 
 func (user *UserData) GetNickName() string {
 	return user.User.Nick
+}
+
+func (user *UserData) SetShouldBeMuteDeaf(mute, deaf bool) {
+	user.ShouldBeMute = mute
+	user.ShouldBeDeaf = deaf
 }
 
 //func (user *UserData) GetOriginalNickName() string {

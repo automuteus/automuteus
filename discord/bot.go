@@ -198,7 +198,10 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 }
 
 func (bot *Bot) gracefulShutdownWorker(guildID, connCode string, s *discordgo.Session, seconds int, message string) {
-	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(guildID, "", "", connCode)
+	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(GameStateRequest{
+		GuildID:     guildID,
+		ConnectCode: connCode,
+	})
 	if dgs.GameStateMsg.MessageID != "" {
 		log.Printf("Received graceful shutdown message, saving and shutting down in %d seconds", seconds)
 
@@ -207,7 +210,13 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string, s *discordgo.Se
 
 	time.Sleep(time.Duration(seconds) * time.Second)
 
-	bot.gracefulEndGame(dgs.GuildID, dgs.GameStateMsg.MessageChannelID, dgs.Tracking.ChannelID, dgs.ConnectCode, s)
+	gsr := GameStateRequest{
+		GuildID:      dgs.GuildID,
+		TextChannel:  dgs.GameStateMsg.MessageChannelID,
+		VoiceChannel: dgs.Tracking.ChannelID,
+		ConnectCode:  dgs.ConnectCode,
+	}
+	bot.gracefulEndGame(gsr, s)
 
 	//this is only for forceful shutdown
 	//bot.RedisInterface.DeleteDiscordGameState(dgs)
@@ -299,12 +308,12 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 	return
 }
 
-func (bot *Bot) gracefulEndGame(guildID, channelID, voiceChannel, connCode string, s *discordgo.Session) {
-	sett := bot.StorageInterface.GetGuildSettings(guildID)
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, channelID, voiceChannel, connCode)
+func (bot *Bot) gracefulEndGame(gsr GameStateRequest, s *discordgo.Session) {
+	//sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		log.Println("Couldnt obtain lock when ending game")
-		s.ChannelMessageSend(channelID, "Could not obtain lock when ending game! You'll need to manually unmute/undeafen players!")
+		s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when ending game! You'll need to manually unmute/undeafen players!")
 		return
 	}
 
@@ -316,25 +325,24 @@ func (bot *Bot) gracefulEndGame(guildID, channelID, voiceChannel, connCode strin
 	dgs.Subscribed = false
 	dgs.Linked = false
 
-	//VERY IMPORTANT. We set in Redis HERE, and then change the dgs without propagating back to Redis;
-	//only changing for the appropriate unmutes/undeafens without writing a bunch of custom handlers
-	//but we DO NOT RELEASE THE LOCK. This is to prevent voice state handlers, for example, from interfering
-	bot.RedisInterface.SetDiscordGameState(dgs, nil)
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	dgs.AmongUsData.SetAllAlive()
 	dgs.AmongUsData.UpdatePhase(game.LOBBY)
 	dgs.AmongUsData.SetRoomRegion("", "")
 
+	//TODO need an override to unmute, write some custom handler for it
+
 	// apply the unmute/deafen to users who have state linked to them
-	dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
+	//bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
 
 	log.Println("Done saving guild data. Ready for shutdown")
 }
 
-func (bot *Bot) forceEndGame(guildID, channelID, voiceChannel, connCode string, s *discordgo.Session) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, channelID, voiceChannel, connCode)
+func (bot *Bot) forceEndGame(gsr GameStateRequest, s *discordgo.Session) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
-		s.ChannelMessageSend(channelID, "Could not obtain lock when forcefully ending game! You'll need to manually unmute/undeafen players!")
+		s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when forcefully ending game! You'll need to manually unmute/undeafen players!")
 		return
 	}
 
@@ -347,14 +355,20 @@ func (bot *Bot) forceEndGame(guildID, channelID, voiceChannel, connCode string, 
 	dgs.AmongUsData.UpdatePhase(game.LOBBY)
 	dgs.AmongUsData.SetRoomRegion("", "")
 
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
 
 	// apply the unmute/deafen to users who have state linked to them
-	dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.LOBBY)
+	bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
+
+	lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 
 	//clear the Tracking and make sure all users are unlinked
 	dgs.clearGameTracking(s)
 
 	dgs.Running = false
+
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 }

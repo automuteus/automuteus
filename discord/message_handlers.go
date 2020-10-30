@@ -79,12 +79,14 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	//TODO this loop is slow and will block the lock
 	//TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
-	//TODO voicechangeready gets blocked (probably by the lock taking too long...)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+	gsr := GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+	}
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock != nil && dgs != nil && dgs.Exists() {
 		//verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(m) {
@@ -126,7 +128,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			}
 			//make sure to update any voice changes if they occurred
 			if idMatched {
-				dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgs.AmongUsData.GetPhase())
+				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
 				dgs.Edit(s, bot.gameStateResponse(dgs))
 			}
 		}
@@ -143,17 +145,19 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	gsr := GameStateRequest{
+		GuildID:      m.GuildID,
+		VoiceChannel: m.ChannelID,
+	}
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, "", m.ChannelID, "")
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
-		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, "", m.ChannelID, "")
-		dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
 		return
 	}
 
-	g := dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
+	g, err := s.State.Guild(dgs.GuildID)
 
-	if g == nil {
+	if err != nil || g == nil {
 		lock.Release()
 		return
 	}
@@ -172,8 +176,8 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	tracked = tracked && found
 	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
-	if found && userData.IsVoiceChangeReady() && (mute != m.Mute || deaf != m.Deaf) {
-		userData.SetVoiceChangeReady(false)
+	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
+		userData.SetShouldBeMuteDeaf(mute, deaf)
 
 		dgs.UpdateUserData(m.UserID, userData)
 
@@ -190,7 +194,10 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+	})
 	if lock == nil {
 		log.Println("Couldn't obtain redis dgs lock for new game! This is really bad...")
 		return
@@ -320,7 +327,11 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 }
 
 func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild, connCode string) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", connCode)
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+		ConnectCode: connCode,
+	})
 	if lock == nil {
 		log.Println("Couldn't obtain lock for DGS on game start...")
 		return

@@ -10,16 +10,19 @@ import (
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
 	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
+	dgsRequest := GameStateRequest{
+		GuildID:     guildID,
+		ConnectCode: connectCode,
+	}
 	for {
 		select {
 		case gameMessage := <-connection.Channel():
 			log.Println(gameMessage)
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 			if lock == nil {
 				log.Println("Couldn't obtain lock when receiving connect message!")
 				break
 			}
-
 			if gameMessage.Payload == "true" {
 				dgs.Linked = true
 			} else {
@@ -38,14 +41,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				log.Println(err)
 				break
 			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
-			if lock == nil {
-				log.Println("Couldn't obtain lock when receiving lobby message!")
-				break
-			}
 
-			bot.processLobby(dgs, bot.SessionManager.GetPrimarySession(), lobby)
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+			bot.processLobby(bot.SessionManager.GetPrimarySession(), lobby, dgsRequest)
 			break
 		case gameMessage := <-phase.Channel():
 			var phase game.Phase
@@ -54,7 +51,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				log.Println(err)
 				break
 			}
-			bot.processTransition(guildID, connectCode, phase)
+			bot.processTransition(phase, dgsRequest)
 			break
 		case gameMessage := <-player.Channel():
 			sett := bot.StorageInterface.GetGuildSettings(guildID)
@@ -65,13 +62,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				break
 			}
 
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
-			if lock == nil {
-				log.Println("Couldn't obtain lock when receiving player message!")
-				break
+			shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
+			if shouldHandleTracked {
+				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
 			}
-			bot.processPlayer(dgs, sett, player)
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 			break
 		case k := <-killChan:
 			if k {
@@ -97,8 +92,16 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 		}
 	}
 }
-func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings, player game.Player) {
+func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, dgsRequest GameStateRequest) bool {
 	if player.Name != "" {
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+		if lock == nil {
+			log.Println("Couldn't obtain lock to process player")
+			return false
+		}
+
+		defer bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
 		if player.Disconnected || player.Action == game.LEFT {
 			log.Println("I detected that " + player.Name + " disconnected or left! " +
 				"I'm removing their linked game data; they will need to relink")
@@ -106,7 +109,7 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 			dgs.ClearPlayerDataByPlayerName(player.Name)
 			dgs.AmongUsData.ClearPlayerData(player.Name)
 			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-			return
+			return true
 		} else {
 			updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
 
@@ -120,6 +123,7 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 				}
 
 				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+				return true
 			} else if updated {
 				paired := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
@@ -131,25 +135,28 @@ func (bot *Bot) processPlayer(dgs *DiscordGameState, sett *storage.GuildSettings
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
 					if sett.GetUnmuteDeadDuringTasks() {
-						// unmute players even if in tasks because unmuteDeadDuringTasks is true
-						dgs.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, game.TASKS)
 						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+						return true
 					} else {
 						log.Println("NOT updating the discord status message; would leak info")
+						return false
 					}
 				} else {
 					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
+					return true
 				}
 			} else {
+				return false
 				//No changes occurred; no reason to update
 			}
 		}
 	}
+	return false
 }
 
-func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase) {
-	sett := bot.StorageInterface.GetGuildSettings(guildID)
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connectCode)
+func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest) {
+	sett := bot.StorageInterface.GetGuildSettings(dgsRequest.GuildID)
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	if lock == nil {
 		log.Println("Couldn't obtain lock when processing transition message!")
 		return
@@ -161,17 +168,18 @@ func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase)
 		return
 	}
 
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
+		go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
 		break
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, phase)
+		bot.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, dgsRequest)
 
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
-		dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
+		go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 		break
 	case game.TASKS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
@@ -181,21 +189,26 @@ func (bot *Bot) processTransition(guildID, connectCode string, phase game.Phase)
 			priority = NoPriority
 		}
 
-		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, priority, phase)
+		bot.handleTrackedMembers(bot.SessionManager, sett, delay, priority, dgsRequest)
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		break
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		dgs.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgs.AmongUsData.GetPhase())
+		bot.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgsRequest)
 
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 		break
 	}
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
-func (bot *Bot) processLobby(dgs *DiscordGameState, s *discordgo.Session, lobby game.Lobby) {
+func (bot *Bot) processLobby(s *discordgo.Session, lobby game.Lobby, dgsRequest GameStateRequest) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+	if lock == nil {
+		log.Println("Couldn't obtain lock when processing lobby message!")
+		return
+	}
 	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	dgs.Edit(s, bot.gameStateResponse(dgs))
 }
@@ -209,7 +222,10 @@ func (bot *Bot) updatesListener(s *discordgo.Session, guildID string, globalUpda
 				if worldUpdate.Type == GRACEFUL_SHUTDOWN {
 
 					go bot.gracefulShutdownWorker(guildID, connCode, s, worldUpdate.Data, worldUpdate.Message)
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(guildID, "", "", connCode)
+					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+						GuildID:     guildID,
+						ConnectCode: connCode,
+					})
 					if lock == nil {
 						log.Println("Couldn't obtain lock when processing graceful shutdown message!")
 						break

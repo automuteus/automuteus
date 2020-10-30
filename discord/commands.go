@@ -284,10 +284,14 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	prefix := sett.CommandPrefix
 	cmd := GetCommand(args[0])
 
+	gsr := GameStateRequest{
+		GuildID:     m.GuildID,
+		TextChannel: m.ChannelID,
+	}
+
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
-
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
 			log.Println("State fetched is valid, but I'm not subscribed! Resubscribing now!")
 			killChan := make(chan bool)
@@ -338,10 +342,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.forceEndGame(m.GuildID, m.ChannelID, "", "", s)
+		bot.forceEndGame(gsr, s)
 
 		//only need read-only for deletion (the delete method is locking)
-		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, m.ChannelID, "", "")
+		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 		bot.RedisInterface.DeleteDiscordGameState(dgs)
 
 		//have to explicitly delete here, because if we use the default delete below, the ChannelID
@@ -350,7 +354,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Pause:
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			break
 		}
@@ -361,7 +365,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case Refresh:
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			break
 		}
@@ -385,7 +389,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			embed := ConstructEmbedForCommand(prefix, cmd)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 			if lock == nil {
 				break
 			}
@@ -407,14 +411,12 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				log.Println(err)
 			} else {
 				log.Print(fmt.Sprintf("Removing player %s", userID))
-				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 				if lock == nil {
 					break
 				}
 				dgs.ClearPlayerData(userID)
 
-				//make sure that any players we remove/unlink get auto-unmuted/undeafened
-				dgs.verifyVoiceStateChanges(s, sett, dgs.AmongUsData.GetPhase())
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				//update the state message to reflect the player leaving
@@ -435,7 +437,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				log.Println(err)
 			}
 
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(m.GuildID, m.ChannelID, "", "")
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 			if lock == nil {
 				break
 			}
@@ -511,7 +513,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case DebugState:
 		if m.Author != nil {
-			state := bot.RedisInterface.GetReadOnlyDiscordGameState(m.GuildID, m.ChannelID, "", "")
+			state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			if state != nil {
 				jBytes, err := json.MarshalIndent(state, "", "  ")
 				if err != nil {

@@ -108,25 +108,32 @@ func (redisInterface *RedisInterface) SubscribeToGame(connectCode string) (conne
 }
 
 //todo this can technically be a race condition? what happens if one of these is updated while we're fetching...
-func (redisInterface *RedisInterface) getDiscordGameStateKey(guildID, textChannel, voiceChannel, connectCode string) string {
-	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(guildID, connectCode))
+func (redisInterface *RedisInterface) getDiscordGameStateKey(gsr GameStateRequest) string {
+	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(gsr.GuildID, gsr.ConnectCode))
 	if key == "" {
-		key = redisInterface.CheckPointer(discordKeyTextChannelPtr(guildID, textChannel))
+		key = redisInterface.CheckPointer(discordKeyTextChannelPtr(gsr.GuildID, gsr.TextChannel))
 		if key == "" {
-			key = redisInterface.CheckPointer(discordKeyVoiceChannelPtr(guildID, voiceChannel))
+			key = redisInterface.CheckPointer(discordKeyVoiceChannelPtr(gsr.GuildID, gsr.VoiceChannel))
 		}
 	}
 	return key
 }
 
+type GameStateRequest struct {
+	GuildID      string
+	TextChannel  string
+	VoiceChannel string
+	ConnectCode  string
+}
+
 //need at least one of these fields to fetch
-func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(guildID, textChannel, voiceChannel, connectCode string) *DiscordGameState {
-	return redisInterface.getDiscordGameState(guildID, textChannel, voiceChannel, connectCode)
+func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateRequest) *DiscordGameState {
+	return redisInterface.getDiscordGameState(gsr)
 }
 
 //TODO can fail to obtain the lock when voice state changes happen. This is expected, but need to gracefully handle it
-func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(guildID, textChannel, voiceChannel, connectCode string) (*redislock.Lock, *DiscordGameState) {
-	key := redisInterface.getDiscordGameStateKey(guildID, textChannel, voiceChannel, connectCode)
+func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *DiscordGameState) {
+	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, nil)
 	if err == redislock.ErrNotObtained {
@@ -137,19 +144,19 @@ func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(guildID, textCh
 	}
 	//log.Println("LOCKING " + key)
 
-	return lock, redisInterface.getDiscordGameState(guildID, textChannel, voiceChannel, connectCode)
+	return lock, redisInterface.getDiscordGameState(gsr)
 }
 
-func (redisInterface *RedisInterface) getDiscordGameState(guildID, textChannel, voiceChannel, connectCode string) *DiscordGameState {
-	key := redisInterface.getDiscordGameStateKey(guildID, textChannel, voiceChannel, connectCode)
+func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest) *DiscordGameState {
+	key := redisInterface.getDiscordGameStateKey(gsr)
 
 	jsonStr, err := redisInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		dgs := NewDiscordGameState(guildID)
+		dgs := NewDiscordGameState(gsr.GuildID)
 		//this is a little silly, but it works...
-		dgs.ConnectCode = connectCode
-		dgs.GameStateMsg.MessageChannelID = textChannel
-		dgs.Tracking.ChannelID = voiceChannel
+		dgs.ConnectCode = gsr.ConnectCode
+		dgs.GameStateMsg.MessageChannelID = gsr.TextChannel
+		dgs.Tracking.ChannelID = gsr.VoiceChannel
 		redisInterface.SetDiscordGameState(dgs, nil)
 		return dgs
 	} else if err != nil {
@@ -185,7 +192,12 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		return
 	}
 
-	key := redisInterface.getDiscordGameStateKey(data.GuildID, data.GameStateMsg.MessageChannelID, data.Tracking.ChannelID, data.ConnectCode)
+	key := redisInterface.getDiscordGameStateKey(GameStateRequest{
+		GuildID:      data.GuildID,
+		TextChannel:  data.GameStateMsg.MessageChannelID,
+		VoiceChannel: data.Tracking.ChannelID,
+		ConnectCode:  data.ConnectCode,
+	})
 	//log.Println("unlock " + key)
 
 	//connectCode is the 1 sole key we should ever rely on for tracking games. Because we generate it ourselves
@@ -253,7 +265,10 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	if guildID == "" || connCode == "" {
 		log.Println("Can't delete DGS with null guildID or null ConnCode")
 	}
-	data := redisInterface.getDiscordGameState(guildID, "", "", connCode)
+	data := redisInterface.getDiscordGameState(GameStateRequest{
+		GuildID:     guildID,
+		ConnectCode: connCode,
+	})
 	key := discordKey(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
