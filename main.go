@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/locale"
 
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
@@ -49,7 +51,7 @@ func discordMainWrapper() error {
 				log.Println("Issue creating sample config.txt")
 				return err
 			}
-			_, err = f.WriteString("DISCORD_BOT_TOKEN=\n")
+			_, err = f.WriteString(fmt.Sprintf("DISCORD_BOT_TOKEN=\nBOT_LANG=%s\n", locale.DefaultLang))
 			f.Close()
 		}
 	}
@@ -166,6 +168,8 @@ func discordMainWrapper() error {
 		}
 		log.Println("Success in initializing the local Filesystem as the Storage Driver")
 	}
+
+	locale.InitLang(os.Getenv("BOT_LANG"))
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

@@ -5,6 +5,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+
 	"log"
 	"strconv"
 	"strings"
@@ -123,22 +126,34 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
-				Name:   "Current Value",
+				Name:   locale.LocalizeMessage(&i18n.Message{
+						ID:    "settings.ConstructEmbedForSetting.Fields.CurrentValue",
+						Other: "Current Value",
+					}),
 				Value:  value,
 				Inline: false,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   "Example",
+				Name:   locale.LocalizeMessage(&i18n.Message{
+						ID:    "settings.ConstructEmbedForSetting.Fields.Example",
+						Other: "Example",
+					}),
 				Value:  "`" + setting.example + "`",
 				Inline: false,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   "Arguments",
+				Name:   locale.LocalizeMessage(&i18n.Message{
+						ID:    "settings.ConstructEmbedForSetting.Fields.Arguments",
+						Other: "Arguments",
+					}),
 				Value:  "`" + setting.args + "`",
 				Inline: false,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   "Aliases",
+				Name:   locale.LocalizeMessage(&i18n.Message{
+						ID:    "settings.ConstructEmbedForSetting.Fields.Aliases",
+						Other: "Aliases",
+					}),
 				Value:  strings.Join(setting.aliases, ", "),
 				Inline: false,
 			},
@@ -225,7 +240,13 @@ func HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, gui
 		isValid = SettingVoiceRules(s, m, guild, args)
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, `%s` is not a valid setting!\n", args[1]))
+		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "settings.HandleSettingsCommand.default",
+				Other: "Sorry, `{{.Argument}}` is not a valid setting!\n",
+			},
+			map[string]interface{}{
+				"Argument": args[1],
+			}))
 	}
 	if isValid {
 		err := storageInterface.WriteGuildSettings(m.GuildID, guild.guildSettings)
@@ -285,11 +306,22 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 	}
 	// check if channel was found
 	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Could not find the voice channel `%s`! Pass in the name or the ID, and make sure the bot can see it.", args[2]))
+		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingDefaultTrackedChannel.withoutChannelID",
+				Other: "Could not find the voice channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it.",
+			},
+			map[string]interface{}{
+				"channelName": args[2],
+			}))
 		return false
 	} else {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Default voice channel changed to `%s`. Use that from now on!",
-			channelName))
+		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingDefaultTrackedChannel.withChannelName",
+				Other: "Default voice channel changed to `{{.channelName}}`. Use that from now on!",
+			},
+			map[string]interface{}{
+				"channelName": channelName,
+			}))
 		guild.guildSettings.SetDefaultTrackedChannel(channelID)
 		return true
 	}

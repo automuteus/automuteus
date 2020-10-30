@@ -3,6 +3,7 @@ package storage
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
 	"sync"
 )
 
@@ -11,6 +12,7 @@ type GuildSettings struct {
 	GuildName             string `json:"guildName"`
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
+	Language              string `json:"language"`
 
 	AdminUserIDs          []string        `json:"adminIDs"`
 	PermissionRoleIDs     []string        `json:"permissionRoleIDs"`
@@ -28,6 +30,7 @@ func MakeGuildSettings(guildID, guildName string) *GuildSettings {
 		GuildName:             guildName,
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
+		Language:              locale.DefaultLang,
 		AdminUserIDs:          []string{},
 		PermissionRoleIDs:     []string{},
 		Delays:                game.MakeDefaultDelays(),
@@ -108,6 +111,14 @@ func (gs *GuildSettings) GetDefaultTrackedChannel() string {
 
 func (gs *GuildSettings) SetDefaultTrackedChannel(c string) {
 	gs.DefaultTrackedChannel = c
+}
+
+func (gs *GuildSettings) GetLanguage() string {
+	return gs.Language
+}
+
+func (gs *GuildSettings) SetLanguage(c string) {
+	gs.Language = c
 }
 
 func (gs *GuildSettings) GetApplyNicknames() bool {

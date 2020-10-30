@@ -16,8 +16,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/locale"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const DefaultPort = "8123"
@@ -486,7 +488,13 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 					*v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    1,
-						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", bot.captureTimeout),
+						Message: locale.LocalizeMessage(&i18n.Message{
+								ID:    "bot.InactiveGameWorker.Message",
+								Other: "**I haven't received any messages from your capture in {{.captureTimeout}} seconds, so I'm ending the game!**",
+							},
+							map[string]interface{}{
+								"captureTimeout": bot.captureTimeout,
+							}),
 					}
 				}
 			}
@@ -516,13 +524,20 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
+			captureTimeout := 30
 			bot.ChannelsMapLock.RLock()
 			for _, v := range bot.GlobalBroadcastChannels {
 				if v != nil {
 					*v <- BroadcastMessage{
 						Type:    GRACEFUL_SHUTDOWN,
 						Data:    30,
-						Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
+						Message: locale.LocalizeMessage(&i18n.Message{
+								ID:    "bot.InactiveGameWorker.Message",
+								Other: "I'm being shut down in {{.captureTimeout}} seconds, and will be closing your active game!",
+							},
+							map[string]interface{}{
+								"captureTimeout": captureTimeout,
+							}),
 					}
 				}
 			}
@@ -564,7 +579,7 @@ func (bot *Bot) updatesListener() func(dg *discordgo.Session, guildID string, so
 							break
 						}
 						log.Println("Detected transition to Menu")
-						guild.AmongUsData.SetRoomRegion("Unprovided", "Unprovided")
+						guild.AmongUsData.SetRoomRegion(getRoomAndRegionFromArgs(nil))
 						guild.AmongUsData.SetPhase(phase)
 						guild.GameStateMsg.Edit(dg, gameStateResponse(guild))
 						guild.GameStateMsg.RemoveAllReactions(dg)
@@ -967,7 +982,10 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 			perms = guild.HasAdminPerms(m.Author) || guild.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "bot.handleMessageCreate.noPerms",
+				Other: "User does not have the required permissions to execute this command!",
+			}))
 		} else {
 			oldLen := len(contents)
 			contents = strings.Replace(contents, prefix+" ", "", 1)
