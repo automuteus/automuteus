@@ -8,7 +8,18 @@ import (
 	"log"
 )
 
-func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
+type EndGameType int
+
+const (
+	EndAndSave EndGameType = iota
+	EndAndWipe
+)
+
+type EndGameMessage struct {
+	EndGameType EndGameType
+}
+
+func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel <-chan EndGameMessage) {
 	log.Println("Started Redis Subscription worker")
 	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
 
@@ -75,29 +86,32 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			}
 
 			break
-		case k := <-killChan:
-			if k {
-				log.Println("Redis subscriber received kill signal, closing all pubsubs")
-				err := connection.Close()
-				if err != nil {
-					log.Println(err)
-				}
-				err = lobby.Close()
-				if err != nil {
-					log.Println(err)
-				}
-				err = phase.Close()
-				if err != nil {
-					log.Println(err)
-				}
-				err = player.Close()
-				if err != nil {
-					log.Println(err)
-				}
-
-				go bot.gracefulShutdownWorker(guildID, connectCode)
-				return
+		case k := <-endGameChannel:
+			log.Println("Redis subscriber received kill signal, closing all pubsubs")
+			err := connection.Close()
+			if err != nil {
+				log.Println(err)
 			}
+			err = lobby.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			err = phase.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			err = player.Close()
+			if err != nil {
+				log.Println(err)
+			}
+
+			if k.EndGameType == EndAndSave {
+				go bot.gracefulShutdownWorker(guildID, connectCode)
+			} else if k.EndGameType == EndAndWipe {
+				bot.forceEndGame(dgsRequest)
+			}
+
+			return
 		}
 	}
 }

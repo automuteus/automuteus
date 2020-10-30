@@ -320,11 +320,14 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.forceEndGame(gsr, s)
-
-		//only need read-only for deletion (the delete method is locking)
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-		bot.RedisInterface.DeleteDiscordGameState(dgs)
+		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+			v <- EndGameMessage{EndGameType: EndAndWipe}
+		}
+		delete(bot.EndGameChannels, dgs.ConnectCode)
+		bot.forceEndGame(gsr)
+
+		bot.applyToAll(dgs, false, false)
 
 		//have to explicitly delete here, because if we use the default delete below, the ChannelID
 		//for the game state message doesn't exist anymore...

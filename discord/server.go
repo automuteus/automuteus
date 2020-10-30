@@ -117,6 +117,20 @@ func (bot *Bot) socketioServer(port string) {
 	router := mux.NewRouter()
 	router.Handle("/socket.io/", server)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]interface{}{
+			"version":           Version,
+			"commit":            Commit,
+			"totalGuilds":       bot.guildCounter,
+			"activeConnections": len(bot.ConnsToGames),
+			"activeGames":       len(bot.EndGameChannels),
+		}
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			log.Println(err)
+		}
+		w.Write(jsonBytes)
+	})
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Auto-Mute Us is up and running.")
 	})
 
@@ -129,23 +143,11 @@ func MessagesServer(port string, bot *Bot) {
 		if r.Method == http.MethodPost {
 
 			bot.ChannelsMapLock.RLock()
-			for _, v := range bot.RedisSubscriberKillChannels {
-				v <- true
+			for _, v := range bot.EndGameChannels {
+				v <- EndGameMessage{EndGameType: EndAndSave}
 			}
 			bot.ChannelsMapLock.RUnlock()
 		}
-	})
-	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
-		data := map[string]interface{}{
-			"activeConnections": len(bot.ConnsToGames),
-			//"totalGuilds":       len(bot.GlobalBroadcastChannels), //probably an inaccurate metric
-			"activeGames": len(bot.RedisSubscriberKillChannels),
-		}
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			log.Println(err)
-		}
-		w.Write(jsonBytes)
 	})
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))

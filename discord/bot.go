@@ -23,7 +23,7 @@ type Bot struct {
 
 	StatusEmojis AlivenessEmojis
 
-	RedisSubscriberKillChannels map[string]chan bool
+	EndGameChannels map[string]chan EndGameMessage
 
 	ChannelsMapLock sync.RWMutex
 
@@ -36,14 +36,17 @@ type Bot struct {
 	logPath string
 
 	captureTimeout int
+	guildCounter   int
 }
 
 var Version string
+var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, commit, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
 	Version = version
+	Commit = commit
 
 	var altDiscordSession *discordgo.Session = nil
 
@@ -77,13 +80,14 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		RedisSubscriberKillChannels: make(map[string]chan bool),
-		ChannelsMapLock:             sync.RWMutex{},
-		SessionManager:              NewSessionManager(dg, altDiscordSession),
-		RedisInterface:              redisInterface,
-		StorageInterface:            storageInterface,
-		logPath:                     logPath,
-		captureTimeout:              timeoutSecs,
+		EndGameChannels:  make(map[string]chan EndGameMessage),
+		ChannelsMapLock:  sync.RWMutex{},
+		SessionManager:   NewSessionManager(dg, altDiscordSession),
+		RedisInterface:   redisInterface,
+		StorageInterface: storageInterface,
+		logPath:          logPath,
+		captureTimeout:   timeoutSecs,
+		guildCounter:     0,
 	}
 
 	dg.AddHandler(bot.handleVoiceStateChange)
@@ -134,8 +138,8 @@ func (bot *Bot) Run(port string) {
 
 func (bot *Bot) GracefulClose() {
 	bot.ChannelsMapLock.RLock()
-	for _, v := range bot.RedisSubscriberKillChannels {
-		v <- true
+	for _, v := range bot.EndGameChannels {
+		v <- EndGameMessage{EndGameType: EndAndSave}
 	}
 
 	bot.ChannelsMapLock.RUnlock()
@@ -163,8 +167,8 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 			bot.PurgeConnection(socket.ID())
 
 			bot.ChannelsMapLock.RLock()
-			for _, v := range bot.RedisSubscriberKillChannels {
-				v <- true
+			for _, v := range bot.EndGameChannels {
+				v <- EndGameMessage{EndGameType: EndAndSave}
 			}
 
 			bot.ChannelsMapLock.RUnlock()
@@ -239,14 +243,15 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 			if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
-				killChan := make(chan bool)
+				killChan := make(chan EndGameMessage)
 				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 				dgs.Subscribed = true
 
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				bot.ChannelsMapLock.Lock()
-				bot.RedisSubscriberKillChannels[dgs.ConnectCode] = killChan
+				bot.guildCounter++
+				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 			} else if lock != nil {
 				//log.Println("UNLOCKING")
@@ -260,6 +265,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			//put an empty entry in Redis
 			bot.RedisInterface.SetDiscordGameState(dsg, nil)
 		}
+
 	}
 }
 
@@ -332,36 +338,17 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	log.Println("Done saving guild data. Ready for shutdown")
 }
 
-func (bot *Bot) forceEndGame(gsr GameStateRequest, s *discordgo.Session) {
+func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
-		s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when forcefully ending game! You'll need to manually unmute/undeafen players!")
 		return
 	}
-
-	if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
-		v <- true
-	}
-	delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
 
 	dgs.AmongUsData.SetAllAlive()
 	dgs.AmongUsData.UpdatePhase(game.LOBBY)
 	dgs.AmongUsData.SetRoomRegion("", "")
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	lock.Release()
 
-	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
-
-	// apply the unmute/deafen to users who have state linked to them
-	bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
-
-	lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-
-	//clear the Tracking and make sure all users are unlinked
-	dgs.clearGameTracking(s)
-
-	dgs.Running = false
-
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
+	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
