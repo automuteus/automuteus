@@ -433,6 +433,9 @@ func (bot *Bot) socketioServer(port string) {
 
 	router := mux.NewRouter()
 	router.Handle("/socket.io/", server)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Auto-Mute Us is up and running.")
+	})
 
 	log.Printf("Serving at localhost:%s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
