@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"sync"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
-	"sync"
 )
 
 type GuildSettings struct {

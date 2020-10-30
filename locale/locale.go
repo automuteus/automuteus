@@ -1,14 +1,14 @@
 package locale
 
 import (
+	"io/ioutil"
 	"log"
 	"path"
-	"io/ioutil"
 	"regexp"
 
-	"golang.org/x/text/language"
 	"github.com/BurntSushi/toml"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
 const localesDir = "locales/"
@@ -43,7 +43,7 @@ func LoadTranslations() *i18n.Bundle {
 		for _, file := range files {
 			if match := re.FindStringSubmatch(file.Name()); match != nil {
 				fileLang := match[re.SubexpIndex("lang")]
-		
+
 				if _, err = bundle.LoadMessageFile(path.Join(localesDir, file.Name())); err != nil {
 					if curLang != DefaultLang && fileLang != DefaultLang {
 						log.Println("[Locale] Eroor load message file: %s", err)
@@ -73,7 +73,7 @@ func LocalizeMessage(args ...interface{}) string {
 		return "Noup"
 	}
 
-	var templateData map[string]interface{};
+	var templateData map[string]interface{}
 	lang := curLang
 	message := args[0].(*i18n.Message)
 

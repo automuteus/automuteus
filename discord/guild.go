@@ -2,11 +2,12 @@ package discord
 
 import (
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	"log"
-	"sync"
 )
 
 // GuildState struct

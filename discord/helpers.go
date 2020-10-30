@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 	"time"
-	
+
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
-	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 

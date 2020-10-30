@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
-	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"

@@ -1,9 +1,10 @@
 package discord
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 //TODO up this for a full public rollout

@@ -2,12 +2,13 @@ package discord
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/storage"
-	"github.com/denverquane/amongusdiscord/locale"
 	"log"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -353,8 +354,8 @@ func (bot *Bot) HandleCommand(guild *GuildState, s *discordgo.Session, g *discor
 			ID:    "commands.HandleCommand.default",
 			Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
 		},
-		map[string]interface{}{
-			"CommandPrefix": prefix,
-		}))
+			map[string]interface{}{
+				"CommandPrefix": prefix,
+			}))
 	}
 }

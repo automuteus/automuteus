@@ -4,39 +4,40 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strings"
 
+	"github.com/denverquane/amongusdiscord/storage"
+
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
-	
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func helpResponse(version, CommandPrefix string, commands []Command) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.helpResponse.Title",
-				Other: "Among Us Bot Commands (v{{.version}}):\n",
-			},
+		URL:  "",
+		Type: "",
+		Title: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.Title",
+			Other: "Among Us Bot Commands (v{{.version}}):\n",
+		},
 			map[string]interface{}{
 				"version": version,
 			}),
 		Description: locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.helpResponse.SubTitle",
-				Other: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
-			}),
-		Timestamp:   "",
-		Color:       15844367, //GOLD
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+			ID:    "responses.helpResponse.SubTitle",
+			Other: "Having issues or have suggestions? Join our discord at <https://discord.gg/ZkqZSWF>!",
+		}),
+		Timestamp: "",
+		Color:     15844367, //GOLD
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, len(commands)-2)
@@ -165,34 +166,34 @@ func lobbyMetaEmbedFields(tracking *Tracking, room, region string, playerCount i
 	str := tracking.ToStatusString()
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
-				Other: "Room Code",
-			}),
+		Name: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.RoomCode",
+			Other: "Room Code",
+		}),
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMetaEmbedFields.Region",
-				Other: "Region",
-			}),
+		Name: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.Region",
+			Other: "Region",
+		}),
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMetaEmbedFields.Tracking",
-				Other: "Tracking",
-			}),
+		Name: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.Tracking",
+			Other: "Tracking",
+		}),
 		Value:  str,
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
-		Name:   locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
-				Other: "Players Linked",
-			}),
+		Name: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
+			Other: "Players Linked",
+		}),
 		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
 		Inline: false,
 	}
@@ -220,22 +221,22 @@ func menuMessage(g *GuildState) *discordgo.MessageEmbed {
 		color = 3066993
 	} else {
 		desc = locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.menuMessage.notLinked.Description",
-				Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
-			},
+			ID:    "responses.menuMessage.notLinked.Description",
+			Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
+		},
 			map[string]interface{}{
 				"alarmFormattedStart": alarmFormatted,
-				"alarmFormattedEnd": alarmFormatted,
+				"alarmFormattedEnd":   alarmFormatted,
 			})
 	}
 
 	msg := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.menuMessage.Title",
-				Other: "Main Menu",
-			}),
+		URL:  "",
+		Type: "",
+		Title: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.menuMessage.Title",
+			Other: "Main Menu",
+		}),
 		Description: desc,
 		Timestamp:   "",
 		Footer:      nil,
@@ -273,30 +274,30 @@ func lobbyMessage(g *GuildState) *discordgo.MessageEmbed {
 		color = 3066993
 	} else {
 		desc = locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMessage.notLinked.Description",
-				Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
-			},
+			ID:    "responses.lobbyMessage.notLinked.Description",
+			Other: "{{.alarmFormattedStart}}**No capture linked! Click the link in your DMs to connect!**{{.alarmFormattedEnd}}",
+		},
 			map[string]interface{}{
 				"alarmFormattedStart": alarmFormatted,
-				"alarmFormattedEnd": alarmFormatted,
+				"alarmFormattedEnd":   alarmFormatted,
 			})
 	}
 
 	emojiLeave := "❌"
 	msg := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMessage.Title",
-				Other: "Lobby",
-			}),
+		URL:  "",
+		Type: "",
+		Title: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMessage.Title",
+			Other: "Lobby",
+		}),
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
-			Text:  locale.LocalizeMessage(&i18n.Message{
-					ID:    "responses.lobbyMessage.Footer.Text",
-					Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
-				},
+			Text: locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.Footer.Text",
+				Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
+			},
 				map[string]interface{}{
 					"emojiLeave": emojiLeave,
 				}),
@@ -361,9 +362,9 @@ func (guild *GuildState) makeDescription() string {
 			ID:    "responses.makeDescription.GameNotRunning",
 			Other: "\n**Bot is Paused! Unpause with `{{.CommandPrefix}} p`!**\n\n",
 		},
-		map[string]interface{}{
-			"CommandPrefix": guild.CommandPrefix(),
-		}))
+			map[string]interface{}{
+				"CommandPrefix": guild.CommandPrefix(),
+			}))
 	}
 
 	author := guild.GameStateMsg.leaderID
@@ -372,9 +373,9 @@ func (guild *GuildState) makeDescription() string {
 			ID:    "responses.makeDescription.author",
 			Other: "<@{{.author}}> is running an Among Us game!\nThe game is happening in ",
 		},
-		map[string]interface{}{
-			"author": author,
-		}))
+			map[string]interface{}{
+				"author": author,
+			}))
 	}
 
 	if len(guild.Tracking.tracking) == 0 {
@@ -394,9 +395,9 @@ func (guild *GuildState) makeDescription() string {
 				ID:    "responses.makeDescription.voiceChannelName",
 				Other: "the **{{.channelName}}** voice channel!",
 			},
-			map[string]interface{}{
-				"channelName": t.channelName,
-			}))
+				map[string]interface{}{
+					"channelName": t.channelName,
+				}))
 		}
 	}
 

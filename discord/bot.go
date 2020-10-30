@@ -15,8 +15,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/denverquane/amongusdiscord/storage"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -486,12 +486,12 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 			if v, ok := bot.GlobalBroadcastChannels[guildID]; ok {
 				if v != nil {
 					*v <- BroadcastMessage{
-						Type:    GRACEFUL_SHUTDOWN,
-						Data:    1,
+						Type: GRACEFUL_SHUTDOWN,
+						Data: 1,
 						Message: locale.LocalizeMessage(&i18n.Message{
-								ID:    "bot.InactiveGameWorker.Message",
-								Other: "**I haven't received any messages from your capture in {{.captureTimeout}} seconds, so I'm ending the game!**",
-							},
+							ID:    "bot.InactiveGameWorker.Message",
+							Other: "**I haven't received any messages from your capture in {{.captureTimeout}} seconds, so I'm ending the game!**",
+						},
 							map[string]interface{}{
 								"captureTimeout": bot.captureTimeout,
 							}),
@@ -529,12 +529,12 @@ func MessagesServer(port string, bot *Bot) {
 			for _, v := range bot.GlobalBroadcastChannels {
 				if v != nil {
 					*v <- BroadcastMessage{
-						Type:    GRACEFUL_SHUTDOWN,
-						Data:    30,
+						Type: GRACEFUL_SHUTDOWN,
+						Data: 30,
 						Message: locale.LocalizeMessage(&i18n.Message{
-								ID:    "bot.InactiveGameWorker.Message",
-								Other: "I'm being shut down in {{.captureTimeout}} seconds, and will be closing your active game!",
-							},
+							ID:    "bot.InactiveGameWorker.Message",
+							Other: "I'm being shut down in {{.captureTimeout}} seconds, and will be closing your active game!",
+						},
 							map[string]interface{}{
 								"captureTimeout": captureTimeout,
 							}),

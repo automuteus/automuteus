@@ -2,10 +2,11 @@ package discord
 
 import (
 	"encoding/base64"
-	"github.com/denverquane/amongusdiscord/game"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/denverquane/amongusdiscord/game"
 
 	"github.com/bwmarrin/discordgo"
 )

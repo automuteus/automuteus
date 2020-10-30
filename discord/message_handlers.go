@@ -85,20 +85,20 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 	}
 
 	var embed = discordgo.MessageEmbed{
-		URL:   "",
-		Type:  "",
+		URL:  "",
+		Type: "",
 		Title: locale.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.embed.Title",
-				Other: "You just started a game!",
-			}),
+			ID:    "message_handlers.handleNewGameMessage.embed.Title",
+			Other: "You just started a game!",
+		}),
 		Description: locale.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.embed.Description",
-				Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n"+
-					"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n"+
-					"Don't have .NET Core installed? [32-bit here]({{.dotNet32Url}}), [64-bit here]({{.dotNet64Url}})\n\nTo link your capture manually:",
-			},
+			ID: "message_handlers.handleNewGameMessage.embed.Description",
+			Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n" +
+				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n" +
+				"Don't have .NET Core installed? [32-bit here]({{.dotNet32Url}}), [64-bit here]({{.dotNet64Url}})\n\nTo link your capture manually:",
+		},
 			map[string]interface{}{
-				"hyperlink": hyperlink,
+				"hyperlink":   hyperlink,
 				"downloadURL": downloadURL,
 				"dotNet32Url": dotNet32Url,
 				"dotNet64Url": dotNet64Url,
@@ -111,16 +111,16 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Provider:  nil,
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
-				Name:   locale.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
-						Other: "URL",
-					}),
 			{
+				Name: locale.LocalizeMessage(&i18n.Message{
+					ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
+					Other: "URL",
+				}),
 				Value:  minimalUrl,
 				Inline: true,
 			},
-				Name:   locale.LocalizeMessage(&i18n.Message{
 			{
+				Name: locale.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
 					Other: "Code",
 				}),

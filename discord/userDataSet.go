@@ -159,8 +159,8 @@ func (uds *UserDataSet) ToEmojiEmbedFields(nameColorMap map[string]int, nameAliv
 		if unsorted[color] == nil {
 			emoji := emojis[nameAliveMap[name]][color]
 			unsorted[color] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", name),
-				Value:  fmt.Sprintf("%s **%s**", emoji.FormatForInline(), locale.LocalizeMessage(&i18n.Message{
+				Name: fmt.Sprintf("%s", name),
+				Value: fmt.Sprintf("%s **%s**", emoji.FormatForInline(), locale.LocalizeMessage(&i18n.Message{
 					ID:    "userDataSet.ToEmojiEmbedFields.Unlinked",
 					Other: "Unlinked",
 				})),
