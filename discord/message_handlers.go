@@ -111,16 +111,16 @@ func (bot *Bot) handleNewGameMessage(guild *GuildState, s *discordgo.Session, m 
 		Provider:  nil,
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
 						Other: "URL",
 					}),
+			{
 				Value:  minimalUrl,
 				Inline: true,
 			},
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
+			{
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
 					Other: "Code",
 				}),

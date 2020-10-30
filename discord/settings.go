@@ -125,35 +125,35 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 		Provider:    nil,
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "settings.ConstructEmbedForSetting.Fields.CurrentValue",
 						Other: "Current Value",
 					}),
+			{
 				Value:  value,
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "settings.ConstructEmbedForSetting.Fields.Example",
 						Other: "Example",
 					}),
+			{
 				Value:  "`" + setting.example + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "settings.ConstructEmbedForSetting.Fields.Arguments",
 						Other: "Arguments",
 					}),
+			{
 				Value:  "`" + setting.args + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
 				Name:   locale.LocalizeMessage(&i18n.Message{
 						ID:    "settings.ConstructEmbedForSetting.Fields.Aliases",
 						Other: "Aliases",
 					}),
+			{
 				Value:  strings.Join(setting.aliases, ", "),
 				Inline: false,
 			},

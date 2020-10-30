@@ -165,17 +165,17 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 		Provider:    nil,
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Example",
 				Value:  "`" + fmt.Sprintf("%s %s", prefix, cmd.example) + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Arguments",
 				Value:  "`" + cmd.args + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Aliases",
 				Value:  strings.Join(cmd.aliases, ", "),
 				Inline: false,
