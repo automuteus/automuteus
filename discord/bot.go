@@ -435,6 +435,9 @@ func (bot *Bot) socketioServer(port string) {
 
 	router := mux.NewRouter()
 	router.Handle("/socket.io/", server)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Auto-Mute Us is up and running.")
+	})
 
 	log.Printf("Serving at localhost:%s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
@@ -976,7 +979,7 @@ func (bot *Bot) handleMessageCreate(guild *GuildState, s *discordgo.Session, m *
 		//either BOTH the admin/roles are empty, or the user fulfills EITHER perm "bucket"
 		perms := guild.EmptyAdminAndRolePerms()
 		if !perms {
-			perms = guild.HasAdminPerms(m.Member) || guild.HasRolePerms(m.Member)
+			perms = guild.HasAdminPerms(m.Author) || guild.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
 			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{

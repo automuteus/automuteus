@@ -11,7 +11,7 @@ require (
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.3.0
+	google.golang.org/api v0.34.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.1
 	golang.org/x/text v0.3.3
-	google.golang.org/api v0.29.0
 )
