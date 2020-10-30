@@ -2,7 +2,6 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"log"
 	"sync"
 	"time"
 )
@@ -79,7 +78,6 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	DeferredEditsLock.Unlock()
 
 	if me != nil {
-		log.Println("Editing msg")
 		editMessageEmbed(s, channelID, messageID, me)
 	}
 }

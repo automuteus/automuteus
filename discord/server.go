@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (bot *Bot) socketioServer(port string) {
@@ -25,7 +26,41 @@ func (bot *Bot) socketioServer(port string) {
 		log.Printf("Received connection code: \"%s\"", msg)
 
 		bot.ConnsToGames[s.ID()] = msg
-		bot.RedisInterface.PublishConnectUpdate(msg, "true")
+
+		retryCount := 0
+
+		timer := time.NewTimer(time.Second * time.Duration(3))
+
+		//keep publishing the connection code until someone ACKS it
+		go func() {
+			receiver := bot.RedisInterface.SubscribeConnectUpdateAck(msg)
+
+			for {
+				select {
+				case <-receiver.Channel():
+					log.Println("Received connection ack for " + msg)
+					timer.Stop()
+					receiver.Close()
+					return
+
+				case <-timer.C:
+					if retryCount > 5 {
+						log.Println("Exceeded 5 retries for connect ACK")
+						s.Close()
+						bot.PurgeConnection(s.ID())
+						receiver.Close()
+						return
+					} else {
+						log.Println("Publishing connect = true for " + msg)
+					}
+					retryCount++
+					bot.RedisInterface.PublishConnectUpdate(msg, "true")
+					timer.Reset(time.Second * time.Duration(3))
+					break
+				}
+			}
+		}()
+
 	})
 	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
@@ -92,14 +127,10 @@ func (bot *Bot) socketioServer(port string) {
 func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/graceful", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			bot.ChannelsMapLock.RLock()
-			for _, v := range bot.GlobalBroadcastChannels {
-				v <- BroadcastMessage{
-					Type:    GRACEFUL_SHUTDOWN,
-					Data:    30,
-					Message: fmt.Sprintf("I'm being shut down in %d seconds, and will be closing your active game!", 30),
-				}
 
+			bot.ChannelsMapLock.RLock()
+			for _, v := range bot.RedisSubscriberKillChannels {
+				v <- true
 			}
 			bot.ChannelsMapLock.RUnlock()
 		}
@@ -107,8 +138,8 @@ func MessagesServer(port string, bot *Bot) {
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
 			"activeConnections": len(bot.ConnsToGames),
-			"totalGuilds":       len(bot.GlobalBroadcastChannels), //probably an inaccurate metric
-			"activeGames":       len(bot.RedisSubscriberKillChannels),
+			//"totalGuilds":       len(bot.GlobalBroadcastChannels), //probably an inaccurate metric
+			"activeGames": len(bot.RedisSubscriberKillChannels),
 		}
 		jsonBytes, err := json.Marshal(data)
 		if err != nil {

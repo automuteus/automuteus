@@ -205,7 +205,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
-	//if !guild.GameStateMsg.Exists() {
+
 	if dgs.GameStateMsg.MessageChannelID != "" {
 		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
 			v <- true

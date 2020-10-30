@@ -50,8 +50,17 @@ func connectUpdateKey(connCode string) string {
 	return gameKey(connCode) + ":events:connect"
 }
 
+//used by the receiver to indicate that it saw the connection event
+func connectUpdateKeyAck(connCode string) string {
+	return gameKey(connCode) + ":events:connect:ack"
+}
+
 func gameKey(connCode string) string {
 	return "automuteus:game:" + connCode
+}
+
+func activeGamesKey(guildID string) string {
+	return "automuteus:discord:" + guildID + ":games"
 }
 
 func discordKeyTextChannelPtr(guildID, channelID string) string {
@@ -88,6 +97,14 @@ func (redisInterface *RedisInterface) PublishPlayerUpdate(connectCode, playerJso
 
 func (redisInterface *RedisInterface) PublishConnectUpdate(connectCode, connect string) {
 	redisInterface.publish(connectUpdateKey(connectCode), connect)
+}
+
+func (redisInterface *RedisInterface) PublishConnectUpdateAck(connectCode string) {
+	redisInterface.publish(connectUpdateKeyAck(connectCode), "ack")
+}
+
+func (redisInterface *RedisInterface) SubscribeConnectUpdateAck(connectCode string) *redis.PubSub {
+	return redisInterface.client.Subscribe(ctx, connectUpdateKeyAck(connectCode))
 }
 
 func (redisInterface *RedisInterface) publish(topic, message string) {
@@ -257,6 +274,67 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 			log.Println(err)
 		}
 	}
+}
+
+func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
+	key := activeGamesKey(guildID)
+	locker := redislock.New(redisInterface.client)
+	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, nil)
+	if err == redislock.ErrNotObtained {
+		log.Println("Lock not obtained for active games append!")
+		return
+	} else if err != nil {
+		log.Println(err)
+		return
+	}
+
+	v, err := redisInterface.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		s := []string{connectCode}
+		jBytes, err := json.Marshal(s)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Println("Writing active game: " + connectCode)
+		redisInterface.client.Set(ctx, key, string(jBytes), SecsIn12Hrs*time.Second)
+		return
+	} else if err != nil {
+		log.Println(err)
+		return
+	}
+	var games []string
+	err = json.Unmarshal([]byte(v), &games)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	games = append(games, connectCode)
+	jBytes, err := json.Marshal(games)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("Appending active game: " + connectCode)
+	redisInterface.client.Set(ctx, key, string(jBytes), SecsIn12Hrs*time.Second)
+	lock.Release()
+}
+
+func (redisInterface *RedisInterface) LoadAllActiveGamesAndDelete(guildID string) []string {
+	hash := activeGamesKey(guildID)
+	v, err := redisInterface.client.Get(ctx, hash).Result()
+	if err != nil {
+		log.Println(err)
+		return []string{}
+	}
+	var games []string
+	err = json.Unmarshal([]byte(v), &games)
+	if err != nil {
+		log.Println(err)
+		return []string{}
+	}
+	redisInterface.client.Del(ctx, hash)
+	return games
 }
 
 func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameState) {

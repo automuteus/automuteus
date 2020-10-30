@@ -44,42 +44,43 @@ func (h *PatchPriority) Pop() interface{} {
 	return x
 }
 
-//func (dgs *DiscordGameState) verifyVoiceStateChanges(s *discordgo.Session, sett *storage.GuildSettings, phase game.Phase) *discordgo.Guild {
-//	g, err := s.State.Guild(dgs.GuildID)
-//	if err != nil {
-//		log.Println(err)
-//		return nil
-//	}
-//
-//	for _, voiceState := range g.VoiceStates {
-//		userData, err := dgs.GetUser(voiceState.UserID)
-//
-//		if err != nil {
-//			//the User doesn't exist in our userdata cache; add them
-//			added := false
-//			userData, added = dgs.checkCacheAndAddUser(g, s, voiceState.UserID)
-//			if !added {
-//				continue
-//			}
-//		}
-//
-//		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
-//
-//		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
-//		//only actually tracked if we're in a tracked channel AND linked to a player
-//		tracked = tracked && linked
-//		mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, phase)
-//
-//		//still have to check if the player is linked
-//		//(music bots are untracked so mute/deafen = false, but they dont have playerdata...)
-//		if linked && userData.ShouldBeMute == mute && voiceState.Deaf == deaf {
-//			userData.SetVoiceChangeReady(true)
-//
-//			dgs.UpdateUserData(voiceState.UserID, userData)
-//		}
-//	}
-//	return g
-//}
+func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
+	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	for _, voiceState := range g.VoiceStates {
+		userData, err := dgs.GetUser(voiceState.UserID)
+		if err != nil {
+			//the User doesn't exist in our userdata cache; add them
+			added := false
+			userData, added = dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), voiceState.UserID)
+			if !added {
+				continue
+			}
+		}
+
+		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
+
+		_, linked := dgs.AmongUsData.GetByName(userData.InGameName)
+		//only actually tracked if we're in a tracked channel AND linked to a player
+		tracked = tracked && linked
+
+		if tracked {
+			log.Println("Forcibly applying mute/deaf to " + userData.User.UserID)
+			params := UserPatchParameters{
+				GuildID:  dgs.GuildID,
+				Userdata: userData,
+				Deaf:     deaf,
+				Mute:     mute,
+				Nick:     "",
+			}
+			go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+		}
+	}
+}
 
 //handleTrackedMembers moves/mutes players according to the current game state
 func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
@@ -122,10 +123,12 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 			nick = ""
 		}
 
+		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
+
 		//only issue a change if the User isn't in the right state already
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
-		if linked && (shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf || (nick != "" && userData.GetNickName() != userData.GetPlayerName())) {
+		if linked && (incorrectMuteDeafenState || (nick != "" && userData.GetNickName() != userData.GetPlayerName())) {
 			priority := 0
 
 			if handlePriority != NoPriority {

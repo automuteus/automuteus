@@ -9,7 +9,9 @@ import (
 )
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
+	log.Println("Started Redis Subscription worker")
 	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
+
 	dgsRequest := GameStateRequest{
 		GuildID:     guildID,
 		ConnectCode: connectCode,
@@ -18,10 +20,12 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 		select {
 		case gameMessage := <-connection.Channel():
 			log.Println(gameMessage)
+
+			//tell the producer of the connection event that we got their message
+			bot.RedisInterface.PublishConnectUpdateAck(connectCode)
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-			if lock == nil {
-				log.Println("Couldn't obtain lock when receiving connect message!")
-				break
+			for lock == nil {
+				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 			}
 			if gameMessage.Payload == "true" {
 				dgs.Linked = true
@@ -30,6 +34,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 			}
 			dgs.ConnectCode = connectCode
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
+			bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
 
 			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 			break
@@ -87,6 +94,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 				if err != nil {
 					log.Println(err)
 				}
+
+				go bot.gracefulShutdownWorker(guildID, connectCode)
 				return
 			}
 		}
@@ -95,9 +104,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, dgsRequest GameStateRequest) bool {
 	if player.Name != "" {
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-		if lock == nil {
-			log.Println("Couldn't obtain lock to process player")
-			return false
+		for lock == nil {
+			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 		}
 
 		defer bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -157,9 +165,8 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest) {
 	sett := bot.StorageInterface.GetGuildSettings(dgsRequest.GuildID)
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-	if lock == nil {
-		log.Println("Couldn't obtain lock when processing transition message!")
-		return
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
 	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
@@ -204,38 +211,10 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 func (bot *Bot) processLobby(s *discordgo.Session, lobby game.Lobby, dgsRequest GameStateRequest) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	if lock == nil {
-		log.Println("Couldn't obtain lock when processing lobby message!")
-		return
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
 	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	dgs.Edit(s, bot.gameStateResponse(dgs))
-}
-
-func (bot *Bot) updatesListener(s *discordgo.Session, guildID string, globalUpdates chan BroadcastMessage) {
-	for {
-		select {
-		case worldUpdate := <-globalUpdates:
-			bot.ChannelsMapLock.Lock()
-			for i, connCode := range bot.ConnsToGames {
-				if worldUpdate.Type == GRACEFUL_SHUTDOWN {
-
-					go bot.gracefulShutdownWorker(guildID, connCode, s, worldUpdate.Data, worldUpdate.Message)
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-						GuildID:     guildID,
-						ConnectCode: connCode,
-					})
-					if lock == nil {
-						log.Println("Couldn't obtain lock when processing graceful shutdown message!")
-						break
-					}
-					dgs.Linked = false
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
-					delete(bot.ConnsToGames, i)
-				}
-			}
-			bot.ChannelsMapLock.Unlock()
-		}
-	}
 }

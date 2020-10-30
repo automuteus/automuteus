@@ -182,8 +182,8 @@ var AllCommands = []Command{
 		cmdType:   ForgetMe,
 		command:   "forgetme",
 		example:   "forgetme",
-		shortDesc: "DeleteGameStateMsg player data",
-		desc:      "DeleteGameStateMsg all the data associated with the User issuing the command",
+		shortDesc: "Delete player data",
+		desc:      "Delete all the data associated with the User issuing the command",
 		args:      "None",
 		aliases:   []string{"fm"},
 		secret:    false,
@@ -291,29 +291,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
-			log.Println("State fetched is valid, but I'm not subscribed! Resubscribing now!")
-			killChan := make(chan bool)
-			go bot.SubscribeToGameByConnectCode(m.GuildID, dgs.ConnectCode, killChan)
-			dgs.Subscribed = true
 
-			if dgs.GameStateMsg.MessageID != "" && dgs.GameStateMsg.LeaderID != "" {
-				dgs.DeleteGameStateMsg(s) //delete the old message
-
-				//create a new instance of the new one
-				dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
-			}
-
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-			bot.ChannelsMapLock.Lock()
-			bot.RedisSubscriberKillChannels[dgs.ConnectCode] = killChan
-			bot.ChannelsMapLock.Unlock()
-		} else if lock != nil {
-			//log.Println("UNLOCKING")
-			lock.Release()
-		}
 	}
 
 	switch cmd.cmdType {

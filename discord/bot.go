@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -15,19 +14,6 @@ import (
 
 const DefaultPort = "8123"
 
-type BcastMsgType int
-
-const (
-	GRACEFUL_SHUTDOWN BcastMsgType = iota
-	FORCE_SHUTDOWN
-)
-
-type BroadcastMessage struct {
-	Type    BcastMsgType
-	Data    int
-	Message string
-}
-
 type Bot struct {
 	url          string
 	internalPort string
@@ -36,8 +22,6 @@ type Bot struct {
 	ConnsToGames map[string]string
 
 	StatusEmojis AlivenessEmojis
-
-	GlobalBroadcastChannels map[string]chan BroadcastMessage
 
 	RedisSubscriberKillChannels map[string]chan bool
 
@@ -94,7 +78,6 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		StatusEmojis: emptyStatusEmojis(),
 
 		RedisSubscriberKillChannels: make(map[string]chan bool),
-		GlobalBroadcastChannels:     make(map[string]chan BroadcastMessage),
 		ChannelsMapLock:             sync.RWMutex{},
 		SessionManager:              NewSessionManager(dg, altDiscordSession),
 		RedisInterface:              redisInterface,
@@ -128,6 +111,18 @@ func MakeAndStartBot(version, token, token2, url, internalPort, emojiGuildID str
 		}
 	}
 
+	status := &discordgo.UpdateStatusData{
+		IdleSince: nil,
+		Game: &discordgo.Game{
+			Name: ".au help",
+			Type: discordgo.GameTypeListening,
+		},
+		AFK:    false,
+		Status: "",
+	}
+
+	dg.UpdateStatusComplex(*status)
+
 	bot.Run(internalPort)
 
 	return &bot
@@ -137,15 +132,8 @@ func (bot *Bot) Run(port string) {
 	go bot.socketioServer(port)
 }
 
-func (bot *Bot) GracefulClose(seconds int, message string) {
+func (bot *Bot) GracefulClose() {
 	bot.ChannelsMapLock.RLock()
-	for _, v := range bot.GlobalBroadcastChannels {
-		v <- BroadcastMessage{
-			Type:    GRACEFUL_SHUTDOWN,
-			Data:    seconds,
-			Message: message,
-		}
-	}
 	for _, v := range bot.RedisSubscriberKillChannels {
 		v <- true
 	}
@@ -167,7 +155,6 @@ func (bot *Bot) PurgeConnection(socketID string) {
 
 func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
-	guildID := ""
 	for {
 		select {
 		case <-timer.C:
@@ -175,21 +162,15 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 			socket.Close()
 			bot.PurgeConnection(socket.ID())
 
-			if v, ok := bot.GlobalBroadcastChannels[guildID]; ok {
-				if v != nil {
-					v <- BroadcastMessage{
-						Type:    GRACEFUL_SHUTDOWN,
-						Data:    1,
-						Message: fmt.Sprintf("**I haven't received any messages from your capture in %d seconds, so I'm ending the game!**", bot.captureTimeout),
-					}
-				}
+			bot.ChannelsMapLock.RLock()
+			for _, v := range bot.RedisSubscriberKillChannels {
+				v <- true
 			}
+
+			bot.ChannelsMapLock.RUnlock()
 			timer.Stop()
 			return
-		case b := <-c:
-			if b != "" {
-				guildID = b
-			}
+		case <-c:
 			//received true; the socket is alive
 			log.Printf("Bot inactivity timer has been reset to %d seconds\n", bot.captureTimeout)
 			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
@@ -197,18 +178,16 @@ func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
 	}
 }
 
-func (bot *Bot) gracefulShutdownWorker(guildID, connCode string, s *discordgo.Session, seconds int, message string) {
+func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(GameStateRequest{
 		GuildID:     guildID,
 		ConnectCode: connCode,
 	})
-	if dgs.GameStateMsg.MessageID != "" {
-		log.Printf("Received graceful shutdown message, saving and shutting down in %d seconds", seconds)
 
-		//sendMessage(s, dgs.GameStateMsg.MessageChannelID, message)
-	}
+	log.Printf("Received graceful shutdown message, saving and shutting down in 3 seconds")
 
-	time.Sleep(time.Duration(seconds) * time.Second)
+	//sendMessage(s, dgs.GameStateMsg.MessageChannelID, message)
+	time.Sleep(3 * time.Second)
 
 	gsr := GameStateRequest{
 		GuildID:      dgs.GuildID,
@@ -216,7 +195,9 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string, s *discordgo.Se
 		VoiceChannel: dgs.Tracking.ChannelID,
 		ConnectCode:  dgs.ConnectCode,
 	}
-	bot.gracefulEndGame(gsr, s)
+	bot.gracefulEndGame(gsr)
+
+	bot.RedisInterface.AppendToActiveGames(gsr.GuildID, gsr.ConnectCode)
 
 	//this is only for forceful shutdown
 	//bot.RedisInterface.DeleteDiscordGameState(dgs)
@@ -248,18 +229,37 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 		}
 
-		globalUpdates := make(chan BroadcastMessage)
+		games := bot.RedisInterface.LoadAllActiveGamesAndDelete(m.Guild.ID)
 
-		bot.ChannelsMapLock.Lock()
-		bot.GlobalBroadcastChannels[m.Guild.ID] = globalUpdates
-		bot.ChannelsMapLock.Unlock()
+		for _, connCode := range games {
+			gsr := GameStateRequest{
+				GuildID:     m.Guild.ID,
+				ConnectCode: connCode,
+			}
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
+				log.Println("Resubscribing to Redis events for an old game: " + connCode)
+				killChan := make(chan bool)
+				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
+				dgs.Subscribed = true
 
-		dsg := NewDiscordGameState(m.Guild.ID)
+				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-		//put an empty entry in Redis
-		bot.RedisInterface.SetDiscordGameState(dsg, nil)
+				bot.ChannelsMapLock.Lock()
+				bot.RedisSubscriberKillChannels[dgs.ConnectCode] = killChan
+				bot.ChannelsMapLock.Unlock()
+			} else if lock != nil {
+				//log.Println("UNLOCKING")
+				lock.Release()
+			}
+		}
 
-		go bot.updatesListener(s, m.Guild.ID, globalUpdates)
+		if len(games) == 0 {
+			dsg := NewDiscordGameState(m.Guild.ID)
+
+			//put an empty entry in Redis
+			bot.RedisInterface.SetDiscordGameState(dsg, nil)
+		}
 	}
 }
 
@@ -308,33 +308,26 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 	return
 }
 
-func (bot *Bot) gracefulEndGame(gsr GameStateRequest, s *discordgo.Session) {
+func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	//sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		log.Println("Couldnt obtain lock when ending game")
-		s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when ending game! You'll need to manually unmute/undeafen players!")
+		//s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when ending game! You'll need to manually unmute/undeafen players!")
 		return
 	}
-
-	if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
-		v <- true
-	}
-	delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
+	//log.Println("lock obtained for game end")
 
 	dgs.Subscribed = false
 	dgs.Linked = false
 
+	for v, userData := range dgs.UserData {
+		userData.SetShouldBeMuteDeaf(false, false)
+		dgs.UserData[v] = userData
+	}
+
+	//DON'T supply the lock... cheeky cheeky way to prevent the voice change event handling from firing
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	dgs.AmongUsData.SetAllAlive()
-	dgs.AmongUsData.UpdatePhase(game.LOBBY)
-	dgs.AmongUsData.SetRoomRegion("", "")
-
-	//TODO need an override to unmute, write some custom handler for it
-
-	// apply the unmute/deafen to users who have state linked to them
-	//bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
 
 	log.Println("Done saving guild data. Ready for shutdown")
 }
