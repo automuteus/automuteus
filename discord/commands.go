@@ -50,167 +50,302 @@ type Command struct {
 //note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
 var AllCommands = []Command{
 	{
-		cmdType:   Help,
-		command:   "help",
-		example:   "help track",
-		shortDesc: "Display help",
-		desc:      "Display bot help message, or see info about a command",
-		args:      "None, or optional command to see info for",
-		aliases:   []string{"h"},
-		secret:    false,
-		emoji:     "❓",
+		cmdType: Help,
+		command: "help",
+		example: "help track",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Help.shortDesc",
+			Other: "Display help",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Help.desc",
+			Other: "Display bot help message, or see info about a command",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Help.args",
+			Other: "None, or optional command to see info for",
+		}),
+		aliases: []string{"h"},
+		secret:  false,
+		emoji:   "❓",
 	},
 	{
-		cmdType:   New,
-		command:   "new",
-		example:   "new",
-		shortDesc: "Start a new game",
-		desc:      "Start a new game",
-		args:      "None",
-		aliases:   []string{"n"},
-		secret:    false,
-		emoji:     "🕹",
+		cmdType: New,
+		command: "new",
+		example: "new",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.New.shortDesc",
+			Other: "Start a new game",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.New.desc",
+			Other: "Start a new game",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.New.args",
+			Other: "None",
+		}),
+		aliases: []string{"n"},
+		secret:  false,
+		emoji:   "🕹",
 	},
 	{
-		cmdType:   End,
-		command:   "end",
-		example:   "end",
-		shortDesc: "End the game",
-		desc:      "End the current game",
-		args:      "None",
-		aliases:   []string{"e"},
-		secret:    false,
-		emoji:     "🛑",
+		cmdType: End,
+		command: "end",
+		example: "end",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.End.shortDesc",
+			Other: "End the game",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.End.desc",
+			Other: "End the current game",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.End.args",
+			Other: "None",
+		}),
+		aliases: []string{"e"},
+		secret:  false,
+		emoji:   "🛑",
 	},
 	{
-		cmdType:   Pause,
-		command:   "pause",
-		example:   "pause",
-		shortDesc: "Pause the bot",
-		desc:      "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
-		args:      "None",
-		aliases:   []string{"p"},
-		secret:    false,
-		emoji:     "⏸",
+		cmdType: Pause,
+		command: "pause",
+		example: "pause",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Pause.shortDesc",
+			Other: "Pause the bot",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Pause.desc",
+			Other: "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Pause.args",
+			Other: "None",
+		}),
+		aliases: []string{"p"},
+		secret:  false,
+		emoji:   "⏸",
 	},
 	{
-		cmdType:   Refresh,
-		command:   "refresh",
-		example:   "refresh",
-		shortDesc: "Refresh the bot status",
-		desc:      "Recreate the bot status message if it ends up too far in the chat",
-		args:      "None",
-		aliases:   []string{"r"},
-		secret:    false,
-		emoji:     "♻",
+		cmdType: Refresh,
+		command: "refresh",
+		example: "refresh",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Refresh.shortDesc",
+			Other: "Refresh the bot status",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Refresh.desc",
+			Other: "Recreate the bot status message if it ends up too far in the chat",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Refresh.args",
+			Other: "None",
+		}),
+		aliases: []string{"r"},
+		secret:  false,
+		emoji:   "♻",
 	},
 	{
-		cmdType:   Link,
-		command:   "link",
-		example:   "link @Soup red",
-		shortDesc: "Link a Discord User",
-		desc:      "Manually link a Discord User to their in-game color or name",
-		args:      "<discord User> <in-game color or name>",
-		aliases:   []string{"l"},
-		secret:    false,
-		emoji:     "🔗",
+		cmdType: Link,
+		command: "link",
+		example: "link @Soup red",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Link.shortDesc",
+			Other: "Link a Discord User",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Link.desc",
+			Other: "Manually link a Discord User to their in-game color or name",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Link.args",
+			Other: "<discord User> <in-game color or name>",
+		}),
+		aliases: []string{"l"},
+		secret:  false,
+		emoji:   "🔗",
 	},
 	{
-		cmdType:   Unlink,
-		command:   "unlink",
-		example:   "unlink @Soup",
-		shortDesc: "Unlink a Discord User",
-		desc:      "Manually unlink a Discord User from their in-game player",
-		args:      "<discord User>",
-		aliases:   []string{"u"},
-		secret:    false,
-		emoji:     "🚷",
+		cmdType: Unlink,
+		command: "unlink",
+		example: "unlink @Soup",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Unlink.shortDesc",
+			Other: "Unlink a Discord User",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Unlink.desc",
+			Other: "Manually unlink a Discord User from their in-game player",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Unlink.args",
+			Other: "<discord User>",
+		}),
+		aliases: []string{"u"},
+		secret:  false,
+		emoji:   "🚷",
 	},
 	{
-		cmdType:   Track,
-		command:   "track",
-		example:   "track Among Us Voice",
-		shortDesc: "Track a voice channel",
-		desc:      "Tell the bot which voice channel you'll be playing in",
-		args:      "<voice channel name>",
-		aliases:   []string{"t"},
-		secret:    false,
-		emoji:     "📌",
+		cmdType: Track,
+		command: "track",
+		example: "track Among Us Voice",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Track.shortDesc",
+			Other: "Track a voice channel",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Track.desc",
+			Other: "Tell the bot which voice channel you'll be playing in",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Track.args",
+			Other: "<voice channel name>",
+		}),
+		aliases: []string{"t"},
+		secret:  false,
+		emoji:   "📌",
 	},
 	{
-		cmdType:   Force,
-		command:   "force",
-		example:   "force task",
-		shortDesc: "Force the bot to transition",
-		desc:      "Force the bot to transition to another game stage, if it doesn't transition properly",
-		args:      "<phase name> (task, discuss, or lobby / t,d, or l)",
-		aliases:   []string{"f"},
-		secret:    false,
-		emoji:     "📢",
+		cmdType: Force,
+		command: "force",
+		example: "force task",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Force.shortDesc",
+			Other: "Force the bot to transition",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Force.desc",
+			Other: "Force the bot to transition to another game stage, if it doesn't transition properly",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Force.args",
+			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
+		}),
+		aliases: []string{"f"},
+		secret:  false,
+		emoji:   "📢",
 	},
 	{
-		cmdType:   Settings,
-		command:   "settings",
-		example:   "settings commandPrefix !",
-		shortDesc: "Adjust bot settings",
-		desc:      "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
-		args:      "<setting> <value>",
-		aliases:   []string{"s"},
-		secret:    false,
-		emoji:     "⚙",
+		cmdType: Settings,
+		command: "settings",
+		example: "settings commandPrefix !",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Settings.shortDesc",
+			Other: "Adjust bot settings",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Settings.desc",
+			Other: "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Settings.args",
+			Other: "<setting> <value>",
+		}),
+		aliases: []string{"s"},
+		secret:  false,
+		emoji:   "⚙",
 	},
 	{
-		cmdType:   Log,
-		command:   "log",
-		example:   "log something bad happened",
-		shortDesc: "Log a weird event",
-		desc:      "Log if something bad happened, so you can find the event in your logs later",
-		args:      "<message>",
-		aliases:   []string{"log"},
-		secret:    false,
-		emoji:     "⁉",
+		cmdType: Log,
+		command: "log",
+		example: "log something bad happened",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Log.shortDesc",
+			Other: "Log a weird event",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Log.desc",
+			Other: "Log if something bad happened, so you can find the event in your logs later",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Log.args",
+			Other: "<message>",
+		}),
+		aliases: []string{"log"},
+		secret:  false,
+		emoji:   "⁉",
 	},
 	{
-		cmdType:   ShowMe,
-		command:   "showme",
-		example:   "showme",
-		shortDesc: "Show player data",
-		desc:      "Send all the player data for the User issuing the command",
-		args:      "None",
-		aliases:   []string{"sm"},
-		secret:    false,
-		emoji:     "🔍",
+		cmdType: ShowMe,
+		command: "showme",
+		example: "showme",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.shortDesc",
+			Other: "Show player data",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.desc",
+			Other: "Send all the player data for the User issuing the command",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.args",
+			Other: "None",
+		}),
+		aliases: []string{"sm"},
+		secret:  false,
+		emoji:   "🔍",
 	},
 	{
-		cmdType:   ForgetMe,
-		command:   "forgetme",
-		example:   "forgetme",
-		shortDesc: "Delete player data",
-		desc:      "Delete all the data associated with the User issuing the command",
-		args:      "None",
-		aliases:   []string{"fm"},
-		secret:    false,
-		emoji:     "🗑",
+		cmdType: ForgetMe,
+		command: "forgetme",
+		example: "forgetme",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.shortDesc",
+			Other: "Delete player data",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.desc",
+			Other: "Delete all the data associated with the User issuing the command",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.args",
+			Other: "None",
+		}),
+		aliases: []string{"fm"},
+		secret:  false,
+		emoji:   "🗑",
 	},
 	{
-		cmdType:   DebugState,
-		command:   "debugstate",
-		example:   "debugstate",
-		shortDesc: "View the full state of the Discord Guild Data",
-		desc:      "View the full state of the Discord Guild Data",
-		args:      "None",
-		aliases:   []string{"ds"},
-		secret:    true,
+		cmdType: DebugState,
+		command: "debugstate",
+		example: "debugstate",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.DebugState.shortDesc",
+			Other: "View the full state of the Discord Guild Data",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.DebugState.desc",
+			Other: "View the full state of the Discord Guild Data",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.DebugState.args",
+			Other: "None",
+		}),
+		aliases: []string{"ds"},
+		secret:  true,
 	},
 	{
-		cmdType:   Ascii,
-		command:   "ascii",
-		example:   "ascii",
-		shortDesc: "Print an ASCII crewmate",
-		desc:      "Print an ASCII crewmate",
-		args:      "None",
-		aliases:   []string{"ascii"},
-		secret:    true,
+		cmdType: Ascii,
+		command: "ascii",
+		example: "ascii",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Ascii.shortDesc",
+			Other: "Print an ASCII crewmate",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Ascii.desc",
+			Other: "Print an ASCII crewmate",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Ascii.args",
+			Other: "None",
+		}),
+		aliases: []string{"ascii"},
+		secret:  true,
 	},
 	{
 		cmdType:   Null,
@@ -243,17 +378,26 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Example",
+				Name: locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
+					Other: "Example",
+				}),
 				Value:  "`" + fmt.Sprintf("%s %s", prefix, cmd.example) + "`",
 				Inline: false,
 			},
 			{
-				Name:   "Arguments",
+				Name: locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Arguments",
+					Other: "Arguments",
+				}),
 				Value:  "`" + cmd.args + "`",
 				Inline: false,
 			},
 			{
-				Name:   "Aliases",
+				Name: locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Aliases",
+					Other: "Aliases",
+				}),
 				Value:  strings.Join(cmd.aliases, ", "),
 				Inline: false,
 			},
@@ -294,7 +438,6 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
-
 	}
 
 	switch cmd.cmdType {
@@ -461,7 +604,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		if m.Author != nil {
 			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
 			if sett == nil {
-				s.ChannelMessageSend(m.ChannelID, "I don't have any settings stored for you!")
+				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.emptySettings",
+					Other: "I don't have any settings stored for you!",
+				}))
 			} else {
 				embed := sett.ToEmbed()
 				sendMessageDM(s, m.Author.ID, embed)
@@ -469,16 +615,22 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
 			if len(cached) == 0 {
-				s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for you!")
+				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
+					Other: "I don't have any cached player names stored for you!",
+				}))
 			} else {
-				buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+				buf := bytes.NewBuffer([]byte(locale.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.cachedNames",
+					Other: "Cached in-game names:",
+				})))
+				buf.WriteString("\n```\n")
 				for n := range cached {
 					buf.WriteString(fmt.Sprintf("%s\n", n))
 				}
 				buf.WriteString("```")
 				s.ChannelMessageSend(m.ChannelID, buf.String())
 			}
-
 		}
 		break
 	case ForgetMe:
@@ -491,7 +643,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all player data for <@"+m.Author.ID+">")
+					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ForgetMe.Success",
+						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
+					},
+						map[string]interface{}{
+							"AuthorID": m.Author.ID,
+						}))
 				}
 			}
 		}

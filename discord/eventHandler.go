@@ -2,10 +2,11 @@ package discord
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	"log"
 )
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killChan <-chan bool) {
@@ -101,6 +102,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, killCh
 		}
 	}
 }
+
 func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, dgsRequest GameStateRequest) bool {
 	if player.Name != "" {
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)

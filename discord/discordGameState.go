@@ -2,10 +2,13 @@ package discord
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type TrackingChannel struct {
@@ -15,7 +18,10 @@ type TrackingChannel struct {
 
 func (tc TrackingChannel) ToStatusString() string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return "Any Voice Channel"
+		return locale.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
+			Other: "Any Voice Channel",
+		})
 	} else {
 		return tc.ChannelName
 	}
@@ -23,9 +29,18 @@ func (tc TrackingChannel) ToStatusString() string {
 
 func (tc TrackingChannel) ToDescString() string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return "any voice channel!"
+		return locale.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToDescString.anyVoiceChannel",
+			Other: "any voice channel!",
+		})
 	} else {
-		return "the **" + tc.ChannelName + "** voice channel!"
+		return locale.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToDescString.voiceChannelName",
+			Other: "the **{{.channelName}}** voice channel!",
+		},
+			map[string]interface{}{
+				"channelName": tc.ChannelName,
+			})
 	}
 }
 
@@ -109,10 +124,22 @@ func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*dis
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
 
 			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
-			return fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name)
+			return locale.LocalizeMessage(&i18n.Message{
+				ID:    "discordGameState.trackChannel.voiceChannelSet",
+				Other: "Now Tracking \"{{.channelName}}\" Voice Channel for Automute!",
+			},
+				map[string]interface{}{
+					"channelName": c.Name,
+				})
 		}
 	}
-	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
+	return locale.LocalizeMessage(&i18n.Message{
+		ID:    "discordGameState.trackChannel.voiceChannelNotfound",
+		Other: "No channel found by the name {{.channelName}}!\n",
+	},
+		map[string]interface{}{
+			"channelName": channelName,
+		})
 }
 
 func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*discordgo.MessageEmbedField {
@@ -135,8 +162,11 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*disco
 		if unsorted[player.Color] == nil {
 			emoji := emojis[player.IsAlive][player.Color]
 			unsorted[player.Color] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.Name),
-				Value:  fmt.Sprintf("%s **Unlinked**", emoji.FormatForInline()),
+				Name: fmt.Sprintf("%s", player.Name),
+				Value: fmt.Sprintf("%s **%s**", emoji.FormatForInline(), locale.LocalizeMessage(&i18n.Message{
+					ID:    "discordGameState.ToEmojiEmbedFields.Unlinked",
+					Other: "Unlinked",
+				})),
 				Inline: true,
 			}
 		}

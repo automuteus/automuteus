@@ -8,8 +8,10 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const DefaultPort = "8123"
@@ -335,7 +337,10 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 func (bot *Bot) forceEndGame(gsr GameStateRequest, s *discordgo.Session) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
-		s.ChannelMessageSend(gsr.TextChannel, "Could not obtain lock when forcefully ending game! You'll need to manually unmute/undeafen players!")
+		s.ChannelMessageSend(gsr.TextChannel, locale.LocalizeMessage(&i18n.Message{
+			ID:    "bot.forceEndGame.notLocked",
+			Other: "Could not obtain lock when forcefully ending game! You'll need to manually unmute/undeafen players!",
+		}))
 		return
 	}
 
@@ -363,5 +368,4 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest, s *discordgo.Session) {
 	dgs.Running = false
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
 }

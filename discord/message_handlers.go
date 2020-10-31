@@ -40,7 +40,10 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			perms = sett.HasAdminPerms(m.Author) || sett.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, "User does not have the required permissions to execute this command!")
+			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.handleMessageCreate.noPerms",
+				Other: "User does not have the required permissions to execute this command!",
+			}))
 		} else {
 			oldLen := len(contents)
 			contents = strings.Replace(contents, prefix+" ", "", 1)

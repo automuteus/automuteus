@@ -61,19 +61,28 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 	return embed
 }
 
-func settingResponse(cp string, settings []Setting) discordgo.MessageEmbed {
+func settingResponse(CommandPrefix string, settings []Setting) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       "Settings",
-		Description: "Type `" + cp + " settings <setting>` to change a setting from those listed below",
-		Timestamp:   "",
-		Color:       15844367, //GOLD
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+		URL:  "",
+		Type: "",
+		Title: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.Title",
+			Other: "Settings",
+		}),
+		Description: locale.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.Description",
+			Other: "Type `{{.CommandPrefix}} settings <setting>` to change a setting from those listed below",
+		},
+			map[string]interface{}{
+				"CommandPrefix": CommandPrefix,
+			}),
+		Timestamp: "",
+		Color:     15844367, //GOLD
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, len(settings))
@@ -148,7 +157,10 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Messa
 		desc = dgs.makeDescription()
 		color = 3066993
 		footer = &discordgo.MessageEmbedFooter{
-			Text:         "(Enter a game lobby in Among Us to start the match)",
+			Text: locale.LocalizeMessage(&i18n.Message{
+				ID:    "responses.menuMessage.Linked.FooterText",
+				Other: "(Enter a game lobby in Among Us to start the match)",
+			}),
 			IconURL:      "",
 			ProxyIconURL: "",
 		}
@@ -297,28 +309,6 @@ func (dgs *DiscordGameState) makeDescription() string {
 			}))
 	}
 
-	/* if len(guild.Tracking.tracking) == 0 {
-		buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-			ID:    "responses.makeDescription.anyVoiceChannel",
-			Other: "any voice channel!",
-		}))
-	} else {
-		t, err := guild.Tracking.FindAnyTrackedChannel(false)
-		if err != nil {
-			buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.makeDescription.invalidVoiceChannel",
-				Other: "an invalid voice channel!",
-			}))
-		} else {
-			buf.WriteString(locale.LocalizeMessage(&i18n.Message{
-				ID:    "responses.makeDescription.voiceChannelName",
-				Other: "the **{{.channelName}}** voice channel!",
-			},
-				map[string]interface{}{
-					"channelName": t.channelName,
-				}))
-		}
-	} */
 	buf.WriteString(dgs.Tracking.ToDescString())
 
 	return buf.String()
