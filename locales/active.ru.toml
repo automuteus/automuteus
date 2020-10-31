@@ -202,6 +202,18 @@ other = "Аргументы"
 hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
 other = "Пример"
 
+["commands.HandleCommand.Cache.Success"]
+hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
+other = "Успешно удалены все кешированные имена этого пользователя!"
+
+["commands.HandleCommand.Cache.cachedNames"]
+hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
+other = "Кешированные ники:"
+
+["commands.HandleCommand.Cache.emptyCachedNames"]
+hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
+other = "У меня нет никаких кэшированных ников, сохраненных для этого пользователя!"
+
 ["commands.HandleCommand.Force.UNINITIALIZED"]
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "Извините, я не понял тип фазы игры, который вы пытались установить"
@@ -216,11 +228,11 @@ other = "Я не распознал эту команду! Просмтри `hel
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
 hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "Кешированные внутриигровые имена:"
+other = "Кешированные ники:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
-other = "У меня нет никаких кэшированных имен игроков, сохраненных для вас!"
+other = "У меня нет никаких кэшированных ников, сохраненных для вас!"
 
 ["commands.HandleCommand.ShowMe.emptySettings"]
 hash = "sha1-205375851babed42ba0de2c2ddb7eac7f1bb559f"
@@ -240,7 +252,7 @@ other = "голосовом канале **{{.channelName}}**!"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Несвязанный"
+other = "Ззх"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-9027bdbf87393b60e86fab37eab7a874cde292c9"
@@ -248,7 +260,7 @@ other = "Любой Голосовой Канал"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "Канал с именем {{.channelName}} не найден!\\n"
+other = "Канал с именем {{.channelName}} не найден!\n"
 
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
@@ -268,7 +280,7 @@ other = "У пользователя нет необходимых разреш�
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-65406556e4758f7ddbd07a211a0a63a8d353f158"
-other = "Нажмите на следующую ссылку, чтобы связать свой захват: \\n {{.hyperlink}}\\n\\nНе установлен захват? Последняя версия [здесь]({{.downloadURL}})\\n\\nЧтобы связать захват вручную:"
+other = "Нажмите на следующую ссылку, чтобы связать свой захват: \n {{.hyperlink}}\n\nНе установлен захват? Последняя версия [здесь]({{.downloadURL}})\n\nЧтобы связать захват вручную:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -284,11 +296,11 @@ other = "Вы только что начали игру!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Посмотреть Github проект](https://github.com/denverquane/automuteus) или [Присоединяйтесь к нашему Discord](https://discord.gg/ZkqZSWF)\\n\\nВведи `{{.CommandPrefix}} help <command>` чтобы увидеть более подробную информацию о команде!"
+other = "[Посмотреть Github проект](https://github.com/denverquane/automuteus) или [Присоединяйтесь к нашему Discord](https://discord.gg/ZkqZSWF)\n\nВведи `{{.CommandPrefix}} help <command>` чтобы увидеть более подробную информацию о команде!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a0d14755cbb5771aa9b446605b5c9f3f2810c4ee"
-other = "Команды бота AutoMuteUs (v{{.version}}):\\n"
+other = "Команды бота AutoMuteUs (v{{.version}}):\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
@@ -316,11 +328,11 @@ other = "Код Комнаты"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "Отслеживает"
+other = "Отслеживается"
 
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-7edd74af54d49dde68ab78c915fe640c9e81b8f9"
-other = "\\n**Бот приостановлен!**\\n\\n"
+other = "\n**Бот приостановлен!**\n\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"

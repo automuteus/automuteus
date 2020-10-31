@@ -636,9 +636,16 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if len(args[2:]) == 0 {
 				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
 				if len(cached) == 0 {
-					s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for that user!")
+					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.emptyCachedNames",
+						Other: "I don't have any cached player names stored for that user!",
+					}))
 				} else {
-					buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+					buf := bytes.NewBuffer([]byte(locale.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.cachedNames",
+						Other: "Cached in-game names:",
+					})))
+					buf.WriteString("\n```\n")
 					for n := range cached {
 						buf.WriteString(fmt.Sprintf("%s\n", n))
 					}
@@ -650,7 +657,10 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all cached names for that user!")
+					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.Success",
+						Other: "Successfully deleted all cached names for that user!",
+					}))
 				}
 			}
 		}
