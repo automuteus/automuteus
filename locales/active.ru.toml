@@ -274,13 +274,17 @@ other = "Неизвестно"
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
 other = "Неизвестно"
 
+["locale.language.name"]
+hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
+other = "Русский"
+
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "У пользователя нет необходимых разрешений для выполнения этой команды!"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
-hash = "sha1-65406556e4758f7ddbd07a211a0a63a8d353f158"
-other = "Нажмите на следующую ссылку, чтобы связать свой захват: \n {{.hyperlink}}\n\nНе установлен захват? Последняя версия [здесь]({{.downloadURL}})\n\nЧтобы связать захват вручную:"
+hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
+other = "Нажмите на следующую ссылку, чтобы связать свой захват: \n <{{.hyperlink}}>\n\nНе установлен захват? Последняя версия [здесь]({{.downloadURL}})\n\nЧтобы связать захват вручную:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -381,6 +385,18 @@ other = "Укажите задержки для автоматического �
 ["settings.AllSettings.Delays.shortDesc"]
 hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
 other = "Задержки между этапами"
+
+["settings.AllSettings.Language.args"]
+hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
+other = "<language> или reload"
+
+["settings.AllSettings.Language.desc"]
+hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
+other = "Изменить язык бота"
+
+["settings.AllSettings.Language.shortDesc"]
+hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
+other = "Язык бота"
 
 ["settings.AllSettings.Nicknames.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -545,6 +561,26 @@ other = "Задержка при переходе из `{{.PhaseA}}` в `{{.Phas
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
 other = "`{{.Number}}` не является допустимым числом! Пожалуйста, попробуйте еще раз"
+
+["settings.SettingLanguage.notFound"]
+hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
+other = "Язык не найден! Доступные коды локализации: {{.Langs}}"
+
+["settings.SettingLanguage.notLoaded"]
+hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
+other = "Файлы локализации не загружены! Доступные языковые коды: {{.Langs}}"
+
+["settings.SettingLanguage.reloaded"]
+hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
+other = "Файлы локализации перезагружены ({{.Count}}). Доступные языковые коды: {{.Langs}}"
+
+["settings.SettingLanguage.set"]
+hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
+other = "Локализация установлена на {{.LangName}}"
+
+["settings.SettingLanguage.tooShort"]
+hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
+other = "Извини, код языка короткий. Доступные языковые коды: {{.Langs}}."
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
