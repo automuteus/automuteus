@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -20,7 +19,7 @@ func MakeUserSettings() *UserSettings {
 	}
 }
 
-func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
+func (userSettings *UserSettings) ToEmbed(sett *GuildSettings) *discordgo.MessageEmbed {
 	jBytes, err := json.MarshalIndent(userSettings, "", "  ")
 	if err != nil {
 		log.Println(err)
@@ -29,11 +28,11 @@ func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
-		Title: locale.LocalizeMessage(&i18n.Message{
+		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "userSettings.ToEmbed.Title",
 			Other: "Your Settings",
 		}),
-		Description: locale.LocalizeMessage(&i18n.Message{
+		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "userSettings.ToEmbed.Description",
 			Other: "Here's all the settings I have for you",
 		}),
@@ -46,7 +45,7 @@ func (userSettings *UserSettings) ToEmbed() *discordgo.MessageEmbed {
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "userSettings.ToEmbed.FielnName",
 					Other: "Settings",
 				}),

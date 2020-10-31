@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -40,7 +40,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			perms = sett.HasAdminPerms(m.Author) || sett.HasRolePerms(m.Member)
 		}
 		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleMessageCreate.noPerms",
 				Other: "User does not have the required permissions to execute this command!",
 			}))
@@ -57,7 +57,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					// prefix is sent by mistake
 					return
 				} else {
-					embed := helpResponse(Version, prefix, AllCommands)
+					embed := helpResponse(Version, prefix, AllCommands, sett)
 					s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 				}
 			} else {
@@ -134,12 +134,11 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			//make sure to update any voice changes if they occurred
 			if idMatched {
 				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
-				dgs.Edit(s, bot.gameStateResponse(dgs))
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			}
 		}
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	}
-
 }
 
 //voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
@@ -193,7 +192,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
-func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, room, region string) {
+func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings, room, region string) {
 	initialTracking := make([]TrackingChannel, 0)
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
@@ -261,13 +260,13 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
-		Title: locale.LocalizeMessage(&i18n.Message{
+		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleNewGameMessage.embed.Title",
 			Other: "You just started a game!",
 		}),
-		Description: locale.LocalizeMessage(&i18n.Message{
+		Description: sett.LocalizeMessage(&i18n.Message{
 			ID: "message_handlers.handleNewGameMessage.embed.Description",
-			Other: "Click the following link to link your capture: \n {{.hyperlink}}\n\n" +
+			Other: "Click the following link to link your capture: \n <{{.hyperlink}}>\n\n" +
 				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n\nTo link your capture manually:",
 		},
 			map[string]interface{}{
@@ -283,7 +282,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
 					Other: "URL",
 				}),
@@ -291,7 +290,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 				Inline: true,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
 					Other: "Code",
 				}),
@@ -340,10 +339,10 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		}
 	}
 
-	bot.handleGameStartMessage(s, m, room, region, initialTracking, g, connectCode)
+	bot.handleGameStartMessage(s, m, sett, room, region, initialTracking, g, connectCode)
 }
 
-func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, room string, region string, channels []TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, room string, region string, channels []TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -373,7 +372,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 		}
 	}
 
-	dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, m.Author.ID)
+	dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, m.Author.ID)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 

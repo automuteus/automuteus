@@ -20,6 +20,7 @@ type SettingType int
 const (
 	Prefix SettingType = iota
 	TrackedChannel
+	Language
 	AdminUserIDs
 	RoleIDs
 	Nicknames
@@ -75,6 +76,24 @@ var AllSettings = []Setting{
 			Other: "<voice channel name>",
 		},
 		aliases: []string{"tracked", "channel", "vc", "dtc"},
+	},
+	{
+		settingType: Language,
+		name:        "language",
+		example:     "language ru",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Language.shortDesc",
+			Other: "Bot language",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Language.desc",
+			Other: "Change the bot messages language",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Language.args",
+			Other: "<language> or reload",
+		},
+		aliases: []string{"lang", "l"},
 	},
 	{
 		settingType: AdminUserIDs,
@@ -186,12 +205,12 @@ var AllSettings = []Setting{
 	},
 }
 
-func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEmbed {
+func ConstructEmbedForSetting(value string, setting Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       setting.name,
-		Description: locale.LocalizeMessage(setting.desc),
+		Description: sett.LocalizeMessage(setting.desc),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -201,7 +220,7 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.ConstructEmbedForSetting.Fields.CurrentValue",
 					Other: "Current Value",
 				}),
@@ -209,7 +228,7 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 				Inline: false,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.ConstructEmbedForSetting.Fields.Example",
 					Other: "Example",
 				}),
@@ -217,15 +236,15 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 				Inline: false,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.ConstructEmbedForSetting.Fields.Arguments",
 					Other: "Arguments",
 				}),
-				Value:  "`" + locale.LocalizeMessage(setting.args) + "`",
+				Value:  "`" + sett.LocalizeMessage(setting.args) + "`",
 				Inline: false,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.ConstructEmbedForSetting.Fields.Aliases",
 					Other: "Aliases",
 				}),
@@ -272,6 +291,9 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	case TrackedChannel:
 		isValid = SettingDefaultTrackedChannel(s, m, sett, args)
 		break
+	case Language:
+		isValid = SettingLanguage(s, m, sett, args)
+		break
 	case AdminUserIDs:
 		isValid = SettingAdminUserIDs(s, m, sett, args)
 		break
@@ -291,7 +313,7 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		isValid = SettingVoiceRules(s, m, sett, args)
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
 			Other: "Sorry, `{{.Arg}}` is not a valid setting!\n",
 		},
@@ -299,6 +321,7 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 				"Arg": args[1],
 			}))
 	}
+
 	if isValid {
 		err := bot.StorageInterface.SetGuildSettings(m.GuildID, sett)
 		if err != nil {
@@ -309,13 +332,13 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 
 func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), AllSettings[Prefix])
+		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), AllSettings[Prefix], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
 	if len(args[2]) > 10 {
 		// prevent someone from setting something ridiculous lol
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.CommandPrefixSetting.tooLong",
 			Other: "Sorry, the prefix `{{.Prefix}}` is too long ({{.Length}} characters, max 10). Try something shorter.",
 		},
@@ -342,10 +365,10 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 		//		return false
 		//	}
 		//}
-		embed := ConstructEmbedForSetting(locale.LocalizeMessage(&i18n.Message{
+		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDefaultTrackedChannel.noDefault",
 			Other: "No default tracked voice channel",
-		}), AllSettings[TrackedChannel])
+		}), AllSettings[TrackedChannel], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
@@ -369,7 +392,7 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 
 	// check if channel was found
 	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDefaultTrackedChannel.withoutChannelID",
 			Other: "Could not find the voice channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it.",
 		},
@@ -378,7 +401,7 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 			}))
 		return false
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDefaultTrackedChannel.withChannelName",
 			Other: "Default voice channel changed to `{{.channelName}}`. Use that from now on!",
 		},
@@ -390,16 +413,91 @@ func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCrea
 	}
 }
 
+func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(sett.GetLanguage(), AllSettings[Language], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	/* strLangs := ""
+	for id, data := range locale.GetLanguages() {
+		strLangs += id + " - " + data + "\n"
+	}
+	println(strLangs) */
+
+	if args[2] == "reload" {
+		locale.LoadTranslations()
+
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLanguage.reloaded",
+			Other: "Localization files are reloaded ({{.Count}}). Available language codes: {{.Langs}}",
+		},
+			map[string]interface{}{
+				"Langs": locale.GetBundle().LanguageTags(),
+				"Count": len(locale.GetBundle().LanguageTags()),
+			}))
+		return false
+	}
+
+	if len(args[2]) < 2 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLanguage.tooShort",
+			Other: "Sorry, the language code is short. Available language codes: {{.Langs}}.",
+		},
+			map[string]interface{}{
+				"Langs": locale.GetBundle().LanguageTags(),
+			}))
+		return false
+	}
+
+	if len(locale.GetBundle().LanguageTags()) < 2 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLanguage.notLoaded",
+			Other: "Localization files were not loaded! {{.Langs}}",
+		},
+			map[string]interface{}{
+				"Langs": locale.GetBundle().LanguageTags(),
+			}))
+
+		return false
+	}
+
+	langName := locale.GetLanguages()[args[2]]
+	if langName == "" {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLanguage.notFound",
+			Other: "Language not found! Available language codes: {{.Langs}}",
+		},
+			map[string]interface{}{
+				"Langs": locale.GetBundle().LanguageTags(),
+			}))
+
+		return false
+	}
+
+	sett.SetLanguage(args[2])
+
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingLanguage.set",
+		Other: "Localization is set to {{.LangName}}",
+	},
+		map[string]interface{}{
+			"LangName": langName,
+		}))
+	return true
+}
+
 func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
 		// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
 		if adminCount == 0 {
-			embed := ConstructEmbedForSetting(locale.LocalizeMessage(&i18n.Message{
+			embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingAdminUserIDs.noBotAdmins",
 				Other: "No Bot Admins",
-			}), AllSettings[AdminUserIDs])
+			}), AllSettings[AdminUserIDs], sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			listOfAdmins := ""
@@ -412,7 +510,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 					listOfAdmins += ", <@" + ID + ">"
 				}
 			}
-			embed := ConstructEmbedForSetting(listOfAdmins, AllSettings[AdminUserIDs])
+			embed := ConstructEmbedForSetting(listOfAdmins, AllSettings[AdminUserIDs], sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		}
 		return false
@@ -430,7 +528,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 			}
 			ID, err := extractUserIDFromMention(userName)
 			if ID == "" || err != nil {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.notFound",
 					Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID, username, username#XXXX, nickname or @mention",
 				},
@@ -447,7 +545,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 				newAdminIDs = append(newAdminIDs, ID)
 				// mention User without pinging
 				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-					Content: locale.LocalizeMessage(&i18n.Message{
+					Content: sett.LocalizeMessage(&i18n.Message{
 						ID:    "settings.SettingAdminUserIDs.newBotAdmin",
 						Other: "<@{{.UserID}}> is now a bot admin!",
 					},
@@ -459,7 +557,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 			}
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAdminUserIDs.clearAdmins",
 			Other: "Clearing all AdminUserIDs!",
 		}))
@@ -475,10 +573,10 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
 		if adminRoleCount == 0 {
-			embed := ConstructEmbedForSetting(locale.LocalizeMessage(&i18n.Message{
+			embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingPermissionRoleIDs.noRoleAdmins",
 				Other: "No Role Admins",
-			}), AllSettings[RoleIDs])
+			}), AllSettings[RoleIDs], sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			listOfRoles := ""
@@ -491,7 +589,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
-			embed := ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs])
+			embed := ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs], sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		}
 		return false
@@ -509,7 +607,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			}
 			ID := getRoleFromString(s, m.GuildID, roleName)
 			if ID == "" {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",
 					Other: "Sorry, I don't know the role `{{.RoleName}}` is. You can pass the role ID, role name or @role",
 				},
@@ -526,7 +624,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 				newRoleIDs = append(newRoleIDs, ID)
 				// mention User without pinging
 				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-					Content: locale.LocalizeMessage(&i18n.Message{
+					Content: sett.LocalizeMessage(&i18n.Message{
 						ID:    "settings.SettingPermissionRoleIDs.newBotAdmins",
 						Other: "<@&{{.UserID}}>s are now bot admins!",
 					},
@@ -538,7 +636,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			}
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingPermissionRoleIDs.clearRoles",
 			Other: "Clearing all PermissionRoleIDs!",
 		}))
@@ -555,19 +653,19 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, set
 		if applyNicknames {
 			current = "true"
 		}
-		embed := ConstructEmbedForSetting(current, AllSettings[Nicknames])
+		embed := ConstructEmbedForSetting(current, AllSettings[Nicknames], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	if args[2] == "true" {
 		if applyNicknames {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingApplyNicknames.true_applyNicknames",
 				Other: "It's already true!",
 			}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingApplyNicknames.true_noApplyNicknames",
 				Other: "I will now rename the players in the voice chat.",
 			}))
@@ -576,20 +674,20 @@ func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, set
 		}
 	} else if args[2] == "false" {
 		if applyNicknames {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingApplyNicknames.false_applyNicknames",
 				Other: "I will no longer rename the players in the voice chat.",
 			}))
 			sett.SetApplyNicknames(false)
 			return true
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingApplyNicknames.false_noApplyNicknames",
 				Other: "It's already false!",
 			}))
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingApplyNicknames.wrongArg",
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},
@@ -607,18 +705,18 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 		if unmuteDead {
 			current = "true"
 		}
-		embed := ConstructEmbedForSetting(current, AllSettings[UnmuteDead])
+		embed := ConstructEmbedForSetting(current, AllSettings[UnmuteDead], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
 	if args[2] == "true" {
 		if unmuteDead {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_unmuteDead",
 				Other: "It's already true!",
 			}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
 				Other: "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!",
 			}))
@@ -627,20 +725,20 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 		}
 	} else if args[2] == "false" {
 		if unmuteDead {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.false_unmuteDead",
 				Other: "I will no longer immediately unmute dead people. Good choice!",
 			}))
 			sett.SetUnmuteDeadDuringTasks(false)
 			return true
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
 				Other: "It's already false!",
 			}))
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},
@@ -653,14 +751,14 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 
 func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		embed := ConstructEmbedForSetting("N/A", AllSettings[Delays])
+		embed := ConstructEmbedForSetting("N/A", AllSettings[Delays], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
 	// User passes phase name, phase name and new delay value
 	if len(args) < 4 {
 		// User didn't pass 2 phases, tell them the list of game phases
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID: "settings.SettingDelays.missingPhases",
 			Other: "The list of game phases are `Lobby`, `Tasks` and `Discussion`.\n" +
 				"You need to type both phases the game is transitioning from and to to change the delay.",
@@ -671,7 +769,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	var gamePhase1 = getPhaseFromString(args[2])
 	var gamePhase2 = getPhaseFromString(args[3])
 	if gamePhase1 == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.Phase.UNINITIALIZED",
 			Other: "I don't know what `{{.PhaseName}}` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -680,7 +778,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 			}))
 		return false
 	} else if gamePhase2 == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.Phase.UNINITIALIZED",
 			Other: "I don't know what `{{.PhaseName}}` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -693,7 +791,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	oldDelay := sett.GetDelay(gamePhase1, gamePhase2)
 	if len(args) == 4 {
 		// no number was passed, User was querying the delay
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.delayBetweenPhases",
 			Other: "Currently, the delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` is {{.OldDelay}}.",
 		},
@@ -707,7 +805,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 
 	newDelay, err := strconv.Atoi(args[4])
 	if err != nil || newDelay < 0 {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.wrongNumber",
 			Other: "`{{.Number}}` is not a valid number! Please try again",
 		},
@@ -718,7 +816,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	}
 
 	sett.SetDelay(gamePhase1, gamePhase2, newDelay)
-	s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingDelays.setDelayBetweenPhases",
 		Other: "The delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` changed from {{.OldDelay}} to {{.NewDelay}}.",
 	},
@@ -733,10 +831,10 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 
 func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		embed := ConstructEmbedForSetting(locale.LocalizeMessage(&i18n.Message{
+		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.NA",
 			Other: "N/A",
-		}), AllSettings[VoiceRules])
+		}), AllSettings[VoiceRules], sett)
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
@@ -744,7 +842,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	// now for a bunch of input checking
 	if len(args) < 5 {
 		// User didn't pass enough args
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.enoughArgs",
 			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`",
 		}))
@@ -756,7 +854,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	} else if args[2] == "mute" {
 		args[2] = "muted" // same here
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherMuteDeaf",
 			Other: "`{{.Arg}}` is neither `mute` nor `deaf`!",
 		},
@@ -768,7 +866,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 
 	gamePhase := getPhaseFromString(args[3])
 	if gamePhase == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.Phase.UNINITIALIZED",
 			Other: "I don't know what {{.PhaseName}} is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -779,7 +877,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	if args[4] != "alive" && args[4] != "dead" {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherAliveDead",
 			Other: "`{{.Arg}}` is neither `alive` or `dead`!",
 		},
@@ -799,7 +897,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	if len(args) == 5 {
 		// User was only querying
 		if oldValue {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingCurrentlyOldValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently {{.PlayerDiscordState}}.",
 			},
@@ -809,7 +907,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 					"PlayerDiscordState": args[2],
 				}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingCurrentlyValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently NOT {{.PlayerDiscordState}}.",
 			},
@@ -828,7 +926,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	} else if args[5] == "false" {
 		newValue = false
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherTrueFalse",
 			Other: "`{{.Arg}}` is neither `true` or `false`!",
 		},
@@ -840,7 +938,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 
 	if newValue == oldValue {
 		if newValue {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingAlreadyValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already {{.PlayerDiscordState}}!",
 			},
@@ -850,7 +948,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 					"PlayerDiscordState": args[2],
 				}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingAlreadyUnValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already un{{.PlayerDiscordState}}!",
 			},
@@ -870,7 +968,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	if newValue {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.setValues",
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be {{.PlayerDiscordState}}.",
 		},
@@ -880,7 +978,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 				"PlayerDiscordState": args[2],
 			}))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.setUnValues",
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be un{{.PlayerDiscordState}}.",
 		},

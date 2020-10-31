@@ -9,7 +9,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -381,15 +380,15 @@ var AllCommands = []Command{
 }
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed {
+func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	if cmd.cmdType == Settings {
-		return settingResponse(prefix, AllSettings)
+		return settingResponse(prefix, AllSettings, sett)
 	}
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       cmd.emoji + " " + strings.Title(cmd.command),
-		Description: locale.LocalizeMessage(cmd.desc),
+		Description: sett.LocalizeMessage(cmd.desc),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -399,7 +398,7 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
 					Other: "Example",
 				}),
@@ -407,15 +406,15 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 				Inline: false,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.ConstructEmbedForCommand.Fields.Arguments",
 					Other: "Arguments",
 				}),
-				Value:  "`" + locale.LocalizeMessage(cmd.args) + "`",
+				Value:  "`" + sett.LocalizeMessage(cmd.args) + "`",
 				Inline: false,
 			},
 			{
-				Name: locale.LocalizeMessage(&i18n.Message{
+				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.ConstructEmbedForCommand.Fields.Aliases",
 					Other: "Aliases",
 				}),
@@ -464,15 +463,15 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	switch cmd.cmdType {
 	case Help:
 		if len(args[1:]) == 0 {
-			embed := helpResponse(Version, prefix, AllCommands)
+			embed := helpResponse(Version, prefix, AllCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			cmd = GetCommand(args[1])
 			if cmd.cmdType != Null {
-				embed := ConstructEmbedForCommand(prefix, cmd)
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Help.notFound",
 					Other: "I didn't recognize that command! View `help` for all available commands!",
 				}))
@@ -481,9 +480,9 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		break
 
 	case New:
-		room, region := getRoomAndRegionFromArgs(args[1:])
+		room, region := getRoomAndRegionFromArgs(args[1:], sett)
 
-		bot.handleNewGameMessage(s, m, g, room, region)
+		bot.handleNewGameMessage(s, m, g, sett, room, region)
 		break
 
 	case End:
@@ -509,7 +508,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		dgs.Running = !dgs.Running
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-		dgs.Edit(s, bot.gameStateResponse(dgs))
+		dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		break
 
 	case Refresh:
@@ -520,7 +519,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		dgs.DeleteGameStateMsg(s) //delete the old message
 
 		//create a new instance of the new one
-		dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
+		dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 		//add the emojis to the refreshed message if in the right stage
@@ -534,7 +533,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Link:
 		if len(args[1:]) < 2 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -544,13 +543,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			bot.linkPlayer(s, dgs, args[1:])
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		}
 		break
 
 	case Unlink:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 
@@ -568,14 +567,14 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				//update the state message to reflect the player leaving
-				dgs.Edit(s, bot.gameStateResponse(dgs))
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			}
 		}
 		break
 
 	case Track:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			channelName := strings.Join(args[1:], " ")
@@ -589,21 +588,21 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if lock == nil {
 				break
 			}
-			dgs.trackChannel(channelName, channels)
+			dgs.trackChannel(channelName, channels, sett)
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		}
 		break
 
 	case Force:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			phase := getPhaseFromString(args[1])
 			if phase == game.UNINITIALIZED {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Force.UNINITIALIZED",
 					Other: "Sorry, I didn't understand the game phase you tried to force",
 				}))
@@ -624,7 +623,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Cache:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			userID, err := extractUserIDFromMention(args[1])
@@ -636,12 +635,12 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if len(args[2:]) == 0 {
 				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
 				if len(cached) == 0 {
-					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Cache.emptyCachedNames",
 						Other: "I don't have any cached player names stored for that user!",
 					}))
 				} else {
-					buf := bytes.NewBuffer([]byte(locale.LocalizeMessage(&i18n.Message{
+					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Cache.cachedNames",
 						Other: "Cached in-game names:",
 					})))
@@ -657,7 +656,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Cache.Success",
 						Other: "Successfully deleted all cached names for that user!",
 					}))
@@ -667,25 +666,25 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case ShowMe:
 		if m.Author != nil {
-			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
-			if sett == nil {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+
+			if settUser := bot.StorageInterface.GetUserSettings(m.Author.ID); settUser != nil {
+				embed := settUser.ToEmbed(sett)
+				sendMessageDM(s, m.Author.ID, embed)
+			} else {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.ShowMe.emptySettings",
 					Other: "I don't have any settings stored for you!",
 				}))
-			} else {
-				embed := sett.ToEmbed()
-				sendMessageDM(s, m.Author.ID, embed)
 			}
 
 			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
 			if len(cached) == 0 {
-				s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
 					Other: "I don't have any cached player names stored for you!",
 				}))
 			} else {
-				buf := bytes.NewBuffer([]byte(locale.LocalizeMessage(&i18n.Message{
+				buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.ShowMe.cachedNames",
 					Other: "Cached in-game names:",
 				})))
@@ -708,7 +707,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ForgetMe.Success",
 						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
 					},
@@ -741,7 +740,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		s.ChannelMessageSend(m.ChannelID, AsciiCrewmate)
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.HandleCommand.default",
 			Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
 		},

@@ -38,6 +38,11 @@ func MakeGuildSettings() *GuildSettings {
 	}
 }
 
+func (gs *GuildSettings) LocalizeMessage(args ...interface{}) string {
+	args = append(args, gs.GetLanguage())
+	return locale.LocalizeMessage(args...)
+}
+
 func (gs *GuildSettings) EmptyAdminAndRolePerms() bool {
 	return len(gs.AdminUserIDs) == 0 && len(gs.PermissionRoleIDs) == 0
 }
@@ -114,8 +119,8 @@ func (gs *GuildSettings) GetLanguage() string {
 	return gs.Language
 }
 
-func (gs *GuildSettings) SetLanguage(c string) {
-	gs.Language = c
+func (gs *GuildSettings) SetLanguage(l string) {
+	gs.Language = l
 }
 
 func (gs *GuildSettings) GetApplyNicknames() bool {
