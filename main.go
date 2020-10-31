@@ -173,7 +173,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version+"-"+commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
 
 	go discord.MessagesServer(servicePort, bot)
 

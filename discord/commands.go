@@ -28,6 +28,7 @@ const (
 	Force
 	Settings
 	Log
+	Cache
 	ShowMe
 	ForgetMe
 	DebugState
@@ -270,6 +271,26 @@ var AllCommands = []Command{
 		emoji:   "⁉",
 	},
 	{
+		cmdType: Cache,
+		command: "cache",
+		example: "cache @Soup",
+		shortDesc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Cache.shortDesc",
+			Other: "View cached usernames",
+		}),
+		desc: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Cache.desc",
+			Other: "View a player's cached in-game names, and/or clear them",
+		}),
+		args: locale.LocalizeMessage(&i18n.Message{
+			ID:    "commands.AllCommands.Cache.args",
+			Other: "<player> (optionally, \"clear\")",
+		}),
+		aliases: []string{"cache"},
+		secret:  false,
+		emoji:   "📖",
+	},
+	{
 		cmdType: ShowMe,
 		command: "showme",
 		example: "showme",
@@ -468,15 +489,16 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 	case End:
 		log.Println("User typed end to end the current game")
 
-		bot.forceEndGame(gsr, s)
-
-		//only need read-only for deletion (the delete method is locking)
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-		bot.RedisInterface.DeleteDiscordGameState(dgs)
+		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+			v <- EndGameMessage{EndGameType: EndAndWipe}
+		}
+		delete(bot.EndGameChannels, dgs.ConnectCode)
 
-		//have to explicitly delete here, because if we use the default delete below, the ChannelID
-		//for the game state message doesn't exist anymore...
-		deleteMessage(s, m.ChannelID, m.Message.ID)
+		bot.applyToAll(dgs, false, false)
+
+		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+
 		break
 
 	case Pause:
@@ -600,6 +622,39 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		log.Println(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
 		break
 
+	case Cache:
+		if len(args[1:]) == 0 {
+			embed := ConstructEmbedForCommand(prefix, cmd)
+			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		} else {
+			userID, err := extractUserIDFromMention(args[1])
+			if err != nil {
+				log.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+				break
+			}
+			if len(args[2:]) == 0 {
+				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
+				if len(cached) == 0 {
+					s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for that user!")
+				} else {
+					buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+					for n := range cached {
+						buf.WriteString(fmt.Sprintf("%s\n", n))
+					}
+					buf.WriteString("```")
+					s.ChannelMessageSend(m.ChannelID, buf.String())
+				}
+			} else if strings.ToLower(args[2]) == "clear" || strings.ToLower(args[2]) == "c" {
+				err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, userID)
+				if err != nil {
+					log.Println(err)
+				} else {
+					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all cached names for that user!")
+				}
+			}
+		}
+
 	case ShowMe:
 		if m.Author != nil {
 			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
@@ -660,10 +715,15 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			if state != nil {
 				jBytes, err := json.MarshalIndent(state, "", "  ")
-				if err != nil {
-					log.Println(err)
+				if len(jBytes) > 1980 {
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s", jBytes[0:1980]))
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s\n```", jBytes[1980:]))
+				} else {
+					if err != nil {
+						log.Println(err)
+					}
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 				}
-				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 			}
 		}
 		break
@@ -679,4 +739,5 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				"CommandPrefix": prefix,
 			}))
 	}
+	deleteMessage(s, m.ChannelID, m.Message.ID)
 }

@@ -91,9 +91,9 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 	}
 	//check and see if they're cached first
 	for _, v := range g.Members {
-		if v.User.ID == userID {
+		if v.User != nil && v.User.ID == userID {
 			user := MakeUserDataFromDiscordUser(v.User, v.Nick)
-			dgs.AddFullUser(user)
+			dgs.UserData[v.User.ID] = user
 			return user, true
 		}
 	}
@@ -103,7 +103,7 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 		return UserData{}, false
 	}
 	user := MakeUserDataFromDiscordUser(mem.User, mem.Nick)
-	dgs.AddFullUser(user)
+	dgs.UserData[mem.User.ID] = user
 	return user, true
 }
 

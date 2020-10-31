@@ -142,9 +142,6 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 
 }
 
-//TODO with the Redis locking, this function acts a little weird
-//TODO if we return, then we can't properly verify that the voice changes were correctly applied (and reset the
-//VoiceChangeReady var). Can we eliminate that var completely with this new locking???
 //voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
 //relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 //the same mute/unmute, erroneously
@@ -212,11 +209,10 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	//we don't have enough info to go off of when remaking the game...
 
 	if dgs.GameStateMsg.MessageChannelID != "" {
-		if v, ok := bot.RedisSubscriberKillChannels[dgs.ConnectCode]; ok {
-			v <- true
+		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+			v <- EndGameMessage{EndGameType: EndAndWipe}
 		}
-		delete(bot.RedisSubscriberKillChannels, dgs.ConnectCode)
-		bot.RedisInterface.DeleteDiscordGameState(dgs)
+		delete(bot.EndGameChannels, dgs.ConnectCode)
 		dgs.Reset()
 	}
 
@@ -224,7 +220,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	dgs.ConnectCode = connectCode
 
-	killChan := make(chan bool)
+	killChan := make(chan EndGameMessage)
 
 	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode, killChan)
 
@@ -233,7 +229,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	bot.ChannelsMapLock.Lock()
-	bot.RedisSubscriberKillChannels[connectCode] = killChan
+	bot.EndGameChannels[connectCode] = killChan
 	bot.ChannelsMapLock.Unlock()
 
 	var hyperlink string
