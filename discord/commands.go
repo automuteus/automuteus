@@ -511,7 +511,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		switch cmd.cmdType {
 		case Help:
 			if len(args[1:]) == 0 {
-				embed := helpResponse(Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
 				cmd = GetCommand(args[1])

@@ -167,6 +167,9 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 					}
 				} else {
 					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					if player.Action == game.EXILED {
+						return false //don't apply a mute to this player
+					}
 					return true
 				}
 			} else {

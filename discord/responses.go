@@ -13,7 +13,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func helpResponse(version, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, version, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -49,11 +49,13 @@ func helpResponse(version, CommandPrefix string, commands []Command, sett *stora
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
 		if !v.secret && v.cmdType != Help && v.cmdType != Null {
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   v.emoji + " " + v.command,
-				Value:  sett.LocalizeMessage(v.shortDesc),
-				Inline: true,
-			})
+			if (!v.adminSetting || isAdmin) && (!v.permissionSetting || isPermissioned) {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:   v.emoji + " " + v.command,
+					Value:  sett.LocalizeMessage(v.shortDesc),
+					Inline: true,
+				})
+			}
 		}
 	}
 

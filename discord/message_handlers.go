@@ -40,13 +40,29 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			contents = strings.Replace(contents, prefix, "", 1)
 		}
 
+		isAdmin, isPermissioned := false, false
+
+		if len(sett.AdminUserIDs) == 0 || len(sett.PermissionRoleIDs) == 0 {
+			if g.OwnerID == m.Author.ID || len(sett.AdminUserIDs) == 0 {
+				//if no admin roles set, then yes the user has permissions
+				isAdmin = true
+				isPermissioned = true
+			}
+			if len(sett.PermissionRoleIDs) == 0 {
+				isPermissioned = true
+			}
+		} else {
+			isAdmin = g.OwnerID == m.Author.ID || sett.HasAdminPerms(m.Author)
+			isPermissioned = sett.HasRolePerms(m.Member)
+		}
+
 		if len(contents) == 0 {
 			if len(prefix) <= 1 {
 				// prevent bot from spamming help message whenever the single character
 				// prefix is sent by mistake
 				return
 			} else {
-				embed := helpResponse(Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			}
 		} else {
@@ -54,21 +70,6 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 			for i, v := range args {
 				args[i] = strings.ToLower(v)
-			}
-			isAdmin, isPermissioned := false, false
-
-			if len(sett.AdminUserIDs) == 0 || len(sett.PermissionRoleIDs) == 0 {
-				if g.OwnerID == m.Author.ID || len(sett.AdminUserIDs) == 0 {
-					//if no admin roles set, then yes the user has permissions
-					isAdmin = true
-					isPermissioned = true
-				}
-				if len(sett.PermissionRoleIDs) == 0 {
-					isPermissioned = true
-				}
-			} else {
-				isAdmin = g.OwnerID == m.Author.ID || sett.HasAdminPerms(m.Author)
-				isPermissioned = sett.HasRolePerms(m.Member)
 			}
 
 			bot.HandleCommand(isAdmin, isPermissioned, sett, s, g, m, args)
