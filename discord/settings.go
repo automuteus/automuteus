@@ -33,9 +33,9 @@ type Setting struct {
 	settingType SettingType
 	name        string
 	example     string
-	shortDesc   string
-	desc        string
-	args        string
+	shortDesc   *i18n.Message
+	desc        *i18n.Message
+	args        *i18n.Message
 	aliases     []string
 }
 
@@ -44,73 +44,145 @@ var AllSettings = []Setting{
 		settingType: Prefix,
 		name:        "commandPrefix",
 		example:     "commandPrefix !",
-		shortDesc:   "Bot prefix",
-		desc:        "Change the prefix that the bot uses to detect commands",
-		args:        "<prefix>",
-		aliases:     []string{"prefix", "cp"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Prefix.shortDesc",
+			Other: "Bot prefix",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Prefix.desc",
+			Other: "Change the prefix that the bot uses to detect commands",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Prefix.args",
+			Other: "<prefix>",
+		},
+		aliases: []string{"prefix", "cp"},
 	},
 	{
 		settingType: TrackedChannel,
 		name:        "defaultTrackedChannel",
 		example:     "defaultTrackedChannel Among Us Voice",
-		shortDesc:   "Default tracked voice channel",
-		desc:        "Change the default tracked voice channel",
-		args:        "<voice channel name>",
-		aliases:     []string{"tracked", "channel", "vc", "dtc"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.TrackedChannel.shortDesc",
+			Other: "Default tracked voice channel",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.TrackedChannel.desc",
+			Other: "Change the default tracked voice channel",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.TrackedChannel.args",
+			Other: "<voice channel name>",
+		},
+		aliases: []string{"tracked", "channel", "vc", "dtc"},
 	},
 	{
 		settingType: AdminUserIDs,
 		name:        "adminUserIDs",
 		example:     "adminUserIDs @Soup @Bob",
-		shortDesc:   "Bot Admins",
-		desc:        "Specify which individual users have permissions to invoke the bot",
-		args:        "<User @ mentions>...",
-		aliases:     []string{"admins", "admin", "auid", "aui", "a"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.AdminUserIDs.shortDesc",
+			Other: "Bot Admins",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.AdminUserIDs.desc",
+			Other: "Specify which individual users have permissions to invoke the bot",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.AdminUserIDs.args",
+			Other: "<User @ mentions>...",
+		},
+		aliases: []string{"admins", "admin", "auid", "aui", "a"},
 	},
 	{
 		settingType: RoleIDs,
 		name:        "permissionRoleIDs",
 		example:     "permissionRoleIDs @Bot Admins @Bot Mods",
-		shortDesc:   "Bot Admins by Role",
-		desc:        "Specify which roles have permissions to invoke the bot",
-		args:        "<role @ mentions>...",
-		aliases:     []string{"roles", "role", "prid", "pri", "r"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.RoleIDs.shortDesc",
+			Other: "Bot Admins by Role",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.RoleIDs.desc",
+			Other: "Specify which roles have permissions to invoke the bot",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.RoleIDs.args",
+			Other: "<role @ mentions>...",
+		},
+		aliases: []string{"roles", "role", "prid", "pri", "r"},
 	},
 	{
 		settingType: Nicknames,
 		name:        "applyNicknames",
 		example:     "applyNicknames false",
-		shortDesc:   "Bot renames Discord users",
-		desc:        "Specify if the bot should rename Discord users to match their in-game names or not",
-		args:        "<true/false>",
-		aliases:     []string{"nick", "nicknames", "nickname", "an"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Nicknames.shortDesc",
+			Other: "Bot renames Discord users",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Nicknames.desc",
+			Other: "Specify if the bot should rename Discord users to match their in-game names or not",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Nicknames.args",
+			Other: "<true/false>",
+		},
+		aliases: []string{"nick", "nicknames", "nickname", "an"},
 	},
 	{
 		settingType: UnmuteDead,
 		name:        "unmuteDeadDuringTasks",
 		example:     "unmuteDeadDuringTasks false",
-		shortDesc:   "Bot unmutes players on death",
-		desc:        "Specify if the bot should immediately unmute players when they die. **CAUTION. Leaks information!**",
-		args:        "<true/false>",
-		aliases:     []string{"unmute", "uddt"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.UnmuteDead.shortDesc",
+			Other: "Bot unmutes players on death",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.UnmuteDead.desc",
+			Other: "Specify if the bot should immediately unmute players when they die. **CAUTION. Leaks information!**",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.UnmuteDead.args",
+			Other: "<true/false>",
+		},
+		aliases: []string{"unmute", "uddt"},
 	},
 	{
 		settingType: Delays,
 		name:        "delays",
 		example:     "delays lobby tasks 5",
-		shortDesc:   "Delays between stages",
-		desc:        "Specify the delays for automute/deafen between stages of the game, like lobby->tasks",
-		args:        "<start phase> <end phase> <delay>",
-		aliases:     []string{"delays", "d"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Delays.shortDesc",
+			Other: "Delays between stages",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Delays.desc",
+			Other: "Specify the delays for automute/deafen between stages of the game, like lobby->tasks",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Delays.args",
+			Other: "<start phase> <end phase> <delay>",
+		},
+		aliases: []string{"delays", "d"},
 	},
 	{
 		settingType: VoiceRules,
 		name:        "voiceRules",
 		example:     "voiceRules mute tasks dead true",
-		shortDesc:   "Mute/deafen rules",
-		desc:        "Specify mute/deafen rules for the game, depending on the stage and the alive/deadness of players. Example given would mute dead players during the tasks stage",
-		args:        "<mute/deaf> <game phase> <dead/alive> <true/false>",
-		aliases:     []string{"voice", "vr"},
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.VoiceRules.shortDesc",
+			Other: "Mute/deafen rules",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.VoiceRules.desc",
+			Other: "Specify mute/deafen rules for the game, depending on the stage and the alive/deadness of players. Example given would mute dead players during the tasks stage",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.VoiceRules.args",
+			Other: "<mute/deaf> <game phase> <dead/alive> <true/false>",
+		},
+		aliases: []string{"voice", "vr"},
 	},
 }
 
@@ -119,7 +191,7 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 		URL:         "",
 		Type:        "",
 		Title:       setting.name,
-		Description: setting.desc,
+		Description: locale.LocalizeMessage(setting.desc),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -149,7 +221,7 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 					ID:    "settings.ConstructEmbedForSetting.Fields.Arguments",
 					Other: "Arguments",
 				}),
-				Value:  "`" + setting.args + "`",
+				Value:  "`" + locale.LocalizeMessage(setting.args) + "`",
 				Inline: false,
 			},
 			{

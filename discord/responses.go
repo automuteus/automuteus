@@ -51,7 +51,7 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 		if !v.secret && v.cmdType != Help && v.cmdType != Null {
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   v.emoji + " " + v.command,
-				Value:  v.shortDesc,
+				Value:  locale.LocalizeMessage(v.shortDesc),
 				Inline: true,
 			})
 		}
@@ -89,7 +89,7 @@ func settingResponse(CommandPrefix string, settings []Setting) discordgo.Message
 	for i, v := range settings {
 		fields[i] = &discordgo.MessageEmbedField{
 			Name:   v.name,
-			Value:  v.shortDesc,
+			Value:  locale.LocalizeMessage(v.shortDesc),
 			Inline: true,
 		}
 	}

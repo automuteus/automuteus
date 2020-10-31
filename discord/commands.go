@@ -40,9 +40,9 @@ type Command struct {
 	cmdType   CommandType
 	command   string
 	example   string
-	shortDesc string
-	desc      string
-	args      string
+	shortDesc *i18n.Message
+	desc      *i18n.Message
+	args      *i18n.Message
 	aliases   []string
 	secret    bool
 	emoji     string
@@ -54,18 +54,18 @@ var AllCommands = []Command{
 		cmdType: Help,
 		command: "help",
 		example: "help track",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Help.shortDesc",
 			Other: "Display help",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Help.desc",
 			Other: "Display bot help message, or see info about a command",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Help.args",
 			Other: "None, or optional command to see info for",
-		}),
+		},
 		aliases: []string{"h"},
 		secret:  false,
 		emoji:   "❓",
@@ -74,18 +74,18 @@ var AllCommands = []Command{
 		cmdType: New,
 		command: "new",
 		example: "new",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.New.shortDesc",
 			Other: "Start a new game",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.New.desc",
 			Other: "Start a new game",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.New.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"n"},
 		secret:  false,
 		emoji:   "🕹",
@@ -94,18 +94,18 @@ var AllCommands = []Command{
 		cmdType: End,
 		command: "end",
 		example: "end",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.End.shortDesc",
 			Other: "End the game",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.End.desc",
 			Other: "End the current game",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.End.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"e"},
 		secret:  false,
 		emoji:   "🛑",
@@ -114,18 +114,18 @@ var AllCommands = []Command{
 		cmdType: Pause,
 		command: "pause",
 		example: "pause",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Pause.shortDesc",
 			Other: "Pause the bot",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Pause.desc",
 			Other: "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Pause.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"p"},
 		secret:  false,
 		emoji:   "⏸",
@@ -134,18 +134,18 @@ var AllCommands = []Command{
 		cmdType: Refresh,
 		command: "refresh",
 		example: "refresh",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Refresh.shortDesc",
 			Other: "Refresh the bot status",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Refresh.desc",
 			Other: "Recreate the bot status message if it ends up too far in the chat",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Refresh.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"r"},
 		secret:  false,
 		emoji:   "♻",
@@ -154,18 +154,18 @@ var AllCommands = []Command{
 		cmdType: Link,
 		command: "link",
 		example: "link @Soup red",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Link.shortDesc",
 			Other: "Link a Discord User",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Link.desc",
 			Other: "Manually link a Discord User to their in-game color or name",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Link.args",
 			Other: "<discord User> <in-game color or name>",
-		}),
+		},
 		aliases: []string{"l"},
 		secret:  false,
 		emoji:   "🔗",
@@ -174,18 +174,18 @@ var AllCommands = []Command{
 		cmdType: Unlink,
 		command: "unlink",
 		example: "unlink @Soup",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Unlink.shortDesc",
 			Other: "Unlink a Discord User",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Unlink.desc",
 			Other: "Manually unlink a Discord User from their in-game player",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Unlink.args",
 			Other: "<discord User>",
-		}),
+		},
 		aliases: []string{"u"},
 		secret:  false,
 		emoji:   "🚷",
@@ -194,18 +194,18 @@ var AllCommands = []Command{
 		cmdType: Track,
 		command: "track",
 		example: "track Among Us Voice",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Track.shortDesc",
 			Other: "Track a voice channel",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Track.desc",
 			Other: "Tell the bot which voice channel you'll be playing in",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Track.args",
 			Other: "<voice channel name>",
-		}),
+		},
 		aliases: []string{"t"},
 		secret:  false,
 		emoji:   "📌",
@@ -214,18 +214,18 @@ var AllCommands = []Command{
 		cmdType: Force,
 		command: "force",
 		example: "force task",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Force.shortDesc",
 			Other: "Force the bot to transition",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Force.desc",
 			Other: "Force the bot to transition to another game stage, if it doesn't transition properly",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Force.args",
 			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
-		}),
+		},
 		aliases: []string{"f"},
 		secret:  false,
 		emoji:   "📢",
@@ -234,18 +234,18 @@ var AllCommands = []Command{
 		cmdType: Settings,
 		command: "settings",
 		example: "settings commandPrefix !",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Settings.shortDesc",
 			Other: "Adjust bot settings",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Settings.desc",
 			Other: "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Settings.args",
 			Other: "<setting> <value>",
-		}),
+		},
 		aliases: []string{"s"},
 		secret:  false,
 		emoji:   "⚙",
@@ -254,18 +254,18 @@ var AllCommands = []Command{
 		cmdType: Log,
 		command: "log",
 		example: "log something bad happened",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Log.shortDesc",
 			Other: "Log a weird event",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Log.desc",
 			Other: "Log if something bad happened, so you can find the event in your logs later",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Log.args",
 			Other: "<message>",
-		}),
+		},
 		aliases: []string{"log"},
 		secret:  false,
 		emoji:   "⁉",
@@ -274,18 +274,18 @@ var AllCommands = []Command{
 		cmdType: Cache,
 		command: "cache",
 		example: "cache @Soup",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Cache.shortDesc",
 			Other: "View cached usernames",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Cache.desc",
 			Other: "View a player's cached in-game names, and/or clear them",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Cache.args",
 			Other: "<player> (optionally, \"clear\")",
-		}),
+		},
 		aliases: []string{"cache"},
 		secret:  false,
 		emoji:   "📖",
@@ -294,18 +294,18 @@ var AllCommands = []Command{
 		cmdType: ShowMe,
 		command: "showme",
 		example: "showme",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.ShowMe.shortDesc",
 			Other: "Show player data",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.ShowMe.desc",
 			Other: "Send all the player data for the User issuing the command",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.ShowMe.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"sm"},
 		secret:  false,
 		emoji:   "🔍",
@@ -314,18 +314,18 @@ var AllCommands = []Command{
 		cmdType: ForgetMe,
 		command: "forgetme",
 		example: "forgetme",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.ForgetMe.shortDesc",
 			Other: "Delete player data",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.ForgetMe.desc",
 			Other: "Delete all the data associated with the User issuing the command",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.ForgetMe.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"fm"},
 		secret:  false,
 		emoji:   "🗑",
@@ -334,18 +334,18 @@ var AllCommands = []Command{
 		cmdType: DebugState,
 		command: "debugstate",
 		example: "debugstate",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.DebugState.shortDesc",
 			Other: "View the full state of the Discord Guild Data",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.DebugState.desc",
 			Other: "View the full state of the Discord Guild Data",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"ds"},
 		secret:  true,
 	},
@@ -353,18 +353,18 @@ var AllCommands = []Command{
 		cmdType: Ascii,
 		command: "ascii",
 		example: "ascii",
-		shortDesc: locale.LocalizeMessage(&i18n.Message{
+		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Ascii.shortDesc",
 			Other: "Print an ASCII crewmate",
-		}),
-		desc: locale.LocalizeMessage(&i18n.Message{
+		},
+		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Ascii.desc",
 			Other: "Print an ASCII crewmate",
-		}),
-		args: locale.LocalizeMessage(&i18n.Message{
+		},
+		args: &i18n.Message{
 			ID:    "commands.AllCommands.Ascii.args",
 			Other: "None",
-		}),
+		},
 		aliases: []string{"ascii"},
 		secret:  true,
 	},
@@ -372,9 +372,9 @@ var AllCommands = []Command{
 		cmdType:   Null,
 		command:   "",
 		example:   "",
-		shortDesc: "",
-		desc:      "",
-		args:      "",
+		shortDesc: nil,
+		desc:      nil,
+		args:      nil,
 		aliases:   []string{""},
 		secret:    true,
 	},
@@ -389,7 +389,7 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 		URL:         "",
 		Type:        "",
 		Title:       cmd.emoji + " " + strings.Title(cmd.command),
-		Description: cmd.desc,
+		Description: locale.LocalizeMessage(cmd.desc),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -411,7 +411,7 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 					ID:    "commands.ConstructEmbedForCommand.Fields.Arguments",
 					Other: "Arguments",
 				}),
-				Value:  "`" + cmd.args + "`",
+				Value:  "`" + locale.LocalizeMessage(cmd.args) + "`",
 				Inline: false,
 			},
 			{
