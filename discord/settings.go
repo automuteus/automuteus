@@ -238,12 +238,12 @@ func ConstructEmbedForSetting(value string, setting Setting) discordgo.MessageEm
 
 func getSetting(arg string) SettingType {
 	for _, set := range AllSettings {
-		if arg == set.name {
+		if arg == strings.ToLower(set.name) {
 			return set.settingType
 		}
 
 		for _, alias := range set.aliases {
-			if arg == alias {
+			if arg == strings.ToLower(alias) {
 				return set.settingType
 			}
 		}
