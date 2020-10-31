@@ -9,6 +9,7 @@
     You will get "translate.\<language code\>.toml" files with strings that translations need to be updated.
     
 - Edit translations files
+> You need to replace the special line break character from `\\n` to `\n`
 
 - Merge the translations into active files:
     ```bash
