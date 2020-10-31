@@ -156,7 +156,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
-					if sett.GetUnmuteDeadDuringTasks() {
+					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs))
 						return true
 					} else {
