@@ -117,7 +117,7 @@
 "settings.ConstructEmbedForSetting.Fields.Arguments" = "Arguments"
 "settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Current Value"
 "settings.ConstructEmbedForSetting.Fields.Example" = "Example"
-"settings.HandleSettingsCommand.default" = "Sorry, `{{.Argument}}` is not a valid setting!\\n"
+"settings.HandleSettingsCommand.default" = "Sorry, `{{.Arg}}` is not a valid setting!\\n"
 "settings.SettingAdminUserIDs.clearAdmins" = "Clearing all AdminUserIDs!"
 "settings.SettingAdminUserIDs.newBotAdmin" = "<@{{.UserID}}> is now a bot admin!"
 "settings.SettingAdminUserIDs.noBotAdmins" = "No Bot Admins"

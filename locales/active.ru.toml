@@ -475,8 +475,8 @@ hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
 other = "Пример"
 
 ["settings.HandleSettingsCommand.default"]
-hash = "sha1-451dd9251e50d405eb16864f016eecc0ed8caa96"
-other = "Прости, `{{.Аргумент}}` не является допустимым параметром!\n"
+hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
+other = "Прости, `{{.Arg}}` не является допустимым параметром!\n"
 
 ["settings.SettingAdminUserIDs.clearAdmins"]
 hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"

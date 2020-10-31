@@ -293,10 +293,10 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	default:
 		s.ChannelMessageSend(m.ChannelID, locale.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
-			Other: "Sorry, `{{.Argument}}` is not a valid setting!\n",
+			Other: "Sorry, `{{.Arg}}` is not a valid setting!\n",
 		},
 			map[string]interface{}{
-				"Argument": args[1],
+				"Arg": args[1],
 			}))
 	}
 	if isValid {
