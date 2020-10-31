@@ -1,7 +1,3 @@
-["bot.forceEndGame.notLocked"]
-hash = "sha1-6748d1bc9fffddc24cc489d88e486784fd90f1fd"
-other = "Не удалось получить блокировку при принудительном окончании игры! Вам нужно будет вручную размутить/разглушить игроков!"
-
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
 other = "Нету"
@@ -13,6 +9,18 @@ other = "Вывести члена экипажа ASCII"
 ["commands.AllCommands.Ascii.shortDesc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
 other = "Вывести члена экипажа ASCII"
+
+["commands.AllCommands.Cache.args"]
+hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
+other = "<player> (необязательно, \"clear\")"
+
+["commands.AllCommands.Cache.desc"]
+hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
+other = "Просмотр и/или очистка кешированных ников игроков"
+
+["commands.AllCommands.Cache.shortDesc"]
+hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
+other = "Посмотреть кешированные ники"
 
 ["commands.AllCommands.DebugState.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
