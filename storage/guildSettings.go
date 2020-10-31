@@ -1,14 +1,17 @@
 package storage
 
 import (
+	"sync"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"sync"
+	"github.com/denverquane/amongusdiscord/locale"
 )
 
 type GuildSettings struct {
 	CommandPrefix         string `json:"commandPrefix"`
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
+	Language              string `json:"language"`
 
 	AdminUserIDs          []string        `json:"adminIDs"`
 	PermissionRoleIDs     []string        `json:"permissionRoleIDs"`
@@ -24,6 +27,7 @@ func MakeGuildSettings() *GuildSettings {
 	return &GuildSettings{
 		CommandPrefix:         ".au",
 		DefaultTrackedChannel: "",
+		Language:              locale.DefaultLang,
 		AdminUserIDs:          []string{},
 		PermissionRoleIDs:     []string{},
 		Delays:                game.MakeDefaultDelays(),
@@ -32,6 +36,11 @@ func MakeGuildSettings() *GuildSettings {
 		UnmuteDeadDuringTasks: false,
 		lock:                  sync.RWMutex{},
 	}
+}
+
+func (gs *GuildSettings) LocalizeMessage(args ...interface{}) string {
+	args = append(args, gs.GetLanguage())
+	return locale.LocalizeMessage(args...)
 }
 
 func (gs *GuildSettings) EmptyAdminAndRolePerms() bool {
@@ -104,6 +113,14 @@ func (gs *GuildSettings) GetDefaultTrackedChannel() string {
 
 func (gs *GuildSettings) SetDefaultTrackedChannel(c string) {
 	gs.DefaultTrackedChannel = c
+}
+
+func (gs *GuildSettings) GetLanguage() string {
+	return gs.Language
+}
+
+func (gs *GuildSettings) SetLanguage(l string) {
+	gs.Language = l
 }
 
 func (gs *GuildSettings) GetApplyNicknames() bool {

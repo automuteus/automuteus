@@ -4,11 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"math/rand"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type UserPatchParameters struct {
@@ -91,13 +94,22 @@ func getPhaseFromString(input string) game.Phase {
 }
 
 // GetRoomAndRegionFromArgs does what it sounds like
-func getRoomAndRegionFromArgs(args []string) (string, string) {
+func getRoomAndRegionFromArgs(args []string, sett *storage.GuildSettings) (string, string) {
+	roomUnprovided := sett.LocalizeMessage(&i18n.Message{
+		ID:    "helpers.getRoomAndRegionFromArgs.roomUnprovided",
+		Other: "Unprovided",
+	})
+	regionUnprovided := sett.LocalizeMessage(&i18n.Message{
+		ID:    "helpers.getRoomAndRegionFromArgs.regionUnprovided",
+		Other: "Unprovided",
+	})
+
 	if len(args) == 0 {
-		return "Unprovided", "Unprovided"
+		return roomUnprovided, regionUnprovided
 	}
 	room := strings.ToUpper(args[0])
 	if len(args) == 1 {
-		return room, "Unprovided"
+		return room, regionUnprovided
 	}
 	region := strings.ToLower(args[1])
 	switch region {

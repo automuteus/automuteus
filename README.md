@@ -151,6 +151,7 @@ Heroku hosting steps are are not updated for v3.0+ of AutoMuteUs, and as such is
 - `CONFIG_PATH`: Alternate filesystem path for guild and user config files. Defaults to `./`
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 36000 seconds.
+- `REDIS_PASSWORD`: Your Redis database password, if necessary.
 
 ### HIGHLY advanced. Probably don't ever touch these!
 

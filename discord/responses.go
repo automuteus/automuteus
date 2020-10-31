@@ -6,20 +6,34 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
-
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func helpResponse(version, CommandPrefix string, commands []Command) discordgo.MessageEmbed {
+func helpResponse(version, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       fmt.Sprintf("AutoMuteUs Bot Commands (v%s):\n", version),
-		Description: fmt.Sprintf("[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `%s help <command>` to see more details on a command!", CommandPrefix),
-		Timestamp:   "",
-		Color:       15844367, //GOLD
-		Image:       nil,
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.Title",
+			Other: "AutoMuteUs Bot Commands (v{{.version}}):\n",
+		},
+			map[string]interface{}{
+				"version": version,
+			}),
+		Description: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.helpResponse.SubTitle",
+			Other: "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
+		},
+			map[string]interface{}{
+				"CommandPrefix": CommandPrefix,
+			}),
+		Timestamp: "",
+		Color:     15844367, //GOLD
+		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
 			URL:      "https://github.com/denverquane/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
 			ProxyURL: "",
@@ -37,7 +51,7 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 		if !v.secret && v.cmdType != Help && v.cmdType != Null {
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   v.emoji + " " + v.command,
-				Value:  v.shortDesc,
+				Value:  sett.LocalizeMessage(v.shortDesc),
 				Inline: true,
 			})
 		}
@@ -47,26 +61,35 @@ func helpResponse(version, CommandPrefix string, commands []Command) discordgo.M
 	return embed
 }
 
-func settingResponse(cp string, settings []Setting) discordgo.MessageEmbed {
+func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       "Settings",
-		Description: "Type `" + cp + " settings <setting>` to change a setting from those listed below",
-		Timestamp:   "",
-		Color:       15844367, //GOLD
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.Title",
+			Other: "Settings",
+		}),
+		Description: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.Description",
+			Other: "Type `{{.CommandPrefix}} settings <setting>` to change a setting from those listed below",
+		},
+			map[string]interface{}{
+				"CommandPrefix": CommandPrefix,
+			}),
+		Timestamp: "",
+		Color:     15844367, //GOLD
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, len(settings))
 	for i, v := range settings {
 		fields[i] = &discordgo.MessageEmbedField{
 			Name:   v.name,
-			Value:  v.shortDesc,
+			Value:  sett.LocalizeMessage(v.shortDesc),
 			Inline: true,
 		}
 	}
@@ -76,36 +99,48 @@ func settingResponse(cp string, settings []Setting) discordgo.MessageEmbed {
 }
 
 // TODO:
-func (bot *Bot) gameStateResponse(dgs *DiscordGameState) *discordgo.MessageEmbed {
+func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed{
+	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
 		game.MENU:    menuMessage,
 		game.LOBBY:   lobbyMessage,
 		game.TASKS:   gamePlayMessage,
 		game.DISCUSS: gamePlayMessage,
 	}
-	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis)
+	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
-func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerCount int, linkedPlayers int) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerCount int, linkedPlayers int, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 4)
 	gameInfoFields[0] = &discordgo.MessageEmbedField{
-		Name:   "Room Code",
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.RoomCode",
+			Other: "Room Code",
+		}),
 		Value:  fmt.Sprintf("%s", room),
 		Inline: true,
 	}
 	gameInfoFields[1] = &discordgo.MessageEmbedField{
-		Name:   "Region",
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.Region",
+			Other: "Region",
+		}),
 		Value:  fmt.Sprintf("%s", region),
 		Inline: true,
 	}
 	gameInfoFields[2] = &discordgo.MessageEmbedField{
-		Name:   "Tracking",
-		Value:  tracking.ToStatusString(),
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.Tracking",
+			Other: "Tracking",
+		}),
+		Value:  tracking.ToStatusString(sett),
 		Inline: true,
 	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
-		Name:   "Players Linked",
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
+			Other: "Players Linked",
+		}),
 		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
 		Inline: false,
 	}
@@ -113,28 +148,37 @@ func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerC
 	return gameInfoFields
 }
 
-func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 
 	color := 15158332 //red
 	desc := ""
 	var footer *discordgo.MessageEmbedFooter
 	if dgs.Linked {
-		desc = dgs.makeDescription()
+		desc = dgs.makeDescription(sett)
 		color = 3066993
 		footer = &discordgo.MessageEmbedFooter{
-			Text:         "(Enter a game lobby in Among Us to start the match)",
+			Text: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.menuMessage.Linked.FooterText",
+				Other: "(Enter a game lobby in Among Us to start the match)",
+			}),
 			IconURL:      "",
 			ProxyIconURL: "",
 		}
 	} else {
-		desc = "❌**No capture linked! Click the link in your DMs to connect!**❌"
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.menuMessage.notLinked.Description",
+			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+		})
 		footer = nil
 	}
 
 	msg := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       "Main Menu",
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.menuMessage.Title",
+			Other: "Main Menu",
+		}),
 		Description: desc,
 		Timestamp:   "",
 		Footer:      footer,
@@ -149,35 +193,48 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Messa
 	return &msg
 }
 
-func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	//gameInfoFields[2] = &discordgo.MessageEmbedField{
 	//	Name:   "\u200B",
 	//	Value:  "\u200B",
 	//	Inline: false,
 	//}
 	room, region := dgs.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked())
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
-	listResp := dgs.ToEmojiEmbedFields(emojis)
+	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
 
 	color := 15158332 //red
 	desc := ""
 	if dgs.Linked {
-		desc = dgs.makeDescription()
+		desc = dgs.makeDescription(sett)
 		color = 3066993
 	} else {
-		desc = fmt.Sprintf("❌**No capture linked! Click the link in your DMs to connect!**❌")
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMessage.notLinked.Description",
+			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+		})
 	}
 
+	emojiLeave := "❌"
 	msg := discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       "Lobby",
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMessage.Title",
+			Other: "Lobby",
+		}),
 		Description: desc,
 		Timestamp:   "",
 		Footer: &discordgo.MessageEmbedFooter{
-			Text:         "React to this message with your in-game color! (or ❌ to leave)",
+			Text: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.Footer.Text",
+				Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
+			},
+				map[string]interface{}{
+					"emojiLeave": emojiLeave,
+				}),
 			IconURL:      "",
 			ProxyIconURL: "",
 		},
@@ -192,12 +249,12 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.Mess
 	return &msg
 }
 
-func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.MessageEmbed {
+func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// add the player list
 	//guild.UserDataLock.Lock()
 	room, region := dgs.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked())
-	listResp := dgs.ToEmojiEmbedFields(emojis)
+	gameInfoFields := lobbyMetaEmbedFields(dgs.Tracking, room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
 	//guild.UserDataLock.Unlock()
 	var color int
@@ -216,8 +273,8 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.M
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       string(phase.ToString()),
-		Description: dgs.makeDescription(),
+		Title:       sett.LocalizeMessage(phase.ToLocale()),
+		Description: dgs.makeDescription(sett),
 		Timestamp:   "",
 		Color:       color,
 		Footer:      nil,
@@ -232,18 +289,27 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis) *discordgo.M
 	return &msg
 }
 
-func (dgs *DiscordGameState) makeDescription() string {
+func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string {
 	buf := bytes.NewBuffer([]byte{})
 	if !dgs.Running {
-		buf.WriteString("\n**Bot is Paused!**\n\n")
+		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.makeDescription.GameNotRunning",
+			Other: "\n**Bot is Paused!**\n\n",
+		}))
 	}
 
 	author := dgs.GameStateMsg.LeaderID
 	if author != "" {
-		buf.WriteString("<@" + author + "> is running an Among Us game!\nThe game is happening in ")
+		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.makeDescription.author",
+			Other: "<@{{.author}}> is running an Among Us game!\nThe game is happening in ",
+		},
+			map[string]interface{}{
+				"author": author,
+			}))
 	}
 
-	buf.WriteString(dgs.Tracking.ToDescString())
+	buf.WriteString(dgs.Tracking.ToDescString(sett))
 
 	return buf.String()
 }

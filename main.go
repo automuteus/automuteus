@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/denverquane/amongusdiscord/storage"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -12,6 +12,9 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/denverquane/amongusdiscord/locale"
+	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
@@ -51,7 +54,7 @@ func discordMainWrapper() error {
 				log.Println("Issue creating sample config.txt")
 				return err
 			}
-			_, err = f.WriteString("DISCORD_BOT_TOKEN=\n")
+			_, err = f.WriteString(fmt.Sprintf("DISCORD_BOT_TOKEN=\nBOT_LANG=%s\n", locale.DefaultLang))
 			f.Close()
 		}
 	}
@@ -142,11 +145,12 @@ func discordMainWrapper() error {
 	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDRESS")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 	if redisAddr != "" {
 		err := redisClient.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
-			Password: "",
+			Password: redisPassword,
 		})
 		if err != nil {
 			log.Println(err)
@@ -154,7 +158,7 @@ func discordMainWrapper() error {
 		err = storageInterface.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
-			Password: "",
+			Password: redisPassword,
 		})
 		if err != nil {
 			log.Println(err)
@@ -162,6 +166,8 @@ func discordMainWrapper() error {
 	} else {
 		return errors.New("no Redis Address specified; exiting")
 	}
+
+	locale.InitLang(os.Getenv("BOT_LANG"))
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

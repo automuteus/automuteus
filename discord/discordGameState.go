@@ -2,10 +2,13 @@ package discord
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type TrackingChannel struct {
@@ -13,19 +16,31 @@ type TrackingChannel struct {
 	ChannelName string `json:"channelName"`
 }
 
-func (tc TrackingChannel) ToStatusString() string {
+func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return "Any Voice Channel"
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
+			Other: "Any Voice Channel",
+		})
 	} else {
 		return tc.ChannelName
 	}
 }
 
-func (tc TrackingChannel) ToDescString() string {
+func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return "any voice channel!"
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToDescString.anyVoiceChannel",
+			Other: "any voice channel!",
+		})
 	} else {
-		return "the **" + tc.ChannelName + "** voice channel!"
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "discordGameState.ToDescString.voiceChannelName",
+			Other: "the **{{.channelName}}** voice channel!",
+		},
+			map[string]interface{}{
+				"channelName": tc.ChannelName,
+			})
 	}
 }
 
@@ -102,20 +117,32 @@ func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
 	dgs.DeleteGameStateMsg(s)
 }
 
-func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel) string {
+func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *storage.GuildSettings) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
 
 			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
-			return fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name)
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "discordGameState.trackChannel.voiceChannelSet",
+				Other: "Now Tracking \"{{.channelName}}\" Voice Channel for Automute!",
+			},
+				map[string]interface{}{
+					"channelName": c.Name,
+				})
 		}
 	}
-	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    "discordGameState.trackChannel.voiceChannelNotfound",
+		Other: "No channel found by the name {{.channelName}}!\n",
+	},
+		map[string]interface{}{
+			"channelName": channelName,
+		})
 }
 
-func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*discordgo.MessageEmbedField {
+func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 12)
 	num := 0
 
@@ -135,8 +162,11 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis) []*disco
 		if unsorted[player.Color] == nil {
 			emoji := emojis[player.IsAlive][player.Color]
 			unsorted[player.Color] = &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("%s", player.Name),
-				Value:  fmt.Sprintf("%s **Unlinked**", emoji.FormatForInline()),
+				Name: fmt.Sprintf("%s", player.Name),
+				Value: fmt.Sprintf("%s **%s**", emoji.FormatForInline(), sett.LocalizeMessage(&i18n.Message{
+					ID:    "discordGameState.ToEmojiEmbedFields.Unlinked",
+					Other: "Unlinked",
+				})),
 				Inline: true,
 			}
 		}

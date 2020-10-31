@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	"log"
-	"strings"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type CommandType int
@@ -37,9 +39,9 @@ type Command struct {
 	cmdType   CommandType
 	command   string
 	example   string
-	shortDesc string
-	desc      string
-	args      string
+	shortDesc *i18n.Message
+	desc      *i18n.Message
+	args      *i18n.Message
 	aliases   []string
 	secret    bool
 	emoji     string
@@ -48,201 +50,345 @@ type Command struct {
 //note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
 var AllCommands = []Command{
 	{
-		cmdType:   Help,
-		command:   "help",
-		example:   "help track",
-		shortDesc: "Display help",
-		desc:      "Display bot help message, or see info about a command",
-		args:      "None, or optional command to see info for",
-		aliases:   []string{"h"},
-		secret:    false,
-		emoji:     "❓",
+		cmdType: Help,
+		command: "help",
+		example: "help track",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Help.shortDesc",
+			Other: "Display help",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Help.desc",
+			Other: "Display bot help message, or see info about a command",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Help.args",
+			Other: "None, or optional command to see info for",
+		},
+		aliases: []string{"h"},
+		secret:  false,
+		emoji:   "❓",
 	},
 	{
-		cmdType:   New,
-		command:   "new",
-		example:   "new",
-		shortDesc: "Start a new game",
-		desc:      "Start a new game",
-		args:      "None",
-		aliases:   []string{"n"},
-		secret:    false,
-		emoji:     "🕹",
+		cmdType: New,
+		command: "new",
+		example: "new",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.New.shortDesc",
+			Other: "Start a new game",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.New.desc",
+			Other: "Start a new game",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.New.args",
+			Other: "None",
+		},
+		aliases: []string{"n"},
+		secret:  false,
+		emoji:   "🕹",
 	},
 	{
-		cmdType:   End,
-		command:   "end",
-		example:   "end",
-		shortDesc: "End the game",
-		desc:      "End the current game",
-		args:      "None",
-		aliases:   []string{"e"},
-		secret:    false,
-		emoji:     "🛑",
+		cmdType: End,
+		command: "end",
+		example: "end",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.End.shortDesc",
+			Other: "End the game",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.End.desc",
+			Other: "End the current game",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.End.args",
+			Other: "None",
+		},
+		aliases: []string{"e"},
+		secret:  false,
+		emoji:   "🛑",
 	},
 	{
-		cmdType:   Pause,
-		command:   "pause",
-		example:   "pause",
-		shortDesc: "Pause the bot",
-		desc:      "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
-		args:      "None",
-		aliases:   []string{"p"},
-		secret:    false,
-		emoji:     "⏸",
+		cmdType: Pause,
+		command: "pause",
+		example: "pause",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Pause.shortDesc",
+			Other: "Pause the bot",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Pause.desc",
+			Other: "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Pause.args",
+			Other: "None",
+		},
+		aliases: []string{"p"},
+		secret:  false,
+		emoji:   "⏸",
 	},
 	{
-		cmdType:   Refresh,
-		command:   "refresh",
-		example:   "refresh",
-		shortDesc: "Refresh the bot status",
-		desc:      "Recreate the bot status message if it ends up too far in the chat",
-		args:      "None",
-		aliases:   []string{"r"},
-		secret:    false,
-		emoji:     "♻",
+		cmdType: Refresh,
+		command: "refresh",
+		example: "refresh",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Refresh.shortDesc",
+			Other: "Refresh the bot status",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Refresh.desc",
+			Other: "Recreate the bot status message if it ends up too far in the chat",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Refresh.args",
+			Other: "None",
+		},
+		aliases: []string{"r"},
+		secret:  false,
+		emoji:   "♻",
 	},
 	{
-		cmdType:   Link,
-		command:   "link",
-		example:   "link @Soup red",
-		shortDesc: "Link a Discord User",
-		desc:      "Manually link a Discord User to their in-game color or name",
-		args:      "<discord User> <in-game color or name>",
-		aliases:   []string{"l"},
-		secret:    false,
-		emoji:     "🔗",
+		cmdType: Link,
+		command: "link",
+		example: "link @Soup red",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Link.shortDesc",
+			Other: "Link a Discord User",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Link.desc",
+			Other: "Manually link a Discord User to their in-game color or name",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Link.args",
+			Other: "<discord User> <in-game color or name>",
+		},
+		aliases: []string{"l"},
+		secret:  false,
+		emoji:   "🔗",
 	},
 	{
-		cmdType:   Unlink,
-		command:   "unlink",
-		example:   "unlink @Soup",
-		shortDesc: "Unlink a Discord User",
-		desc:      "Manually unlink a Discord User from their in-game player",
-		args:      "<discord User>",
-		aliases:   []string{"u"},
-		secret:    false,
-		emoji:     "🚷",
+		cmdType: Unlink,
+		command: "unlink",
+		example: "unlink @Soup",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Unlink.shortDesc",
+			Other: "Unlink a Discord User",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Unlink.desc",
+			Other: "Manually unlink a Discord User from their in-game player",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Unlink.args",
+			Other: "<discord User>",
+		},
+		aliases: []string{"u"},
+		secret:  false,
+		emoji:   "🚷",
 	},
 	{
-		cmdType:   Track,
-		command:   "track",
-		example:   "track Among Us Voice",
-		shortDesc: "Track a voice channel",
-		desc:      "Tell the bot which voice channel you'll be playing in",
-		args:      "<voice channel name>",
-		aliases:   []string{"t"},
-		secret:    false,
-		emoji:     "📌",
+		cmdType: Track,
+		command: "track",
+		example: "track Among Us Voice",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Track.shortDesc",
+			Other: "Track a voice channel",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Track.desc",
+			Other: "Tell the bot which voice channel you'll be playing in",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Track.args",
+			Other: "<voice channel name>",
+		},
+		aliases: []string{"t"},
+		secret:  false,
+		emoji:   "📌",
 	},
 	{
-		cmdType:   Force,
-		command:   "force",
-		example:   "force task",
-		shortDesc: "Force the bot to transition",
-		desc:      "Force the bot to transition to another game stage, if it doesn't transition properly",
-		args:      "<phase name> (task, discuss, or lobby / t,d, or l)",
-		aliases:   []string{"f"},
-		secret:    false,
-		emoji:     "📢",
+		cmdType: Force,
+		command: "force",
+		example: "force task",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Force.shortDesc",
+			Other: "Force the bot to transition",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Force.desc",
+			Other: "Force the bot to transition to another game stage, if it doesn't transition properly",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Force.args",
+			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
+		},
+		aliases: []string{"f"},
+		secret:  false,
+		emoji:   "📢",
 	},
 	{
-		cmdType:   Settings,
-		command:   "settings",
-		example:   "settings commandPrefix !",
-		shortDesc: "Adjust bot settings",
-		desc:      "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
-		args:      "<setting> <value>",
-		aliases:   []string{"s"},
-		secret:    false,
-		emoji:     "⚙",
+		cmdType: Settings,
+		command: "settings",
+		example: "settings commandPrefix !",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Settings.shortDesc",
+			Other: "Adjust bot settings",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Settings.desc",
+			Other: "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Settings.args",
+			Other: "<setting> <value>",
+		},
+		aliases: []string{"s"},
+		secret:  false,
+		emoji:   "⚙",
 	},
 	{
-		cmdType:   Log,
-		command:   "log",
-		example:   "log something bad happened",
-		shortDesc: "Log a weird event",
-		desc:      "Log if something bad happened, so you can find the event in your logs later",
-		args:      "<message>",
-		aliases:   []string{"log"},
-		secret:    false,
-		emoji:     "⁉",
+		cmdType: Log,
+		command: "log",
+		example: "log something bad happened",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Log.shortDesc",
+			Other: "Log a weird event",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Log.desc",
+			Other: "Log if something bad happened, so you can find the event in your logs later",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Log.args",
+			Other: "<message>",
+		},
+		aliases: []string{"log"},
+		secret:  false,
+		emoji:   "⁉",
 	},
 	{
-		cmdType:   Cache,
-		command:   "cache",
-		example:   "cache @Soup",
-		shortDesc: "View cached usernames",
-		desc:      "View a player's cached in-game names, and/or clear them",
-		args:      "<player> (optionally, \"clear\")",
-		aliases:   []string{"cache"},
-		secret:    false,
-		emoji:     "📖",
+		cmdType: Cache,
+		command: "cache",
+		example: "cache @Soup",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Cache.shortDesc",
+			Other: "View cached usernames",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Cache.desc",
+			Other: "View a player's cached in-game names, and/or clear them",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Cache.args",
+			Other: "<player> (optionally, \"clear\")",
+		},
+		aliases: []string{"cache"},
+		secret:  false,
+		emoji:   "📖",
 	},
 	{
-		cmdType:   ShowMe,
-		command:   "showme",
-		example:   "showme",
-		shortDesc: "Show player data",
-		desc:      "Send all the player data for the User issuing the command",
-		args:      "None",
-		aliases:   []string{"sm"},
-		secret:    false,
-		emoji:     "🔍",
+		cmdType: ShowMe,
+		command: "showme",
+		example: "showme",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.shortDesc",
+			Other: "Show player data",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.desc",
+			Other: "Send all the player data for the User issuing the command",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.ShowMe.args",
+			Other: "None",
+		},
+		aliases: []string{"sm"},
+		secret:  false,
+		emoji:   "🔍",
 	},
 	{
-		cmdType:   ForgetMe,
-		command:   "forgetme",
-		example:   "forgetme",
-		shortDesc: "Delete player data",
-		desc:      "Delete all the data associated with the User issuing the command",
-		args:      "None",
-		aliases:   []string{"fm"},
-		secret:    false,
-		emoji:     "🗑",
+		cmdType: ForgetMe,
+		command: "forgetme",
+		example: "forgetme",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.shortDesc",
+			Other: "Delete player data",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.desc",
+			Other: "Delete all the data associated with the User issuing the command",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.ForgetMe.args",
+			Other: "None",
+		},
+		aliases: []string{"fm"},
+		secret:  false,
+		emoji:   "🗑",
 	},
 	{
-		cmdType:   DebugState,
-		command:   "debugstate",
-		example:   "debugstate",
-		shortDesc: "View the full state of the Discord Guild Data",
-		desc:      "View the full state of the Discord Guild Data",
-		args:      "None",
-		aliases:   []string{"ds"},
-		secret:    true,
+		cmdType: DebugState,
+		command: "debugstate",
+		example: "debugstate",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.DebugState.shortDesc",
+			Other: "View the full state of the Discord Guild Data",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.DebugState.desc",
+			Other: "View the full state of the Discord Guild Data",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.DebugState.args",
+			Other: "None",
+		},
+		aliases: []string{"ds"},
+		secret:  true,
 	},
 	{
-		cmdType:   Ascii,
-		command:   "ascii",
-		example:   "ascii",
-		shortDesc: "Print an ASCII crewmate",
-		desc:      "Print an ASCII crewmate",
-		args:      "None",
-		aliases:   []string{"ascii"},
-		secret:    true,
+		cmdType: Ascii,
+		command: "ascii",
+		example: "ascii",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.shortDesc",
+			Other: "Print an ASCII crewmate",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.desc",
+			Other: "Print an ASCII crewmate",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.args",
+			Other: "None",
+		},
+		aliases: []string{"ascii"},
+		secret:  true,
 	},
 	{
 		cmdType:   Null,
 		command:   "",
 		example:   "",
-		shortDesc: "",
-		desc:      "",
-		args:      "",
+		shortDesc: nil,
+		desc:      nil,
+		args:      nil,
 		aliases:   []string{""},
 		secret:    true,
 	},
 }
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed {
+func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	if cmd.cmdType == Settings {
-		return settingResponse(prefix, AllSettings)
+		return settingResponse(prefix, AllSettings, sett)
 	}
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       cmd.emoji + " " + strings.Title(cmd.command),
-		Description: cmd.desc,
+		Description: sett.LocalizeMessage(cmd.desc),
 		Timestamp:   "",
 		Color:       15844367, //GOLD
 		Image:       nil,
@@ -251,18 +397,27 @@ func ConstructEmbedForCommand(prefix string, cmd Command) discordgo.MessageEmbed
 		Provider:    nil,
 		Author:      nil,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
-				Name:   "Example",
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
+					Other: "Example",
+				}),
 				Value:  "`" + fmt.Sprintf("%s %s", prefix, cmd.example) + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
-				Name:   "Arguments",
-				Value:  "`" + cmd.args + "`",
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Arguments",
+					Other: "Arguments",
+				}),
+				Value:  "`" + sett.LocalizeMessage(cmd.args) + "`",
 				Inline: false,
 			},
-			&discordgo.MessageEmbedField{
-				Name:   "Aliases",
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.ConstructEmbedForCommand.Fields.Aliases",
+					Other: "Aliases",
+				}),
 				Value:  strings.Join(cmd.aliases, ", "),
 				Inline: false,
 			},
@@ -303,30 +458,31 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	if cmd.cmdType != Null {
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.command, m.Author.ID))
-
 	}
 
 	switch cmd.cmdType {
 	case Help:
 		if len(args[1:]) == 0 {
-			embed := helpResponse(Version, prefix, AllCommands)
+			embed := helpResponse(Version, prefix, AllCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-
 		} else {
 			cmd = GetCommand(args[1])
 			if cmd.cmdType != Null {
-				embed := ConstructEmbedForCommand(prefix, cmd)
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
-				s.ChannelMessageSend(m.ChannelID, "I didn't recognize that command! View `help` for all available commands!")
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Help.notFound",
+					Other: "I didn't recognize that command! View `help` for all available commands!",
+				}))
 			}
 		}
 		break
 
 	case New:
-		room, region := getRoomAndRegionFromArgs(args[1:])
+		room, region := getRoomAndRegionFromArgs(args[1:], sett)
 
-		bot.handleNewGameMessage(s, m, g, room, region)
+		bot.handleNewGameMessage(s, m, g, sett, room, region)
 		break
 
 	case End:
@@ -352,7 +508,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		dgs.Running = !dgs.Running
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-		dgs.Edit(s, bot.gameStateResponse(dgs))
+		dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		break
 
 	case Refresh:
@@ -363,7 +519,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		dgs.DeleteGameStateMsg(s) //delete the old message
 
 		//create a new instance of the new one
-		dgs.CreateMessage(s, bot.gameStateResponse(dgs), m.ChannelID, dgs.GameStateMsg.LeaderID)
+		dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 		//add the emojis to the refreshed message if in the right stage
@@ -377,7 +533,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Link:
 		if len(args[1:]) < 2 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -387,13 +543,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			bot.linkPlayer(s, dgs, args[1:])
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		}
 		break
 
 	case Unlink:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 
@@ -411,14 +567,14 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				//update the state message to reflect the player leaving
-				dgs.Edit(s, bot.gameStateResponse(dgs))
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			}
 		}
 		break
 
 	case Track:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			channelName := strings.Join(args[1:], " ")
@@ -432,21 +588,24 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if lock == nil {
 				break
 			}
-			dgs.trackChannel(channelName, channels)
+			dgs.trackChannel(channelName, channels, sett)
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(s, bot.gameStateResponse(dgs))
+			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 		}
 		break
 
 	case Force:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			phase := getPhaseFromString(args[1])
 			if phase == game.UNINITIALIZED {
-				s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't understand the game phase you tried to force")
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.Force.UNINITIALIZED",
+					Other: "Sorry, I didn't understand the game phase you tried to force",
+				}))
 			} else {
 				log.Print("FORCE IS BROKEN!")
 			}
@@ -464,7 +623,7 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 
 	case Cache:
 		if len(args[1:]) == 0 {
-			embed := ConstructEmbedForCommand(prefix, cmd)
+			embed := ConstructEmbedForCommand(prefix, cmd, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		} else {
 			userID, err := extractUserIDFromMention(args[1])
@@ -476,9 +635,16 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 			if len(args[2:]) == 0 {
 				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
 				if len(cached) == 0 {
-					s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for that user!")
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.emptyCachedNames",
+						Other: "I don't have any cached player names stored for that user!",
+					}))
 				} else {
-					buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.cachedNames",
+						Other: "Cached in-game names:",
+					})))
+					buf.WriteString("\n```\n")
 					for n := range cached {
 						buf.WriteString(fmt.Sprintf("%s\n", n))
 					}
@@ -490,26 +656,39 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all cached names for that user!")
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Cache.Success",
+						Other: "Successfully deleted all cached names for that user!",
+					}))
 				}
 			}
 		}
 
 	case ShowMe:
 		if m.Author != nil {
-			sett := bot.StorageInterface.GetUserSettings(m.Author.ID)
-			if sett == nil {
-				s.ChannelMessageSend(m.ChannelID, "I don't have any settings stored for you!")
-			} else {
-				embed := sett.ToEmbed()
+
+			if settUser := bot.StorageInterface.GetUserSettings(m.Author.ID); settUser != nil {
+				embed := settUser.ToEmbed(sett)
 				sendMessageDM(s, m.Author.ID, embed)
+			} else {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.emptySettings",
+					Other: "I don't have any settings stored for you!",
+				}))
 			}
 
 			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
 			if len(cached) == 0 {
-				s.ChannelMessageSend(m.ChannelID, "I don't have any cached player names stored for you!")
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
+					Other: "I don't have any cached player names stored for you!",
+				}))
 			} else {
-				buf := bytes.NewBuffer([]byte("Cached in-game names:\n```\n"))
+				buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.ShowMe.cachedNames",
+					Other: "Cached in-game names:",
+				})))
+				buf.WriteString("\n```\n")
 				for n := range cached {
 					buf.WriteString(fmt.Sprintf("%s\n", n))
 				}
@@ -528,7 +707,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 				if err != nil {
 					log.Println(err)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Successfully deleted all player data for <@"+m.Author.ID+">")
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ForgetMe.Success",
+						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
+					},
+						map[string]interface{}{
+							"AuthorID": m.Author.ID,
+						}))
 				}
 			}
 		}
@@ -555,8 +740,13 @@ func (bot *Bot) HandleCommand(sett *storage.GuildSettings, s *discordgo.Session,
 		s.ChannelMessageSend(m.ChannelID, AsciiCrewmate)
 		break
 	default:
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I didn't understand that command! Please see `%s help` for commands", prefix))
-		break
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.HandleCommand.default",
+			Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
+		},
+			map[string]interface{}{
+				"CommandPrefix": prefix,
+			}))
 	}
 	deleteMessage(s, m.ChannelID, m.Message.ID)
 }

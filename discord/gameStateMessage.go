@@ -1,9 +1,10 @@
 package discord
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const DeferredEditSeconds = 1

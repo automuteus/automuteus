@@ -3,11 +3,12 @@ package discord
 import (
 	"container/heap"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/storage"
 )
 
 type HandlePriority int
