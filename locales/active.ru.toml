@@ -236,11 +236,11 @@ other = "любой голосовой канал!"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "the **{{.channelName}}** voice channel!"
+other = "голосовом канале **{{.channelName}}**!"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Unlinked"
+other = "Несвязанный"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-9027bdbf87393b60e86fab37eab7a874cde292c9"
@@ -345,6 +345,102 @@ other = "Введи `{{.CommandPrefix}} settings <setting>` чтобы изме�
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Настройки"
+
+["settings.AllSettings.AdminUserIDs.args"]
+hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
+other = "<User @ mentions>..."
+
+["settings.AllSettings.AdminUserIDs.desc"]
+hash = "sha1-285212fa2b90d1548b9e7ea526dacead41366744"
+other = "Укажите, какие отдельные пользователи имеют разрешения на вызов бота"
+
+["settings.AllSettings.AdminUserIDs.shortDesc"]
+hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
+other = "Админы бота"
+
+["settings.AllSettings.Delays.args"]
+hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
+other = "<start phase> <end phase> <delay>"
+
+["settings.AllSettings.Delays.desc"]
+hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
+other = "Укажите задержки для автоматического мута/оглушения между этапами игры, например лобби->задачи"
+
+["settings.AllSettings.Delays.shortDesc"]
+hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
+other = "Задержки между этапами"
+
+["settings.AllSettings.Nicknames.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.Nicknames.desc"]
+hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
+other = "Укажите, должен ли бот переименовывать пользователей Discord в соответствии с их игровыми именами или нет"
+
+["settings.AllSettings.Nicknames.shortDesc"]
+hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
+other = "Бот переименовывает пользователей Discord"
+
+["settings.AllSettings.Prefix.args"]
+hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
+other = "<prefix>"
+
+["settings.AllSettings.Prefix.desc"]
+hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
+other = "Измените префикс, который бот использует для обнаружения команд"
+
+["settings.AllSettings.Prefix.shortDesc"]
+hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
+other = "Префикс бота"
+
+["settings.AllSettings.RoleIDs.args"]
+hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
+other = "<role @ mentions>..."
+
+["settings.AllSettings.RoleIDs.desc"]
+hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
+other = "Укажите, какие роли имеют разрешения на вызов бота"
+
+["settings.AllSettings.RoleIDs.shortDesc"]
+hash = "sha1-b9197f2c939d1e8db05d1cf694453e2a67146ef2"
+other = "Администраторы ботов по ролям"
+
+["settings.AllSettings.TrackedChannel.args"]
+hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
+other = "<voice channel name>"
+
+["settings.AllSettings.TrackedChannel.desc"]
+hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
+other = "Изменить отслеживаемый голосовой канал По умолчанию"
+
+["settings.AllSettings.TrackedChannel.shortDesc"]
+hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
+other = "Отслеживаемый голосовой канал По умолчанию"
+
+["settings.AllSettings.UnmuteDead.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.UnmuteDead.desc"]
+hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
+other = "Укажите, должен ли бот мгновенно размутить игроков после смерти. **ВНИМАНИЕ. Утечка информации!**"
+
+["settings.AllSettings.UnmuteDead.shortDesc"]
+hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
+other = "Бот размутит игроков после смерти"
+
+["settings.AllSettings.VoiceRules.args"]
+hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
+other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
+
+["settings.AllSettings.VoiceRules.desc"]
+hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
+other = "Укажите правила мута/оглушения для игры, в зависимости от стадии и живой/мертвый игроков. Приведенный пример замутит мертвых игроков на этапе выполнения заданий"
+
+["settings.AllSettings.VoiceRules.shortDesc"]
+hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
+other = "Правила мата/оглушеня"
 
 ["settings.CommandPrefixSetting.tooLong"]
 hash = "sha1-1cd58be6e5fe97c9ad8a6547e15054956b58d55c"
