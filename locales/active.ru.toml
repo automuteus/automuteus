@@ -336,7 +336,7 @@ other = "Отслеживается"
 
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-7edd74af54d49dde68ab78c915fe640c9e81b8f9"
-other = "\n**Бот приостановлен!**\n\n"
+other = "\n⚠**Бот приостановлен!**⚠\n\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"

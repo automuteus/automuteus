@@ -82,7 +82,7 @@
 "responses.lobbyMetaEmbedFields.Region" = "Region"
 "responses.lobbyMetaEmbedFields.RoomCode" = "Room Code"
 "responses.lobbyMetaEmbedFields.Tracking" = "Tracking"
-"responses.makeDescription.GameNotRunning" = "\\n**Bot is Paused!**\\n\\n"
+"responses.makeDescription.GameNotRunning" = "\\n⚠**Bot is Paused!**⚠\\n\\n"
 "responses.makeDescription.author" = "<@{{.author}}> is running an Among Us game!\\nThe game is happening in "
 "responses.menuMessage.Linked.FooterText" = "(Enter a game lobby in Among Us to start the match)"
 "responses.menuMessage.Title" = "Main Menu"

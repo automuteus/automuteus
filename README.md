@@ -49,10 +49,10 @@ Works in conjunction with [amonguscapture](https://github.com/denverquane/amongu
 
 Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
 
-# ⚠️ Basic Requirements ⚠️
+# ⚠ Basic Requirements ⚠️
 
 1. The Capture application only supports the **Non-Beta Official Steam** release of the game
-2. The Capture application must be run on a Windows PC. The program **CANNOT** be run directly on mobile phones, so you will need 1 or more players on PC in every match.
+2. The Capture application must be run on a Windows PC. The program **CANNOT** be run directly on mobile phones, so you will need 1 player running the capture in each match
 
 # Quickstart and Demo (click the image):
 

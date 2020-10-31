@@ -43,10 +43,6 @@ func (gs *GuildSettings) LocalizeMessage(args ...interface{}) string {
 	return locale.LocalizeMessage(args...)
 }
 
-func (gs *GuildSettings) EmptyAdminAndRolePerms() bool {
-	return len(gs.AdminUserIDs) == 0 && len(gs.PermissionRoleIDs) == 0
-}
-
 func (gs *GuildSettings) HasAdminPerms(user *discordgo.User) bool {
 	if len(gs.AdminUserIDs) == 0 || user == nil {
 		return false

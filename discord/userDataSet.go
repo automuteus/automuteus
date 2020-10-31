@@ -28,12 +28,10 @@ func (dgs *DiscordGameState) GetCountLinked() int {
 func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData) bool {
 	name := strings.ReplaceAll(strings.ToLower(data.Name), " ", "")
 	for userID, v := range dgs.UserData {
-		if v.InGameName == game.UnlinkedPlayerName {
-			if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
-				v.Link(data)
-				dgs.UserData[userID] = v
-				return true
-			}
+		if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
+			v.Link(data)
+			dgs.UserData[userID] = v
+			return true
 		}
 	}
 	return false

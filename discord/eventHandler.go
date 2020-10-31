@@ -126,10 +126,11 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 		defer bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 		if player.Disconnected || player.Action == game.LEFT {
-			log.Println("I detected that " + player.Name + " disconnected or left! " +
-				"I'm removing their linked game data; they will need to relink")
+			if player.Disconnected {
+				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
+				dgs.ClearPlayerDataByPlayerName(player.Name)
+			}
 
-			dgs.ClearPlayerDataByPlayerName(player.Name)
 			dgs.AmongUsData.ClearPlayerData(player.Name)
 			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 			return true

@@ -394,7 +394,7 @@ func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key s
 		return map[string]interface{}{}
 	}
 
-	log.Println(ret)
+	//log.Println(ret)
 	return ret
 }
 

@@ -192,7 +192,9 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		//we can issue mutes/deafens from ANY session, not just the primary
-		go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
+		if dgs.Running {
+			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
+		}
 	}
 	wg.Wait()
 	//relinquish the lock once we've sent all the requests

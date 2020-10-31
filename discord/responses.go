@@ -294,7 +294,7 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	if !dgs.Running {
 		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.makeDescription.GameNotRunning",
-			Other: "\n**Bot is Paused!**\n\n",
+			Other: "\n⚠**Bot is Paused!**⚠\n\n",
 		}))
 	}
 

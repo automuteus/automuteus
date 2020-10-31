@@ -34,40 +34,44 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	prefix := sett.GetCommandPrefix()
 
 	if strings.HasPrefix(contents, prefix) {
-		//either BOTH the admin/roles are empty, or the User fulfills EITHER perm "bucket"
-		perms := sett.EmptyAdminAndRolePerms()
-		if !perms {
-			perms = sett.HasAdminPerms(m.Author) || sett.HasRolePerms(m.Member)
+		oldLen := len(contents)
+		contents = strings.Replace(contents, prefix+" ", "", 1)
+		if len(contents) == oldLen { //didn't have a space
+			contents = strings.Replace(contents, prefix, "", 1)
 		}
-		if !perms && g.OwnerID != m.Author.ID {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleMessageCreate.noPerms",
-				Other: "User does not have the required permissions to execute this command!",
-			}))
-		} else {
-			oldLen := len(contents)
-			contents = strings.Replace(contents, prefix+" ", "", 1)
-			if len(contents) == oldLen { //didn't have a space
-				contents = strings.Replace(contents, prefix, "", 1)
-			}
 
-			if len(contents) == 0 {
-				if len(prefix) <= 1 {
-					// prevent bot from spamming help message whenever the single character
-					// prefix is sent by mistake
-					return
-				} else {
-					embed := helpResponse(Version, prefix, AllCommands, sett)
-					s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		if len(contents) == 0 {
+			if len(prefix) <= 1 {
+				// prevent bot from spamming help message whenever the single character
+				// prefix is sent by mistake
+				return
+			} else {
+				embed := helpResponse(Version, prefix, AllCommands, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			}
+		} else {
+			args := strings.Split(contents, " ")
+
+			for i, v := range args {
+				args[i] = strings.ToLower(v)
+			}
+			isAdmin, isPermissioned := false, false
+
+			if len(sett.AdminUserIDs) == 0 || len(sett.PermissionRoleIDs) == 0 {
+				if g.OwnerID == m.Author.ID || len(sett.AdminUserIDs) == 0 {
+					//if no admin roles set, then yes the user has permissions
+					isAdmin = true
+					isPermissioned = true
+				}
+				if len(sett.PermissionRoleIDs) == 0 {
+					isPermissioned = true
 				}
 			} else {
-				args := strings.Split(contents, " ")
-
-				for i, v := range args {
-					args[i] = strings.ToLower(v)
-				}
-				bot.HandleCommand(sett, s, g, m, args)
+				isAdmin = g.OwnerID == m.Author.ID || sett.HasAdminPerms(m.Author)
+				isPermissioned = sett.HasRolePerms(m.Member)
 			}
+
+			bot.HandleCommand(isAdmin, isPermissioned, sett, s, g, m, args)
 		}
 	}
 }
@@ -187,7 +191,9 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			nick = ""
 		}
 
-		go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
+		if dgs.Running {
+			go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
+		}
 	}
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
