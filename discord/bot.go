@@ -280,8 +280,8 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 		return
 	}
 
-	userID := getMemberFromString(s, dgs.GuildID, args[0])
-	if userID == "" {
+	userID, err := extractUserIDFromMention(args[0])
+	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}
 
@@ -300,7 +300,7 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 		auData, found = dgs.AmongUsData.GetByName(combinedArgs)
 	}
 	if found {
-		found = dgs.AttemptPairingByMatchingNames(auData)
+		found = dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
 		if found {
 			log.Printf("Successfully linked %s to a color\n", userID)
 			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)

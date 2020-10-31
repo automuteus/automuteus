@@ -308,8 +308,8 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 				// User added a double space by accident, ignore it
 				continue
 			}
-			ID := getMemberFromString(s, m.GuildID, userName)
-			if ID == "" {
+			ID, err := extractUserIDFromMention(userName)
+			if ID == "" || err != nil {
 				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", userName))
 				continue
 			}
