@@ -1,0 +1,12 @@
+.dockerignore
+.github
+.gitignore
+.goreleaser.yaml
+amongusdiscord.xml
+app.json
+Dockerfile
+LICENSE
+renovate.json
+TODO.org
+
+*.md
