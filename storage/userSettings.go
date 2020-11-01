@@ -10,13 +10,10 @@ import (
 )
 
 type UserSettings struct {
-	CacheNames bool `json:"cacheNames"`
 }
 
 func MakeUserSettings() *UserSettings {
-	return &UserSettings{
-		CacheNames: true,
-	}
+	return &UserSettings{}
 }
 
 func (userSettings *UserSettings) ToEmbed(sett *GuildSettings) *discordgo.MessageEmbed {
