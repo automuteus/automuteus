@@ -240,6 +240,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	switch phase {
 	case game.MENU:
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+		bot.applyToAll(dgs, false, false)
 		go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
 		break
 	case game.LOBBY:

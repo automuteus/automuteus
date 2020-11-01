@@ -303,8 +303,9 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 		dgs.UserData[v] = userData
 	}
 
-	//DON'T supply the lock... cheeky cheeky way to prevent the voice change event handling from firing
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
+	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 
 	log.Println("Done saving guild data")
 }

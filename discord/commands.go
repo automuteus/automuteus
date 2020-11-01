@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -24,6 +25,7 @@ const (
 	Link
 	Unlink
 	Track
+	UnmuteAll
 	Force
 	Settings
 	Log
@@ -228,6 +230,28 @@ var AllCommands = []Command{
 		permissionSetting: true,
 	},
 	{
+		cmdType: UnmuteAll,
+		command: "unmuteall",
+		example: "unmuteall",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.UnmuteAll.shortDesc",
+			Other: "Force the bot to unmute all",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.UnmuteAll.desc",
+			Other: "Force the bot to unmute all linked players",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.UnmuteAll.args",
+			Other: "None",
+		},
+		aliases:           []string{"unmute", "ua"},
+		secret:            false,
+		emoji:             "🔊",
+		adminSetting:      false,
+		permissionSetting: true,
+	},
+	{
 		cmdType: Force,
 		command: "force",
 		example: "force task",
@@ -416,11 +440,11 @@ var AllCommands = []Command{
 }
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	if cmd.cmdType == Settings {
 		return settingResponse(prefix, AllSettings, sett)
 	}
-	return discordgo.MessageEmbed{
+	return &discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       cmd.emoji + " " + strings.Title(cmd.command),
@@ -517,7 +541,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				cmd = GetCommand(args[1])
 				if cmd.cmdType != Null {
 					embed := ConstructEmbedForCommand(prefix, cmd, sett)
-					s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				} else {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Help.notFound",
@@ -582,7 +606,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case Link:
 			if len(args[1:]) < 2 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 				if lock == nil {
@@ -598,7 +622,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case Unlink:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 
 				userID, err := extractUserIDFromMention(args[1])
@@ -623,7 +647,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case Track:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				channelName := strings.Join(args[1:], " ")
 
@@ -642,11 +666,15 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			}
 			break
+		case UnmuteAll:
+			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+			bot.applyToAll(dgs, false, false)
+			break
 
 		case Force:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				phase := getPhaseFromString(args[1])
 				if phase == game.UNINITIALIZED {
@@ -655,7 +683,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						Other: "Sorry, I didn't understand the game phase you tried to force",
 					}))
 				} else {
-					log.Print("FORCE IS BROKEN!")
+					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+					if dgs.ConnectCode != "" {
+						i := strconv.FormatInt(int64(phase), 10)
+						bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
+					}
 				}
 			}
 			break
@@ -671,7 +703,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case Cache:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
@@ -732,7 +764,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				} else {
 					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.cachedNames",
-						Other: "Cached in-game names:",
+						Other: "Here's your cached in-game names:",
 					})))
 					buf.WriteString("\n```\n")
 					for n := range cached {

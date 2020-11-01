@@ -63,7 +63,7 @@ func helpResponse(isAdmin, isPermissioned bool, version, CommandPrefix string, c
 	return embed
 }
 
-func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -97,7 +97,7 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 	}
 
 	embed.Fields = fields
-	return embed
+	return &embed
 }
 
 // TODO:

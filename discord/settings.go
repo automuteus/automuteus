@@ -3,7 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
@@ -27,6 +26,7 @@ const (
 	UnmuteDead
 	Delays
 	VoiceRules
+	Show
 	NullSetting
 )
 
@@ -203,6 +203,24 @@ var AllSettings = []Setting{
 		},
 		aliases: []string{"voice", "vr"},
 	},
+	{
+		settingType: Show,
+		name:        "show",
+		example:     "show",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Show.shortDesc",
+			Other: "Show All Settings",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Show.desc",
+			Other: "Show all the Bot settings for this server",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Show.args",
+			Other: "None",
+		},
+		aliases: []string{"voice", "vr"},
+	},
 }
 
 func ConstructEmbedForSetting(value string, setting Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
@@ -272,12 +290,7 @@ func getSetting(arg string) SettingType {
 
 func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
 	if len(args) == 1 {
-		jBytes, err := json.MarshalIndent(sett, "", "  ")
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
+		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, AllSettings, sett))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
@@ -312,6 +325,14 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	case VoiceRules:
 		isValid = SettingVoiceRules(s, m, sett, args)
 		break
+	case Show:
+		jBytes, err := json.MarshalIndent(sett, "", "  ")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
+		return
 	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
@@ -348,8 +369,8 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 			}))
 		return false
 	}
-	//s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
-	//	guild.CommandPrefix(), args[2]))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
+		sett.GetCommandPrefix(), args[2]))
 	sett.SetCommandPrefix(args[2])
 	return true
 }

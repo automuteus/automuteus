@@ -33,6 +33,11 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	prefix := sett.GetCommandPrefix()
 
+	if strings.HasPrefix(m.Content, "<@!"+s.State.User.ID) {
+		s.ChannelMessageSend(m.ChannelID, "I respond to the prefix "+prefix)
+		return
+	}
+
 	if strings.HasPrefix(contents, prefix) {
 		oldLen := len(contents)
 		contents = strings.Replace(contents, prefix+" ", "", 1)

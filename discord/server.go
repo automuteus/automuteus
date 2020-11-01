@@ -2,7 +2,6 @@ package discord
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/denverquane/amongusdiscord/game"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
@@ -129,9 +128,6 @@ func (bot *Bot) socketioServer(port string) {
 			log.Println(err)
 		}
 		w.Write(jsonBytes)
-	})
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Auto-Mute Us is up and running.")
 	})
 
 	log.Printf("Serving at localhost:%s...\n", port)
