@@ -28,7 +28,7 @@ var (
 
 const DefaultURL = "http://localhost:8123"
 const DefaultServicePort = "5000"
-const DefaultSocketTimeoutSecs = 36000
+const DefaultSocketTimeoutSecs = 3600
 
 func main() {
 	//seed the rand generator (used for making connection codes)
@@ -138,6 +138,7 @@ func discordMainWrapper() error {
 		if err != nil || num < 0 {
 			return errors.New("invalid or non-numeric CAPTURE_TIMOUT provided")
 		}
+		captureTimeout = num
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 

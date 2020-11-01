@@ -1,15 +1,12 @@
 package discord
 
 import (
-	"log"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	socketio "github.com/googollee/go-socket.io"
+	"log"
+	"strings"
+	"sync"
 )
 
 const DefaultPort = "8123"
@@ -155,31 +152,6 @@ func (bot *Bot) PurgeConnection(socketID string) {
 
 	//TODO purge all the data in the database here
 
-}
-
-func (bot *Bot) InactiveGameWorker(socket socketio.Conn, c <-chan string) {
-	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
-	for {
-		select {
-		case <-timer.C:
-			log.Printf("Socket ID %s timed out with no new messages after %d seconds\n", socket.ID(), bot.captureTimeout)
-			socket.Close()
-			bot.PurgeConnection(socket.ID())
-
-			bot.ChannelsMapLock.RLock()
-			for _, v := range bot.EndGameChannels {
-				v <- EndGameMessage{EndGameType: EndAndSave}
-			}
-
-			bot.ChannelsMapLock.RUnlock()
-			timer.Stop()
-			return
-		case <-c:
-			//received true; the socket is alive
-			log.Printf("Bot inactivity timer has been reset to %d seconds\n", bot.captureTimeout)
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-		}
-	}
 }
 
 func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
@@ -349,5 +321,6 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	lock.Release()
 
+	//TODO this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }

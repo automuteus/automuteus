@@ -1,10 +1,12 @@
 <p align="center">
     <img src="assets/AutoMuteUsBanner_cropped.png" width="800">
 </p>
-
 <p align="center">
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
         <img src="https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg" />
+    </a>
+    <a href="https://github.com/denverquane/automuteus/releases/latest">
+    <img alt="GitHub release" src="https://img.shields.io/github/v/release/denverquane/automuteus" >
     </a>
     <a href="https://github.com/denverquane/amongusdiscord/graphs/contributors" alt="Contributors">
         <img src="https://img.shields.io/github/contributors/denverquane/amongusdiscord" />
@@ -21,38 +23,40 @@
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
     </a>
 </p>
-<p align="center">
-    <img alt="GitHub release" src="https://img.shields.io/github/v/release/denverquane/automuteus">
-</p>
-<p align="center">
-    Artwork provided by <a href=https://aspen-cyborg.tumblr.com/>Smiles</a>!
-</p>
-<p align="center">
-    <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot"/>
-        <img src="assets/DiscordBot_Black.gif", width=180>
-    </p>
-</p>
+
 <p align="center">
     <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot" alt="invite">
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
     </a>
 </p>
 
+# AutoMuteUs
 
-# AutoMuteUs (BETA)
+<div style="display: flex; align-item: center; justify: center;">
+<p style="">
+    <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot"/>
+        <img src="assets/DiscordBot_Black.gif", width=150>
+    </a>
+</p>
+<div style="margin-left: 2%">
+AutoMuteUs is a Discord Bot to harness Among Us game data, and automatically mute/unmute players during games!
 
-Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!
+Requires [amonguscapture](https://github.com/denverquane/amonguscapture) to capture and relay game data.
 
-Works in conjunction with [amonguscapture](https://github.com/denverquane/amonguscapture)
+Have any questions, concerns, bug reports, or just want to chat? Join our discord at https://discord.gg/ZkqZSWF!
 
-**This program is in Beta. While we are confident about the basic functionality, there will still be issues or pecularities with how the program functions! We are actively working to resolve these issues!**
+Click the "invite me" badge in the header to invite the bot to your server, or click the GIF on the left.
 
-Have any questions, concerns, bug reports, or just want to chat? Join the discord at https://discord.gg/ZkqZSWF!
+All artwork for the bot has been generously provided by <a href=https://aspen-cyborg.tumblr.com/>Smiles</a>!
 
-# ⚠ Basic Requirements ⚠️
 
-1. The Capture application only supports the **Non-Beta Official Steam** release of the game
-2. The Capture application must be run on a Windows PC. The program **CANNOT** be run directly on mobile phones, so you will need 1 player running the capture in each match
+</div>
+</div>
+
+# ⚠️ Requirements ⚠️
+
+1. You **must** run the [Capture application](https://github.com/denverquane/amonguscapture/releases/latest) on your Windows PC for the bot to work! Any Among Us games that don't have a user running the capture software will **not have automuting capabilities**!
+2. The [Capture application](https://github.com/denverquane/amonguscapture/releases) currently only supports the **Non-Beta Official Steam** release of the game.
 
 # Quickstart and Demo (click the image):
 
@@ -67,7 +71,7 @@ To start a bot game in the current channel, type the following `.au` command in 
 # Starts a game, and allows users to react to emojis to link to their in-game players
 ```
 
-Get Playing!
+The bot will send you a private message (make sure your Discord settings allow DMs from server members!) with a link that is used to sync the capture software to your game. It will also have a link to download the latest version of the capture software, if you don't have it already.
 
 If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
 
@@ -89,14 +93,14 @@ The Discord Bot uses the `.au` prefix for any commands
 | `.au pause`    | `.au p` |             | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
 | `.au log`      |         | message     | Issue a small log message that will help you find the message later, if a problem occurs                        | `.au log Something bad happened`   |
 
-*In addition to handful of more secretive Easter Egg commands...*
+_In addition to handful of more secretive Easter Egg commands..._
 
 # Self-Hosting
 
-If you would prefer to self-host the bot, the steps for doing so are provided below. 
-Self-hosting requires robust knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and any other networking and routing config specific to your hosting solution. 
+If you would prefer to self-host the bot, the steps for doing so are provided below.
+Self-hosting requires robust knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and/or any other networking and routing config specific to your hosting solution.
 
-As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can be found here:     
+As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can be found here:
 
 <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot" alt="invite">
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
@@ -117,19 +121,20 @@ Docker compose is the simplest and recommended method for self-hosting AutoMuteU
 There is a `docker-compose.yml` file in this repository that will provide all the consituent components to run AutoMuteUs.
 
 ### Steps:
+
 - Install Docker and Docker Compose on the machine you will be using to host AutoMuteUs
-- Download the `docker-compose.yml` from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template `sample.env` is provided in this repository for reference.
+- Download the `docker-compose.yml` from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template `sample.env` is provided in this repository for reference. 
 - Provide your specific Environment Variables in the `.env` file, as relevant to your configuration. Please see the Environment Variables reference further down in this Readme for details, as well as the `sample.env` provided.
 - Run `docker-compose pull`. This will download the latest built Docker images from Dockerhub that are required to run AutoMuteUs.
 - Run `docker-compose up -d` to start all the containers required for AutoMuteUs to function. The containers will now be running in the background, but you can view the logs for the containers using `docker-compose logs`, or `docker-compose logs -f` to follow along as new log entries are generated.
 
 ## unRAID
 
-unRAID hosting steps are are not updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
+unRAID hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
 
 ## Heroku
 
-Heroku hosting steps are are not updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
+Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
 
 ## Environment Variables
 

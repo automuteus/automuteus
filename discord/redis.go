@@ -15,8 +15,7 @@ var ctx = context.Background()
 
 const LockTimeoutSecs = 10
 
-//for TTL of Discord Game State (shouldn't need to last more than 12 hours)
-const SecsIn12Hrs = 43200
+const SecsPerHour = 3600
 
 type RedisInterface struct {
 	client *redis.Client
@@ -241,7 +240,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 
 	//log.Printf("Setting %s to JSON", key)
-	err = redisInterface.client.Set(ctx, key, jBytes, SecsIn12Hrs*time.Second).Err()
+	err = redisInterface.client.Set(ctx, key, jBytes, SecsPerHour*time.Second).Err()
 	if err != nil {
 		log.Println(err)
 	}
@@ -253,7 +252,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.ConnectCode != "" {
 		//log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
-		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, SecsIn12Hrs*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, SecsPerHour*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -261,7 +260,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.Tracking.ChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, SecsIn12Hrs*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, SecsPerHour*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -269,7 +268,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.GameStateMsg.MessageChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, SecsIn12Hrs*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, SecsPerHour*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -297,7 +296,7 @@ func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode s
 			return
 		}
 		log.Println("Writing active game: " + connectCode)
-		redisInterface.client.Set(ctx, key, string(jBytes), SecsIn12Hrs*time.Second)
+		redisInterface.client.Set(ctx, key, string(jBytes), SecsPerHour*time.Second)
 		return
 	} else if err != nil {
 		log.Println(err)
@@ -316,7 +315,7 @@ func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode s
 		return
 	}
 	log.Println("Appending active game: " + connectCode)
-	redisInterface.client.Set(ctx, key, string(jBytes), SecsIn12Hrs*time.Second)
+	redisInterface.client.Set(ctx, key, string(jBytes), SecsPerHour*time.Second)
 	lock.Release()
 }
 

@@ -32,15 +32,15 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 }
 
 func userSettingsKey(id HashedID) string {
-	return "amongusdiscord:user:settings" + string(id)
+	return "amongusdiscord:user:settings:" + string(id)
 }
 
 func guildSettingsKey(id HashedID) string {
-	return "amongusdiscord:guild:settings" + string(id)
+	return "amongusdiscord:guild:settings:" + string(id)
 }
 
 func userStatsKey(id HashedID) string {
-	return "amongusdiscord:user:stats" + string(id)
+	return "amongusdiscord:user:stats:" + string(id)
 }
 
 func (storageInterface *StorageInterface) GetUserSettings(userID string) *UserSettings {

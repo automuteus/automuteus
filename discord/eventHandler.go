@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
@@ -20,8 +21,10 @@ type EndGameMessage struct {
 	EndGameType EndGameType
 }
 
-func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel <-chan EndGameMessage) {
+func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
 	log.Println("Started Redis Subscription worker")
+
+	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
 	sett := bot.StorageInterface.GetGuildSettings(guildID)
 
@@ -32,7 +35,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	for {
 		select {
 		case gameMessage := <-connection.Channel():
-			log.Println(gameMessage)
+			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
+			if gameMessage == nil {
+				break
+			}
 
 			//tell the producer of the connection event that we got their message
 			bot.RedisInterface.PublishConnectUpdateAck(connectCode)
@@ -53,7 +59,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 			break
 		case gameMessage := <-lobby.Channel():
-
+			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
+			if gameMessage == nil {
+				break
+			}
 			var lobby game.Lobby
 			err := json.Unmarshal([]byte(gameMessage.Payload), &lobby)
 			if err != nil {
@@ -64,6 +73,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
 			break
 		case gameMessage := <-phase.Channel():
+			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
+			if gameMessage == nil {
+				break
+			}
 			var phase game.Phase
 			err := json.Unmarshal([]byte(gameMessage.Payload), &phase)
 			if err != nil {
@@ -73,6 +86,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			bot.processTransition(phase, dgsRequest)
 			break
 		case gameMessage := <-player.Channel():
+			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
+			if gameMessage == nil {
+				break
+			}
 			var player game.Player
 			err := json.Unmarshal([]byte(gameMessage.Payload), &player)
 			if err != nil {
@@ -86,6 +103,31 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			}
 
 			break
+		case <-timer.C:
+			timer.Stop()
+			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
+			err := connection.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			err = lobby.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			err = phase.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			err = player.Close()
+			if err != nil {
+				log.Println(err)
+			}
+			go bot.forceEndGame(dgsRequest)
+			bot.ChannelsMapLock.Lock()
+			delete(bot.EndGameChannels, connectCode)
+			bot.ChannelsMapLock.Unlock()
+
+			return
 		case k := <-endGameChannel:
 			log.Println("Redis subscriber received kill signal, closing all pubsubs")
 			err := connection.Close()
