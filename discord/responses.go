@@ -138,6 +138,11 @@ func lobbyMetaEmbedFields(tracking TrackingChannel, room, region string, playerC
 		Value:  tracking.ToStatusString(sett),
 		Inline: true,
 	}
+	//necessary with the latest checks for linked players
+	//probably still broken, though -_-
+	if linkedPlayers > playerCount {
+		linkedPlayers = playerCount
+	}
 	gameInfoFields[3] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
