@@ -179,8 +179,8 @@ func discordMainWrapper() error {
 
 	<-sc
 	bot.GracefulClose()
-	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 6 seconds")
-	time.Sleep(time.Second * time.Duration(6))
+	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
+	time.Sleep(time.Second)
 
 	bot.Close()
 	redisClient.Close()

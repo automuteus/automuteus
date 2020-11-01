@@ -188,10 +188,7 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 		ConnectCode: connCode,
 	})
 
-	log.Printf("Received graceful shutdown message, saving and shutting down in 3 seconds")
-
-	//sendMessage(s, dgs.GameStateMsg.MessageChannelID, message)
-	time.Sleep(3 * time.Second)
+	log.Printf("Received graceful shutdown message, saving and shutting down")
 
 	gsr := GameStateRequest{
 		GuildID:      dgs.GuildID,
@@ -202,6 +199,8 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 	bot.gracefulEndGame(gsr)
 
 	bot.RedisInterface.AppendToActiveGames(gsr.GuildID, gsr.ConnectCode)
+
+	log.Println("Finished gracefully shutting down")
 
 	//this is only for forceful shutdown
 	//bot.RedisInterface.DeleteDiscordGameState(dgs)
@@ -335,7 +334,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	//DON'T supply the lock... cheeky cheeky way to prevent the voice change event handling from firing
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	log.Println("Done saving guild data. Ready for shutdown")
+	log.Println("Done saving guild data")
 }
 
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
