@@ -54,6 +54,10 @@ func connectUpdateKeyAck(connCode string) string {
 	return gameKey(connCode) + ":events:connect:ack"
 }
 
+func totalGuildsKey(version string) string {
+	return "automuteus:count:guilds:v" + version
+}
+
 func gameKey(connCode string) string {
 	return "automuteus:game:" + connCode
 }
@@ -80,6 +84,19 @@ func discordKey(guildID, id string) string {
 
 func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
+}
+
+func (redisInterface *RedisInterface) IncrementGuildCounter(version string) {
+	redisInterface.client.Incr(ctx, totalGuildsKey(version))
+}
+
+func (redisInterface *RedisInterface) GetGuildCounter(version string) int {
+	count, err := redisInterface.client.Get(ctx, totalGuildsKey(version)).Int()
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	return count
 }
 
 func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {

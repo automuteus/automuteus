@@ -33,7 +33,6 @@ type Bot struct {
 	logPath string
 
 	captureTimeout int
-	guildCounter   int
 }
 
 var Version string
@@ -84,7 +83,6 @@ func MakeAndStartBot(version, commit, token, token2, url, internalPort, emojiGui
 		StorageInterface: storageInterface,
 		logPath:          logPath,
 		captureTimeout:   timeoutSecs,
-		guildCounter:     0,
 	}
 
 	dg.AddHandler(bot.handleVoiceStateChange)
@@ -182,6 +180,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
+		bot.RedisInterface.IncrementGuildCounter(Version)
 
 		//f, err := os.Create(path.Join(bot.logPath, m.Guild.ID+"_log.txt"))
 		//w := io.MultiWriter(os.Stdout)
@@ -221,7 +220,6 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				bot.ChannelsMapLock.Lock()
-				bot.guildCounter++
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 			} else if lock != nil {

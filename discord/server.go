@@ -119,7 +119,7 @@ func (bot *Bot) socketioServer(port string) {
 		data := map[string]interface{}{
 			"version":           Version,
 			"commit":            Commit,
-			"totalGuilds":       bot.guildCounter,
+			"totalGuilds":       bot.RedisInterface.GetGuildCounter(Version),
 			"activeConnections": len(bot.ConnsToGames),
 			"activeGames":       len(bot.EndGameChannels),
 		}
