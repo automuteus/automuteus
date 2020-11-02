@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
@@ -369,8 +370,16 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 			}))
 		return false
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Guild prefix changed from `%s` to `%s`. Use that from now on!",
-		sett.GetCommandPrefix(), args[2]))
+
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.CommandPrefixSetting.changes",
+		Other: "Guild prefix changed from `{{.From}}` to `{{.To}}`. Use that from now on!",
+	},
+		map[string]interface{}{
+			"From": sett.GetCommandPrefix(),
+			"To":   args[2],
+		}))
+
 	sett.SetCommandPrefix(args[2])
 	return true
 }

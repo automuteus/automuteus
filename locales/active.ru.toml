@@ -190,6 +190,18 @@ other = "Ручное разъединение пользователя Discord 
 hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
 other = "Разъединить пользователя Discord"
 
+["commands.AllCommands.UnmuteAll.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Нету"
+
+["commands.AllCommands.UnmuteAll.desc"]
+hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
+other = "Заставить бота размутить всех привязанных игроков"
+
+["commands.AllCommands.UnmuteAll.shortDesc"]
+hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
+other = "Заставить бота всех размутить"
+
 ["commands.ConstructEmbedForCommand.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
 other = "Псевдонимы"
@@ -227,8 +239,8 @@ hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "Я не распознал эту команду! Просмтри `help` для всех доступных команд!"
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "Кешированные ники:"
+hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
+other = "Вот ваши кешированные ники:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
@@ -243,8 +255,8 @@ hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
 other = "Извините, я не понял эту команду! См. справку `{{.CommandPrefix}} help` для команд"
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
-hash = "sha1-5aa3c66a8466d31f7c0ac91e0697f9656ecf9254"
-other = "любой голосовой канал!"
+hash = "sha1-20533e7acfc42e254d99d460ab065585022bde5e"
+other = "**голосовой канал не указан! Используй `.au track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
@@ -255,8 +267,8 @@ hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
 other = "Ззх"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
-hash = "sha1-9027bdbf87393b60e86fab37eab7a874cde292c9"
-other = "Любой Голосовой Канал"
+hash = "sha1-99059f9ec0c764d7c2185aca0827394e9b8199c9"
+other = "**Голосовой Канал не указан! Используй `.au track`!**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
@@ -281,6 +293,10 @@ other = "Русский"
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "У пользователя нет необходимых разрешений для выполнения этой команды!"
+
+["message_handlers.handleMessageCreate.respondPrefix"]
+hash = "sha1-e42b564d8e4151e361a31d18da3d8cea176c6013"
+other = "Я отвечаю на префикс {{.Prefix}}"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
@@ -335,7 +351,7 @@ hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
 other = "Отслеживается"
 
 ["responses.makeDescription.GameNotRunning"]
-hash = "sha1-7edd74af54d49dde68ab78c915fe640c9e81b8f9"
+hash = "sha1-86cde27b1b68172d5a2ced8c7064619ee439b61c"
 other = "\n⚠**Бот приостановлен!**⚠\n\n"
 
 ["responses.makeDescription.author"]
@@ -367,8 +383,8 @@ hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
 other = "<User @ mentions>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
-hash = "sha1-285212fa2b90d1548b9e7ea526dacead41366744"
-other = "Укажите, какие отдельные пользователи имеют разрешения на вызов бота"
+hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
+other = "Укажите, какие пользователи имеют админ права для бота"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
@@ -431,8 +447,20 @@ hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
 other = "Укажите, какие роли имеют разрешения на вызов бота"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
-hash = "sha1-b9197f2c939d1e8db05d1cf694453e2a67146ef2"
-other = "Администраторы ботов по ролям"
+hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
+other = "Операторы бота"
+
+["settings.AllSettings.Show.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Нету"
+
+["settings.AllSettings.Show.desc"]
+hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
+other = "Показать все настройки бота для этого сервера"
+
+["settings.AllSettings.Show.shortDesc"]
+hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
+other = "Показать все настройки"
 
 ["settings.AllSettings.TrackedChannel.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
@@ -469,6 +497,10 @@ other = "Укажите правила мута/оглушения для игр
 ["settings.AllSettings.VoiceRules.shortDesc"]
 hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
 other = "Правила мата/оглушеня"
+
+["settings.CommandPrefixSetting.changes"]
+hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
+other = "Префикс гильдии изменен с `{{.From}}` на `{{.To}}`. Используй с этого момента!"
 
 ["settings.CommandPrefixSetting.tooLong"]
 hash = "sha1-1cd58be6e5fe97c9ad8a6547e15054956b58d55c"

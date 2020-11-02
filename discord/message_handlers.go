@@ -34,7 +34,13 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	prefix := sett.GetCommandPrefix()
 
 	if strings.HasPrefix(m.Content, "<@!"+s.State.User.ID) {
-		s.ChannelMessageSend(m.ChannelID, "I respond to the prefix "+prefix)
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "message_handlers.handleMessageCreate.respondPrefix",
+			Other: "I respond to the prefix {{.Prefix}}",
+		},
+			map[string]interface{}{
+				"Prefix": prefix,
+			}))
 		return
 	}
 
