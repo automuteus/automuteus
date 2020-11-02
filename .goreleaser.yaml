@@ -4,9 +4,15 @@ builds:
       - linux
     goarch:
       - "386"
+      - arm
+    ignore:
+      - goos: windows
+        goarch: arm
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - format: binary
-    name_template: "{{ .ProjectName }}_{{ .Os }}"
+    replacements:
+      "386": 32bit
+      "arm": arm_raspberrypi
 checksum:
   disable: true
