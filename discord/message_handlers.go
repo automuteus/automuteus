@@ -59,8 +59,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			isAdmin = true
 			isPermissioned = true
 		} else {
-			isAdmin = sett.HasAdminPerms(m.Author)
-			isPermissioned = sett.HasRolePerms(m.Member)
+			isAdmin = len(sett.AdminUserIDs) == 0 || sett.HasAdminPerms(m.Author)
+			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
 		}
 
 		if len(contents) == 0 {
