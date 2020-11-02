@@ -41,6 +41,10 @@
       "CAPTURE_TIMEOUT": {
         "description": "How many seconds of no capture events received before the Bot terminates the associated game/connection. Defaults to 600 seconds.",
         "required": false
+      },
+      "BOT_LANG": {
+        "description": "The bot localization language in Discord. By default en.",
+        "required": false
       }
     }
   }

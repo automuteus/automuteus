@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  automuteus:
+    image: denverquane/amongusdiscord:${BRANCH}
+    restart: always
+    ports:
+      # 5000 is the default service port, 8123 is the default port for the capture
+      # if your HOST is non-8123, and/or you use a different port for the SERVICE_PORT,
+      # be sure to change them here, too!
+
+      # Format is HostPort:ContainerPort
+      - 5000:5000
+      - 8123:8123
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2}
+      - HOST=${HOST}
+      - REDIS_ADDRESS=redis:6379
+      # Add other variables as desired here. Either explicitly (like the REDIS_ADDRESS above is),
+      # or by providing an equivalent mapping in the `.env` file
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    restart: always
