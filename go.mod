@@ -6,7 +6,7 @@ go 1.15
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/bsm/redislock v0.6.0
+	github.com/bsm/redislock v0.7.0
 	github.com/bwmarrin/discordgo v0.22.0
 	github.com/go-redis/redis/v8 v8.3.3
 	github.com/googollee/go-socket.io v1.4.4
