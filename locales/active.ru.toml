@@ -383,8 +383,8 @@ hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
 other = "<User @ mentions>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
-hash = "sha1-285212fa2b90d1548b9e7ea526dacead41366744"
-other = "Укажите, какие отдельные пользователи имеют разрешения на вызов бота"
+hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
+other = "Укажите, какие пользователи имеют админ права для бота"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
@@ -447,8 +447,8 @@ hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
 other = "Укажите, какие роли имеют разрешения на вызов бота"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
-hash = "sha1-b9197f2c939d1e8db05d1cf694453e2a67146ef2"
-other = "Администраторы ботов по ролям"
+hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
+other = "Операторы бота"
 
 ["settings.AllSettings.Show.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
