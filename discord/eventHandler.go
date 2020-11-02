@@ -2,12 +2,15 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/go-redis/redis/v8"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/automuteusbroker/broker"
 )
 
 type EndGameType int
@@ -22,103 +25,98 @@ type EndGameMessage struct {
 }
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
-	log.Println("Started Redis Subscription worker")
+	log.Println("Started Redis Subscription worker for " + connectCode)
+
+	notify := broker.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
-	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
+
 	sett := bot.StorageInterface.GetGuildSettings(guildID)
 
 	dgsRequest := GameStateRequest{
 		GuildID:     guildID,
 		ConnectCode: connectCode,
 	}
+
+	//TODO probably want a way to message backwards. If we start up brand new, prompt the broker to notify us of the connection status.
 	for {
 		select {
-		case gameMessage := <-connection.Channel():
+		case message := <-notify.Channel():
 			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
+			if message == nil {
 				break
 			}
 
-			//tell the producer of the connection event that we got their message
-			bot.RedisInterface.PublishConnectUpdateAck(connectCode)
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-			for lock == nil {
-				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-			}
-			if gameMessage.Payload == "true" {
-				dgs.Linked = true
-			} else {
-				dgs.Linked = false
-			}
-			dgs.ConnectCode = connectCode
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+			//anytime we get a notification message, continue pulling messages off the list until there are no more
+			for {
+				job, err := broker.PopJob(ctx, bot.RedisInterface.client, connectCode)
+				if err == redis.Nil {
+					break
+				} else if err != nil {
+					log.Println(err)
+					break
+				}
+				log.Println("Popped job w/ payload " + job.Payload.(string))
 
-			bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+				switch job.JobType {
+				case broker.Connection:
+					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					for lock == nil {
+						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					}
+					if job.Payload == "true" {
+						dgs.Linked = true
+					} else {
+						dgs.Linked = false
+					}
+					dgs.ConnectCode = connectCode
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+
+					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					break
+				case broker.Lobby:
+					var lobby game.Lobby
+					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
+					break
+				case broker.State:
+					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					bot.processTransition(game.Phase(num), dgsRequest)
+					break
+				case broker.Player:
+					var player game.Player
+					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
+					if shouldHandleTracked {
+						bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+					}
+
+					break
+				}
+			}
 			break
-		case gameMessage := <-lobby.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var lobby game.Lobby
-			err := json.Unmarshal([]byte(gameMessage.Payload), &lobby)
-			if err != nil {
-				log.Println(err)
-				break
-			}
 
-			bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
-			break
-		case gameMessage := <-phase.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var phase game.Phase
-			err := json.Unmarshal([]byte(gameMessage.Payload), &phase)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			bot.processTransition(phase, dgsRequest)
-			break
-		case gameMessage := <-player.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var player game.Player
-			err := json.Unmarshal([]byte(gameMessage.Payload), &player)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-
-			shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
-			if shouldHandleTracked {
-				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
-			}
-
-			break
 		case <-timer.C:
 			timer.Stop()
 			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
-			err := connection.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = lobby.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = phase.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = player.Close()
+			err := notify.Close()
 			if err != nil {
 				log.Println(err)
 			}
@@ -130,19 +128,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			return
 		case k := <-endGameChannel:
 			log.Println("Redis subscriber received kill signal, closing all pubsubs")
-			err := connection.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = lobby.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = phase.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = player.Close()
+			err := notify.Close()
 			if err != nil {
 				log.Println(err)
 			}

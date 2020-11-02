@@ -258,7 +258,11 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		port := ":" + match[urlregex.SubexpIndex("port")]
 
 		if port == ":" {
-			port = ":" + bot.internalPort
+			if secure {
+				port = ":443"
+			} else {
+				port = ":80"
+			}
 		}
 
 		insecure := "?insecure"

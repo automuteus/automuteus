@@ -13,7 +13,7 @@ import (
 
 var ctx = context.Background()
 
-const LockTimeoutSecs = 10
+const LockTimeoutSecs = 1
 
 const SecsPerHour = 3600
 
@@ -33,33 +33,8 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func lobbyUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:lobby"
-}
-
-func phaseUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:phase"
-}
-
-func playerUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:player"
-}
-
-func connectUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:connect"
-}
-
-//used by the receiver to indicate that it saw the connection event
-func connectUpdateKeyAck(connCode string) string {
-	return gameKey(connCode) + ":events:connect:ack"
-}
-
 func totalGuildsKey(version string) string {
 	return "automuteus:count:guilds:v" + version
-}
-
-func gameKey(connCode string) string {
-	return "automuteus:game:" + connCode
 }
 
 func activeGamesKey(guildID string) string {
@@ -97,47 +72,6 @@ func (redisInterface *RedisInterface) GetGuildCounter(version string) int {
 		return 0
 	}
 	return count
-}
-
-func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
-	redisInterface.publish(lobbyUpdateKey(connectCode), lobbyJson)
-}
-
-func (redisInterface *RedisInterface) PublishPhaseUpdate(connectCode, phase string) {
-	redisInterface.publish(phaseUpdateKey(connectCode), phase)
-}
-
-func (redisInterface *RedisInterface) PublishPlayerUpdate(connectCode, playerJson string) {
-	redisInterface.publish(playerUpdateKey(connectCode), playerJson)
-}
-
-func (redisInterface *RedisInterface) PublishConnectUpdate(connectCode, connect string) {
-	redisInterface.publish(connectUpdateKey(connectCode), connect)
-}
-
-func (redisInterface *RedisInterface) PublishConnectUpdateAck(connectCode string) {
-	redisInterface.publish(connectUpdateKeyAck(connectCode), "ack")
-}
-
-func (redisInterface *RedisInterface) SubscribeConnectUpdateAck(connectCode string) *redis.PubSub {
-	return redisInterface.client.Subscribe(ctx, connectUpdateKeyAck(connectCode))
-}
-
-func (redisInterface *RedisInterface) publish(topic, message string) {
-	log.Printf("Publishing %s to %s\n", message, topic)
-	err := redisInterface.client.Publish(ctx, topic, message).Err()
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (redisInterface *RedisInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player *redis.PubSub) {
-	connect := redisInterface.client.Subscribe(ctx, connectUpdateKey(connectCode))
-	lob := redisInterface.client.Subscribe(ctx, lobbyUpdateKey(connectCode))
-	phas := redisInterface.client.Subscribe(ctx, phaseUpdateKey(connectCode))
-	play := redisInterface.client.Subscribe(ctx, playerUpdateKey(connectCode))
-
-	return connect, lob, phas, play
 }
 
 //todo this can technically be a race condition? what happens if one of these is updated while we're fetching...

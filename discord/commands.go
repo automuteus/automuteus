@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -683,11 +682,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						Other: "Sorry, I didn't understand the game phase you tried to force",
 					}))
 				} else {
-					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-					if dgs.ConnectCode != "" {
-						i := strconv.FormatInt(int64(phase), 10)
-						bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
-					}
+					//TODO fix
+					//dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+					//if dgs.ConnectCode != "" {
+					//	i := strconv.FormatInt(int64(phase), 10)
+					//	bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
+					//}
 				}
 			}
 			break

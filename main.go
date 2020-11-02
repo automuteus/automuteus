@@ -109,17 +109,6 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	internalPort := os.Getenv("PORT")
-	if internalPort == "" {
-		log.Printf("[Info] No PORT provided. Defaulting to %s\n", discord.DefaultPort)
-		internalPort = discord.DefaultPort
-	} else {
-		num, err := strconv.Atoi(internalPort)
-		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
-			return errors.New("invalid PORT (outside range [1024-65535] or 80/443) provided")
-		}
-	}
-
 	servicePort := os.Getenv("SERVICE_PORT")
 	if servicePort == "" {
 		log.Printf("[Info] No SERVICE_PORT provided. Defaulting to %s\n", DefaultServicePort)
@@ -174,9 +163,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
-
-	go discord.MessagesServer(servicePort, bot)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
 
 	<-sc
 	bot.GracefulClose()

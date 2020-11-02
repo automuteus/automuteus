@@ -9,11 +9,8 @@ import (
 	"sync"
 )
 
-const DefaultPort = "8123"
-
 type Bot struct {
-	url          string
-	internalPort string
+	url string
 
 	//mapping of socket connections to the game connect codes
 	ConnsToGames map[string]string
@@ -40,7 +37,7 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, token2, url, internalPort, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
 	Version = version
 	Commit = commit
 
@@ -72,7 +69,6 @@ func MakeAndStartBot(version, commit, token, token2, url, internalPort, emojiGui
 
 	bot := Bot{
 		url:          url,
-		internalPort: internalPort,
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
@@ -122,13 +118,7 @@ func MakeAndStartBot(version, commit, token, token2, url, internalPort, emojiGui
 
 	dg.UpdateStatusComplex(*status)
 
-	bot.Run(internalPort)
-
 	return &bot
-}
-
-func (bot *Bot) Run(port string) {
-	go bot.socketioServer(port)
 }
 
 func (bot *Bot) GracefulClose() {

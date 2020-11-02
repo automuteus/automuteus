@@ -8,9 +8,8 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/bsm/redislock v0.6.0
 	github.com/bwmarrin/discordgo v0.22.0
+	github.com/denverquane/automuteusbroker v0.0.0-20201102065755-0a277388c928
 	github.com/go-redis/redis/v8 v8.3.3
-	github.com/googollee/go-socket.io v1.4.4
-	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.3.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.1
 	golang.org/x/text v0.3.4
