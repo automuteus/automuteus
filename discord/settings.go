@@ -105,7 +105,7 @@ var AllSettings = []Setting{
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.AdminUserIDs.desc",
-			Other: "Specify which individual users have permissions to invoke the bot",
+			Other: "Specify which individual users have admin bot permissions",
 		},
 		args: &i18n.Message{
 			ID:    "settings.AllSettings.AdminUserIDs.args",
@@ -119,7 +119,7 @@ var AllSettings = []Setting{
 		example:     "permissionRoleIDs @Bot Admins @Bot Mods",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.RoleIDs.shortDesc",
-			Other: "Bot Admins by Role",
+			Other: "Bot Operators",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.RoleIDs.desc",
@@ -219,7 +219,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.Show.args",
 			Other: "None",
 		},
-		aliases: []string{"voice", "vr"},
+		aliases: []string{"sh", "s"},
 	},
 }
 
