@@ -58,9 +58,9 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 1. You **must** run the [Capture application](https://github.com/denverquane/amonguscapture/releases/latest) on your Windows PC for the bot to work! Any Among Us games that don't have a user running the capture software will **not have automuting capabilities**!
 2. The [Capture application](https://github.com/denverquane/amonguscapture/releases) currently only supports the **Non-Beta Official Steam** release of the game.
 
-# Quickstart and Demo:
+# Quickstart and Demo (click the image):
 
-Updated 3.0 Video coming soon.
+[![Quickstart](https://img.youtube.com/vi/kO4cqMKV2yI/0.jpg)](https://youtu.be/kO4cqMKV2yI)
 
 # Usage and Commands
 

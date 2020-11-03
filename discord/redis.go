@@ -13,7 +13,9 @@ import (
 
 var ctx = context.Background()
 
-const LockTimeoutSecs = 1
+const LockTimeoutSecs = 3
+const LinearBackoffMs = 200
+const MaxRetries = 10
 
 const SecsPerHour = 3600
 
@@ -38,7 +40,7 @@ func totalGuildsKey(version string) string {
 }
 
 func activeGamesKey(guildID string) string {
-	return "automuteus:discord:" + guildID + ":games"
+	return "automuteus:discord:" + guildID + ":games:set"
 }
 
 func discordKeyTextChannelPtr(guildID, channelID string) string {
@@ -61,12 +63,12 @@ func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
 }
 
-func (redisInterface *RedisInterface) IncrementGuildCounter(version string) {
-	redisInterface.client.Incr(ctx, totalGuildsKey(version))
+func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
+	redisInterface.client.SAdd(ctx, totalGuildsKey(version), storage.HashGuildID(guildID))
 }
 
-func (redisInterface *RedisInterface) GetGuildCounter(version string) int {
-	count, err := redisInterface.client.Get(ctx, totalGuildsKey(version)).Int()
+func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
+	count, err := redisInterface.client.SCard(ctx, totalGuildsKey(version)).Result()
 	if err != nil {
 		log.Println(err)
 		return 0
@@ -102,7 +104,11 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *DiscordGameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, nil)
+	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, &redislock.Options{
+		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
+		Metadata:      "",
+		Context:       nil,
+	})
 	if err == redislock.ErrNotObtained {
 		return nil, nil
 	} else if err != nil {
@@ -226,64 +232,32 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 }
 
+//TODO perform this constantly as games are started/ended
 func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
-	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, nil)
-	if err == redislock.ErrNotObtained {
-		log.Println("Lock not obtained for active games append!")
-		return
-	} else if err != nil {
-		log.Println(err)
-		return
-	}
 
-	v, err := redisInterface.client.Get(ctx, key).Result()
-	if err == redis.Nil {
-		s := []string{connectCode}
-		jBytes, err := json.Marshal(s)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		log.Println("Writing active game: " + connectCode)
-		redisInterface.client.Set(ctx, key, string(jBytes), SecsPerHour*time.Second)
-		return
-	} else if err != nil {
-		log.Println(err)
-		return
-	}
-	var games []string
-	err = json.Unmarshal([]byte(v), &games)
+	count, err := redisInterface.client.SAdd(ctx, key, connectCode).Result()
+
 	if err != nil {
 		log.Println(err)
-		return
+	} else {
+		log.Printf("Active games: %d", count)
 	}
-	games = append(games, connectCode)
-	jBytes, err := json.Marshal(games)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Println("Appending active game: " + connectCode)
-	redisInterface.client.Set(ctx, key, string(jBytes), SecsPerHour*time.Second)
-	lock.Release(ctx)
 }
 
 func (redisInterface *RedisInterface) LoadAllActiveGamesAndDelete(guildID string) []string {
 	hash := activeGamesKey(guildID)
-	v, err := redisInterface.client.Get(ctx, hash).Result()
+
+	games, err := redisInterface.client.SMembers(ctx, hash).Result()
 	if err != nil {
 		log.Println(err)
 		return []string{}
 	}
-	var games []string
-	err = json.Unmarshal([]byte(v), &games)
+
+	_, err = redisInterface.client.Del(ctx, hash).Result()
 	if err != nil {
 		log.Println(err)
-		return []string{}
 	}
-	redisInterface.client.Del(ctx, hash)
 	return games
 }
 
@@ -300,7 +274,11 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	key := discordKey(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, key+":lock", LockTimeoutSecs*time.Second, nil)
+	lock, err := locker.Obtain(ctx, key+":lock", LockTimeoutSecs*time.Second, &redislock.Options{
+		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
+		Metadata:      "",
+		Context:       nil,
+	})
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
 	} else if err != nil {

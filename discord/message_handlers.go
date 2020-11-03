@@ -53,18 +53,14 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 		isAdmin, isPermissioned := false, false
 
-		if len(sett.AdminUserIDs) == 0 || len(sett.PermissionRoleIDs) == 0 {
-			if g.OwnerID == m.Author.ID || len(sett.AdminUserIDs) == 0 {
-				//if no admin roles set, then yes the user has permissions
-				isAdmin = true
-				isPermissioned = true
-			}
-			if len(sett.PermissionRoleIDs) == 0 {
-				isPermissioned = true
-			}
+		if g.OwnerID == m.Author.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
+			//the guild owner should always have both permissions
+			//or if both permissions are still empty everyone get both
+			isAdmin = true
+			isPermissioned = true
 		} else {
-			isAdmin = g.OwnerID == m.Author.ID || sett.HasAdminPerms(m.Author)
-			isPermissioned = sett.HasRolePerms(m.Member)
+			isAdmin = len(sett.AdminUserIDs) == 0 || sett.HasAdminPerms(m.Author)
+			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
 		}
 
 		if len(contents) == 0 {
