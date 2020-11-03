@@ -36,7 +36,7 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 }
 
 func totalGuildsKey(version string) string {
-	return "automuteus:count:guilds:v" + version
+	return "automuteus:count:guilds:version-" + version
 }
 
 func activeGamesKey(guildID string) string {
@@ -64,7 +64,10 @@ func cacheHash(guildID string) string {
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
-	redisInterface.client.SAdd(ctx, totalGuildsKey(version), storage.HashGuildID(guildID))
+	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
@@ -107,7 +110,6 @@ func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRe
 	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
-		Context:       nil,
 	})
 	if err == redislock.ErrNotObtained {
 		return nil, nil
@@ -277,7 +279,6 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	lock, err := locker.Obtain(ctx, key+":lock", LockTimeoutSecs*time.Second, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
-		Context:       nil,
 	})
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
