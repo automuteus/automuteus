@@ -12,7 +12,7 @@ other = "Gibt ein ASCII Besatzungsmitglied aus"
 
 ["commands.AllCommands.Cache.args"]
 hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
-other = "<Spieler> (optional, \"clear\")")"
+other = "<Spieler> (optional, \"clear\")"
 
 ["commands.AllCommands.Cache.desc"]
 hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
