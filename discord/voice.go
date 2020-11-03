@@ -94,7 +94,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 	g, err := sm.GetPrimarySession().State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release()
+		lock.Release(ctx)
 		return
 	}
 

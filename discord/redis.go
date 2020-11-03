@@ -102,7 +102,7 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *DiscordGameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, nil)
+	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, nil)
 	if err == redislock.ErrNotObtained {
 		return nil, nil
 	} else if err != nil {
@@ -154,7 +154,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	if data == nil {
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	}
@@ -173,7 +173,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		//log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	} else {
@@ -185,7 +185,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		log.Println(err)
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	}
@@ -198,7 +198,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if lock != nil {
 		//log.Println("UNLOCKING")
-		lock.Release()
+		lock.Release(ctx)
 	}
 
 	if data.ConnectCode != "" {
@@ -229,7 +229,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, nil)
+	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, nil)
 	if err == redislock.ErrNotObtained {
 		log.Println("Lock not obtained for active games append!")
 		return
@@ -267,7 +267,7 @@ func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode s
 	}
 	log.Println("Appending active game: " + connectCode)
 	redisInterface.client.Set(ctx, key, string(jBytes), SecsPerHour*time.Second)
-	lock.Release()
+	lock.Release(ctx)
 }
 
 func (redisInterface *RedisInterface) LoadAllActiveGamesAndDelete(guildID string) []string {
@@ -300,13 +300,13 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	key := discordKey(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", LockTimeoutSecs*time.Second, nil)
+	lock, err := locker.Obtain(ctx, key+":lock", LockTimeoutSecs*time.Second, nil)
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
 	} else if err != nil {
 		log.Fatalln(err)
 	} else {
-		defer lock.Release()
+		defer lock.Release(ctx)
 	}
 
 	//delete all the pointers to the underlying -actual- discord data

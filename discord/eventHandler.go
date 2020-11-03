@@ -38,7 +38,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 		ConnectCode: connectCode,
 	}
 
-	//TODO probably want a way to message backwards. If we start up brand new, prompt the broker to notify us of the connection status.
+	//indicate to the broker that we're online and ready to start processing messages
+	broker.Ack(ctx, bot.RedisInterface.client, connectCode)
+
 	for {
 		select {
 		case message := <-notify.Channel():
@@ -218,7 +220,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 
 	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
 	if oldPhase == phase {
-		lock.Release()
+		lock.Release(ctx)
 		return
 	}
 

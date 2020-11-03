@@ -214,7 +214,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.ChannelsMapLock.Unlock()
 			} else if lock != nil {
 				//log.Println("UNLOCKING")
-				lock.Release()
+				lock.Release(ctx)
 			}
 		}
 
@@ -308,7 +308,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	dgs.AmongUsData.UpdatePhase(game.LOBBY)
 	dgs.AmongUsData.SetRoomRegion("", "")
 
-	lock.Release()
+	lock.Release(ctx)
 
 	//TODO this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
 	bot.RedisInterface.DeleteDiscordGameState(dgs)

@@ -175,7 +175,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	g, err := s.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release()
+		lock.Release(ctx)
 		return
 	}
 
