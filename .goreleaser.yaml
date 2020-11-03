@@ -1,18 +1,18 @@
-builds:
-  - goos:
-      - windows
-      - linux
-    goarch:
-      - "386"
-      - arm
-    ignore:
-      - goos: windows
-        goarch: arm
-    mod_timestamp: "{{ .CommitTimestamp }}"
-archives:
-  - format: binary
-    replacements:
-      "386": 32bit
-      "arm": arm_raspberrypi
-checksum:
-  disable: true
+#builds:
+#  - goos:
+#      - windows
+#      - linux
+#    goarch:
+#      - "386"
+#      - arm
+#    ignore:
+#      - goos: windows
+#        goarch: arm
+#    mod_timestamp: "{{ .CommitTimestamp }}"
+#archives:
+#  - format: binary
+#    replacements:
+#      "386": 32bit
+#      "arm": arm_raspberrypi
+#checksum:
+#  disable: true
