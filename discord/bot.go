@@ -180,7 +180,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-		bot.RedisInterface.IncrementGuildCounter(Version)
+		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
 
 		//f, err := os.Create(path.Join(bot.logPath, m.Guild.ID+"_log.txt"))
 		//w := io.MultiWriter(os.Stdout)
@@ -292,6 +292,11 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 		return
 	}
 	//log.Println("lock obtained for game end")
+
+	if dgs.Linked && dgs.GameStateMsg.MessageID != "" && dgs.GameStateMsg.MessageChannelID != "" {
+		sess := bot.SessionManager.GetPrimarySession()
+		sess.ChannelMessageSend(dgs.GameStateMsg.MessageChannelID, "Your game might be momentarily disrupted while I upgrade...")
+	}
 
 	dgs.Subscribed = false
 	dgs.Linked = false
