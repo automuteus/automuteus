@@ -312,7 +312,7 @@ other = "URL"
 
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "Du hast gerade neues Spiel begonnen!"
+other = "Du hast gerade ein neues Spiel begonnen!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -592,7 +592,7 @@ other = "Die Verzögerung beim Übergang von `{{.PhaseA}}` zu `{{.PhaseB}}` wurd
 
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
-other = "`{{.Number}}` ist keine gültige Zahl! Bitte versuch es erneut"
+other = "`{{.Number}}` ist keine gültige Zahl! Bitte versuche es erneut"
 
 ["settings.SettingLanguage.notFound"]
 hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
