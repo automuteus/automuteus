@@ -20,7 +20,7 @@ other = "Zeigt gespeicherte Ingamenamen eines Spielers an und/oder löscht diese
 
 ["commands.AllCommands.Cache.shortDesc"]
 hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "Zeigt gepseichere Benutzernamen"
+other = "Zeigt gespeicherte Benutzernamen"
 
 ["commands.AllCommands.DebugState.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -52,7 +52,7 @@ other = "<Name der Phase> (task, discuss, oder lobby / t,d, oder l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Zwingt den Bot zum Wechsel in eine andere Spielphase, wenn er nicht korrekt wechelt"
+other = "Zwingt den Bot zum Wechsel in eine andere Spielphase, wenn er nicht korrekt wechselt"
 
 ["commands.AllCommands.Force.shortDesc"]
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
@@ -64,11 +64,11 @@ other = "Keine"
 
 ["commands.AllCommands.ForgetMe.desc"]
 hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
-other = "Löscht alle Daten, welche mit ausführenden Benutzer in Verbindung stehen"
+other = "Löscht alle Daten, welche mit dem ausführenden Benutzer in Verbindung stehen"
 
 ["commands.AllCommands.ForgetMe.shortDesc"]
 hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
-other = "Löscht Spielderdaten"
+other = "Löscht Spielerdaten"
 
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
@@ -148,11 +148,11 @@ other = "<Einstellung> <Wert>"
 
 ["commands.AllCommands.Settings.desc"]
 hash = "sha1-2c6b4a2f31f15b0cc1c78baabd11e638c4cbb092"
-other = "Passt die Einstellungen des Bot an. Schreibe `.au settings` ohne Parameter, um mehr zu erfahren."
+other = "Passt die Einstellungen des Bots an. Schreibe `.au settings` ohne Parameter, um mehr zu erfahren."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Einstellunge des Bot anpassen"
+other = "Einstellungen des Bots anpassen"
 
 ["commands.AllCommands.ShowMe.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -216,11 +216,11 @@ other = "Beispiel"
 
 ["commands.HandleCommand.Cache.Success"]
 hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "Alle zwischengespeicherten Namen für diesen Benutzer erfolgreich gelöschen!"
+other = "Alle zwischengespeicherten Namen für diesen Benutzer erfolgreich gelöscht!"
 
 ["commands.HandleCommand.Cache.cachedNames"]
 hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "Zwischengespeicherte Ingame Namen:"
+other = "Zwischengespeicherte Ingamenamen:"
 
 ["commands.HandleCommand.Cache.emptyCachedNames"]
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
@@ -384,7 +384,7 @@ other = "<Benutzer @ Erwähnungen>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
 hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Gib an, welche einzelnen Benutzer Admin-Bot-Berechtigungen haben"
+other = "Gibt an, welche einzelnen Benutzer Admin-Bot-Berechtigungen haben"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
@@ -396,7 +396,7 @@ other = "<Startphase> <Endphase> <Verzögerung>"
 
 ["settings.AllSettings.Delays.desc"]
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "Gib die Verzögerungen für das automatische stumm/taub Wechsel zwischen den Phasen des Spiels an, wie z.B. Lobby->Aufgaben"
+other = "Gibt die Verzögerungen für das automatische stumm/taub Wechseln zwischen den Phasen des Spiels an, wie z.B. Lobby->Aufgaben"
 
 ["settings.AllSettings.Delays.shortDesc"]
 hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
@@ -444,7 +444,7 @@ other = "<Rolle @ Erwähnungen>..."
 
 ["settings.AllSettings.RoleIDs.desc"]
 hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Gib an, welche Rollen die Berechtigung haben, den Bot aufzurufen"
+other = "Gibt an, welche Rollen die Berechtigung haben, den Bot aufzurufen"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
 hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
@@ -612,7 +612,7 @@ other = "Die Lokalisierung ist eingestellt auf {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "Entschuldigung, der Sprachcode ist kurz. Verfügbare Sprachcodes: {{.Langs}}."
+other = "Entschuldigung, der Sprachcode ist zu kurz. Verfügbare Sprachcodes: {{.Langs}}."
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
