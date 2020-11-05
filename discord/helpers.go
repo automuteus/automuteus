@@ -158,6 +158,14 @@ func generateConnectCode(guildID string) string {
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 }
 
+func generateSecretKey(guildID string) string {
+	h := sha256.New()
+	h.Write([]byte(guildID))
+
+	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
+	return "Hz" + strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:14])
+}
+
 // sendMessage provides a single interface to send a message to a channel via discord
 func sendMessage(s *discordgo.Session, channelID string, message string) *discordgo.Message {
 	msg, err := s.ChannelMessageSend(channelID, message)

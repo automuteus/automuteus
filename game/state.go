@@ -73,6 +73,7 @@ const (
 	NA Region = iota
 	AS
 	EU
+	IMPOSTOR Region = 10
 )
 
 type Lobby struct {
@@ -92,6 +93,8 @@ func (r Region) ToString() string {
 		return "Europe"
 	case AS:
 		return "Asia"
+	case IMPOSTOR:
+		return "Impostor"
 	}
 	return "Unknown"
 }
