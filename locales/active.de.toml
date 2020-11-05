@@ -4,11 +4,11 @@ other = "Keine"
 
 ["commands.AllCommands.Ascii.desc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Gibt ein ASCII Besatzungsmitglied aus"
+other = "Gibt einen ASCII AmongUs-Spieler aus"
 
 ["commands.AllCommands.Ascii.shortDesc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Gibt ein ASCII Besatzungsmitglied aus"
+other = "Gibt einen ASCII AmongUs-Spieler aus"
 
 ["commands.AllCommands.Cache.args"]
 hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
@@ -20,7 +20,7 @@ other = "Zeigt gespeicherte Ingamenamen eines Spielers an und/oder löscht diese
 
 ["commands.AllCommands.Cache.shortDesc"]
 hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "Zeigt gepseichere Benutzernamen"
+other = "Zeigt gespeicherte Benutzernamen"
 
 ["commands.AllCommands.DebugState.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -52,7 +52,7 @@ other = "<Name der Phase> (task, discuss, oder lobby / t,d, oder l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Zwingt den Bot zum Wechsel in eine andere Spielphase, wenn er nicht korrekt wechelt"
+other = "Zwingt den Bot zum Wechsel in eine andere Spielphase, falls er nicht korrekt wechselt"
 
 ["commands.AllCommands.Force.shortDesc"]
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
@@ -64,15 +64,15 @@ other = "Keine"
 
 ["commands.AllCommands.ForgetMe.desc"]
 hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
-other = "Löscht alle Daten, welche mit ausführenden Benutzer in Verbindung stehen"
+other = "Löscht alle Daten, welche mit dem ausführenden Benutzer in Verbindung stehen"
 
 ["commands.AllCommands.ForgetMe.shortDesc"]
 hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
-other = "Löscht Spielderdaten"
+other = "Löscht Spielerdaten"
 
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
-other = "Keine, oder optional Befehle zum Anzeigen von Informationen über diese"
+other = "Keine, oder ein optionaler Befehl zum Anzeigen der passenden Hilfe"
 
 ["commands.AllCommands.Help.desc"]
 hash = "sha1-86ef9a3df917eb9728b9966b5beb999a1e970db5"
@@ -100,7 +100,7 @@ other = "<Nachricht>"
 
 ["commands.AllCommands.Log.desc"]
 hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
-other = "Protokolleintrag wenn etwas schlimmes passiert, damit du dieses Ereignis später im Protokoll findest"
+other = "Log-Eintrag wenn etwas komisches passiert, damit du dieses Ereignis später im Protokoll findest"
 
 ["commands.AllCommands.Log.shortDesc"]
 hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
@@ -148,11 +148,11 @@ other = "<Einstellung> <Wert>"
 
 ["commands.AllCommands.Settings.desc"]
 hash = "sha1-2c6b4a2f31f15b0cc1c78baabd11e638c4cbb092"
-other = "Passt die Einstellungen des Bot an. Schreibe `.au settings` ohne Parameter, um mehr zu erfahren."
+other = "Passt die Einstellungen des Bots an. Schreibe `{{.CommandPrefix}} settings` ohne Parameter, um mehr zu erfahren."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Einstellunge des Bot anpassen"
+other = "Einstellungen des Bots anpassen"
 
 ["commands.AllCommands.ShowMe.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -172,7 +172,7 @@ other = "<Name des Sprachkanals>"
 
 ["commands.AllCommands.Track.desc"]
 hash = "sha1-36eed0725dbf0269ba9d968d34c45259e7df6968"
-other = "Sage dem Bot, in welchem Sprachkanal du spielen wirst"
+other = "Teile dem Bot mit, in welchem Sprachkanal du Among Us spielen wirst"
 
 ["commands.AllCommands.Track.shortDesc"]
 hash = "sha1-e47592076ff1077a81570c1ddce1de4cf6e7e975"
@@ -200,7 +200,7 @@ other = "Zwingt den Bot, die Stummschaltung aller verknüpften Spieler aufzuhebe
 
 ["commands.AllCommands.UnmuteAll.shortDesc"]
 hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "Zwingt den Bot, die Stummschaltung aller aufzuheben"
+other = "Zwingt den Bot, die Stummschaltung von allen aufzuheben"
 
 ["commands.ConstructEmbedForCommand.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
@@ -236,11 +236,11 @@ other = "Erfolgreiches Löschen aller Spielerdaten für <@{{.AuthorID}}>"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
-other = "Ich habe diesen Befehl nicht erkannt! Siehe `help` für alle verfügbaren Befehle!"
+other = "Ich habe diesen Befehl nicht erkannt! Siehe `{{.CommandPrefix}} help` für alle verfügbaren Befehle!"
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
 hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
-other = "Hier sind Ihre zwischengespeicherten Ingame Namen:"
+other = "Hier sind Deine zwischengespeicherten Ingame Namen:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
@@ -256,7 +256,7 @@ other = "Entschuldigung, ich habe den Befehl nicht verstanden! Siehe `{{.Command
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-20533e7acfc42e254d99d460ab065585022bde5e"
-other = "**kein Sprachkanal! Verwende `.au track`!**"
+other = "**kein Sprachkanal! Verwende `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
@@ -268,7 +268,7 @@ other = "Nicht verbunden"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-99059f9ec0c764d7c2185aca0827394e9b8199c9"
-other = "**Kein Sprachkanal! Verwende `.au track`!**"
+other = "**Kein Sprachkanal! Verwende `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
@@ -280,11 +280,11 @@ other = "Überwache nun Sprachkanal \"{{.channelName}}\" für Automute!"
 
 ["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Nicht bereitgestellt"
+other = "Nicht festgelegt"
 
 ["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Nicht bereitgestellt"
+other = "Nicht festgelegt"
 
 ["locale.language.name"]
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
@@ -292,7 +292,7 @@ other = "Deutsch"
 
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
-other = "Der Benutzer hat nicht die erforderlichen Berechtigungen zur Ausführung dieses Befehls!"
+other = "Der Benutzer hat nicht die erforderlichen Berechtigungen, um diesen Befehl auszuführen!"
 
 ["message_handlers.handleMessageCreate.respondPrefix"]
 hash = "sha1-e42b564d8e4151e361a31d18da3d8cea176c6013"
@@ -300,7 +300,7 @@ other = "Ich antworte auf das Präfix {{.Prefix}}"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "Klick auf den folgenden Link, um Ihr Capture Programm zu verlinken: \\n <{{.hyperlink}}>\\n\\nHast du das Capture Programm nicht installiert? Neuste Version [hier]({{.downloadURL}})\\n\\nUm dein Capture Programm manuell zu verbinden:"
+other = "Klick auf den folgenden Link, um das Capture Programm zu verlinken: \\n <{{.hyperlink}}>\\n\\nHast du das Capture Programm nicht installiert? Neuste Version [hier]({{.downloadURL}})\\n\\nUm dein Capture Programm manuell zu verbinden:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -312,11 +312,11 @@ other = "URL"
 
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "Du hast gerade ein Spiel begonnen!"
+other = "Du hast gerade ein neues Spiel begonnen!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Das Github Projekt ansehen](https://github.com/denverquane/automuteus) oder [Trete unserem Discord bei](https://discord.gg/ZkqZSWF)\\n\\nSchreibe `{{.CommandPrefix}} help <Befehl>`, um mehr Informationen über diesen Befehl zu erhalten!"
+other = "[Das Github Projekt ansehen](https://github.com/denverquane/automuteus) oder [Tritt unserem Discord bei](https://discord.gg/ZkqZSWF)\\n\\nSchreibe `{{.CommandPrefix}} help <Befehl>`, um mehr Informationen über diesen Befehl zu erhalten!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a0d14755cbb5771aa9b446605b5c9f3f2810c4ee"
@@ -324,7 +324,7 @@ other = "AutoMuteUs Bot Befehle (v{{.version}}):\\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "Reagiere auf diese Nachricht mit deiner Ingame Farbe! (oder {{.emojiLeave}} zum Gehen)"
+other = "Reagiere auf diese Nachricht mit deiner Ingame Farbe! (oder {{.emojiLeave}} zum Verlassen/Entlinken)"
 
 ["responses.lobbyMessage.Title"]
 hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
@@ -344,7 +344,7 @@ other = "Region"
 
 ["responses.lobbyMetaEmbedFields.RoomCode"]
 hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
-other = "Raum-Code"
+other = "Lobby-Code"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
@@ -372,7 +372,7 @@ other = "❌**Kein Capture Programm verbunden! Klicke auf den Link in deinen DMs
 
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Schreibe `{{.CommandPrefix}} settings <Einstellung>`, um eine Einstellung von der folgenden Liste anzupassen"
+other = "Schreibe `{{.CommandPrefix}} settings <Einstellung>`, um eine Einstellung aus der folgenden Liste anzupassen"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
@@ -384,11 +384,11 @@ other = "<Benutzer @ Erwähnungen>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
 hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Gib an, welche einzelnen Benutzer Admin-Bot-Berechtigungen haben"
+other = "Gibt an, welche einzelnen Benutzer Bot-Admin-Berechtigungen haben"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
-other = "Bot Admins"
+other = "Bot-Admins"
 
 ["settings.AllSettings.Delays.args"]
 hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
@@ -396,7 +396,7 @@ other = "<Startphase> <Endphase> <Verzögerung>"
 
 ["settings.AllSettings.Delays.desc"]
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "Gib die Verzögerungen für das automatische stumm/taub Wechsel zwischen den Phasen des Spiels an, wie z.B. Lobby->Aufgaben"
+other = "Gib die Verzögerungen für den automatischen Stumm/Taub-Wechsel zwischen den Phasen des Spiels an, wie z.B. Lobby->Aufgaben"
 
 ["settings.AllSettings.Delays.shortDesc"]
 hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
@@ -436,7 +436,7 @@ other = "Ändert das Präfix, welches der Bot zur Erkennung von Befehlen verwend
 
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
-other = "Bot Präfix"
+other = "Bot-Präfix"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -444,7 +444,7 @@ other = "<Rolle @ Erwähnungen>..."
 
 ["settings.AllSettings.RoleIDs.desc"]
 hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Gib an, welche Rollen die Berechtigung haben, den Bot aufzurufen"
+other = "Gibt an, welche Rollen die Berechtigung haben, den Bot aufzurufen"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
 hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
@@ -508,7 +508,7 @@ other = "Entschuldigung, der präfix `{{.Prefix}}` ist zu lang ({{.Length}} Zeic
 
 ["settings.ConstructEmbedForSetting.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Aliasnamen"
+other = "Alias"
 
 ["settings.ConstructEmbedForSetting.Fields.Arguments"]
 hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
@@ -536,7 +536,7 @@ other = "<@{{.UserID}}> ist jetzt ein Bot-Admin!"
 
 ["settings.SettingAdminUserIDs.noBotAdmins"]
 hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
-other = "Keine Bot Admins"
+other = "Keine Bot-Admins vorhanden!"
 
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
@@ -568,7 +568,7 @@ other = "Kein standardmäßig überwachter Sprachkanal"
 
 ["settings.SettingDefaultTrackedChannel.withChannelName"]
 hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
-other = "Der Standard-Sprachkanal wurde geändert in `{{.channelName}}`. Verwende ihn von nun an!"
+other = "Der Standard-Sprachkanal wurde geändert zu `{{.channelName}}`. Verwende ihn von nun an!"
 
 ["settings.SettingDefaultTrackedChannel.withoutChannelID"]
 hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
@@ -600,19 +600,19 @@ other = "Sprache nicht gefunden! Verfügbare Sprachcodes: {{.Langs}}"
 
 ["settings.SettingLanguage.notLoaded"]
 hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "Lokalisierungsdateien wurden nicht geladen! {{.Langs}}"
+other = "Sprachen wurden nicht geladen! {{.Langs}}"
 
 ["settings.SettingLanguage.reloaded"]
 hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
-other = "Lokalisierungsdateien werden neu geladen ({{.Count}}). Verfügbare Sprachcodes: {{.Langs}}"
+other = "Sprachen werden neu geladen ({{.Count}}). Verfügbare Sprachcodes: {{.Langs}}"
 
 ["settings.SettingLanguage.set"]
 hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "Die Lokalisierung ist eingestellt auf {{.LangName}}"
+other = "Die Sprache ist eingestellt auf {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "Entschuldigung, der Sprachcode ist kurz. Verfügbare Sprachcodes: {{.Langs}}."
+other = "Entschuldigung, der Sprachcode ist zu kurz. Verfügbare Sprachcodes: {{.Langs}}."
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
@@ -660,7 +660,7 @@ other = "Ich weiß nicht, was {{.PhaseName}} ist. Die Liste der Spielphasen sind
 
 ["settings.SettingVoiceRules.enoughArgs"]
 hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Du hast nicht genug Parameter übergeben! Die korrekte Syntax ist: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
+other = "Du hast nicht genügend Parameter übergeben! Die korrekte Syntax ist: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
 
 ["settings.SettingVoiceRules.neitherAliveDead"]
 hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
