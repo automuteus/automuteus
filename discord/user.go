@@ -7,97 +7,65 @@ import (
 
 // User struct
 type User struct {
-	nick          string
-	userID        string
-	userName      string
-	discriminator string
-	originalNick  string
+	Nick          string `json:"Nick"`
+	UserID        string `json:"UserID"`
+	UserName      string `json:"UserName"`
+	Discriminator string `json:"Discriminator"`
+	OriginalNick  string `json:"OriginalNick"`
 }
 
 // UserData struct
 type UserData struct {
-	user               User
-	pendingVoiceUpdate bool
-	cachedPlayerName   string
-	auData             *game.PlayerData //we want to point to player data that isn't necessarily correlated with a player yet...
+	User         User   `json:"User"`
+	ShouldBeMute bool   `json:"ShouldBeMute"`
+	ShouldBeDeaf bool   `json:"ShouldBeDeaf"`
+	InGameName   string `json:"PlayerName"`
 }
 
 func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 	return UserData{
-		user: User{
-			nick:          nick,
-			userID:        dUser.ID,
-			userName:      dUser.Username,
-			discriminator: dUser.Discriminator,
-			originalNick:  nick,
+		User: User{
+			Nick:          nick,
+			UserID:        dUser.ID,
+			UserName:      dUser.Username,
+			Discriminator: dUser.Discriminator,
+			OriginalNick:  nick,
 		},
-		cachedPlayerName:   "",
-		pendingVoiceUpdate: false,
-		auData:             nil,
+		ShouldBeDeaf: false,
+		ShouldBeMute: false,
+		InGameName:   game.UnlinkedPlayerName,
 	}
-}
-
-// IsAlive for a user
-func (user *UserData) IsAlive() bool {
-	if user.auData != nil {
-		return user.auData.IsAlive
-	}
-	return true //Assume that users we can't correlate to among us game data are always alive (safer policy)
-}
-
-func (user *UserData) IsLinked() bool {
-	return user.auData != nil
-}
-
-func (user *UserData) IsPendingVoiceUpdate() bool {
-	return user.pendingVoiceUpdate
-}
-
-func (user *UserData) SetPendingVoiceUpdate(is bool) {
-	user.pendingVoiceUpdate = is
 }
 
 func (user *UserData) GetNickName() string {
-	return user.user.nick
+	return user.User.Nick
 }
 
-func (user *UserData) GetOriginalNickName() string {
-	return user.user.originalNick
+func (user *UserData) SetShouldBeMuteDeaf(mute, deaf bool) {
+	user.ShouldBeMute = mute
+	user.ShouldBeDeaf = deaf
 }
 
-func (user *UserData) NicknamesMatch() bool {
-	return user.user.nick == user.user.originalNick
-}
+//func (user *UserData) GetOriginalNickName() string {
+//	return user.User.OriginalNick
+//}
+//
+//func (user *UserData) NicknamesMatch() bool {
+//	return user.User.Nick == user.User.OriginalNick
+//}
 
 func (user *UserData) GetUserName() string {
-	return user.user.userName
+	return user.User.UserName
 }
 
 func (user *UserData) GetID() string {
-	return user.user.userID
+	return user.User.UserID
 }
 
 func (user *UserData) GetPlayerName() string {
-	return user.cachedPlayerName
+	return user.InGameName
 }
 
-func (user *UserData) SetPlayerData(player *game.PlayerData) {
-	if player != nil {
-		user.cachedPlayerName = player.Name
-	}
-
-	user.auData = player
-}
-
-func (user *UserData) GetColor() int {
-	if user.auData != nil {
-		return user.auData.Color
-	} else {
-		return 0
-	}
-}
-
-// AmongUsPlayerMatch determines if a player is in the game
-func (user *UserData) AmongUsPlayerMatch(player game.Player) bool {
-	return user.auData != nil && user.auData.Color == player.Color && user.auData.Name == player.Name
+func (user *UserData) Link(player game.PlayerData) {
+	user.InGameName = player.Name
 }

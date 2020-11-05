@@ -1,76 +1,54 @@
 package storage
 
 import (
-	"strings"
-	"sync"
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type UserSettings struct {
-	UserID    string   `json:"userID"`
-	UserName  string   `json:"username"`
-	GameNames []string `json:"gameNames"`
 }
 
-type UserSettingsUpdate struct {
-	UserID string
-	Type   int
-	Value  string
+func MakeUserSettings() *UserSettings {
+	return &UserSettings{}
 }
 
-type UserSettingsCollection struct {
-	users map[string]*UserSettings
-	lock  sync.RWMutex
-}
-
-const (
-	GAME_NAME = 0
-)
-
-func MakeUserSettingsCollection() *UserSettingsCollection {
-	return &UserSettingsCollection{
-		users: make(map[string]*UserSettings),
-		lock:  sync.RWMutex{},
+func (userSettings *UserSettings) ToEmbed(sett *GuildSettings) *discordgo.MessageEmbed {
+	jBytes, err := json.MarshalIndent(userSettings, "", "  ")
+	if err != nil {
+		log.Println(err)
 	}
-}
 
-func (usc *UserSettingsCollection) GetUser(userID string) (UserSettings, bool) {
-	usc.lock.RLock()
-	defer usc.lock.RUnlock()
-
-	if v, ok := usc.users[userID]; ok {
-		return *v, true
+	return &discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "userSettings.ToEmbed.Title",
+			Other: "Your Settings",
+		}),
+		Description: sett.LocalizeMessage(&i18n.Message{
+			ID:    "userSettings.ToEmbed.Description",
+			Other: "Here's all the settings I have for you",
+		}),
+		Timestamp: "",
+		Color:     3066993, //GREEN
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "userSettings.ToEmbed.FielnName",
+					Other: "Settings",
+				}),
+				Value:  fmt.Sprintf("```JSON\n%s\n```", jBytes),
+				Inline: true,
+			},
+		},
 	}
-	return UserSettings{}, false
-}
-
-func (usc *UserSettingsCollection) UpdateUser(userID string, settings UserSettings) {
-	usc.lock.Lock()
-	defer usc.lock.Unlock()
-
-	usc.users[userID] = &settings
-}
-
-//TODO this is very inefficient. n^2 based on the number of users and their cached names
-//probably better off to create a hashtable of the in-game names to the userIDs. This also guarantees a 1:1 mapping,
-//UNLIKE this implementation!
-func (usc *UserSettingsCollection) PairByName(name string) string {
-	usc.lock.RLock()
-	defer usc.lock.RUnlock()
-
-	for id, s := range usc.users {
-		if s.attemptPairingByMatchingNames(name) {
-			return id
-		}
-	}
-	return ""
-}
-
-func (us *UserSettings) attemptPairingByMatchingNames(name string) bool {
-	name = strings.ReplaceAll(strings.ToLower(name), " ", "")
-	for _, otherName := range us.GameNames {
-		if strings.ReplaceAll(strings.ToLower(otherName), " ", "") == strings.ReplaceAll(strings.ToLower(name), " ", "") {
-			return true
-		}
-	}
-	return false
 }

@@ -1,1 +1,4 @@
 TODO private channel for posting round transitions/debug info
+TODO @the bot if you forget command prefix or the like
+TODO add emoji reactions to the help message to also work as commands
+TODO include docker compose file and sample env

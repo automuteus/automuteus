@@ -2,10 +2,11 @@ package discord
 
 import (
 	"encoding/base64"
-	"github.com/denverquane/amongusdiscord/game"
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/denverquane/amongusdiscord/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -54,38 +55,13 @@ func emptyStatusEmojis() AlivenessEmojis {
 	return topMap
 }
 
-func (guild *GuildState) addSpecialEmojis(s *discordgo.Session, guildID string, serverEmojis []*discordgo.Emoji) {
-	for _, emoji := range GlobalSpecialEmojis {
-		alreadyExists := false
-		for _, v := range serverEmojis {
-			if v.Name == emoji.Name {
-				emoji.ID = v.ID
-				guild.SpecialEmojis[v.Name] = emoji
-				alreadyExists = true
-				break
-			}
-		}
-		if !alreadyExists {
-			b64 := emoji.DownloadAndBase64Encode()
-			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
-			if err != nil {
-				log.Println(err)
-			} else {
-				log.Printf("Added emoji %s successfully!\n", emoji.Name)
-				emoji.ID = em.ID
-				guild.SpecialEmojis[em.Name] = emoji
-			}
-		}
-	}
-}
-
-func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
+func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
 			if v.Name == emoji.Name {
 				emoji.ID = v.ID
-				guild.StatusEmojis[alive][i] = emoji
+				bot.StatusEmojis[alive][i] = emoji
 				alreadyExists = true
 				break
 			}
@@ -98,18 +74,10 @@ func (guild *GuildState) addAllMissingEmojis(s *discordgo.Session, guildID strin
 			} else {
 				log.Printf("Added emoji %s successfully!\n", emoji.Name)
 				emoji.ID = em.ID
-				guild.StatusEmojis[alive][i] = emoji
+				bot.StatusEmojis[alive][i] = emoji
 			}
 		}
 	}
-}
-
-// GlobalSpecialEmojis map
-var GlobalSpecialEmojis = map[string]Emoji{
-	"alarm": {
-		Name: "aualarm",
-		ID:   "756595863048159323",
-	},
 }
 
 // AlivenessEmojis map
