@@ -157,7 +157,7 @@ func discordMainWrapper() error {
 		return errors.New("no Redis Address specified; exiting")
 	}
 
-	locale.InitLang(os.Getenv("BOT_LANG"))
+	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

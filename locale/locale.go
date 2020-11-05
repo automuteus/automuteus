@@ -12,18 +12,23 @@ import (
 	"golang.org/x/text/language"
 )
 
-const localesDir = "locales/"
 const DefaultLang = "en"
+
+var LocalePath = ""
 
 var defaultBotLang string
 var bundleInstance *i18n.Bundle
 
 var localeLanguages = make(map[string]string)
 
-func InitLang(lang string) {
+func InitLang(localePath, lang string) {
 	defaultBotLang = lang
 	if defaultBotLang == "" {
 		defaultBotLang = DefaultLang
+	}
+	LocalePath = localePath
+	if localePath == "" {
+		LocalePath = "locales/"
 	}
 	GetBundle()
 }
@@ -47,14 +52,14 @@ func LoadTranslations() *i18n.Bundle {
 	localeLanguages[DefaultLang] = language.Make(DefaultLang).String()
 
 	defaultBotLangLoaded := defaultBotLang == DefaultLang
-	files, err := ioutil.ReadDir(localesDir)
+	files, err := ioutil.ReadDir(LocalePath)
 	if err == nil {
 		re := regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
 		for _, file := range files {
 			if match := re.FindStringSubmatch(file.Name()); match != nil {
 				fileLang := match[re.SubexpIndex("lang")]
 
-				if _, err := bundle.LoadMessageFile(path.Join(localesDir, file.Name())); err != nil {
+				if _, err := bundle.LoadMessageFile(path.Join(LocalePath, file.Name())); err != nil {
 					if defaultBotLang != DefaultLang && fileLang != DefaultLang {
 						log.Println("[Locale] Eroor load message file:", err)
 					}

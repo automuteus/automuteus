@@ -37,14 +37,16 @@ USER bot
 # Import the compiled executable from the first stage.
 COPY --from=builder /app /app
 
+COPY locales /app/locales
+
 # Port used for capture program to report back
 EXPOSE 8123
 # Port used for application command and control
 EXPOSE 5000
 
-ENV CONFIG_PATH="/app/config" \
+ENV LOCALE_PATH="/app/locales" \
     LOG_PATH="/app/logs"
-VOLUME ["/app/config", "/app/logs"]
+VOLUME ["/app/locales", "/app/logs"]
 
 # Run the compiled binary.
 ENTRYPOINT ["/app/app"]
