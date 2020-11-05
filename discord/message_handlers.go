@@ -228,17 +228,20 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 
-	if dgs.GameStateMsg.MessageChannelID != "" {
+	if dgs.GameStateMsg.MessageID != "" {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- EndGameMessage{EndGameType: EndAndWipe}
 		}
 		delete(bot.EndGameChannels, dgs.ConnectCode)
+
 		dgs.Reset()
 	}
 
 	connectCode := generateConnectCode(m.GuildID)
 
 	dgs.ConnectCode = connectCode
+
+	bot.RedisInterface.AppendToActiveGames(m.GuildID, connectCode)
 
 	killChan := make(chan EndGameMessage)
 

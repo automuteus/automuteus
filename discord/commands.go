@@ -31,6 +31,7 @@ const (
 	Cache
 	ShowMe
 	ForgetMe
+	Stats
 	DebugState
 	Ascii
 	Null
@@ -379,6 +380,27 @@ var AllCommands = []Command{
 		aliases:           []string{"fm"},
 		secret:            false,
 		emoji:             "🗑",
+		adminSetting:      false,
+		permissionSetting: false,
+	},
+	{
+		cmdType: Stats,
+		command: "stats",
+		example: "stats",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.shortDesc",
+			Other: "View Bot stats",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.DebugState.desc",
+			Other: "View stats about the bot, like total guild number, active games, etc",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.DebugState.args",
+			Other: "None",
+		},
+		aliases:           []string{"stats"},
+		secret:            false,
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -794,6 +816,13 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}))
 					}
 				}
+			}
+			break
+
+		case Stats:
+			if m.Author != nil {
+				embed := bot.statsResponse(sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			}
 			break
 

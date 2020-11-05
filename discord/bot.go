@@ -158,12 +158,7 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 	}
 	bot.gracefulEndGame(gsr)
 
-	bot.RedisInterface.AppendToActiveGames(gsr.GuildID, gsr.ConnectCode)
-
 	log.Println("Finished gracefully shutting down")
-
-	//this is only for forceful shutdown
-	//bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
 
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
@@ -218,12 +213,12 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			}
 		}
 
-		if len(games) == 0 {
-			dsg := NewDiscordGameState(m.Guild.ID)
-
-			//put an empty entry in Redis
-			bot.RedisInterface.SetDiscordGameState(dsg, nil)
-		}
+		//if len(games) == 0 {
+		//	dsg := NewDiscordGameState(m.Guild.ID)
+		//
+		//	//put an empty entry in Redis
+		//	bot.RedisInterface.SetDiscordGameState(dsg, nil)
+		//}
 
 	}
 }
@@ -314,6 +309,8 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	dgs.AmongUsData.SetRoomRegion("", "")
 
 	lock.Release(ctx)
+
+	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
 	//TODO this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
