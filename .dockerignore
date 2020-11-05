@@ -1,9 +1,11 @@
 .dockerignore
+.env
 .github
 .gitignore
 .goreleaser.yaml
 amongusdiscord.xml
 app.json
+docker-compose.yml
 Dockerfile
 LICENSE
 renovate.json
