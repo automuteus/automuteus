@@ -100,6 +100,49 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 	return &embed
 }
 
+func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Title",
+			Other: "Bot Stats",
+		}),
+		Description: "",
+		Timestamp:   "",
+		Color:       2067276, //DARK GREEN
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
+
+	totalGuilds := bot.RedisInterface.GetGuildCounter(Version)
+	activeGames := bot.RedisInterface.AllGamesCount()
+
+	fields := make([]*discordgo.MessageEmbedField, 2)
+	fields[0] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Guilds",
+			Other: "Total Guilds",
+		}),
+		Value:  fmt.Sprintf("%d", totalGuilds),
+		Inline: true,
+	}
+	fields[1] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Games",
+			Other: "Active Games",
+		}),
+		Value:  fmt.Sprintf("%d", activeGames),
+		Inline: true,
+	}
+
+	embed.Fields = fields
+	return &embed
+}
+
 // TODO:
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
