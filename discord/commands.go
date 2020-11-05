@@ -448,7 +448,6 @@ var AllCommands = []Command{
 		adminSetting:      false,
 		permissionSetting: false,
 	},
-		permissionSetting: true,
 	{
 		cmdType: SecretKey,
 		command: "secretkey",

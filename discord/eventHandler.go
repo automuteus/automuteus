@@ -2,10 +2,11 @@ package discord
 
 import (
 	"encoding/json"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
