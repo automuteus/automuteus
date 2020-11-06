@@ -401,6 +401,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"ds"},
 		secret:            true,
+		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: true,
 	},
