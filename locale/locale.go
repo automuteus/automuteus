@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -46,15 +47,24 @@ func LoadTranslations() *i18n.Bundle {
 	localeLanguages = make(map[string]string)
 	localeLanguages[DefaultLang] = language.Make(DefaultLang).String()
 
+	absLocalesDir, e := filepath.Abs(localesDir)
+	if e != nil {
+		log.Printf("[Locale] Locale path is not valid: %s", e)
+	} else {
+		log.Printf("[Locale] Looking for locale data in: %s", absLocalesDir)
+	}
+
 	defaultBotLangLoaded := defaultBotLang == DefaultLang
-	files, err := ioutil.ReadDir(localesDir)
-	if err == nil {
+	files, err := ioutil.ReadDir(absLocalesDir)
+	if err != nil {
+		log.Printf("[Locale] No locale folder found: %s", err)
+	} else {
 		re := regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
 		for _, file := range files {
 			if match := re.FindStringSubmatch(file.Name()); match != nil {
 				fileLang := match[re.SubexpIndex("lang")]
 
-				if _, err := bundle.LoadMessageFile(path.Join(localesDir, file.Name())); err != nil {
+				if _, err := bundle.LoadMessageFile(path.Join(absLocalesDir, file.Name())); err != nil {
 					if defaultBotLang != DefaultLang && fileLang != DefaultLang {
 						log.Println("[Locale] Eroor load message file:", err)
 					}

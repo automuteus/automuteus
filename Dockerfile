@@ -33,9 +33,11 @@ RUN addgroup -g 1000 bot && \
     mkdir -p /app/logs /app/config && \
     chown -R bot:bot /app
 USER bot
+WORKDIR /app
 
-# Import the compiled executable from the first stage.
+# Import the compiled executable and locales.
 COPY --from=builder /app /app
+COPY ./locales/ /app/locales
 
 # Port used for capture program to report back
 EXPOSE 8123
@@ -46,4 +48,4 @@ ENV LOG_PATH="/app/logs"
 VOLUME ["/app/config", "/app/logs"]
 
 # Run the compiled binary.
-ENTRYPOINT ["/app/app"]
+ENTRYPOINT ["./app"]
