@@ -42,8 +42,7 @@ EXPOSE 8123
 # Port used for application command and control
 EXPOSE 5000
 
-ENV CONFIG_PATH="/app/config" \
-    LOG_PATH="/app/logs"
+ENV LOG_PATH="/app/logs"
 VOLUME ["/app/config", "/app/logs"]
 
 # Run the compiled binary.
