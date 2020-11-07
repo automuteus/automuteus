@@ -35,6 +35,10 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
+func versionKey() string {
+	return "automuteus:version"
+}
+
 func totalGuildsKey(version string) string {
 	return "automuteus:count:guilds:version-" + version
 }
@@ -61,6 +65,21 @@ func discordKey(guildID, id string) string {
 
 func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
+}
+
+func (redisInterface *RedisInterface) SetVersion(version string) {
+	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) GetVersion() string {
+	v, err := redisInterface.client.Get(ctx, versionKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return v
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
