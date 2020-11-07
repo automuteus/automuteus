@@ -122,6 +122,8 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	go StartHealthCheckServer("8080")
 
+	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
+
 	return &bot
 }
 
