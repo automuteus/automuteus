@@ -3,6 +3,7 @@ package discord
 import (
 	"container/heap"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"sync"
 	"time"
@@ -116,7 +117,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 
 		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && linked
+		tracked = tracked && (linked || userData.GetPlayerName() == game.SpectatorPlayerName)
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 
 		nick := userData.GetPlayerName()

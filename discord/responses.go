@@ -119,23 +119,14 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 	}
 
 	totalGuilds := bot.RedisInterface.GetGuildCounter(Version)
-	activeGames := bot.RedisInterface.AllGamesCount()
 
-	fields := make([]*discordgo.MessageEmbedField, 2)
+	fields := make([]*discordgo.MessageEmbedField, 1)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Guilds",
 			Other: "Total Guilds",
 		}),
 		Value:  fmt.Sprintf("%d", totalGuilds),
-		Inline: true,
-	}
-	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Games",
-			Other: "Active Games",
-		}),
-		Value:  fmt.Sprintf("%d", activeGames),
 		Inline: true,
 	}
 

@@ -186,7 +186,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
 	//only actually tracked if we're in a tracked channel AND linked to a player
-	tracked = tracked && found
+	tracked = tracked && (found || userData.GetPlayerName() == game.SpectatorPlayerName)
 	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
