@@ -86,6 +86,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	dg.AddHandler(bot.handleMessageCreate)
 	dg.AddHandler(bot.handleReactionGameStartAdd)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
+	dg.AddHandler(bot.leaveGuild)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -226,6 +227,16 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		//	bot.RedisInterface.SetDiscordGameState(dsg, nil)
 		//}
 
+	}
+}
+
+func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
+	log.Println("Bot was removed from Guild " + m.ID)
+	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID, Version)
+
+	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
+	if err != nil {
+		log.Println(err)
 	}
 }
 

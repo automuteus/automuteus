@@ -89,6 +89,13 @@ func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version str
 	}
 }
 
+func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID, version string) {
+	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
 	count, err := redisInterface.client.SCard(ctx, totalGuildsKey(version)).Result()
 	if err != nil {

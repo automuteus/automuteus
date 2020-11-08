@@ -121,6 +121,13 @@ func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guild
 	return err
 }
 
+func (storageInterface *StorageInterface) DeleteGuildSettings(guildID string) error {
+	key := guildSettingsKey(HashGuildID(guildID))
+
+	err := storageInterface.client.Del(ctx, key).Err()
+	return err
+}
+
 func (storageInterface *StorageInterface) Close() error {
 	return storageInterface.client.Close()
 }
