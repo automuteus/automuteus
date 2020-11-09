@@ -68,6 +68,10 @@ func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
 }
 
+func secretKeysHash(guildID string) string {
+	return "automuteus:discord:" + guildID + ":secretkeys"
+}
+
 func matchIDKey() string {
 	return "automuteus:match:counter"
 }
