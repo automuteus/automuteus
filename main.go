@@ -142,6 +142,10 @@ func discordMainWrapper() error {
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
 
+	if os.Getenv("CONFIG_PATH") != "" {
+		log.Print("[Depreciation] Variable `CONFIG_PATH` is depreciated, you can remove it from your `.env`")
+	}
+
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
