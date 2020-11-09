@@ -6,12 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-
+	"github.com/automuteus/galactus/broker"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	"github.com/denverquane/automuteusbroker/broker"
+	"github.com/go-redis/redis/v8"
 )
 
 type EndGameType int
@@ -161,31 +160,47 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
+			_, _, data := dgs.AmongUsData.UpdatePlayer(player)
+
+			userID := dgs.AttemptPairingByMatchingNames(data)
+			//try pairing via the cached usernames
+			if userID == "" {
+				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				userID = dgs.AttemptPairingByUserIDs(data, uids)
+			}
+			if userID != "" {
+				bot.applyToSingle(dgs, userID, false, false)
+			}
 
 			dgs.AmongUsData.ClearPlayerData(player.Name)
-			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+
+			//only update the message if we're not in the tasks phase (info leaks)
+			if dgs.AmongUsData.GetPhase() != game.TASKS {
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+			}
+
 			return true
 		} else {
 			updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
 
 			if player.Action == game.JOINED {
 				log.Println("Detected a player joined, refreshing User data mappings")
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
 				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 				return true
 			} else if updated {
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
@@ -223,6 +238,22 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	if oldPhase == phase {
 		lock.Release(ctx)
 		return
+	}
+	//if we started a new game
+	if oldPhase == game.LOBBY && phase == game.TASKS {
+		matchID := bot.RedisInterface.GetAndIncrementMatchID()
+		matchStart := time.Now().Unix()
+		dgs.MatchStartUnix = matchStart
+		dgs.MatchID = matchID
+		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
+		//if we went to lobby from anywhere else but the menu, assume the game is over
+	} else if phase == game.LOBBY && oldPhase != game.MENU {
+		//TODO process the game's completion and send to Postgres
+		//only process games that actually receive the end-game event from the capture! Might need to start a worker
+		//to listen for this
+
+		dgs.MatchID = -1
+		dgs.MatchStartUnix = -1
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

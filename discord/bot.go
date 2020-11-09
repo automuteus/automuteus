@@ -86,6 +86,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	dg.AddHandler(bot.handleMessageCreate)
 	dg.AddHandler(bot.handleReactionGameStartAdd)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
+	dg.AddHandler(bot.leaveGuild)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -117,6 +118,12 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	}
 
 	dg.UpdateStatusComplex(*status)
+
+	bot.RedisInterface.SetVersion(Version)
+
+	go StartHealthCheckServer("8080")
+
+	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
 	return &bot
 }
@@ -223,6 +230,16 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	}
 }
 
+func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
+	log.Println("Bot was removed from Guild " + m.ID)
+	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID, Version)
+
+	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func (bot *Bot) newAltGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
 	bot.SessionManager.RegisterGuildSecondSession(m.Guild.ID)
 }
@@ -254,8 +271,8 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 		auData, found = dgs.AmongUsData.GetByName(combinedArgs)
 	}
 	if found {
-		found = dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
-		if found {
+		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
+		if foundID != "" {
 			log.Printf("Successfully linked %s to a color\n", userID)
 			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {

@@ -403,6 +403,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"stats"},
 		secret:            false,
+		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -579,7 +580,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		switch cmd.cmdType {
 		case Help:
 			if len(args[1:]) == 0 {
-				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
 				cmd = GetCommand(args[1])
@@ -790,16 +791,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case ShowMe:
 			if m.Author != nil {
-				if settUser := bot.StorageInterface.GetUserSettings(m.Author.ID); settUser != nil {
-					embed := settUser.ToEmbed(sett)
-					sendMessageDM(s, m.Author.ID, embed)
-				} else {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ShowMe.emptySettings",
-						Other: "I don't have any settings stored for you!",
-					}))
-				}
-
 				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
 				if len(cached) == 0 {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -822,22 +813,17 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 		case ForgetMe:
 			if m.Author != nil {
-				err := bot.StorageInterface.DeleteUserSettings(m.Author.ID)
+				err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, m.Author.ID)
 				if err != nil {
 					log.Println(err)
 				} else {
-					err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, m.Author.ID)
-					if err != nil {
-						log.Println(err)
-					} else {
-						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.HandleCommand.ForgetMe.Success",
-							Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
-						},
-							map[string]interface{}{
-								"AuthorID": m.Author.ID,
-							}))
-					}
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ForgetMe.Success",
+						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
+					},
+						map[string]interface{}{
+							"AuthorID": m.Author.ID,
+						}))
 				}
 			}
 			break

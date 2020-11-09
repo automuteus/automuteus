@@ -69,7 +69,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			} else {
-				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			}
 		} else {
@@ -186,7 +186,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
 	//only actually tracked if we're in a tracked channel AND linked to a player
-	tracked = tracked && found
+	tracked = tracked && (found || userData.GetPlayerName() == game.SpectatorPlayerName)
 	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {

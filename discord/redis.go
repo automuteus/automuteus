@@ -36,12 +36,12 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func totalGuildsKey(version string) string {
-	return "automuteus:count:guilds:version-" + version
+func versionKey() string {
+	return "automuteus:version"
 }
 
-func totalGamesKey(version string) string {
-	return "automuteus:count:games:version-" + version
+func totalGuildsKey(version string) string {
+	return "automuteus:count:guilds:version-" + version
 }
 
 func activeGamesKey(guildID string) string {
@@ -68,12 +68,42 @@ func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
 }
 
-func secretKeysHash(guildID string) string {
-	return "automuteus:discord:" + guildID + ":secretkeys"
+func matchIDKey() string {
+	return "automuteus:match:counter"
+}
+
+func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
+	num, err := redisInterface.client.Incr(ctx, matchIDKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return num
+}
+
+func (redisInterface *RedisInterface) SetVersion(version string) {
+	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) GetVersion() string {
+	v, err := redisInterface.client.Get(ctx, versionKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return v
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
 	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID, version string) {
+	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
@@ -242,18 +272,6 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 }
 
-func (redisInterface *RedisInterface) AllGamesCount() int64 {
-	key := totalGamesKey(Version)
-
-	count, err := redisInterface.client.SCard(ctx, key).Result()
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-
-	return count
-}
-
 func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
 
@@ -264,24 +282,12 @@ func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode s
 	} else {
 		log.Printf("Active games: %d", count)
 	}
-
-	key = totalGamesKey(Version)
-	err = redisInterface.client.SAdd(ctx, key, connectCode).Err()
-	if err != nil {
-		log.Println(err)
-	}
 }
 
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
 
 	err := redisInterface.client.SRem(ctx, key, connectCode).Err()
-	if err != nil {
-		log.Println(err)
-	}
-
-	key = totalGamesKey(Version)
-	err = redisInterface.client.SRem(ctx, key, connectCode).Err()
 	if err != nil {
 		log.Println(err)
 	}

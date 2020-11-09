@@ -40,7 +40,7 @@ COPY --from=builder /app /app
 COPY locales /app/locales
 
 # Port used for capture program to report back
-EXPOSE 8123
+EXPOSE 8080
 # Port used for application command and control
 EXPOSE 5000
 
