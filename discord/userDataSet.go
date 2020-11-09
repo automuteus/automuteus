@@ -25,32 +25,32 @@ func (dgs *DiscordGameState) GetCountLinked() int {
 	return LinkedPlayerCount
 }
 
-func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData) bool {
+func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData) string {
 	name := strings.ReplaceAll(strings.ToLower(data.Name), " ", "")
 	for userID, v := range dgs.UserData {
 		if strings.ReplaceAll(strings.ToLower(v.GetUserName()), " ", "") == name || strings.ReplaceAll(strings.ToLower(v.GetNickName()), " ", "") == name {
 			v.Link(data)
 			dgs.UserData[userID] = v
-			return true
+			return userID
 		}
 	}
-	return false
+	return ""
 }
 
 func (dgs *DiscordGameState) UpdateUserData(userID string, data UserData) {
 	dgs.UserData[userID] = data
 }
 
-func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs map[string]interface{}) bool {
+func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs map[string]interface{}) string {
 	for userID := range userIDs {
 		//only attempt to link players that aren't paired already
 		if v, ok := dgs.UserData[userID]; ok && v.GetPlayerName() == game.UnlinkedPlayerName {
 			v.Link(data)
 			dgs.UserData[userID] = v
-			return true
+			return userID
 		}
 	}
-	return false
+	return ""
 }
 
 func (dgs *DiscordGameState) ClearPlayerData(userID string) {

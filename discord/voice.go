@@ -46,6 +46,24 @@ func (h *PatchPriority) Pop() interface{} {
 	return x
 }
 
+func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
+	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("Forcibly applying mute/deaf to " + userID)
+	userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
+	params := UserPatchParameters{
+		GuildID:  dgs.GuildID,
+		Userdata: userData,
+		Deaf:     deaf,
+		Mute:     mute,
+		Nick:     "",
+	}
+	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+}
+
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
 	if err != nil {

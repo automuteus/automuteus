@@ -271,8 +271,8 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 		auData, found = dgs.AmongUsData.GetByName(combinedArgs)
 	}
 	if found {
-		found = dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
-		if found {
+		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
+		if foundID != "" {
 			log.Printf("Successfully linked %s to a color\n", userID)
 			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {

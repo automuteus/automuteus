@@ -160,31 +160,47 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
+			_, _, data := dgs.AmongUsData.UpdatePlayer(player)
+
+			userID := dgs.AttemptPairingByMatchingNames(data)
+			//try pairing via the cached usernames
+			if userID == "" {
+				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				userID = dgs.AttemptPairingByUserIDs(data, uids)
+			}
+			if userID != "" {
+				bot.applyToSingle(dgs, userID, false, false)
+			}
 
 			dgs.AmongUsData.ClearPlayerData(player.Name)
-			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+
+			//only update the message if we're not in the tasks phase (info leaks)
+			if dgs.AmongUsData.GetPhase() != game.TASKS {
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+			}
+
 			return true
 		} else {
 			updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
 
 			if player.Action == game.JOINED {
 				log.Println("Detected a player joined, refreshing User data mappings")
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
 				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 				return true
 			} else if updated {
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
