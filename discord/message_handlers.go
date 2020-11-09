@@ -69,7 +69,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			} else {
-				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			}
 		} else {

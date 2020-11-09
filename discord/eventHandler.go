@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/automuteus/galactus/broker"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
-	"github.com/denverquane/automuteusbroker/broker"
 )
 
 type EndGameType int

@@ -402,6 +402,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"stats"},
 		secret:            false,
+		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -423,7 +424,6 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"ds"},
 		secret:            true,
-		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: true,
 	},
@@ -558,7 +558,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		switch cmd.cmdType {
 		case Help:
 			if len(args[1:]) == 0 {
-				embed := helpResponse(isAdmin, isPermissioned, Version, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
 				cmd = GetCommand(args[1])
