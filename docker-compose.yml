@@ -4,7 +4,7 @@ services:
   automuteus:
     # Either:
     # - Use a prebuilt image
-    image: denverquane/amongusdiscord:${BRANCH:-3}
+    image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:-4}
     # - Build image from local source
     #build: .
     # - Build image from github directly
@@ -26,7 +26,7 @@ services:
       - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
 
       # Do **NOT** change this
-      - REDIS_ADDRESS=redis:6379
+      - REDIS_ADDRESS=${REDIS_ADDRESS}
     depends_on:
       - redis
       - galactus
@@ -36,7 +36,7 @@ services:
     ports:
       # External port MUST match the port you specified in HOST for the bot!!!
       - ${EXTERNAL_PORT}:${BROKER_PORT}
-    image: automuteus/galactus:${GALACTUS_TAG}
+    image: automuteus/galactus:${GALACTUS_TAG:-0.0.2}
     restart: always
     environment:
       - BROKER_PORT=${BROKER_PORT}
