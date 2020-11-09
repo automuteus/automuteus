@@ -1,18 +1,18 @@
 ["commands.AllCommands.Ascii.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
+other = "<@discord user> <был предателем> (true|false) <x предателей осталось> (число)"
 
 ["commands.AllCommands.Ascii.desc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Вывести члена экипажа ASCII"
+other = "Нарисовать символами (ASCII) члена экипажа"
 
 ["commands.AllCommands.Ascii.shortDesc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Вывести члена экипажа ASCII"
+other = "Нарисовать символами (ASCII) члена экипажа"
 
 ["commands.AllCommands.Cache.args"]
 hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
-other = "<player> (необязательно, \"clear\")"
+other = "<player> (опционально, \"clear\")"
 
 ["commands.AllCommands.Cache.desc"]
 hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
@@ -24,19 +24,19 @@ other = "Посмотреть кешированные ники"
 
 ["commands.AllCommands.DebugState.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.DebugState.desc"]
 hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Просмотр полного состояния данных Гильдии Discord"
+other = "Просмотр всех данных бота на этом сервере Discord"
 
 ["commands.AllCommands.DebugState.shortDesc"]
 hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Просмотр полного состояния данных Гильдии Discord"
+other = "Просмотр всех данных бота на этом сервере Discord"
 
 ["commands.AllCommands.End.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.End.desc"]
 hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
@@ -48,19 +48,19 @@ other = "Закончить игру"
 
 ["commands.AllCommands.Force.args"]
 hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<phase name> (task, discuss, or lobby / t,d, or l)"
+other = "<стадия игры> (task, discuss, or lobby / t,d, or l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Заставьте бота перейти на другую стадию игры, если он не переходит должным образом"
+other = "Принудительная смена стадии игры, если бот не переключил её сам"
 
 ["commands.AllCommands.Force.shortDesc"]
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
-other = "Заставить бота перейти"
+other = "Принудительная смена стадии игры"
 
 ["commands.AllCommands.ForgetMe.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.ForgetMe.desc"]
 hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
@@ -72,7 +72,7 @@ other = "Удалить данные игрока"
 
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
-other = "Нету или необязательная команда для просмотра информации о ней"
+other = "Нет или любая из существующих комманд (для просмотра информации о ней)"
 
 ["commands.AllCommands.Help.desc"]
 hash = "sha1-86ef9a3df917eb9728b9966b5beb999a1e970db5"
@@ -84,7 +84,7 @@ other = "Показать справку"
 
 ["commands.AllCommands.Link.args"]
 hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
-other = "<discord User> <in-game color or name>"
+other = "<@discord User> <цвет в игре или игровой ник>"
 
 ["commands.AllCommands.Link.desc"]
 hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
@@ -92,23 +92,23 @@ other = "Ручная привязка пользователя Discord к ег�
 
 ["commands.AllCommands.Link.shortDesc"]
 hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
-other = "Свяжите пользователя Discord"
+other = "Привязка игрков из Discord"
 
 ["commands.AllCommands.Log.args"]
 hash = "sha1-21352b2be58fee3b7776cc67679330b08d1d9f38"
-other = "<message>"
+other = "<текст>"
 
 ["commands.AllCommands.Log.desc"]
 hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
-other = "Логируйте, если что-то случилось, чтобы потом можно было найти событие в логах."
+other = "Логируйте, если что-то пошло не так с ботом, чтобы потом можно было найти это событие в логах."
 
 ["commands.AllCommands.Log.shortDesc"]
 hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
-other = "Записать странное событие"
+other = "Залогировать странное поведение бота"
 
 ["commands.AllCommands.New.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.New.desc"]
 hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
@@ -120,11 +120,11 @@ other = "Начать новую игру"
 
 ["commands.AllCommands.Pause.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.Pause.desc"]
 hash = "sha1-3298f4f757558ae0a5d04b36707f51525cf02e96"
-other = "Приостановить бота, чтобы он не мутил/не оглушал. **Не будет включать/отключать звук**"
+other = "Приостановить бота, чтобы он не отключал микрофон/звук. **Эта команда не включит уже отключенный микрофон/звук**"
 
 ["commands.AllCommands.Pause.shortDesc"]
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
@@ -132,15 +132,15 @@ other = "Приостановить бота"
 
 ["commands.AllCommands.Refresh.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.Refresh.desc"]
 hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
-other = "Восстановите сообщение о статусе бота, если оно окажется слишком далеко в чате"
+other = "Переотправка и обновление сообщения о статусе игры, если оно окажется слишком далеко в чате"
 
 ["commands.AllCommands.Refresh.shortDesc"]
 hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
-other = "Обновить статус бота"
+other = "Обновить сообщение со статусом"
 
 ["commands.AllCommands.Settings.args"]
 hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
@@ -148,15 +148,15 @@ other = "<setting> <value>"
 
 ["commands.AllCommands.Settings.desc"]
 hash = "sha1-2c6b4a2f31f15b0cc1c78baabd11e638c4cbb092"
-other = "Отрегулируйте настройки бота. Введите `.au settings` без аргументов, чтобы увидеть больше."
+other = "Настройки бота. Введите `.au settings` без аргументов, чтобы увидеть больше."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Отрегулируйте настройки бота"
+other = "Настройки бота"
 
 ["commands.AllCommands.ShowMe.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.ShowMe.desc"]
 hash = "sha1-f0fa9b743f84a92cef4aca88f2b2baf8c6b9c91f"
@@ -184,27 +184,27 @@ other = "<discord User>"
 
 ["commands.AllCommands.Unlink.desc"]
 hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
-other = "Ручное разъединение пользователя Discord от игрока"
+other = "Ручная отвзяка пользователя Discord от игрока"
 
 ["commands.AllCommands.Unlink.shortDesc"]
 hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
-other = "Разъединить пользователя Discord"
+other = "Отвязать пользователя Discord"
 
 ["commands.AllCommands.UnmuteAll.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["commands.AllCommands.UnmuteAll.desc"]
 hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
-other = "Заставить бота размутить всех привязанных игроков"
+other = "Заставить бота включить микрофон у всех привязанных игроков"
 
 ["commands.AllCommands.UnmuteAll.shortDesc"]
 hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "Заставить бота всех размутить"
+other = "Заставить бота всех размьютить"
 
 ["commands.ConstructEmbedForCommand.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Псевдонимы"
+other = "Сокращения"
 
 ["commands.ConstructEmbedForCommand.Fields.Arguments"]
 hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
@@ -216,7 +216,7 @@ other = "Пример"
 
 ["commands.HandleCommand.Cache.Success"]
 hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "Успешно удалены все кешированные имена этого пользователя!"
+other = "Успешно удалены все кешированные ники этого пользователя!"
 
 ["commands.HandleCommand.Cache.cachedNames"]
 hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
@@ -228,7 +228,7 @@ other = "У меня нет никаких кэшированных ников, 
 
 ["commands.HandleCommand.Force.UNINITIALIZED"]
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
-other = "Извините, я не понял тип фазы игры, который вы пытались установить"
+other = "Извините, я не понял фазу игры, на которую вы пытались переключиться"
 
 ["commands.HandleCommand.ForgetMe.Success"]
 hash = "sha1-fa5049065e85726171d4a53ed857cc3375a5d924"
@@ -256,7 +256,7 @@ other = "Извините, я не понял эту команду! См. сп�
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-20533e7acfc42e254d99d460ab065585022bde5e"
-other = "**голосовой канал не указан! Используй `.au track`!**"
+other = "**Голосовой канал не указан! Используй `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
@@ -264,7 +264,7 @@ other = "голосовом канале **{{.channelName}}**!"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Ззх"
+other = "Не привязан"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-99059f9ec0c764d7c2185aca0827394e9b8199c9"
@@ -300,7 +300,7 @@ other = "Я отвечаю на префикс {{.Prefix}}"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "Нажмите на следующую ссылку, чтобы связать свой захват: \n <{{.hyperlink}}>\n\nНе установлен захват? Последняя версия [здесь]({{.downloadURL}})\n\nЧтобы связать захват вручную:"
+other = "Нажмите на следующую ссылку, чтобы связать сканер игры: \n <{{.hyperlink}}>\n\nНе установлен сканер? Последняя версия [здесь]({{.downloadURL}})\n\nДанные, чтобы свзяать сканер вручную:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -316,7 +316,7 @@ other = "Вы только что начали игру!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Посмотреть Github проект](https://github.com/denverquane/automuteus) или [Присоединяйтесь к нашему Discord](https://discord.gg/ZkqZSWF)\n\nВведи `{{.CommandPrefix}} help <command>` чтобы увидеть более подробную информацию о команде!"
+other = "[Посмотреть Github проект](https://github.com/denverquane/automuteus) или [Присоединиться к нашему Discord](https://discord.gg/ZkqZSWF)\n\nВведи `{{.CommandPrefix}} help <command>` чтобы увидеть более подробную информацию о команде!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a0d14755cbb5771aa9b446605b5c9f3f2810c4ee"
@@ -324,7 +324,7 @@ other = "Команды бота AutoMuteUs (v{{.version}}):\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "Отреагируйте на это сообщение своим внутриигровым цветом! (или {{.emojiLeave}}, чтобы отказаться)"
+other = "Отреагируйте на это сообщение своим внутриигровым цветом! (или {{.emojiLeave}}, чтобы покинуть игру)"
 
 ["responses.lobbyMessage.Title"]
 hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
@@ -332,11 +332,11 @@ other = "Лобби"
 
 ["responses.lobbyMessage.notLinked.Description"]
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Захват не связан! Нажмите ссылку в ЛС, чтобы подключиться!**❌"
+other = "❌**Сканер не связан! Нажмите ссылку в ЛС, чтобы подключиться!**❌"
 
 ["responses.lobbyMetaEmbedFields.PlayersLinked"]
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "Игроков Связано"
+other = "Игроков связано"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
@@ -344,7 +344,7 @@ other = "Регион"
 
 ["responses.lobbyMetaEmbedFields.RoomCode"]
 hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
-other = "Код Комнаты"
+other = "Код комнаты"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
@@ -360,7 +360,7 @@ other = "<@{{.author}}> запускает игру Among Us!\nИгра идёт
 
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
-other = "(Войдите в игровое лобби в «Among Us», чтобы начать матч.)"
+other = "(Войдите в игровое лобби «Among Us», чтобы начать матч.)"
 
 ["responses.menuMessage.Title"]
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
@@ -368,11 +368,11 @@ other = "Главное меню"
 
 ["responses.menuMessage.notLinked.Description"]
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Захват не связан! Нажмите ссылку в ЛС, чтобы подключиться!**❌"
+other = "❌**Сканер не связан! Нажмите ссылку в ЛС, чтобы подключиться!**❌"
 
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Введи `{{.CommandPrefix}} settings <setting>` чтобы изменить настройку из перечисленных ниже"
+other = "Введи `{{.CommandPrefix}} settings <параметр>` чтобы изменить параметр бота из перечисленных ниже"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
@@ -384,7 +384,7 @@ other = "<User @ mentions>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
 hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Укажите, какие пользователи имеют админ права для бота"
+other = "Укажите, какие пользователи будут администраторами бота"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
@@ -392,19 +392,19 @@ other = "Админы бота"
 
 ["settings.AllSettings.Delays.args"]
 hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
-other = "<start phase> <end phase> <delay>"
+other = "<первая фаза> <вторая фаза> <задержка в секундах>"
 
 ["settings.AllSettings.Delays.desc"]
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "Укажите задержки для автоматического мута/оглушения между этапами игры, например лобби->задачи"
+other = "Укажите задержки для автоматического отключения микрофона/звука между фазами игры, например Лобби -> Задачи"
 
 ["settings.AllSettings.Delays.shortDesc"]
 hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
-other = "Задержки между этапами"
+other = "Задержки между фазами игры"
 
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
-other = "<language> или reload"
+other = "<язык> или reload"
 
 ["settings.AllSettings.Language.desc"]
 hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
@@ -424,7 +424,7 @@ other = "Укажите, должен ли бот переименовывать
 
 ["settings.AllSettings.Nicknames.shortDesc"]
 hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Бот переименовывает пользователей Discord"
+other = "Автоматическая смена ника пользователей на игровой ник"
 
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
@@ -432,7 +432,7 @@ other = "<prefix>"
 
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "Измените префикс, который бот использует для обнаружения команд"
+other = "Изменение префикса, который бот использует для обнаружения команд"
 
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
@@ -444,7 +444,7 @@ other = "<role @ mentions>..."
 
 ["settings.AllSettings.RoleIDs.desc"]
 hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Укажите, какие роли имеют разрешения на вызов бота"
+other = "Настройка ролей, которые имеют разрешения на вызов бота"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
 hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
@@ -452,7 +452,7 @@ other = "Операторы бота"
 
 ["settings.AllSettings.Show.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Нету"
+other = "Нет"
 
 ["settings.AllSettings.Show.desc"]
 hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
@@ -468,11 +468,11 @@ other = "<voice channel name>"
 
 ["settings.AllSettings.TrackedChannel.desc"]
 hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
-other = "Изменить отслеживаемый голосовой канал По умолчанию"
+other = "Изменить отслеживаемый по умолчанию голосовой канал"
 
 ["settings.AllSettings.TrackedChannel.shortDesc"]
 hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
-other = "Отслеживаемый голосовой канал По умолчанию"
+other = "Отслеживаемый по умолчанию голосовой канал"
 
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -480,11 +480,11 @@ other = "<true/false>"
 
 ["settings.AllSettings.UnmuteDead.desc"]
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
-other = "Укажите, должен ли бот мгновенно размутить игроков после смерти. **ВНИМАНИЕ. Утечка информации!**"
+other = "Укажите, должен ли бот мгновенно размьютить игроков после их смерти. **ВНИМАНИЕ. Возможна утечка информации!**"
 
 ["settings.AllSettings.UnmuteDead.shortDesc"]
 hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
-other = "Бот размутит игроков после смерти"
+other = "Моментальный размьют погибших игроков"
 
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
@@ -492,23 +492,23 @@ other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
 
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
-other = "Укажите правила мута/оглушения для игры, в зависимости от стадии и живой/мертвый игроков. Приведенный пример замутит мертвых игроков на этапе выполнения заданий"
+other = "Укажите правила отключения микрофона/звука для игры, в зависимости от фазы и состояния (живой/мертвый) игроков. Приведенный ниже пример отключит микрофон мёртвых игроков во время фазы заданий"
 
 ["settings.AllSettings.VoiceRules.shortDesc"]
 hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
-other = "Правила мата/оглушеня"
+other = "Правила отключения микрофона/звука"
 
 ["settings.CommandPrefixSetting.changes"]
 hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
-other = "Префикс гильдии изменен с `{{.From}}` на `{{.To}}`. Используй с этого момента!"
+other = "Префикс сервера изменен с `{{.From}}` на `{{.To}}`. Используй его с этого момента!"
 
 ["settings.CommandPrefixSetting.tooLong"]
 hash = "sha1-1cd58be6e5fe97c9ad8a6547e15054956b58d55c"
-other = "Извините, префикс `{{.Prefix}}` слишком длинный ({{.Length}} символов, максимум 10). Попробуйте что-нибудь короче."
+other = "Извините, префикс `{{.Prefix}}` слишком длинный ({{.Length}} символов, максимум 10). Попробуйте что-нибудь покороче."
 
 ["settings.ConstructEmbedForSetting.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Псевдонимы"
+other = "Сокращения"
 
 ["settings.ConstructEmbedForSetting.Fields.Arguments"]
 hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
@@ -516,7 +516,7 @@ other = "Аргументы"
 
 ["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
 hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
-other = "Текущее Значение"
+other = "Текущее значение"
 
 ["settings.ConstructEmbedForSetting.Fields.Example"]
 hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
@@ -540,7 +540,7 @@ other = "Нет администраторов ботов"
 
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "Извините, я не знаю, кто такой `{{.UserName}}`. Вы можете передать ID, имя пользователя, имяПользователя#XXXX, ник или @упоминание"
+other = "Извините, я не знаю, кто такой `{{.UserName}}`. Вы можете указать ID, имя пользователя, имяПользователя#XXXX, ник или @упоминание"
 
 ["settings.SettingApplyNicknames.false_applyNicknames"]
 hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
@@ -556,15 +556,15 @@ other = "Это уже true!"
 
 ["settings.SettingApplyNicknames.true_noApplyNicknames"]
 hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "Теперь я переименую игроков в голосовом чате."
+other = "Теперь я буду переименовывать игроков в голосовом чате."
 
 ["settings.SettingApplyNicknames.wrongArg"]
 hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Извините, `{{.Arg}}` не является ни `true`, ни` false`."
+other = "Извините, `{{.Arg}}` не является ни `true`, ни `false`."
 
 ["settings.SettingDefaultTrackedChannel.noDefault"]
 hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
-other = "Голосовой канал По умолчанию не отслеживается"
+other = "Голосовой канал по умолчанию не отслеживается"
 
 ["settings.SettingDefaultTrackedChannel.withChannelName"]
 hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
@@ -584,7 +584,7 @@ other = "В настоящее время задержка при переход
 
 ["settings.SettingDelays.missingPhases"]
 hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "Список фаз игры: `Lobby`, `Tasks` и `Discussion`.\nЧтобы изменить задержку, вам нужно ввести обе фазы - из какой и в какую переходит игра."
+other = "Список фаз игры: `Lobby`, `Tasks` и `Discussion`.\nЧтобы изменить задержку, вам нужно ввести обе фазы: первой - из какой фазы, второй - в какую фазу переходит игра."
 
 ["settings.SettingDelays.setDelayBetweenPhases"]
 hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
@@ -612,7 +612,7 @@ other = "Локализация установлена на {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "Извини, код языка короткий. Доступные языковые коды: {{.Langs}}."
+other = "Извини, код языка слишком короткий. Доступные языковые коды: {{.Langs}}."
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
@@ -624,11 +624,11 @@ other = "<@&{{.UserID}}> теперь админы бота!"
 
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "нету Роли Админа"
+other = "Роль админа не установлена"
 
 ["settings.SettingPermissionRoleIDs.notFound"]
 hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
-other = "Извините, я не знаю роли `{{.RoleName}}`. Вы можете передать ID роли, имя роли или @role"
+other = "Извините, я не знаю роль `{{.RoleName}}`. Вы можете передать ID роли, имя роли или @role"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
@@ -636,11 +636,11 @@ other = "Это уже false!"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "Я больше не буду мгновенно размучивать мёртвых игроков. Хороший выбор!"
+other = "Я больше не буду мгновенно включать микрофон и звук мёртвых игроков. Хороший выбор!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
 hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "Я размучу мертвых игроков сразу после их смерти. Осторожно, это показывает, кто погиб во время матча!"
+other = "Я включу микрофон и звук мертвых игроков сразу после их смерти. Осторожно, это показывает, кого убили во время матча до того, как найдут труп!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
@@ -660,7 +660,7 @@ other = "Я не знаю, что такое {{.PhaseName}}. Список фаз
 
 ["settings.SettingVoiceRules.enoughArgs"]
 hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Вы не привели достаточно аргументов! Правильный синтаксис: `voiceRules [mute/deaf] [фаза игры] [alive/dead] [true/false]`"
+other = "Вы не указали достаточно аргументов! Правильный синтаксис: `voiceRules [mute/deaf] [фаза игры] [alive/dead] [true/false]`"
 
 ["settings.SettingVoiceRules.neitherAliveDead"]
 hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
