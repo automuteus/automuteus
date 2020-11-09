@@ -32,6 +32,21 @@ const (
 	EXILED       PlayerAction = iota
 )
 
+type GameResult int
+
+const (
+	HumansByVote GameResult = iota
+	HumansByTask
+	ImpostorByVote
+	ImpostorByKill
+	ImpostorBySabotage
+	ImpostorDisconnect
+	HumansDisconnect
+)
+
+type GameWinner struct {
+}
+
 type PhaseNameString string
 
 // PhaseNames for lowercase, possibly for translation if needed

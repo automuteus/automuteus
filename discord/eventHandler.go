@@ -239,6 +239,22 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		lock.Release(ctx)
 		return
 	}
+	//if we started a new game
+	if oldPhase == game.LOBBY && phase == game.TASKS {
+		matchID := bot.RedisInterface.GetAndIncrementMatchID()
+		matchStart := time.Now().Unix()
+		dgs.MatchStartUnix = matchStart
+		dgs.MatchID = matchID
+		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
+		//if we went to lobby from anywhere else but the menu, assume the game is over
+	} else if phase == game.LOBBY && oldPhase != game.MENU {
+		//TODO process the game's completion and send to Postgres
+		//only process games that actually receive the end-game event from the capture! Might need to start a worker
+		//to listen for this
+
+		dgs.MatchID = -1
+		dgs.MatchStartUnix = -1
+	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {

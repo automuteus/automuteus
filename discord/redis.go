@@ -67,6 +67,18 @@ func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
 }
 
+func matchIDKey() string {
+	return "automuteus:match:counter"
+}
+
+func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
+	num, err := redisInterface.client.Incr(ctx, matchIDKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return num
+}
+
 func (redisInterface *RedisInterface) SetVersion(version string) {
 	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
 	if err != nil {
