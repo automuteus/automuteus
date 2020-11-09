@@ -153,7 +153,6 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
   This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.
   **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
 - `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000
-- `CONFIG_PATH`: Alternate filesystem path for guild and user config files. Defaults to `./`
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 36000 seconds.
 - `REDIS_PASSWORD`: Your Redis database password, if necessary.
