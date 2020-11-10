@@ -26,7 +26,7 @@ services:
       - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
 
       # Do **NOT** change this
-      - REDIS_ADDR=${BOT_REDIS_ADDR}
+      - REDIS_ADDR=${AUTOMUTEUS_REDIS_ADDR}
     depends_on:
       - redis
       - galactus
