@@ -19,7 +19,7 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/galactus
+          images: ${{ secrets.DOCKERHUB_REPOSITORY }}
           tag-sha: true
 
       - name: Set up QEMU
