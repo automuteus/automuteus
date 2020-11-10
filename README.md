@@ -16,10 +16,10 @@
     </a>
 </p>
 <p align="center">
-    <a href="pulls" alt="Pulls">
+    <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Pulls">
         <img src="https://img.shields.io/docker/pulls/denverquane/amongusdiscord.svg" />
     </a>
-    <a href="stars" alt="Stars">
+    <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Stars">
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
     </a>
 </p>
