@@ -468,6 +468,22 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 				"Count": len(locale.GetBundle().LanguageTags()),
 			}))
 		return false
+	} else if args[2] == "list" {
+		// locale.LoadTranslations()
+
+		strLangs := ""
+		for langCode, langName := range locale.GetLanguages() {
+			strLangs += fmt.Sprintf("\n[%s] - %s", langCode, langName)
+		}
+
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLanguage.list",
+			Other: "Available languages: {{.Langs}}",
+		},
+			map[string]interface{}{
+				"Langs": strLangs,
+			}))
+		return false
 	}
 
 	if len(args[2]) < 2 {

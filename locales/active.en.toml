@@ -1,4 +1,6 @@
-"commands.AllCommands.Ascii.args" = "None"
+"ascii.AsciiStarfield.isWas" = "was An Impostor."
+"ascii.AsciiStarfield.isWasNot" = "was not An Impostor."
+"commands.AllCommands.Ascii.args" = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
 "commands.AllCommands.Ascii.desc" = "Print an ASCII crewmate"
 "commands.AllCommands.Ascii.shortDesc" = "Print an ASCII crewmate"
 "commands.AllCommands.Cache.args" = "<player> (optionally, \"clear\")"
@@ -153,6 +155,7 @@
 "settings.SettingDelays.missingPhases" = "The list of game phases are `Lobby`, `Tasks` and `Discussion`.\\nYou need to type both phases the game is transitioning from and to to change the delay."
 "settings.SettingDelays.setDelayBetweenPhases" = "The delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` changed from {{.OldDelay}} to {{.NewDelay}}."
 "settings.SettingDelays.wrongNumber" = "`{{.Number}}` is not a valid number! Please try again"
+"settings.SettingLanguage.list" = "Available languages: {{.Langs}}"
 "settings.SettingLanguage.notFound" = "Language not found! Available language codes: {{.Langs}}"
 "settings.SettingLanguage.notLoaded" = "Localization files were not loaded! {{.Langs}}"
 "settings.SettingLanguage.reloaded" = "Localization files are reloaded ({{.Count}}). Available language codes: {{.Langs}}"
@@ -183,3 +186,7 @@
 "state.phase.LOBBY" = "LOBBY"
 "state.phase.MENU" = "MENU"
 "state.phase.TASKS" = "TASKS"
+
+["ascii.AsciiStarfield.remains"]
+one = "Impostor remain"
+other = "Impostors remains"
