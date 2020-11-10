@@ -35,10 +35,11 @@ services:
   galactus:
     ports:
       # External port MUST match the port you specified in HOST for the bot!!!
-      - ${EXTERNAL_PORT}:${BROKER_PORT}
+      - ${EXTERNAL_PORT:-8123}:${BROKER_PORT}
     image: automuteus/galactus:${GALACTUS_TAG:-0.0.2}
     restart: always
     environment:
+      # Do not change these
       - BROKER_PORT=${BROKER_PORT}
       - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
     depends_on:

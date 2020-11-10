@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strings"
 )
+
+var OwoFaces = []string{"OwO", "Owo", "owO", "ÓwÓ", "ÕwÕ", "@w@", "ØwØ", "øwø", "uwu", "☆w☆", "✧w✧", "♥w♥", "゜w゜", "◕w◕", "ᅌwᅌ", "◔w◔", "ʘwʘ", "⓪w⓪", "(owo)"}
 
 func Owoify(input string) string {
 	pieces := strings.Split(input, "{{")
@@ -69,7 +72,13 @@ func OwoToml(path, output string) {
 			text := arr[1][1 : len(arr[1])-2]
 			text = strings.ReplaceAll(text, "\n", "")
 			text = strings.ReplaceAll(text, "\r", "")
-			outputfile.WriteString(fmt.Sprintf("%s = \"%s\"\n", arr[0], Owoify(text)))
+			genFace := rand.Intn(2)
+			if genFace == 1 {
+				faceIdx := rand.Intn(len(OwoFaces))
+				outputfile.WriteString(fmt.Sprintf("%s = \"%s %s\"\n", arr[0], Owoify(text), OwoFaces[faceIdx]))
+			} else {
+				outputfile.WriteString(fmt.Sprintf("%s = \"%s\"\n", arr[0], Owoify(text)))
+			}
 		}
 	}
 
