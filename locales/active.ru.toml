@@ -1,3 +1,18 @@
+["ascii.AsciiStarfield.isWas"]
+hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
+other = "оказался предателем."
+
+["ascii.AsciiStarfield.isWasNot"]
+hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
+other = "не был предателем."
+
+["ascii.AsciiStarfield.remains"]
+few = "предателей осталось."
+hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
+many = "предателей осталось."
+one = "предатель остался"
+other = "предателей осталось."
+
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
 other = "<@discord user> <был предателем> (true|false) <x предателей осталось> (число)"
@@ -166,6 +181,10 @@ other = "Отправить все данные игрока пользоват�
 hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
 other = "Показать данные игрока"
 
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
+other = "Посмотреть статистику бота"
+
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
 other = "<название голосового канала>"
@@ -246,10 +265,6 @@ other = "Вот ваши кешированные ники:"
 hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
 other = "У меня нет никаких кэшированных ников, сохраненных для вас!"
 
-["commands.HandleCommand.ShowMe.emptySettings"]
-hash = "sha1-205375851babed42ba0de2c2ddb7eac7f1bb559f"
-other = "У меня нет никаких настроек, сохраненных для вас!"
-
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
 other = "Извините, я не понял эту команду! См. справку `{{.CommandPrefix}} help` для команд"
@@ -319,8 +334,8 @@ hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
 other = "[Посмотреть Github проект](https://github.com/denverquane/automuteus) или [Присоединиться к нашему Discord](https://discord.gg/ZkqZSWF)\n\nВведи `{{.CommandPrefix}} help <command>` чтобы увидеть более подробную информацию о команде!"
 
 ["responses.helpResponse.Title"]
-hash = "sha1-a0d14755cbb5771aa9b446605b5c9f3f2810c4ee"
-other = "Команды бота AutoMuteUs (v{{.version}}):\n"
+hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
+other = "Команды бота AutoMuteUs:\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
@@ -377,6 +392,26 @@ other = "Введи `{{.CommandPrefix}} settings <параметр>` чтобы 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Настройки"
+
+["responses.statsResponse.Commit"]
+hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
+other = "Commit"
+
+["responses.statsResponse.Games"]
+hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
+other = "Активных игр"
+
+["responses.statsResponse.Guilds"]
+hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
+other = "Всего серверов"
+
+["responses.statsResponse.Title"]
+hash = "sha1-8490902565bf22c8f9bfa748c6377c90aad6d6f0"
+other = "Статистика бота"
+
+["responses.statsResponse.Version"]
+hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
+other = "Версия"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -594,6 +629,10 @@ other = "Задержка при переходе из `{{.PhaseA}}` в `{{.Phas
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
 other = "`{{.Number}}` не является допустимым числом! Пожалуйста, попробуйте еще раз"
 
+["settings.SettingLanguage.list"]
+hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
+other = "Доступные языки: {{.Langs}}"
+
 ["settings.SettingLanguage.notFound"]
 hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
 other = "Язык не найден! Доступные коды локализации: {{.Langs}}"
@@ -713,15 +752,3 @@ other = "МЕНЮ"
 ["state.phase.TASKS"]
 hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
 other = "ЗАДАЧИ"
-
-["userSettings.ToEmbed.Description"]
-hash = "sha1-92aee129821ec09bea44cd54de51859f624892a9"
-other = "Вот все настройки, которые у меня есть для вас"
-
-["userSettings.ToEmbed.FielnName"]
-hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
-other = "Настройки"
-
-["userSettings.ToEmbed.Title"]
-hash = "sha1-645421f170f86f0c98aecc9def520089d0c3352d"
-other = "Ваши настройки"
