@@ -35,7 +35,7 @@ services:
   galactus:
     ports:
       # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
-      - ${GALACTUS_EXTERNAL_PORT:-8123}:${GALACTUS_PORT}
+      - ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT}
     image: automuteus/galactus:${GALACTUS_TAG:-0.0.3}
     restart: always
     environment:
