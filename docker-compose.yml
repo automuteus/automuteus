@@ -18,7 +18,7 @@ services:
     environment:
       # These are required and will fail if not present
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
-      - HOST=${HOST:?err}
+      - HOST=${GALACTUS_HOST:?err}
 
       # These Variables are optional
       - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2:-}
@@ -35,12 +35,12 @@ services:
   galactus:
     ports:
       # External port MUST match the port you specified in HOST for the bot!!!
-      - ${EXTERNAL_PORT:-8123}:${BROKER_PORT}
-    image: automuteus/galactus:${GALACTUS_TAG:-0.0.2}
+      - ${GALACTUS_EXTERNAL_PORT:-8123}:${GALACTUS_PORT}
+    image: automuteus/galactus:${GALACTUS_TAG:-0.0.3}
     restart: always
     environment:
-      # Do not change these
-      - BROKER_PORT=${BROKER_PORT}
+      # Do **NOT** change these
+      - BROKER_PORT=${GALACTUS_PORT}
       - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
     depends_on:
       - redis
