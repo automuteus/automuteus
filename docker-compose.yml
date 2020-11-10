@@ -34,14 +34,15 @@ services:
       - "bot-logs:/app/logs"
   galactus:
     ports:
-      # External port MUST match the port you specified in HOST for the bot!!!
+      # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
       - ${GALACTUS_EXTERNAL_PORT:-8123}:${GALACTUS_PORT}
     image: automuteus/galactus:${GALACTUS_TAG:-0.0.3}
     restart: always
     environment:
       # Do **NOT** change these
-      - BROKER_PORT=${GALACTUS_PORT}
+      - BROKER_PORT=${BROKER_PORT}
       - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
+      - GALACTUS_PORT=${GALACTUS_PORT}
     depends_on:
       - redis
 
