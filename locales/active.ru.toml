@@ -1,3 +1,18 @@
+["ascii.AsciiStarfield.isWas"]
+hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
+other = "оказался самозванцем."
+
+["ascii.AsciiStarfield.isWasNot"]
+hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
+other = "не был самозванцем."
+
+["ascii.AsciiStarfield.remains"]
+few = "самозванцев осталось"
+hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
+many = "самозванцев осталось"
+one = "самозванец остался"
+other = "самозванцев осталось"
+
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
 other = "<@discord user> <был предателем> (true|false) <x предателей осталось> (число)"
@@ -408,7 +423,7 @@ other = "Настройки"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "Активные игры"
+other = "Активных игр"
 
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
@@ -637,6 +652,10 @@ other = "Задержка при переходе из `{{.PhaseA}}` в `{{.Phas
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
 other = "`{{.Number}}` не является допустимым числом! Пожалуйста, попробуйте еще раз"
+
+["settings.SettingLanguage.list"]
+hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
+other = "Доступные языки: {{.Langs}}"
 
 ["settings.SettingLanguage.notFound"]
 hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
