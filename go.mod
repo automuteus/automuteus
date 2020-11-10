@@ -6,7 +6,7 @@ go 1.15
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/automuteus/galactus v0.0.1
+	github.com/automuteus/galactus v0.0.3
 	github.com/bsm/redislock v0.7.0
 	github.com/bwmarrin/discordgo v0.22.0
 	github.com/go-redis/redis/v8 v8.3.3

@@ -101,6 +101,7 @@
 "responses.statsResponse.Guilds" = "Total Guilds"
 "responses.statsResponse.Games" = "Active Games"
 "responses.statsResponse.Version" = "Version"
+"responses.statsResponse.Commit" = "Commit"
 "settings.AllSettings.AdminUserIDs.args" = "<User @ mentions>..."
 "settings.AllSettings.AdminUserIDs.desc" = "Specify which individual users have admin bot permissions"
 "settings.AllSettings.AdminUserIDs.shortDesc" = "Bot Admins"

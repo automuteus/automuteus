@@ -116,11 +116,11 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 		Author:      nil,
 	}
 
-	version := broker.GetVersion(bot.RedisInterface.client)
+	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
 	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
 	totalGames := broker.GetActiveGames(bot.RedisInterface.client)
 
-	fields := make([]*discordgo.MessageEmbedField, 3)
+	fields := make([]*discordgo.MessageEmbedField, 4)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Guilds",
@@ -143,6 +143,14 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 			Other: "Version",
 		}),
 		Value:  version,
+		Inline: true,
+	}
+	fields[3] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Commit",
+			Other: "Commit",
+		}),
+		Value:  commit,
 		Inline: true,
 	}
 

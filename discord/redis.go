@@ -39,6 +39,10 @@ func versionKey() string {
 	return "automuteus:version"
 }
 
+func commitKey() string {
+	return "automuteus:commit"
+}
+
 func totalGuildsKey(version string) string {
 	return "automuteus:count:guilds:version-" + version
 }
@@ -79,19 +83,29 @@ func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
 	return num
 }
 
-func (redisInterface *RedisInterface) SetVersion(version string) {
+func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
 	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = redisInterface.client.Set(ctx, commitKey(), commit, 0).Err()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (redisInterface *RedisInterface) GetVersion() string {
+func (redisInterface *RedisInterface) GetVersionAndCommit() (string, string) {
 	v, err := redisInterface.client.Get(ctx, versionKey()).Result()
 	if err != nil {
 		log.Println(err)
 	}
-	return v
+
+	c, err := redisInterface.client.Get(ctx, commitKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return v, c
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {

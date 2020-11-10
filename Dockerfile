@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=builder /app /app
 COPY ./locales/ /app/locales
 
-# Port used for
+# Port used for health/liveliness checks
 EXPOSE 8080
 # Port used for application command and control
 EXPOSE 5000

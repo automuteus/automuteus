@@ -119,7 +119,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	dg.UpdateStatusComplex(*status)
 
-	bot.RedisInterface.SetVersion(Version)
+	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
 
 	go StartHealthCheckServer("8080")
 
