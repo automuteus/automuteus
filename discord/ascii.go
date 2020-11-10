@@ -1,8 +1,14 @@
 package discord
 
-import "fmt"
+import (
+	"fmt"
 
-const AsciiCrewmate = "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⣠⣤⣤⣤⣤⣤⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+)
+
+const AsciiCrewmate = "" +
+	"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⣠⣤⣤⣤⣤⣤⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠀ ⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠀ ⣼⣿⠋⠀⠀⠀⠀      ⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀  ⣸⣿   ⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀\n" +
@@ -22,19 +28,32 @@ const AsciiCrewmate = "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⣠⣤⣤⣤⣤⣤⣤�
 	"⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿  ⠀⠈⠻⣿⣿⣿⡿⠏⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 
-func AsciiStarfield(name string, imposter bool, count int) string {
-	t := "was not"
-	if imposter {
-		t = "was"
+func AsciiStarfield(sett *storage.GuildSettings, name string, isImpostor bool, count int) string {
+	isImpostorStr := sett.LocalizeMessage(&i18n.Message{
+		ID:    "ascii.AsciiStarfield.isWasNot",
+		Other: "was not An Impostor.",
+	})
+
+	if isImpostor {
+		isImpostorStr = sett.LocalizeMessage(&i18n.Message{
+			ID:    "ascii.AsciiStarfield.isWas",
+			Other: "was An Impostor.",
+		})
 	}
 
-	// decide how much impostors remain and put out matching text --> textremimp
-	textremimp := "Impostor remains"
-	if count > 1 {
-		textremimp = "Impostors remain"
-	} else {
-		textremimp = "Impostor remains"
-	}
+	remains := sett.LocalizeMessage(&i18n.Message{
+		ID:    "ascii.AsciiStarfield.remains",
+		One:   "Impostor remain",
+		Other: "Impostors remains",
+	}, count)
 
-	return fmt.Sprintf(". 　　　。　　　　•　 　 ﾟ　　 。 　　 .\n\n　　　.　　　 　　.　　　　　。　　 。　. 　\n\n.　　 。　　　　　 ඞ 。 . 　　 • 　　　　•\n\n　　ﾟ　　%s %s An Impostor.　。\n\n　　'　　　 %d %s 　 　　。\n\n　　ﾟ　　　.　　　. ,　　　　.　 .        •　 　ﾟ", name, t, count, textremimp)
+	template := "" +
+		". 　　　。　　　　•　 　 ﾟ　　 。 　　 .\n\n" +
+		"　　　.　　　 　　.　　　　　。　　 。　. 　\n\n" +
+		".　　 。　　　　　 ඞ 。 . 　　 • 　　　　•\n\n" +
+		"　　ﾟ　　%s %s　。\n\n" +
+		"　　'　　　 %d %s 　 　　。\n\n" +
+		"　　ﾟ　　　.　　　. ,　　　　.　 .        •　 　ﾟ"
+
+	return fmt.Sprintf(template, name, isImpostorStr, count, remains)
 }
