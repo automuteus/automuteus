@@ -99,18 +99,33 @@ func LocalizeMessage(args ...interface{}) string {
 	var templateData map[string]interface{}
 	lang := defaultBotLang
 	message := args[0].(*i18n.Message)
+	var pluralCount interface{} = nil
 
-	// omgg
+	// omgg, rework this
+
+	// 1
 	if len(args[1:]) > 0 {
 		if model, ok := args[1].(map[string]interface{}); ok {
 			templateData = model
 		} else if model, ok := args[1].(string); ok {
 			lang = model
+		} else if model, ok := args[1].(int); ok {
+			pluralCount = model
 		}
 
-		if len(args[1:]) > 1 {
+		// 2
+		if len(args[2:]) > 0 {
 			if model, ok := args[2].(string); ok {
 				lang = model
+			} else if model, ok := args[2].(int); ok {
+				pluralCount = model
+			}
+
+			// 3
+			if len(args[3:]) > 0 {
+				if model, ok := args[3].(int); ok {
+					pluralCount = model
+				}
 			}
 		}
 	}
@@ -120,6 +135,7 @@ func LocalizeMessage(args ...interface{}) string {
 	msg, err := localizer.Localize(&i18n.LocalizeConfig{
 		DefaultMessage: message,
 		TemplateData:   templateData,
+		PluralCount:    pluralCount,
 	})
 
 	// fix go-i18n extract
