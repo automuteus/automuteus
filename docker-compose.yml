@@ -2,7 +2,14 @@ version: "3"
 
 services:
   automuteus:
-    image: denverquane/amongusdiscord:${BRANCH}
+    # Either:
+    # - Use a prebuilt image
+    image: denverquane/amongusdiscord:${BRANCH:-3}
+    # - Build image from local source
+    #build: .
+    # - Build image from github directly
+    #build: http://github.com/denverquane/automuteus.git
+
     restart: always
     ports:
       # 5000 is the default service port, 8123 is the default port for the capture
@@ -10,18 +17,31 @@ services:
       # be sure to change them here, too!
 
       # Format is HostPort:ContainerPort
-      - 5000:5000
-      - 8123:8123
+      - ${SERVICE_PORT:-5000}:5000
+      - ${PORT:-8123}:8123
     environment:
-      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-      - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2}
-      - HOST=${HOST}
+      # These are required and will fail if not present
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
+      - HOST=${HOST:?err}
+
+      # These Variables are optional
+      - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2:-}
+      - EMOJI_GUILD_ID=${EMOJI_GUILD_ID:-}
+      - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
+
+      # Do **NOT** change this
       - REDIS_ADDRESS=redis:6379
-      # Add other variables as desired here. Either explicitly (like the REDIS_ADDRESS above is),
-      # or by providing an equivalent mapping in the `.env` file
     depends_on:
       - redis
+    volumes:
+      - "bot-logs:/app/logs"
 
   redis:
     image: redis:alpine
     restart: always
+    volumes:
+      - "redis-data:/data"
+
+volumes:
+  bot-logs:
+  redis-data:

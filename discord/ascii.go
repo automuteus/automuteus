@@ -27,5 +27,14 @@ func AsciiStarfield(name string, imposter bool, count int) string {
 	if imposter {
 		t = "was"
 	}
-	return fmt.Sprintf(". 　　　。　　　　•　 　 ﾟ　　 。 　　 .\n\n　　　.　　　 　　.　　　　　。　　 。　. 　\n\n.　　 。　　　　　 ඞ 。 . 　　 • 　　　　•\n\n　　ﾟ　　%s %s An Impostor.　。\n\n　　'　　　 %d Impostor remains 　 　　。\n\n　　ﾟ　　　.　　　. ,　　　　.　 .        •　 　ﾟ", name, t, count)
+
+	// decide how much impostors remain and put out matching text --> textremimp
+	textremimp := "Impostor remains"
+	if count > 1 {
+		textremimp = "Impostors remain"
+	} else {
+		textremimp = "Impostor remains"
+	}
+
+	return fmt.Sprintf(". 　　　。　　　　•　 　 ﾟ　　 。 　　 .\n\n　　　.　　　 　　.　　　　　。　　 。　. 　\n\n.　　 。　　　　　 ඞ 。 . 　　 • 　　　　•\n\n　　ﾟ　　%s %s An Impostor.　。\n\n　　'　　　 %d %s 　 　　。\n\n　　ﾟ　　　.　　　. ,　　　　.　 .        •　 　ﾟ", name, t, count, textremimp)
 }
