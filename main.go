@@ -138,8 +138,8 @@ func discordMainWrapper() error {
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
-	redisAddr := os.Getenv("REDIS_ADDRESS")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASS")
 	if redisAddr != "" {
 		err := redisClient.Init(storage.RedisParameters{
 			Addr:     redisAddr,
@@ -158,7 +158,7 @@ func discordMainWrapper() error {
 			log.Println(err)
 		}
 	} else {
-		return errors.New("no Redis Address specified; exiting")
+		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))

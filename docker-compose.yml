@@ -26,7 +26,7 @@ services:
       - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
 
       # Do **NOT** change this
-      - REDIS_ADDRESS=${REDIS_ADDRESS}
+      - REDIS_ADDR=${BOT_REDIS_ADDR}
     depends_on:
       - redis
       - galactus
@@ -40,7 +40,7 @@ services:
     restart: always
     environment:
       - BROKER_PORT=${BROKER_PORT}
-      - REDIS_ADDRESS=${REDIS_ADDRESS}
+      - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
     depends_on:
       - redis
 
