@@ -2,7 +2,6 @@ package discord
 
 import (
 	"encoding/json"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/go-redis/redis/v8"
 )
 
 type EndGameType int

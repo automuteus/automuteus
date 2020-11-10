@@ -35,6 +35,7 @@ const (
 	Stats
 	DebugState
 	Ascii
+	SecretKey
 	Null
 )
 
@@ -449,6 +450,27 @@ var AllCommands = []Command{
 		permissionSetting: false,
 	},
 	{
+		cmdType: SecretKey,
+		command: "secretkey",
+		example: "secretkey",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.SecretKey.shortDesc",
+			Other: "Gen secretKey",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.SecretKey.desc",
+			Other: "Generate a secret key for the plugin",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.SecretKey.args",
+			Other: "<@user owner code> <generate or clear>",
+		},
+		aliases:           []string{"sk"},
+		secret:            true,
+		adminSetting:      true,
+		permissionSetting: true,
+	},
+	{
 		cmdType:           Null,
 		command:           "",
 		example:           "",
@@ -851,10 +873,76 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					}
-					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(args[1], imposter, count))
+					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(sett, args[1], imposter, count))
 				}
 			}
 			break
+
+		case SecretKey:
+			if len(args[1:]) == 0 {
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			} else {
+				ownerID, err := extractUserIDFromMention(args[1])
+				if err != nil {
+					log.Println(err)
+					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+					break
+				}
+
+				if len(args[2:]) == 0 {
+					userSecretKeys := bot.RedisInterface.GetSecretKeysMappings(m.GuildID, ownerID)
+					if len(userSecretKeys) == 0 {
+						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.HandleCommand.SecretKey.emptySecretKeys",
+							Other: "I don't have any secretKeys stored for that user!",
+						}))
+					} else {
+						buf := bytes.NewBuffer([]byte(""))
+						buf.WriteString("\n```\n")
+						for n := range userSecretKeys {
+							buf.WriteString(fmt.Sprintf("%s\n", n))
+						}
+						buf.WriteString("```")
+
+						// s.ChannelMessageSend(m.ChannelID, buf.String())
+						var embed = discordgo.MessageEmbed{
+							URL:  "",
+							Type: "",
+							Title: sett.LocalizeMessage(&i18n.Message{
+								ID:    "commands.HandleCommand.SecretKey.secretKeys.embed.Title",
+								Other: "Secret keys",
+							}),
+							Description: buf.String(),
+						}
+						sendMessageDM(s, m.Author.ID, &embed)
+					}
+				} else if strings.ToLower(args[2]) == "generate" || strings.ToLower(args[2]) == "g" {
+					newSecretKey := generateSecretKey(m.GuildID)
+					log.Println(newSecretKey)
+					go bot.RedisInterface.AddSecretKey(m.GuildID, ownerID, newSecretKey)
+					if err != nil {
+						log.Println(err)
+					} else {
+						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.HandleCommand.SecretKey.Generated",
+							Other: "Successfully generated new secretKey for that user! See console...",
+						}))
+					}
+				} else if strings.ToLower(args[2]) == "clear" || strings.ToLower(args[2]) == "c" {
+					err := bot.RedisInterface.DeleteSecretKeysByUserID(m.GuildID, ownerID)
+					if err != nil {
+						log.Println(err)
+					} else {
+						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.HandleCommand.SecretKey.Success",
+							Other: "Successfully deleted all secretKeys for that user!",
+						}))
+					}
+				}
+			}
+			break
+
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.default",

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
-	"log"
-	"time"
 )
 
 var ctx = context.Background()
@@ -65,6 +66,10 @@ func discordKey(guildID, id string) string {
 
 func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
+}
+
+func secretKeysHash(guildID string) string {
+	return "automuteus:discord:" + guildID + ":secretkeys"
 }
 
 func matchIDKey() string {
@@ -422,6 +427,58 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 
 	return redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
 }
+
+// => secretKey zone
+
+func (redisInterface *RedisInterface) AddSecretKey(guildID, userID, secretKeys string) error {
+	return redisInterface.appendToSecretKeyEntry(guildID, userID, secretKeys)
+}
+
+func (redisInterface *RedisInterface) DeleteSecretKeysByUserID(guildID, userID string) error {
+	secretKeysHash := secretKeysHash(guildID)
+	return redisInterface.client.HDel(ctx, secretKeysHash, userID).Err()
+}
+
+func (redisInterface *RedisInterface) GetSecretKeysMappings(guildID, userID string) map[string]interface{} {
+	secretKeysHash := secretKeysHash(guildID)
+
+	value, err := redisInterface.client.HGet(ctx, secretKeysHash, userID).Result()
+	if err != nil {
+		log.Println(err)
+		return map[string]interface{}{}
+	}
+
+	var ret map[string]interface{}
+	err = json.Unmarshal([]byte(value), &ret)
+	if err != nil {
+		log.Println(err)
+		return map[string]interface{}{}
+	}
+
+	log.Println(ret)
+	return ret
+}
+
+func (redisInterface *RedisInterface) appendToSecretKeyEntry(guildID, userID, value string) error {
+	resp := redisInterface.GetSecretKeysMappings(guildID, userID)
+
+	resp[value] = struct{}{}
+
+	return redisInterface.setSecretKeysMappings(guildID, userID, resp)
+}
+
+func (redisInterface *RedisInterface) setSecretKeysMappings(guildID, key string, values map[string]interface{}) error {
+	secretKeysHash := secretKeysHash(guildID)
+
+	jBytes, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+
+	return redisInterface.client.HSet(ctx, secretKeysHash, key, jBytes).Err()
+}
+
+// <= end secretKey zone
 
 func (redisInterface *RedisInterface) Close() error {
 	return redisInterface.client.Close()
