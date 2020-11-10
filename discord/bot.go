@@ -107,6 +107,12 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		}
 	}
 
+	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
+
+	go StartHealthCheckServer("8080")
+
+	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
+
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
 		Game: &discordgo.Game{
@@ -116,14 +122,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		AFK:    false,
 		Status: "",
 	}
-
 	dg.UpdateStatusComplex(*status)
-
-	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
-
-	go StartHealthCheckServer("8080")
-
-	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
 	return &bot
 }
