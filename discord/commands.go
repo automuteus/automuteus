@@ -836,7 +836,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					}
-					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(args[1], imposter, count))
+					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(sett, args[1], imposter, count))
 				}
 			}
 			break
