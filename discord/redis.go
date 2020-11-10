@@ -35,33 +35,16 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func lobbyUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:lobby"
+func versionKey() string {
+	return "automuteus:version"
 }
 
-func phaseUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:phase"
-}
-
-func playerUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:player"
-}
-
-func connectUpdateKey(connCode string) string {
-	return gameKey(connCode) + ":events:connect"
-}
-
-//used by the receiver to indicate that it saw the connection event
-func connectUpdateKeyAck(connCode string) string {
-	return gameKey(connCode) + ":events:connect:ack"
+func commitKey() string {
+	return "automuteus:commit"
 }
 
 func totalGuildsKey(version string) string {
-	return "automuteus:count:guilds:v" + version
-}
-
-func gameKey(connCode string) string {
-	return "automuteus:game:" + connCode
+	return "automuteus:count:guilds:version-" + version
 }
 
 func activeGamesKey(guildID string) string {
@@ -88,8 +71,55 @@ func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
 }
 
+func matchIDKey() string {
+	return "automuteus:match:counter"
+}
+
+func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
+	num, err := redisInterface.client.Incr(ctx, matchIDKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return num
+}
+
+func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
+	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = redisInterface.client.Set(ctx, commitKey(), commit, 0).Err()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) GetVersionAndCommit() (string, string) {
+	v, err := redisInterface.client.Get(ctx, versionKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+
+	c, err := redisInterface.client.Get(ctx, commitKey()).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return v, c
+}
+
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
-	redisInterface.client.SAdd(ctx, totalGuildsKey(version), storage.HashGuildID(guildID))
+	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID, version string) {
+	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
@@ -99,47 +129,6 @@ func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
 		return 0
 	}
 	return count
-}
-
-func (redisInterface *RedisInterface) PublishLobbyUpdate(connectCode, lobbyJson string) {
-	redisInterface.publish(lobbyUpdateKey(connectCode), lobbyJson)
-}
-
-func (redisInterface *RedisInterface) PublishPhaseUpdate(connectCode, phase string) {
-	redisInterface.publish(phaseUpdateKey(connectCode), phase)
-}
-
-func (redisInterface *RedisInterface) PublishPlayerUpdate(connectCode, playerJson string) {
-	redisInterface.publish(playerUpdateKey(connectCode), playerJson)
-}
-
-func (redisInterface *RedisInterface) PublishConnectUpdate(connectCode, connect string) {
-	redisInterface.publish(connectUpdateKey(connectCode), connect)
-}
-
-func (redisInterface *RedisInterface) PublishConnectUpdateAck(connectCode string) {
-	redisInterface.publish(connectUpdateKeyAck(connectCode), "ack")
-}
-
-func (redisInterface *RedisInterface) SubscribeConnectUpdateAck(connectCode string) *redis.PubSub {
-	return redisInterface.client.Subscribe(ctx, connectUpdateKeyAck(connectCode))
-}
-
-func (redisInterface *RedisInterface) publish(topic, message string) {
-	log.Printf("Publishing %s to %s\n", message, topic)
-	err := redisInterface.client.Publish(ctx, topic, message).Err()
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (redisInterface *RedisInterface) SubscribeToGame(connectCode string) (connection, lobby, phase, player *redis.PubSub) {
-	connect := redisInterface.client.Subscribe(ctx, connectUpdateKey(connectCode))
-	lob := redisInterface.client.Subscribe(ctx, lobbyUpdateKey(connectCode))
-	phas := redisInterface.client.Subscribe(ctx, phaseUpdateKey(connectCode))
-	play := redisInterface.client.Subscribe(ctx, playerUpdateKey(connectCode))
-
-	return connect, lob, phas, play
 }
 
 //todo this can technically be a race condition? what happens if one of these is updated while we're fetching...
@@ -166,14 +155,12 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 	return redisInterface.getDiscordGameState(gsr)
 }
 
-//TODO can fail to obtain the lock when voice state changes happen. This is expected, but need to gracefully handle it
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *DiscordGameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", time.Second*LockTimeoutSecs, &redislock.Options{
+	lock, err := locker.Obtain(ctx, key+":lock", time.Second*LockTimeoutSecs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
-		Context:       nil,
 	})
 	if err == redislock.ErrNotObtained {
 		return nil, nil
@@ -226,7 +213,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	if data == nil {
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	}
@@ -245,7 +232,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		//log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	} else {
@@ -257,7 +244,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		log.Println(err)
 		if lock != nil {
 			//log.Println("UNLOCKING")
-			lock.Release()
+			lock.Release(ctx)
 		}
 		return
 	}
@@ -270,7 +257,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if lock != nil {
 		//log.Println("UNLOCKING")
-		lock.Release()
+		lock.Release(ctx)
 	}
 
 	if data.ConnectCode != "" {
@@ -298,7 +285,6 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 }
 
-//TODO perform this constantly as games are started/ended
 func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
 
@@ -311,6 +297,16 @@ func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode s
 	}
 }
 
+func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {
+	key := activeGamesKey(guildID)
+
+	err := redisInterface.client.SRem(ctx, key, connectCode).Err()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+//only deletes from the guild's responsibility, NOT the entire guild counter!
 func (redisInterface *RedisInterface) LoadAllActiveGamesAndDelete(guildID string) []string {
 	hash := activeGamesKey(guildID)
 
@@ -340,17 +336,16 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 	key := discordKey(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(key+":lock", LockTimeoutSecs*time.Second, &redislock.Options{
+	lock, err := locker.Obtain(ctx, key+":lock", LockTimeoutSecs*time.Second, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
-		Context:       nil,
 	})
 	if err == redislock.ErrNotObtained {
 		fmt.Println("Could not obtain lock!")
 	} else if err != nil {
 		log.Fatalln(err)
 	} else {
-		defer lock.Release()
+		defer lock.Release(ctx)
 	}
 
 	//delete all the pointers to the underlying -actual- discord data

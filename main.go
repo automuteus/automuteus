@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	version = "3.0.0"
+	version = "4.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -109,17 +109,6 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	internalPort := os.Getenv("PORT")
-	if internalPort == "" {
-		log.Printf("[Info] No PORT provided. Defaulting to %s\n", discord.DefaultPort)
-		internalPort = discord.DefaultPort
-	} else {
-		num, err := strconv.Atoi(internalPort)
-		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
-			return errors.New("invalid PORT (outside range [1024-65535] or 80/443) provided")
-		}
-	}
-
 	servicePort := os.Getenv("SERVICE_PORT")
 	if servicePort == "" {
 		log.Printf("[Info] No SERVICE_PORT provided. Defaulting to %s\n", DefaultServicePort)
@@ -149,8 +138,8 @@ func discordMainWrapper() error {
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
-	redisAddr := os.Getenv("REDIS_ADDRESS")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASS")
 	if redisAddr != "" {
 		err := redisClient.Init(storage.RedisParameters{
 			Addr:     redisAddr,
@@ -169,18 +158,16 @@ func discordMainWrapper() error {
 			log.Println(err)
 		}
 	} else {
-		return errors.New("no Redis Address specified; exiting")
+		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
-	locale.InitLang(os.Getenv("BOT_LANG"))
+	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, internalPort, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
-
-	go discord.MessagesServer(servicePort, bot)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
 
 	<-sc
 	bot.GracefulClose()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/automuteus/galactus/broker"
 	"strings"
 
 	"github.com/denverquane/amongusdiscord/game"
@@ -13,17 +14,14 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func helpResponse(isAdmin, isPermissioned bool, version, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.helpResponse.Title",
-			Other: "AutoMuteUs Bot Commands (v{{.version}}):\n",
-		},
-			map[string]interface{}{
-				"version": version,
-			}),
+			Other: "AutoMuteUs Bot Commands:\n",
+		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.helpResponse.SubTitle",
 			Other: "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
@@ -94,6 +92,66 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 			Value:  sett.LocalizeMessage(v.shortDesc),
 			Inline: true,
 		}
+	}
+
+	embed.Fields = fields
+	return &embed
+}
+
+func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	embed := discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Title",
+			Other: "Bot Stats",
+		}),
+		Description: "",
+		Timestamp:   "",
+		Color:       2067276, //DARK GREEN
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+	}
+
+	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
+	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
+	totalGames := broker.GetActiveGames(bot.RedisInterface.client)
+
+	fields := make([]*discordgo.MessageEmbedField, 4)
+	fields[0] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Guilds",
+			Other: "Total Guilds",
+		}),
+		Value:  fmt.Sprintf("%d", totalGuilds),
+		Inline: true,
+	}
+	fields[1] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Games",
+			Other: "Active Games",
+		}),
+		Value:  fmt.Sprintf("%d", totalGames),
+		Inline: true,
+	}
+	fields[2] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Version",
+			Other: "Version",
+		}),
+		Value:  version,
+		Inline: true,
+	}
+	fields[3] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Commit",
+			Other: "Commit",
+		}),
+		Value:  commit,
+		Inline: true,
 	}
 
 	embed.Fields = fields

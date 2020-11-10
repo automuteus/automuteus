@@ -2,9 +2,12 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/go-redis/redis/v8"
 	"log"
+	"strconv"
 	"time"
 
+	"github.com/automuteus/galactus/broker"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -22,103 +25,100 @@ type EndGameMessage struct {
 }
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
-	log.Println("Started Redis Subscription worker")
+	log.Println("Started Redis Subscription worker for " + connectCode)
+
+	notify := broker.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
-	connection, lobby, phase, player := bot.RedisInterface.SubscribeToGame(connectCode)
+
 	sett := bot.StorageInterface.GetGuildSettings(guildID)
 
 	dgsRequest := GameStateRequest{
 		GuildID:     guildID,
 		ConnectCode: connectCode,
 	}
+
+	//indicate to the broker that we're online and ready to start processing messages
+	broker.Ack(ctx, bot.RedisInterface.client, connectCode)
+
 	for {
 		select {
-		case gameMessage := <-connection.Channel():
+		case message := <-notify.Channel():
 			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
+			if message == nil {
 				break
 			}
 
-			//tell the producer of the connection event that we got their message
-			bot.RedisInterface.PublishConnectUpdateAck(connectCode)
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-			for lock == nil {
-				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-			}
-			if gameMessage.Payload == "true" {
-				dgs.Linked = true
-			} else {
-				dgs.Linked = false
-			}
-			dgs.ConnectCode = connectCode
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+			//anytime we get a notification message, continue pulling messages off the list until there are no more
+			for {
+				job, err := broker.PopJob(ctx, bot.RedisInterface.client, connectCode)
+				if err == redis.Nil {
+					break
+				} else if err != nil {
+					log.Println(err)
+					break
+				}
+				log.Println("Popped job w/ payload " + job.Payload.(string))
 
-			bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+				switch job.JobType {
+				case broker.Connection:
+					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					for lock == nil {
+						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					}
+					if job.Payload == "true" {
+						dgs.Linked = true
+					} else {
+						dgs.Linked = false
+					}
+					dgs.ConnectCode = connectCode
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+
+					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					break
+				case broker.Lobby:
+					var lobby game.Lobby
+					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
+					break
+				case broker.State:
+					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					bot.processTransition(game.Phase(num), dgsRequest)
+					break
+				case broker.Player:
+					var player game.Player
+					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
+					if err != nil {
+						log.Println(err)
+						break
+					}
+
+					shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
+					if shouldHandleTracked {
+						bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+					}
+
+					break
+				}
+			}
 			break
-		case gameMessage := <-lobby.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var lobby game.Lobby
-			err := json.Unmarshal([]byte(gameMessage.Payload), &lobby)
-			if err != nil {
-				log.Println(err)
-				break
-			}
 
-			bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
-			break
-		case gameMessage := <-phase.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var phase game.Phase
-			err := json.Unmarshal([]byte(gameMessage.Payload), &phase)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			bot.processTransition(phase, dgsRequest)
-			break
-		case gameMessage := <-player.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if gameMessage == nil {
-				break
-			}
-			var player game.Player
-			err := json.Unmarshal([]byte(gameMessage.Payload), &player)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-
-			shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
-			if shouldHandleTracked {
-				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
-			}
-
-			break
 		case <-timer.C:
 			timer.Stop()
 			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
-			err := connection.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = lobby.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = phase.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = player.Close()
+			err := notify.Close()
 			if err != nil {
 				log.Println(err)
 			}
@@ -130,19 +130,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			return
 		case k := <-endGameChannel:
 			log.Println("Redis subscriber received kill signal, closing all pubsubs")
-			err := connection.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = lobby.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = phase.Close()
-			if err != nil {
-				log.Println(err)
-			}
-			err = player.Close()
+			err := notify.Close()
 			if err != nil {
 				log.Println(err)
 			}
@@ -172,31 +160,47 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
+			_, _, data := dgs.AmongUsData.UpdatePlayer(player)
+
+			userID := dgs.AttemptPairingByMatchingNames(data)
+			//try pairing via the cached usernames
+			if userID == "" {
+				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				userID = dgs.AttemptPairingByUserIDs(data, uids)
+			}
+			if userID != "" {
+				bot.applyToSingle(dgs, userID, false, false)
+			}
 
 			dgs.AmongUsData.ClearPlayerData(player.Name)
-			dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+
+			//only update the message if we're not in the tasks phase (info leaks)
+			if dgs.AmongUsData.GetPhase() != game.TASKS {
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+			}
+
 			return true
 		} else {
 			updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
 
 			if player.Action == game.JOINED {
 				log.Println("Detected a player joined, refreshing User data mappings")
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
 				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 				return true
 			} else if updated {
-				paired := dgs.AttemptPairingByMatchingNames(data)
+				userID := dgs.AttemptPairingByMatchingNames(data)
 				//try pairing via the cached usernames
-				if !paired {
+				if userID == "" {
 					uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 
-					paired = dgs.AttemptPairingByUserIDs(data, uids)
+					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
@@ -232,8 +236,24 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 
 	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
 	if oldPhase == phase {
-		lock.Release()
+		lock.Release(ctx)
 		return
+	}
+	//if we started a new game
+	if oldPhase == game.LOBBY && phase == game.TASKS {
+		matchID := bot.RedisInterface.GetAndIncrementMatchID()
+		matchStart := time.Now().Unix()
+		dgs.MatchStartUnix = matchStart
+		dgs.MatchID = matchID
+		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
+		//if we went to lobby from anywhere else but the menu, assume the game is over
+	} else if phase == game.LOBBY && oldPhase != game.MENU {
+		//TODO process the game's completion and send to Postgres
+		//only process games that actually receive the end-game event from the capture! Might need to start a worker
+		//to listen for this
+
+		dgs.MatchID = -1
+		dgs.MatchStartUnix = -1
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

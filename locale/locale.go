@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -13,18 +12,23 @@ import (
 	"golang.org/x/text/language"
 )
 
-const localesDir = "locales/"
 const DefaultLang = "en"
+
+var LocalePath = ""
 
 var defaultBotLang string
 var bundleInstance *i18n.Bundle
 
 var localeLanguages = make(map[string]string)
 
-func InitLang(lang string) {
+func InitLang(localePath, lang string) {
 	defaultBotLang = lang
 	if defaultBotLang == "" {
 		defaultBotLang = DefaultLang
+	}
+	LocalePath = localePath
+	if localePath == "" {
+		LocalePath = "locales/"
 	}
 	GetBundle()
 }
@@ -47,24 +51,15 @@ func LoadTranslations() *i18n.Bundle {
 	localeLanguages = make(map[string]string)
 	localeLanguages[DefaultLang] = language.Make(DefaultLang).String()
 
-	absLocalesDir, e := filepath.Abs(localesDir)
-	if e != nil {
-		log.Printf("[Locale] Locale path is not valid: %s", e)
-	} else {
-		log.Printf("[Locale] Looking for locale data in: %s", absLocalesDir)
-	}
-
 	defaultBotLangLoaded := defaultBotLang == DefaultLang
-	files, err := ioutil.ReadDir(absLocalesDir)
-	if err != nil {
-		log.Printf("[Locale] No locale folder found: %s", err)
-	} else {
+	files, err := ioutil.ReadDir(LocalePath)
+	if err == nil {
 		re := regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
 		for _, file := range files {
 			if match := re.FindStringSubmatch(file.Name()); match != nil {
 				fileLang := match[re.SubexpIndex("lang")]
 
-				if _, err := bundle.LoadMessageFile(path.Join(absLocalesDir, file.Name())); err != nil {
+				if _, err := bundle.LoadMessageFile(path.Join(LocalePath, file.Name())); err != nil {
 					if defaultBotLang != DefaultLang && fileLang != DefaultLang {
 						log.Println("[Locale] Eroor load message file:", err)
 					}

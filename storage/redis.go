@@ -31,53 +31,8 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 	return nil
 }
 
-func userSettingsKey(id HashedID) string {
-	return "automuteus:settings:user:" + string(id)
-}
-
 func guildSettingsKey(id HashedID) string {
 	return "automuteus:settings:guild:" + string(id)
-}
-
-func userStatsKey(id HashedID) string {
-	return "automuteus:stats:user:" + string(id)
-}
-
-func (storageInterface *StorageInterface) GetUserSettings(userID string) *UserSettings {
-	key := userSettingsKey(HashUserID(userID))
-
-	j, err := storageInterface.client.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return nil
-	} else if err != nil {
-		log.Println(err)
-		return nil
-	} else {
-		s := UserSettings{}
-		err := json.Unmarshal([]byte(j), &s)
-		if err != nil {
-			log.Println(err)
-			return nil
-		}
-		return &s
-	}
-}
-
-func (storageInterface *StorageInterface) SetUserSettings(userID string, userSettings *UserSettings) error {
-	key := userSettingsKey(HashUserID(userID))
-
-	jbytes, err := json.MarshalIndent(userSettings, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = storageInterface.client.Set(ctx, key, jbytes, 0).Err()
-	return err
-}
-
-func (storageInterface *StorageInterface) DeleteUserSettings(userID string) error {
-	key := userSettingsKey(HashUserID(userID))
-
-	return storageInterface.client.Del(ctx, key).Err()
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *GuildSettings {
@@ -118,6 +73,13 @@ func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guild
 		return err
 	}
 	err = storageInterface.client.Set(ctx, key, jbytes, 0).Err()
+	return err
+}
+
+func (storageInterface *StorageInterface) DeleteGuildSettings(guildID string) error {
+	key := guildSettingsKey(HashGuildID(guildID))
+
+	err := storageInterface.client.Del(ctx, key).Err()
 	return err
 }
 

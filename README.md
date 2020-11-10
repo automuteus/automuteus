@@ -141,7 +141,7 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 ### Required
 
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
-- `REDIS_ADDRESS`: The host and port at which your Redis database instance is accessible. Ex: `192.168.1.42:6379`
+- `REDIS_ADDR`: The host and port at which your Redis database instance is accessible. Ex: `192.168.1.42:6379`
 
 ### Optional
 
@@ -155,7 +155,7 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 - `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 36000 seconds.
-- `REDIS_PASSWORD`: Your Redis database password, if necessary.
+- `REDIS_PASS`: Your Redis database password, if necessary.
 
 ### HIGHLY advanced. Probably don't ever touch these!
 

@@ -3,6 +3,7 @@ package discord
 import (
 	"container/heap"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"sync"
 	"time"
@@ -43,6 +44,24 @@ func (h *PatchPriority) Pop() interface{} {
 	x := old[n-1]
 	*h = old[0 : n-1]
 	return x
+}
+
+func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
+	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("Forcibly applying mute/deaf to " + userID)
+	userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
+	params := UserPatchParameters{
+		GuildID:  dgs.GuildID,
+		Userdata: userData,
+		Deaf:     deaf,
+		Mute:     mute,
+		Nick:     "",
+	}
+	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 }
 
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
@@ -94,7 +113,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 	g, err := sm.GetPrimarySession().State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release()
+		lock.Release(ctx)
 		return
 	}
 
@@ -116,7 +135,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 
 		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && linked
+		tracked = tracked && (linked || userData.GetPlayerName() == game.SpectatorPlayerName)
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 
 		nick := userData.GetPlayerName()

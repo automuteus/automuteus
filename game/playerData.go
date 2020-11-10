@@ -9,6 +9,7 @@ type PlayerData struct {
 }
 
 const UnlinkedPlayerName = "UnlinkedPlayer"
+const SpectatorPlayerName = "SpectatorSpectator" //this is silly, but is >10 chars, so can never happen in-game...
 
 var UnlinkedPlayer = PlayerData{
 	Color:   -1,

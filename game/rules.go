@@ -51,37 +51,3 @@ func MakeMuteAndDeafenRules() VoiceRules {
 	}
 	return rules
 }
-
-func MakeMuteOnlyRules() VoiceRules {
-	rules := VoiceRules{
-		MuteRules: map[PhaseNameString]map[string]bool{
-			PhaseNames[LOBBY]: {
-				"alive": false,
-				"dead":  false,
-			},
-			PhaseNames[TASKS]: {
-				"alive": true,
-				"dead":  true,
-			},
-			PhaseNames[DISCUSS]: {
-				"alive": false,
-				"dead":  true,
-			},
-		},
-		DeafRules: map[PhaseNameString]map[string]bool{
-			PhaseNames[LOBBY]: {
-				"alive": false,
-				"dead":  false,
-			},
-			PhaseNames[TASKS]: {
-				"alive": false,
-				"dead":  false,
-			},
-			PhaseNames[DISCUSS]: {
-				"alive": false,
-				"dead":  false,
-			},
-		},
-	}
-	return rules
-}

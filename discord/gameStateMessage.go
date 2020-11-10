@@ -7,7 +7,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const DeferredEditSeconds = 1
+//bumped for public rollout. Don't need to update the status message more than once every 2 secs prob
+const DeferredEditSeconds = 2
 
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
