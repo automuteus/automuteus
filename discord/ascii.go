@@ -43,8 +43,8 @@ func AsciiStarfield(sett *storage.GuildSettings, name string, isImpostor bool, c
 
 	remains := sett.LocalizeMessage(&i18n.Message{
 		ID:    "ascii.AsciiStarfield.remains",
-		One:   "Impostor remain",
-		Other: "Impostors remains",
+		One:   "Impostor remains",
+		Other: "Impostors remain",
 	}, count)
 
 	template := "" +
