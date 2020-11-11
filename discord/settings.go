@@ -362,11 +362,11 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 		// prevent someone from setting something ridiculous lol
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.CommandPrefixSetting.tooLong",
-			Other: "Sorry, the prefix `{{.Prefix}}` is too long ({{.Length}} characters, max 10). Try something shorter.",
+			Other: "Sorry, the prefix `{{.CommandPrefix}}` is too long ({{.Length}} characters, max 10). Try something shorter.",
 		},
 			map[string]interface{}{
-				"Prefix": args[2],
-				"Length": len(args[2]),
+				"CommandPrefix": args[2],
+				"Length":        len(args[2]),
 			}))
 		return false
 	}

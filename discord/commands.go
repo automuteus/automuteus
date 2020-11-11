@@ -284,7 +284,7 @@ var AllCommands = []Command{
 		},
 		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Settings.desc",
-			Other: "Adjust the bot settings. Type `.au settings` with no arguments to see more.",
+			Other: "Adjust the bot settings. Type `{{.CommandPrefix}} settings` with no arguments to see more.",
 		},
 		args: &i18n.Message{
 			ID:    "commands.AllCommands.Settings.args",
@@ -468,17 +468,20 @@ func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSet
 		return settingResponse(prefix, AllSettings, sett)
 	}
 	return &discordgo.MessageEmbed{
-		URL:         "",
-		Type:        "",
-		Title:       cmd.emoji + " " + strings.Title(cmd.command),
-		Description: sett.LocalizeMessage(cmd.desc),
-		Timestamp:   "",
-		Color:       15844367, //GOLD
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
+		URL:   "",
+		Type:  "",
+		Title: cmd.emoji + " " + strings.Title(cmd.command),
+		Description: sett.LocalizeMessage(cmd.desc,
+			map[string]interface{}{
+				"CommandPrefix": sett.CommandPrefix,
+			}),
+		Timestamp: "",
+		Color:     15844367, //GOLD
+		Image:     nil,
+		Thumbnail: nil,
+		Video:     nil,
+		Provider:  nil,
+		Author:    nil,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: sett.LocalizeMessage(&i18n.Message{

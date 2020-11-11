@@ -138,8 +138,8 @@ hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
 other = "Нет"
 
 ["commands.AllCommands.Pause.desc"]
-hash = "sha1-3298f4f757558ae0a5d04b36707f51525cf02e96"
-other = "Приостановить бота, чтобы он не отключал микрофон/звук. **Эта команда не включит уже отключенный микрофон/звук**"
+hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
+other = "Приостановить бота, чтобы он не отключал микрофон/звук. Будет включать микрофон/звук для всех игроков."
 
 ["commands.AllCommands.Pause.shortDesc"]
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
@@ -162,8 +162,8 @@ hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
 other = "<setting> <value>"
 
 ["commands.AllCommands.Settings.desc"]
-hash = "sha1-2c6b4a2f31f15b0cc1c78baabd11e638c4cbb092"
-other = "Настройки бота. Введите `.au settings` без аргументов, чтобы увидеть больше."
+hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
+other = "Настройки бота. Введите `{{.CommandPrefix}} settings` без аргументов, чтобы увидеть больше."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
@@ -270,7 +270,7 @@ hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
 other = "Извините, я не понял эту команду! См. справку `{{.CommandPrefix}} help` для команд"
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
-hash = "sha1-20533e7acfc42e254d99d460ab065585022bde5e"
+hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
 other = "**Голосовой канал не указан! Используй `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
@@ -282,8 +282,8 @@ hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
 other = "Не привязан"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
-hash = "sha1-99059f9ec0c764d7c2185aca0827394e9b8199c9"
-other = "**Голосовой Канал не указан! Используй `.au track`!**"
+hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
+other = "**Голосовой Канал не указан! Используй `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
@@ -310,8 +310,8 @@ hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "У пользователя нет необходимых разрешений для выполнения этой команды!"
 
 ["message_handlers.handleMessageCreate.respondPrefix"]
-hash = "sha1-e42b564d8e4151e361a31d18da3d8cea176c6013"
-other = "Я отвечаю на префикс {{.Prefix}}"
+hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
+other = "Я отвечаю на префикс {{.CommandPrefix}}"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
@@ -538,8 +538,8 @@ hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
 other = "Префикс сервера изменен с `{{.From}}` на `{{.To}}`. Используй его с этого момента!"
 
 ["settings.CommandPrefixSetting.tooLong"]
-hash = "sha1-1cd58be6e5fe97c9ad8a6547e15054956b58d55c"
-other = "Извините, префикс `{{.Prefix}}` слишком длинный ({{.Length}} символов, максимум 10). Попробуйте что-нибудь покороче."
+hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
+other = "Извините, префикс `{{.CommandPrefix}}` слишком длинный ({{.Length}} символов, максимум 10). Попробуйте что-нибудь покороче."
 
 ["settings.ConstructEmbedForSetting.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
