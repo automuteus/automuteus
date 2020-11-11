@@ -20,8 +20,11 @@ func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
-			Other: "**No Voice Channel! Use `.au track`!**",
-		})
+			Other: "**No Voice Channel! Use `{{.CommandPrefix}} track`!**",
+		},
+			map[string]interface{}{
+				"CommandPrefix": sett.CommandPrefix,
+			})
 	} else {
 		return tc.ChannelName
 	}
@@ -31,8 +34,11 @@ func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "discordGameState.ToDescString.anyVoiceChannel",
-			Other: "**no Voice Channel! Use `.au track`!**",
-		})
+			Other: "**no Voice Channel! Use `{{.CommandPrefix}} track`!**",
+		},
+			map[string]interface{}{
+				"CommandPrefix": sett.CommandPrefix,
+			})
 	} else {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "discordGameState.ToDescString.voiceChannelName",
