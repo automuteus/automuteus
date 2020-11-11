@@ -35,6 +35,18 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
+func activeGamesCode() string {
+	return "automuteus:games"
+}
+
+func (bot *Bot) refreshGameLiveness(code string) {
+	t := time.Now().Unix()
+	bot.RedisInterface.client.ZAdd(ctx, activeGamesCode(), &redis.Z{
+		Score:  float64(t),
+		Member: code,
+	})
+}
+
 func versionKey() string {
 	return "automuteus:version"
 }
