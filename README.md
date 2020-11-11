@@ -155,6 +155,7 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 36000 seconds.
 - `REDIS_PASS`: Your Redis database password, if necessary.
+- `AUTOMUTEUS_LISTENING`: What the bot displays it is "Listening to" in the online presence message. Recommend putting your custom command prefix here
 
 ### HIGHLY advanced. Probably don't ever touch these!
 

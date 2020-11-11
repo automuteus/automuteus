@@ -5,6 +5,7 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
+	"os"
 	"strings"
 	"sync"
 )
@@ -113,10 +114,15 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
+	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
+	if listeningTo == "" {
+		listeningTo = ".au help"
+	}
+
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
 		Game: &discordgo.Game{
-			Name: ".au help",
+			Name: listeningTo,
 			Type: discordgo.GameTypeListening,
 		},
 		AFK:    false,
