@@ -31,8 +31,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 
-	sett := bot.StorageInterface.GetGuildSettings(guildID)
-
 	dgsRequest := GameStateRequest{
 		GuildID:     guildID,
 		ConnectCode: connectCode,
@@ -74,6 +72,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					dgs.ConnectCode = connectCode
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
+					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
 
 					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
@@ -86,6 +85,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 
+					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
 					break
 				case broker.State:
@@ -105,6 +105,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 
+					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
 					if shouldHandleTracked {
 						bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
@@ -204,6 +205,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
+					log.Println(sett.GetUnmuteDeadDuringTasks())
 					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 						return true

@@ -203,15 +203,14 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 			waitForHigherPriority = false
 		}
 
-		wg.Add(1)
-
 		//wait until it goes through
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
 		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
-		//we can issue mutes/deafens from ANY session, not just the primary
 		if dgs.Running {
+			wg.Add(1)
+			//we can issue mutes/deafens from ANY session, not just the primary
 			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
 		}
 	}

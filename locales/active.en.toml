@@ -31,7 +31,7 @@
 "commands.AllCommands.New.desc" = "Start a new game"
 "commands.AllCommands.New.shortDesc" = "Start a new game"
 "commands.AllCommands.Pause.args" = "None"
-"commands.AllCommands.Pause.desc" = "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**"
+"commands.AllCommands.Pause.desc" = "Pause the bot so it doesn't automute/deafen. Will unmute/undeafen all players!"
 "commands.AllCommands.Pause.shortDesc" = "Pause the bot"
 "commands.AllCommands.Refresh.args" = "None"
 "commands.AllCommands.Refresh.desc" = "Recreate the bot status message if it ends up too far in the chat"

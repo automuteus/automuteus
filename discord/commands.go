@@ -130,7 +130,7 @@ var AllCommands = []Command{
 		},
 		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Pause.desc",
-			Other: "Pause the bot so it doesn't automute/deafen. **Will not unmute/undeafen**",
+			Other: "Pause the bot so it doesn't automute/deafen. Will unmute/undeafen all players!",
 		},
 		args: &i18n.Message{
 			ID:    "commands.AllCommands.Pause.args",
@@ -601,7 +601,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				break
 			}
 			dgs.Running = !dgs.Running
+
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+			if !dgs.Running {
+				bot.applyToAll(dgs, false, false)
+			}
 
 			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			break
