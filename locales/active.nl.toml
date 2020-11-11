@@ -329,7 +329,7 @@ other = "Je hebt een spel gestart!"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Het Github project bekijken](https://github.com/denverquane/automuteus) of [Sluit je aan bij onze discord](https://discord.gg/ZkqZSWF)\\n\\nSchreibe `{{.CommandPrefix}} help <Commando>`, voor meer informatie over een commando!"
+other = "[Het Github project bekijken](https://github.com/denverquane/automuteus) of [Sluit je aan bij onze discord](https://discord.gg/ZkqZSWF)\\n\\nTyp `{{.CommandPrefix}} help <Commando>`, voor meer informatie over een commando!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
@@ -645,7 +645,7 @@ other = "Lokalisatiebestanden zijn herladen ({{.Count}}). Beschikbare taalcodes:
 
 ["settings.SettingLanguage.set"]
 hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "De lokalisatie is ingeseteld op {{.LangName}}"
+other = "De lokalisatie is ingesteld op {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
