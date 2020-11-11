@@ -1,192 +1,752 @@
-"ascii.AsciiStarfield.isWas" = "was An Impostow. ᅌwᅌ"
-"ascii.AsciiStarfield.isWasNot" = "was nyot An Impostow. ÕwÕ"
-"commands.AllCommands.Ascii.args" = "<@discowd usew> <is impostew> (twue|fawse) <x impostow wemains> (count) uwu"
-"commands.AllCommands.Ascii.desc" = "Pwint an ASCII cwewmate OwO"
-"commands.AllCommands.Ascii.shortDesc" = "Pwint an ASCII cwewmate"
-"commands.AllCommands.Cache.args" = "<pwayew> (optionyawwy, \"cweaw\")"
-"commands.AllCommands.Cache.desc" = "View a pwayew's cached in-game nyames, and/ow cweaw dem"
-"commands.AllCommands.Cache.shortDesc" = "View cached usewnyames ◕w◕"
-"commands.AllCommands.DebugState.args" = "Nyonye ⓪w⓪"
-"commands.AllCommands.DebugState.desc" = "View de fuww state of de Discowd Guiwd Data"
-"commands.AllCommands.DebugState.shortDesc" = "View de fuww state of de Discowd Guiwd Data ◔w◔"
-"commands.AllCommands.End.args" = "Nyonye ÕwÕ"
-"commands.AllCommands.End.desc" = "End de cuwwent game owO"
-"commands.AllCommands.End.shortDesc" = "End de game"
-"commands.AllCommands.Force.args" = "<phase nyame> (task, discuss, ow wobby / t,d, ow w)"
-"commands.AllCommands.Force.desc" = "Fowce de bot to twansition to anyodew game stage, if it doesn't twansition pwopewwy (owo)"
-"commands.AllCommands.Force.shortDesc" = "Fowce de bot to twansition øwø"
-"commands.AllCommands.ForgetMe.args" = "Nyonye"
-"commands.AllCommands.ForgetMe.desc" = "Dewete aww de data associated wid de Usew issuing de command ☆w☆"
-"commands.AllCommands.ForgetMe.shortDesc" = "Dewete pwayew data"
-"commands.AllCommands.Help.args" = "Nyonye, ow optionyaw command to see info fow øwø"
-"commands.AllCommands.Help.desc" = "Dispway bot hewp message, ow see info about a command ⓪w⓪"
-"commands.AllCommands.Help.shortDesc" = "Dispway hewp ☆w☆"
-"commands.AllCommands.Link.args" = "<discowd Usew> <in-game cowow ow nyame> ÕwÕ"
-"commands.AllCommands.Link.desc" = "Manyuawwy wink a Discowd Usew to deiw in-game cowow ow nyame øwø"
-"commands.AllCommands.Link.shortDesc" = "Wink a Discowd Usew"
-"commands.AllCommands.Log.args" = "<message> ÓwÓ"
-"commands.AllCommands.Log.desc" = "Wog if someding bad happenyed, so you can find de event in youw wogs watew uwu"
-"commands.AllCommands.Log.shortDesc" = "Wog a weiwd event"
-"commands.AllCommands.New.args" = "Nyonye owO"
-"commands.AllCommands.New.desc" = "Stawt a nyew game ☆w☆"
-"commands.AllCommands.New.shortDesc" = "Stawt a nyew game ♥w♥"
-"commands.AllCommands.Pause.args" = "Nyonye"
-"commands.AllCommands.Pause.desc" = "Pause de bot so it doesn't automute/deafen. **Wiww nyot unmute/undeafen** ✧w✧"
-"commands.AllCommands.Pause.shortDesc" = "Pause de bot"
-"commands.AllCommands.Refresh.args" = "Nyonye Owo"
-"commands.AllCommands.Refresh.desc" = "Wecweate de bot status message if it ends up too faw in de chat ØwØ"
-"commands.AllCommands.Refresh.shortDesc" = "Wefwesh de bot status Owo"
-"commands.AllCommands.Settings.args" = "<setting> <vawue>"
-"commands.AllCommands.Settings.desc" = "Adjust de bot settings. Type `.au settings` wid nyo awguments to see mowe."
-"commands.AllCommands.Settings.shortDesc" = "Adjust bot settings ÓwÓ"
-"commands.AllCommands.ShowMe.args" = "Nyonye ØwØ"
-"commands.AllCommands.ShowMe.desc" = "Send aww de pwayew data fow de Usew issuing de command ᅌwᅌ"
-"commands.AllCommands.ShowMe.shortDesc" = "Show pwayew data"
-"commands.AllCommands.Stats.args" = "Nyonye"
-"commands.AllCommands.Stats.desc" = "View stats about de bot, wike totaw guiwd nyumbew, active games, etc øwø"
-"commands.AllCommands.Stats.shortDesc" = "View Bot stats uwu"
-"commands.AllCommands.Track.args" = "<voice channyew nyame>"
-"commands.AllCommands.Track.desc" = "Teww de bot which voice channyew you'ww be pwaying in"
-"commands.AllCommands.Track.shortDesc" = "Twack a voice channyew ÓwÓ"
-"commands.AllCommands.Unlink.args" = "<discowd Usew> @w@"
-"commands.AllCommands.Unlink.desc" = "Manyuawwy unwink a Discowd Usew fwom deiw in-game pwayew ØwØ"
-"commands.AllCommands.Unlink.shortDesc" = "Unwink a Discowd Usew @w@"
-"commands.AllCommands.UnmuteAll.args" = "Nyonye ᅌwᅌ"
-"commands.AllCommands.UnmuteAll.desc" = "Fowce de bot to unmute aww winked pwayews"
-"commands.AllCommands.UnmuteAll.shortDesc" = "Fowce de bot to unmute aww"
-"commands.ConstructEmbedForCommand.Fields.Aliases" = "Awiases"
-"commands.ConstructEmbedForCommand.Fields.Arguments" = "Awguments ◔w◔"
-"commands.ConstructEmbedForCommand.Fields.Example" = "Exampwe ◕w◕"
-"commands.HandleCommand.Cache.Success" = "Successfuwwy deweted aww cached nyames fow dat usew! ☆w☆"
-"commands.HandleCommand.Cache.cachedNames" = "Cached in-game nyames:"
-"commands.HandleCommand.Cache.emptyCachedNames" = "I don't have any cached pwayew nyames stowed fow dat usew! Owo"
-"commands.HandleCommand.Force.UNINITIALIZED" = "Sowwy, I didn't undewstand de game phase you twied to fowce uwu"
-"commands.HandleCommand.ForgetMe.Success" = "Successfuwwy deweted aww pwayew data fow <@{{.AuthorID}}> ÕwÕ"
-"commands.HandleCommand.Help.notFound" = "I didn't wecognyize dat command! View `hewp` fow aww avaiwabwe commands!"
-"commands.HandleCommand.ShowMe.cachedNames" = "Hewe's youw cached in-game nyames: ʘwʘ"
-"commands.HandleCommand.ShowMe.emptyCachedNames" = "I don't have any cached pwayew nyames stowed fow you!"
-"commands.HandleCommand.default" = "Sowwy, I didn't undewstand dat command! Pwease see `{{.CommandPrefix}} hewp` fow commands"
-"discordGameState.ToDescString.anyVoiceChannel" = "**nyo Voice Channyew! Use `.au twack`!** Owo"
-"discordGameState.ToDescString.voiceChannelName" = "de **{{.channelName}}** voice channyew!"
-"discordGameState.ToEmojiEmbedFields.Unlinked" = "Unwinked"
-"discordGameState.ToStatusString.anyVoiceChannel" = "**Nyo Voice Channyew! Use `.au twack`!** ÕwÕ"
-"discordGameState.trackChannel.voiceChannelNotfound" = "Nyo channyew found by de nyame {{.channelName}}!\\n ♥w♥"
-"discordGameState.trackChannel.voiceChannelSet" = "Nyow Twacking \"{{.channelName}}\" Voice Channyew fow Automute!"
-"helpers.getRoomAndRegionFromArgs.regionUnprovided" = "Unpwovided"
-"helpers.getRoomAndRegionFromArgs.roomUnprovided" = "Unpwovided"
-"locale.language.name" = "Engwish ᅌwᅌ"
-"message_handlers.handleMessageCreate.noPerms" = "Usew does nyot have de wequiwed pewmissions to execute dis command!"
-"message_handlers.handleMessageCreate.respondPrefix" = "I wespond to de pwefix {{.Prefix}}"
-"message_handlers.handleNewGameMessage.embed.Description" = "Cwick de fowwowing wink to wink youw captuwe: \\n <{{.hyperlink}}>\\n\\nDon't have de captuwe instawwed? Watest vewsion [hewe]( ʘwʘ"
-"message_handlers.handleNewGameMessage.embed.Fields.Code" = "Code ◔w◔"
-"message_handlers.handleNewGameMessage.embed.Fields.URL" = "UWW"
-"message_handlers.handleNewGameMessage.embed.Title" = "You just stawted a game! ゜w゜"
-"responses.helpResponse.SubTitle" = "[View de Gidub Pwoject](https://gidub.com/denvewquanye/automuteus) ow [Join ouw Discowd](https://discowd.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} hewp <command>` to see mowe detaiws on a command!"
-"responses.helpResponse.Title" = "AutoMuteUs Bot Commands:\\n ØwØ"
-"responses.lobbyMessage.Footer.Text" = "Weact to dis message wid youw in-game cowow! (ow {{.emojiLeave}} to weave)"
-"responses.lobbyMessage.Title" = "Wobby"
-"responses.lobbyMessage.notLinked.Description" = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌"
-"responses.lobbyMetaEmbedFields.PlayersLinked" = "Pwayews Winked OwO"
-"responses.lobbyMetaEmbedFields.Region" = "Wegion ᅌwᅌ"
-"responses.lobbyMetaEmbedFields.RoomCode" = "Woom Code"
-"responses.lobbyMetaEmbedFields.Tracking" = "Twacking"
-"responses.makeDescription.GameNotRunning" = "\\n⚠**Bot is Paused!**⚠\\n\\n ♥w♥"
-"responses.makeDescription.author" = "<@{{.author}}> is wunnying an Among Us game!\\nThe game is happenying in "
-"responses.menuMessage.Linked.FooterText" = "(Entew a game wobby in Among Us to stawt de match) @w@"
-"responses.menuMessage.Title" = "Main Menyu"
-"responses.menuMessage.notLinked.Description" = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌ ◕w◕"
-"responses.settingResponse.Description" = "Type `{{.CommandPrefix}} settings <setting>` to change a setting fwom dose wisted bewow"
-"responses.settingResponse.Title" = "Settings owO"
-"responses.statsResponse.Title" = "Bot Stats ÓwÓ"
-"responses.statsResponse.Guilds" = "Totaw Guiwds"
-"responses.statsResponse.Games" = "Active Games"
-"responses.statsResponse.Version" = "Vewsion (owo)"
-"settings.AllSettings.AdminUserIDs.args" = "<Usew @ mentions>..."
-"settings.AllSettings.AdminUserIDs.desc" = "Specify which individuaw usews have admin bot pewmissions"
-"settings.AllSettings.AdminUserIDs.shortDesc" = "Bot Admins"
-"settings.AllSettings.Delays.args" = "<stawt phase> <end phase> <deway> Owo"
-"settings.AllSettings.Delays.desc" = "Specify de deways fow automute/deafen between stages of de game, wike wobby->tasks"
-"settings.AllSettings.Delays.shortDesc" = "Deways between stages ᅌwᅌ"
-"settings.AllSettings.Language.args" = "<wanguage> ow wewoad"
-"settings.AllSettings.Language.desc" = "Change de bot messages wanguage"
-"settings.AllSettings.Language.shortDesc" = "Bot wanguage ♥w♥"
-"settings.AllSettings.Nicknames.args" = "<twue/fawse>"
-"settings.AllSettings.Nicknames.desc" = "Specify if de bot shouwd wenyame Discowd usews to match deiw in-game nyames ow nyot"
-"settings.AllSettings.Nicknames.shortDesc" = "Bot wenyames Discowd usews ᅌwᅌ"
-"settings.AllSettings.Prefix.args" = "<pwefix> Owo"
-"settings.AllSettings.Prefix.desc" = "Change de pwefix dat de bot uses to detect commands"
-"settings.AllSettings.Prefix.shortDesc" = "Bot pwefix ÕwÕ"
-"settings.AllSettings.RoleIDs.args" = "<wowe @ mentions>... ◕w◕"
-"settings.AllSettings.RoleIDs.desc" = "Specify which wowes have pewmissions to invoke de bot ♥w♥"
-"settings.AllSettings.RoleIDs.shortDesc" = "Bot Opewatows"
-"settings.AllSettings.Show.args" = "Nyonye (owo)"
-"settings.AllSettings.Show.desc" = "Show aww de Bot settings fow dis sewvew ÓwÓ"
-"settings.AllSettings.Show.shortDesc" = "Show Aww Settings uwu"
-"settings.AllSettings.TrackedChannel.args" = "<voice channyew nyame>"
-"settings.AllSettings.TrackedChannel.desc" = "Change de defauwt twacked voice channyew"
-"settings.AllSettings.TrackedChannel.shortDesc" = "Defauwt twacked voice channyew owO"
-"settings.AllSettings.UnmuteDead.args" = "<twue/fawse>"
-"settings.AllSettings.UnmuteDead.desc" = "Specify if de bot shouwd immediatewy unmute pwayews when dey die. **CAUTION. Weaks infowmation!**"
-"settings.AllSettings.UnmuteDead.shortDesc" = "Bot unmutes pwayews on dead uwu"
-"settings.AllSettings.VoiceRules.args" = "<mute/deaf> <game phase> <dead/awive> <twue/fawse> ʘwʘ"
-"settings.AllSettings.VoiceRules.desc" = "Specify mute/deafen wuwes fow de game, depending on de stage and de awive/deadnyess of pwayews. Exampwe given wouwd mute dead pwayews duwing de tasks stage"
-"settings.AllSettings.VoiceRules.shortDesc" = "Mute/deafen wuwes"
-"settings.CommandPrefixSetting.changes" = "Guiwd pwefix changed fwom `{{.From}}` to ` OwO"
-"settings.CommandPrefixSetting.tooLong" = "Sowwy, de pwefix `{{.Prefix}}` is too wong ( OwO"
-"settings.ConstructEmbedForSetting.Fields.Aliases" = "Awiases"
-"settings.ConstructEmbedForSetting.Fields.Arguments" = "Awguments uwu"
-"settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Cuwwent Vawue"
-"settings.ConstructEmbedForSetting.Fields.Example" = "Exampwe"
-"settings.HandleSettingsCommand.default" = "Sowwy, `{{.Arg}}` is nyot a vawid setting!\\n"
-"settings.SettingAdminUserIDs.clearAdmins" = "Cweawing aww AdminUsewIDs! ✧w✧"
-"settings.SettingAdminUserIDs.newBotAdmin" = "<@{{.UserID}}> is nyow a bot admin! ◕w◕"
-"settings.SettingAdminUserIDs.noBotAdmins" = "Nyo Bot Admins ◕w◕"
-"settings.SettingAdminUserIDs.notFound" = "Sowwy, I don't knyow who `{{.UserName}}` is. You can pass in ID, usewnyame, usewnyame#XXXX, nyicknyame ow @mention (owo)"
-"settings.SettingApplyNicknames.false_applyNicknames" = "I wiww nyo wongew wenyame de pwayews in de voice chat. ⓪w⓪"
-"settings.SettingApplyNicknames.false_noApplyNicknames" = "It's awweady fawse!"
-"settings.SettingApplyNicknames.true_applyNicknames" = "It's awweady twue!"
-"settings.SettingApplyNicknames.true_noApplyNicknames" = "I wiww nyow wenyame de pwayews in de voice chat."
-"settings.SettingApplyNicknames.wrongArg" = "Sowwy, `{{.Arg}}` is nyeidew `twue` nyow `fawse`."
-"settings.SettingDefaultTrackedChannel.noDefault" = "Nyo defauwt twacked voice channyew"
-"settings.SettingDefaultTrackedChannel.withChannelName" = "Defauwt voice channyew changed to `{{.channelName}}`. Use dat fwom nyow on!"
-"settings.SettingDefaultTrackedChannel.withoutChannelID" = "Couwd nyot find de voice channyew `{{.channelName}}`! Pass in de nyame ow de ID, and make suwe de bot can see it."
-"settings.SettingDelays.Phase.UNINITIALIZED" = "I don't knyow what `{{.PhaseName}}` is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`. ☆w☆"
-"settings.SettingDelays.delayBetweenPhases" = "Cuwwentwy, de deway when passing fwom `{{.PhaseA}}` to `"
-"settings.SettingDelays.missingPhases" = "The wist of game phases awe `Wobby`, `Tasks` and `Discussion`.\\nYou nyeed to type bod phases de game is twansitionying fwom and to to change de deway."
-"settings.SettingDelays.setDelayBetweenPhases" = "The deway when passing fwom `{{.PhaseA}}` to ` ʘwʘ"
-"settings.SettingDelays.wrongNumber" = "`{{.Number}}` is nyot a vawid nyumbew! Pwease twy again"
-"settings.SettingLanguage.list" = "Avaiwabwe wanguages: {{.Langs}}"
-"settings.SettingLanguage.notFound" = "Wanguage nyot found! Avaiwabwe wanguage codes: {{.Langs}} ◔w◔"
-"settings.SettingLanguage.notLoaded" = "Wocawization fiwes wewe nyot woaded! {{.Langs}} ʘwʘ"
-"settings.SettingLanguage.reloaded" = "Wocawization fiwes awe wewoaded ({{.Count}}). Avaiwabwe wanguage codes: "
-"settings.SettingLanguage.set" = "Wocawization is set to {{.LangName}} ✧w✧"
-"settings.SettingLanguage.tooShort" = "Sowwy, de wanguage code is showt. Avaiwabwe wanguage codes: {{.Langs}}. uwu"
-"settings.SettingPermissionRoleIDs.clearRoles" = "Cweawing aww PewmissionWoweIDs!"
-"settings.SettingPermissionRoleIDs.newBotAdmins" = "<@&{{.UserID}}>s awe nyow bot admins! @w@"
-"settings.SettingPermissionRoleIDs.noRoleAdmins" = "Nyo Wowe Admins OwO"
-"settings.SettingPermissionRoleIDs.notFound" = "Sowwy, I don't knyow de wowe `{{.RoleName}}` is. You can pass de wowe ID, wowe nyame ow @wowe"
-"settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead" = "It's awweady fawse!"
-"settings.SettingUnmuteDeadDuringTasks.false_unmuteDead" = "I wiww nyo wongew immediatewy unmute dead peopwe. Good choice!"
-"settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead" = "I wiww nyow unmute de dead peopwe immediatewy aftew dey die. Cawefuw, dis weveaws who died duwing de match!"
-"settings.SettingUnmuteDeadDuringTasks.true_unmuteDead" = "It's awweady twue!"
-"settings.SettingUnmuteDeadDuringTasks.wrongArg" = "Sowwy, `{{.Arg}}` is nyeidew `twue` nyow `fawse`."
-"settings.SettingVoiceRules.NA" = "N/A ☆w☆"
-"settings.SettingVoiceRules.Phase.UNINITIALIZED" = "I don't knyow what {{.PhaseName}} is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`. ÕwÕ"
-"settings.SettingVoiceRules.enoughArgs" = "You didn't pass enyough awguments! Cowwect syntax is: `voiceWuwes [mute/deaf] [game phase] [awive/dead] [twue/fawse]`"
-"settings.SettingVoiceRules.neitherAliveDead" = "`{{.Arg}}` is nyeidew `awive` ow `dead`!"
-"settings.SettingVoiceRules.neitherMuteDeaf" = "`{{.Arg}}` is nyeidew `mute` nyow `deaf`! ☆w☆"
-"settings.SettingVoiceRules.neitherTrueFalse" = "`{{.Arg}}` is nyeidew `twue` ow `fawse`!"
-"settings.SettingVoiceRules.queryingAlreadyUnValues" = "When in `{{.PhaseName}}` phase, "
-"settings.SettingVoiceRules.queryingAlreadyValues" = "When in `{{.PhaseName}}` phase, "
-"settings.SettingVoiceRules.queryingCurrentlyOldValues" = "When in `{{.PhaseName}}` phase, "
-"settings.SettingVoiceRules.queryingCurrentlyValues" = "When in `{{.PhaseName}}` phase,  OwO"
-"settings.SettingVoiceRules.setUnValues" = "Fwom nyow on, when in `{{.PhaseName}}` phase,  owO"
-"settings.SettingVoiceRules.setValues" = "Fwom nyow on, when in `{{.PhaseName}}` phase,  ゜w゜"
-"state.phase.DISCUSSION" = "DISCUSSION"
-"state.phase.LOBBY" = "WOBBY"
-"state.phase.MENU" = "MENYU"
-"state.phase.TASKS" = "TASKS"
+["ascii.AsciiStarfield.isWas"]
+hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
+other = "was An Impostow."
+
+["ascii.AsciiStarfield.isWasNot"]
+hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
+other = "was nyot An Impostow. ØwØ"
 
 ["ascii.AsciiStarfield.remains"]
-one = "Impostow wemain (owo)"
-other = "Impostows wemains ʘwʘ"
+hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
+one = "Impostow wemain"
+other = "Impostows wemains ☆w☆"
+
+["commands.AllCommands.Ascii.args"]
+hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
+other = "<@discowd usew> <is impostew> (twue|fawse) <x impostow wemains> (count) (owo)"
+
+["commands.AllCommands.Ascii.desc"]
+hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
+other = "Pwint an ASCII cwewmate"
+
+["commands.AllCommands.Ascii.shortDesc"]
+hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
+other = "Pwint an ASCII cwewmate ØwØ"
+
+["commands.AllCommands.Cache.args"]
+hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
+other = "<pwayew> (optionyawwy, \"cweaw\") @w@"
+
+["commands.AllCommands.Cache.desc"]
+hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
+other = "View a pwayew's cached in-game nyames, and/ow cweaw dem ÕwÕ"
+
+["commands.AllCommands.Cache.shortDesc"]
+hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
+other = "View cached usewnyames"
+
+["commands.AllCommands.DebugState.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ◕w◕"
+
+["commands.AllCommands.DebugState.desc"]
+hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
+other = "View de fuww state of de Discowd Guiwd Data"
+
+["commands.AllCommands.DebugState.shortDesc"]
+hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
+other = "View de fuww state of de Discowd Guiwd Data ✧w✧"
+
+["commands.AllCommands.End.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye OwO"
+
+["commands.AllCommands.End.desc"]
+hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
+other = "End de cuwwent game"
+
+["commands.AllCommands.End.shortDesc"]
+hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
+other = "End de game ⓪w⓪"
+
+["commands.AllCommands.Force.args"]
+hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
+other = "<phase nyame> (task, discuss, ow wobby / t,d, ow w)"
+
+["commands.AllCommands.Force.desc"]
+hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
+other = "Fowce de bot to twansition to anyodew game stage, if it doesn't twansition pwopewwy"
+
+["commands.AllCommands.Force.shortDesc"]
+hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
+other = "Fowce de bot to twansition"
+
+["commands.AllCommands.ForgetMe.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye øwø"
+
+["commands.AllCommands.ForgetMe.desc"]
+hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
+other = "Dewete aww de data associated wid de Usew issuing de command ⓪w⓪"
+
+["commands.AllCommands.ForgetMe.shortDesc"]
+hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
+other = "Dewete pwayew data ◕w◕"
+
+["commands.AllCommands.Help.args"]
+hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
+other = "Nyonye, ow optionyaw command to see info fow ⓪w⓪"
+
+["commands.AllCommands.Help.desc"]
+hash = "sha1-86ef9a3df917eb9728b9966b5beb999a1e970db5"
+other = "Dispway bot hewp message, ow see info about a command @w@"
+
+["commands.AllCommands.Help.shortDesc"]
+hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
+other = "Dispway hewp ÕwÕ"
+
+["commands.AllCommands.Link.args"]
+hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
+other = "<discowd Usew> <in-game cowow ow nyame>"
+
+["commands.AllCommands.Link.desc"]
+hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
+other = "Manyuawwy wink a Discowd Usew to deiw in-game cowow ow nyame"
+
+["commands.AllCommands.Link.shortDesc"]
+hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
+other = "Wink a Discowd Usew"
+
+["commands.AllCommands.Log.args"]
+hash = "sha1-21352b2be58fee3b7776cc67679330b08d1d9f38"
+other = "<message>"
+
+["commands.AllCommands.Log.desc"]
+hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
+other = "Wog if someding bad happenyed, so you can find de event in youw wogs watew"
+
+["commands.AllCommands.Log.shortDesc"]
+hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
+other = "Wog a weiwd event ÕwÕ"
+
+["commands.AllCommands.New.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["commands.AllCommands.New.desc"]
+hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
+other = "Stawt a nyew game OwO"
+
+["commands.AllCommands.New.shortDesc"]
+hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
+other = "Stawt a nyew game"
+
+["commands.AllCommands.Pause.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["commands.AllCommands.Pause.desc"]
+hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
+other = "Pause de bot so it doesn't automute/deafen. Wiww unmute/undeafen aww pwayews!"
+
+["commands.AllCommands.Pause.shortDesc"]
+hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
+other = "Pause de bot"
+
+["commands.AllCommands.Refresh.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye OwO"
+
+["commands.AllCommands.Refresh.desc"]
+hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
+other = "Wecweate de bot status message if it ends up too faw in de chat ♥w♥"
+
+["commands.AllCommands.Refresh.shortDesc"]
+hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
+other = "Wefwesh de bot status"
+
+["commands.AllCommands.Settings.args"]
+hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
+other = "<setting> <vawue> øwø"
+
+["commands.AllCommands.Settings.desc"]
+hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
+other = "Adjust de bot settings. Type `{{.CommandPrefix}} settings` wid nyo awguments to see mowe. (owo)"
+
+["commands.AllCommands.Settings.shortDesc"]
+hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
+other = "Adjust bot settings ÕwÕ"
+
+["commands.AllCommands.ShowMe.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ☆w☆"
+
+["commands.AllCommands.ShowMe.desc"]
+hash = "sha1-f0fa9b743f84a92cef4aca88f2b2baf8c6b9c91f"
+other = "Send aww de pwayew data fow de Usew issuing de command ᅌwᅌ"
+
+["commands.AllCommands.ShowMe.shortDesc"]
+hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
+other = "Show pwayew data"
+
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
+other = "View Bot stats ♥w♥"
+
+["commands.AllCommands.Track.args"]
+hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
+other = "<voice channyew nyame>"
+
+["commands.AllCommands.Track.desc"]
+hash = "sha1-36eed0725dbf0269ba9d968d34c45259e7df6968"
+other = "Teww de bot which voice channyew you'ww be pwaying in"
+
+["commands.AllCommands.Track.shortDesc"]
+hash = "sha1-e47592076ff1077a81570c1ddce1de4cf6e7e975"
+other = "Twack a voice channyew owO"
+
+["commands.AllCommands.Unlink.args"]
+hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
+other = "<discowd Usew>"
+
+["commands.AllCommands.Unlink.desc"]
+hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
+other = "Manyuawwy unwink a Discowd Usew fwom deiw in-game pwayew"
+
+["commands.AllCommands.Unlink.shortDesc"]
+hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
+other = "Unwink a Discowd Usew ʘwʘ"
+
+["commands.AllCommands.UnmuteAll.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["commands.AllCommands.UnmuteAll.desc"]
+hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
+other = "Fowce de bot to unmute aww winked pwayews ÓwÓ"
+
+["commands.AllCommands.UnmuteAll.shortDesc"]
+hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
+other = "Fowce de bot to unmute aww Owo"
+
+["commands.ConstructEmbedForCommand.Fields.Aliases"]
+hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
+other = "Awiases ◔w◔"
+
+["commands.ConstructEmbedForCommand.Fields.Arguments"]
+hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
+other = "Awguments"
+
+["commands.ConstructEmbedForCommand.Fields.Example"]
+hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
+other = "Exampwe"
+
+["commands.HandleCommand.Cache.Success"]
+hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
+other = "Successfuwwy deweted aww cached nyames fow dat usew! ÕwÕ"
+
+["commands.HandleCommand.Cache.cachedNames"]
+hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
+other = "Cached in-game nyames: ᅌwᅌ"
+
+["commands.HandleCommand.Cache.emptyCachedNames"]
+hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
+other = "I don't have any cached pwayew nyames stowed fow dat usew!"
+
+["commands.HandleCommand.Force.UNINITIALIZED"]
+hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
+other = "Sowwy, I didn't undewstand de game phase you twied to fowce ÓwÓ"
+
+["commands.HandleCommand.ForgetMe.Success"]
+hash = "sha1-fa5049065e85726171d4a53ed857cc3375a5d924"
+other = "Successfuwwy deweted aww pwayew data fow <@{{.AuthorID}}>"
+
+["commands.HandleCommand.Help.notFound"]
+hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
+other = "I didn't wecognyize dat command! View `hewp` fow aww avaiwabwe commands! ✧w✧"
+
+["commands.HandleCommand.ShowMe.cachedNames"]
+hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
+other = "Hewe's youw cached in-game nyames:"
+
+["commands.HandleCommand.ShowMe.emptyCachedNames"]
+hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
+other = "I don't have any cached pwayew nyames stowed fow you!"
+
+["commands.HandleCommand.default"]
+hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
+other = "Sowwy, I didn't undewstand dat command! Pwease see `{{.CommandPrefix}} hewp` fow commands"
+
+["discordGameState.ToDescString.anyVoiceChannel"]
+hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
+other = "**nyo Voice Channyew! Use `{{.CommandPrefix}} twack`!**"
+
+["discordGameState.ToDescString.voiceChannelName"]
+hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
+other = "de **{{.channelName}}** voice channyew! ◕w◕"
+
+["discordGameState.ToEmojiEmbedFields.Unlinked"]
+hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
+other = "Unwinked"
+
+["discordGameState.ToStatusString.anyVoiceChannel"]
+hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
+other = "**Nyo Voice Channyew! Use `{{.CommandPrefix}} twack`!** owO"
+
+["discordGameState.trackChannel.voiceChannelNotfound"]
+hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
+other = "Nyo channyew found by de nyame {{.channelName}}!\\n"
+
+["discordGameState.trackChannel.voiceChannelSet"]
+hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
+other = "Nyow Twacking \"{{.channelName}}\" Voice Channyew fow Automute! owO"
+
+["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Unpwovided uwu"
+
+["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
+hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
+other = "Unpwovided"
+
+["locale.language.name"]
+hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
+other = "Engwish"
+
+["message_handlers.handleMessageCreate.noPerms"]
+hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
+other = "Usew does nyot have de wequiwed pewmissions to execute dis command!"
+
+["message_handlers.handleMessageCreate.respondPrefix"]
+hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
+other = "I wespond to de pwefix {{.CommandPrefix}} uwu"
+
+["message_handlers.handleNewGameMessage.embed.Description"]
+hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
+other = "Cwick de fowwowing wink to wink youw captuwe: \\n <{{.hyperlink}}>\\n\\nDon't have de captuwe instawwed? Watest vewsion [hewe]({{.downloadURL}})\\n\\nTo wink youw captuwe manyuawwy: @w@"
+
+["message_handlers.handleNewGameMessage.embed.Fields.Code"]
+hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
+other = "Code OwO"
+
+["message_handlers.handleNewGameMessage.embed.Fields.URL"]
+hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
+other = "UWW"
+
+["message_handlers.handleNewGameMessage.embed.Title"]
+hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
+other = "You just stawted a game!"
+
+["responses.helpResponse.SubTitle"]
+hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
+other = "[View de Gidub Pwoject](https://gidub.com/denvewquanye/automuteus) ow [Join ouw Discowd](https://discowd.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} hewp <command>` to see mowe detaiws on a command! ♥w♥"
+
+["responses.helpResponse.Title"]
+hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
+other = "AutoMuteUs Bot Commands:\\n"
+
+["responses.lobbyMessage.Footer.Text"]
+hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
+other = "Weact to dis message wid youw in-game cowow! (ow {{.emojiLeave}} to weave) ☆w☆"
+
+["responses.lobbyMessage.Title"]
+hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
+other = "Wobby uwu"
+
+["responses.lobbyMessage.notLinked.Description"]
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌"
+
+["responses.lobbyMetaEmbedFields.PlayersLinked"]
+hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
+other = "Pwayews Winked"
+
+["responses.lobbyMetaEmbedFields.Region"]
+hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
+other = "Wegion"
+
+["responses.lobbyMetaEmbedFields.RoomCode"]
+hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
+other = "Woom Code OwO"
+
+["responses.lobbyMetaEmbedFields.Tracking"]
+hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
+other = "Twacking ᅌwᅌ"
+
+["responses.makeDescription.GameNotRunning"]
+hash = "sha1-86cde27b1b68172d5a2ced8c7064619ee439b61c"
+other = "\\n⚠**Bot is Paused!**⚠\\n\\n ÓwÓ"
+
+["responses.makeDescription.author"]
+hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
+other = "<@{{.author}}> is wunnying an Among Us game!\\nThe game is happenying in  (owo)"
+
+["responses.menuMessage.Linked.FooterText"]
+hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
+other = "(Entew a game wobby in Among Us to stawt de match)"
+
+["responses.menuMessage.Title"]
+hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
+other = "Main Menyu ᅌwᅌ"
+
+["responses.menuMessage.notLinked.Description"]
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌"
+
+["responses.settingResponse.Description"]
+hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
+other = "Type `{{.CommandPrefix}} settings <setting>` to change a setting fwom dose wisted bewow Owo"
+
+["responses.settingResponse.Title"]
+hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
+other = "Settings"
+
+["responses.statsResponse.Commit"]
+hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
+other = "Commit"
+
+["responses.statsResponse.Games"]
+hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
+other = "Active Games"
+
+["responses.statsResponse.Guilds"]
+hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
+other = "Totaw Guiwds ʘwʘ"
+
+["responses.statsResponse.Title"]
+hash = "sha1-8490902565bf22c8f9bfa748c6377c90aad6d6f0"
+other = "Bot Stats ◔w◔"
+
+["responses.statsResponse.Version"]
+hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
+other = "Vewsion"
+
+["settings.AllSettings.AdminUserIDs.args"]
+hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
+other = "<Usew @ mentions>... ◕w◕"
+
+["settings.AllSettings.AdminUserIDs.desc"]
+hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
+other = "Specify which individuaw usews have admin bot pewmissions"
+
+["settings.AllSettings.AdminUserIDs.shortDesc"]
+hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
+other = "Bot Admins OwO"
+
+["settings.AllSettings.Delays.args"]
+hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
+other = "<stawt phase> <end phase> <deway> Owo"
+
+["settings.AllSettings.Delays.desc"]
+hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
+other = "Specify de deways fow automute/deafen between stages of de game, wike wobby->tasks"
+
+["settings.AllSettings.Delays.shortDesc"]
+hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
+other = "Deways between stages"
+
+["settings.AllSettings.Language.args"]
+hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
+other = "<wanguage> ow wewoad"
+
+["settings.AllSettings.Language.desc"]
+hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
+other = "Change de bot messages wanguage øwø"
+
+["settings.AllSettings.Language.shortDesc"]
+hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
+other = "Bot wanguage Owo"
+
+["settings.AllSettings.Nicknames.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse>"
+
+["settings.AllSettings.Nicknames.desc"]
+hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
+other = "Specify if de bot shouwd wenyame Discowd usews to match deiw in-game nyames ow nyot"
+
+["settings.AllSettings.Nicknames.shortDesc"]
+hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
+other = "Bot wenyames Discowd usews uwu"
+
+["settings.AllSettings.Prefix.args"]
+hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
+other = "<pwefix>"
+
+["settings.AllSettings.Prefix.desc"]
+hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
+other = "Change de pwefix dat de bot uses to detect commands ☆w☆"
+
+["settings.AllSettings.Prefix.shortDesc"]
+hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
+other = "Bot pwefix ÓwÓ"
+
+["settings.AllSettings.RoleIDs.args"]
+hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
+other = "<wowe @ mentions>..."
+
+["settings.AllSettings.RoleIDs.desc"]
+hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
+other = "Specify which wowes have pewmissions to invoke de bot"
+
+["settings.AllSettings.RoleIDs.shortDesc"]
+hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
+other = "Bot Opewatows owO"
+
+["settings.AllSettings.Show.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["settings.AllSettings.Show.desc"]
+hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
+other = "Show aww de Bot settings fow dis sewvew ✧w✧"
+
+["settings.AllSettings.Show.shortDesc"]
+hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
+other = "Show Aww Settings"
+
+["settings.AllSettings.TrackedChannel.args"]
+hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
+other = "<voice channyew nyame>"
+
+["settings.AllSettings.TrackedChannel.desc"]
+hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
+other = "Change de defauwt twacked voice channyew"
+
+["settings.AllSettings.TrackedChannel.shortDesc"]
+hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
+other = "Defauwt twacked voice channyew ゜w゜"
+
+["settings.AllSettings.UnmuteDead.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse>"
+
+["settings.AllSettings.UnmuteDead.desc"]
+hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
+other = "Specify if de bot shouwd immediatewy unmute pwayews when dey die. **CAUTION. Weaks infowmation!**"
+
+["settings.AllSettings.UnmuteDead.shortDesc"]
+hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
+other = "Bot unmutes pwayews on dead"
+
+["settings.AllSettings.VoiceRules.args"]
+hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
+other = "<mute/deaf> <game phase> <dead/awive> <twue/fawse>"
+
+["settings.AllSettings.VoiceRules.desc"]
+hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
+other = "Specify mute/deafen wuwes fow de game, depending on de stage and de awive/deadnyess of pwayews. Exampwe given wouwd mute dead pwayews duwing de tasks stage ☆w☆"
+
+["settings.AllSettings.VoiceRules.shortDesc"]
+hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
+other = "Mute/deafen wuwes øwø"
+
+["settings.CommandPrefixSetting.changes"]
+hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
+other = "Guiwd pwefix changed fwom `{{.From}}` to `{{.To}}`. Use dat fwom nyow on! ☆w☆"
+
+["settings.CommandPrefixSetting.tooLong"]
+hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
+other = "Sowwy, de pwefix `{{.CommandPrefix}}` is too wong ({{.Length}} chawactews, max 10). Twy someding showtew."
+
+["settings.ConstructEmbedForSetting.Fields.Aliases"]
+hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
+other = "Awiases"
+
+["settings.ConstructEmbedForSetting.Fields.Arguments"]
+hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
+other = "Awguments"
+
+["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
+hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
+other = "Cuwwent Vawue ʘwʘ"
+
+["settings.ConstructEmbedForSetting.Fields.Example"]
+hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
+other = "Exampwe"
+
+["settings.HandleSettingsCommand.default"]
+hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
+other = "Sowwy, `{{.Arg}}` is nyot a vawid setting!\\n"
+
+["settings.SettingAdminUserIDs.clearAdmins"]
+hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
+other = "Cweawing aww AdminUsewIDs! ʘwʘ"
+
+["settings.SettingAdminUserIDs.newBotAdmin"]
+hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
+other = "<@{{.UserID}}> is nyow a bot admin! Owo"
+
+["settings.SettingAdminUserIDs.noBotAdmins"]
+hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
+other = "Nyo Bot Admins ᅌwᅌ"
+
+["settings.SettingAdminUserIDs.notFound"]
+hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
+other = "Sowwy, I don't knyow who `{{.UserName}}` is. You can pass in ID, usewnyame, usewnyame#XXXX, nyicknyame ow @mention (owo)"
+
+["settings.SettingApplyNicknames.false_applyNicknames"]
+hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
+other = "I wiww nyo wongew wenyame de pwayews in de voice chat."
+
+["settings.SettingApplyNicknames.false_noApplyNicknames"]
+hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
+other = "It's awweady fawse!"
+
+["settings.SettingApplyNicknames.true_applyNicknames"]
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "It's awweady twue!"
+
+["settings.SettingApplyNicknames.true_noApplyNicknames"]
+hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
+other = "I wiww nyow wenyame de pwayews in de voice chat. @w@"
+
+["settings.SettingApplyNicknames.wrongArg"]
+hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
+other = "Sowwy, `{{.Arg}}` is nyeidew `twue` nyow `fawse`. uwu"
+
+["settings.SettingDefaultTrackedChannel.noDefault"]
+hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
+other = "Nyo defauwt twacked voice channyew uwu"
+
+["settings.SettingDefaultTrackedChannel.withChannelName"]
+hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
+other = "Defauwt voice channyew changed to `{{.channelName}}`. Use dat fwom nyow on!"
+
+["settings.SettingDefaultTrackedChannel.withoutChannelID"]
+hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
+other = "Couwd nyot find de voice channyew `{{.channelName}}`! Pass in de nyame ow de ID, and make suwe de bot can see it."
+
+["settings.SettingDelays.Phase.UNINITIALIZED"]
+hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
+other = "I don't knyow what `{{.PhaseName}}` is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`. uwu"
+
+["settings.SettingDelays.delayBetweenPhases"]
+hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
+other = "Cuwwentwy, de deway when passing fwom `{{.PhaseA}}` to `{{.PhaseB}}` is {{.OldDelay}}."
+
+["settings.SettingDelays.missingPhases"]
+hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
+other = "The wist of game phases awe `Wobby`, `Tasks` and `Discussion`.\\nYou nyeed to type bod phases de game is twansitionying fwom and to to change de deway. ÕwÕ"
+
+["settings.SettingDelays.setDelayBetweenPhases"]
+hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
+other = "The deway when passing fwom `{{.PhaseA}}` to `{{.PhaseB}}` changed fwom {{.OldDelay}} to {{.NewDelay}}."
+
+["settings.SettingDelays.wrongNumber"]
+hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
+other = "`{{.Number}}` is nyot a vawid nyumbew! Pwease twy again ʘwʘ"
+
+["settings.SettingLanguage.list"]
+hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
+other = "Avaiwabwe wanguages: {{.Langs}} ᅌwᅌ"
+
+["settings.SettingLanguage.notFound"]
+hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
+other = "Wanguage nyot found! Avaiwabwe wanguage codes: {{.Langs}} owO"
+
+["settings.SettingLanguage.notLoaded"]
+hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
+other = "Wocawization fiwes wewe nyot woaded! {{.Langs}} ◔w◔"
+
+["settings.SettingLanguage.reloaded"]
+hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
+other = "Wocawization fiwes awe wewoaded ({{.Count}}). Avaiwabwe wanguage codes: {{.Langs}}"
+
+["settings.SettingLanguage.set"]
+hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
+other = "Wocawization is set to {{.LangName}}"
+
+["settings.SettingLanguage.tooShort"]
+hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
+other = "Sowwy, de wanguage code is showt. Avaiwabwe wanguage codes: {{.Langs}}. uwu"
+
+["settings.SettingPermissionRoleIDs.clearRoles"]
+hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
+other = "Cweawing aww PewmissionWoweIDs! (owo)"
+
+["settings.SettingPermissionRoleIDs.newBotAdmins"]
+hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
+other = "<@&{{.UserID}}>s awe nyow bot admins!"
+
+["settings.SettingPermissionRoleIDs.noRoleAdmins"]
+hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
+other = "Nyo Wowe Admins"
+
+["settings.SettingPermissionRoleIDs.notFound"]
+hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
+other = "Sowwy, I don't knyow de wowe `{{.RoleName}}` is. You can pass de wowe ID, wowe nyame ow @wowe ♥w♥"
+
+["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
+hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
+other = "It's awweady fawse!"
+
+["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
+hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
+other = "I wiww nyo wongew immediatewy unmute dead peopwe. Good choice!"
+
+["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
+hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
+other = "I wiww nyow unmute de dead peopwe immediatewy aftew dey die. Cawefuw, dis weveaws who died duwing de match! ᅌwᅌ"
+
+["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "It's awweady twue! ☆w☆"
+
+["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
+hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
+other = "Sowwy, `{{.Arg}}` is nyeidew `twue` nyow `fawse`."
+
+["settings.SettingVoiceRules.NA"]
+hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
+other = "N/A"
+
+["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
+hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
+other = "I don't knyow what {{.PhaseName}} is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`. ゜w゜"
+
+["settings.SettingVoiceRules.enoughArgs"]
+hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
+other = "You didn't pass enyough awguments! Cowwect syntax is: `voiceWuwes [mute/deaf] [game phase] [awive/dead] [twue/fawse]` ØwØ"
+
+["settings.SettingVoiceRules.neitherAliveDead"]
+hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
+other = "`{{.Arg}}` is nyeidew `awive` ow `dead`! ◔w◔"
+
+["settings.SettingVoiceRules.neitherMuteDeaf"]
+hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
+other = "`{{.Arg}}` is nyeidew `mute` nyow `deaf`! ÕwÕ"
+
+["settings.SettingVoiceRules.neitherTrueFalse"]
+hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
+other = "`{{.Arg}}` is nyeidew `twue` ow `fawse`! ◕w◕"
+
+["settings.SettingVoiceRules.queryingAlreadyUnValues"]
+hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe awweady un{{.PlayerDiscordState}}! Owo"
+
+["settings.SettingVoiceRules.queryingAlreadyValues"]
+hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe awweady {{.PlayerDiscordState}}!"
+
+["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
+hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe cuwwentwy {{.PlayerDiscordState}}."
+
+["settings.SettingVoiceRules.queryingCurrentlyValues"]
+hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe cuwwentwy NYOT {{.PlayerDiscordState}}. ◕w◕"
+
+["settings.SettingVoiceRules.setUnValues"]
+hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
+other = "Fwom nyow on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews wiww be un{{.PlayerDiscordState}}. ÓwÓ"
+
+["settings.SettingVoiceRules.setValues"]
+hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
+other = "Fwom nyow on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews wiww be {{.PlayerDiscordState}}."
+
+["state.phase.DISCUSSION"]
+hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
+other = "DISCUSSION ØwØ"
+
+["state.phase.LOBBY"]
+hash = "sha1-658c6353d3a9cf4d298b0ecdb88b40d6eda8dbfc"
+other = "WOBBY ♥w♥"
+
+["state.phase.MENU"]
+hash = "sha1-c8910b26f57214f5755dc74b2ca3ca1c721de675"
+other = "MENYU"
+
+["state.phase.TASKS"]
+hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
+other = "TASKS"

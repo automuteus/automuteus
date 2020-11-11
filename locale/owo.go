@@ -1,25 +1,35 @@
 package locale
 
 import (
+	"bytes"
+	"crypto/sha1"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
+
 	"math/rand"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/BurntSushi/toml"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var OwoFaces = []string{"OwO", "Owo", "owO", "ÓwÓ", "ÕwÕ", "@w@", "ØwØ", "øwø", "uwu", "☆w☆", "✧w✧", "♥w♥", "゜w゜", "◕w◕", "ᅌwᅌ", "◔w◔", "ʘwʘ", "⓪w⓪", "(owo)"}
+var OwoFaces = []string{
+	"OwO", "Owo", "owO", "ÓwÓ", "ÕwÕ", "@w@", "ØwØ", "øwø", "uwu", "☆w☆", "✧w✧", "♥w♥", "゜w゜", "◕w◕", "ᅌwᅌ", "◔w◔", "ʘwʘ", "⓪w⓪", "(owo)",
+}
 
 func Owoify(input string) string {
 	pieces := strings.Split(input, "{{")
 	full := owoifyString(pieces[0])
-	if len(pieces) > 1 {
-		//NOTE will fail for strings with {{ but no matching }}
-		sub := strings.Split(pieces[1], "}}")
-		full += "{{" + sub[0] + "}}" + Owoify(sub[1])
+
+	for _, str := range pieces[1:] {
+		// NOTE will fail for strings with {{ but no matching }}
+		sub := strings.Split(str, "}}")
+		full += "{{" + sub[0] + "}}" + owoifyString(sub[1])
 	}
+
 	return full
 }
 
@@ -44,42 +54,92 @@ func owoifyString(input string) string {
 	return output
 }
 
-func OwoToml(path, output string) {
+func OwoToml(path, output string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	defer f.Close()
 
 	bytes, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
-	outputfile, err := os.Create(output)
+	unmarshalFuncs := map[string]i18n.UnmarshalFunc{
+		"toml": toml.Unmarshal,
+	}
+	mf, err := i18n.ParseMessageFileBytes(bytes, path, unmarshalFuncs)
+
 	if err != nil {
-		log.Println(err)
-		return
+		return fmt.Errorf("failed to load message file %s: %s", path, err)
 	}
-	defer outputfile.Close()
 
-	lines := strings.Split(string(bytes), "\n")
-	for _, line := range lines {
-		arr := strings.Split(line, " = ")
-		if len(arr) > 1 {
-			text := arr[1][1 : len(arr[1])-2]
-			text = strings.ReplaceAll(text, "\n", "")
-			text = strings.ReplaceAll(text, "\r", "")
-			genFace := rand.Intn(2)
-			if genFace == 1 {
-				faceIdx := rand.Intn(len(OwoFaces))
-				outputfile.WriteString(fmt.Sprintf("%s = \"%s %s\"\n", arr[0], Owoify(text), OwoFaces[faceIdx]))
-			} else {
-				outputfile.WriteString(fmt.Sprintf("%s = \"%s\"\n", arr[0], Owoify(text)))
-			}
+	messageTemplates := map[string]*i18n.MessageTemplate{}
+	for _, m := range mf.Messages {
+		template := i18n.NewMessageTemplate(m)
+		if template == nil {
+			continue
 		}
+
+		template.Hash = hash(template)
+		messageTemplates[m.ID] = template
 	}
 
+	val := marshalOwoValue(messageTemplates)
+	content, err := encodeToml(val)
+	if err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(output, content, 0666); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func encodeToml(v interface{}) (content []byte, err error) {
+	// by toml
+	var buf bytes.Buffer
+	enc := toml.NewEncoder(&buf)
+	enc.Indent = ""
+	err = enc.Encode(v)
+	content = buf.Bytes()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal strings: %s", err)
+	}
+	return
+}
+
+func marshalOwoValue(messageTemplates map[string]*i18n.MessageTemplate) interface{} {
+	val := make(map[string]interface{}, len(messageTemplates))
+	for id, template := range messageTemplates {
+		m := map[string]string{}
+
+		m["hash"] = template.Hash
+
+		for pluralForm, template := range template.PluralTemplates {
+			text := template.Src
+			if rand.Intn(2) == 1 {
+				faceIdx := rand.Intn(len(OwoFaces))
+				text = fmt.Sprintf("%s %s", Owoify(text), OwoFaces[faceIdx])
+			} else {
+				text = fmt.Sprintf("%s", Owoify(text))
+			}
+
+			m[string(pluralForm)] = text
+		}
+		val[id] = m
+	}
+	return val
+}
+
+// Source: https://github.com/nicksnyder/go-i18n/blob/603af13488ca751833928c45f7ada0eed720a392/v2/goi18n/merge_command.go#L294
+func hash(t *i18n.MessageTemplate) string {
+	h := sha1.New()
+	_, _ = io.WriteString(h, t.Description)
+	_, _ = io.WriteString(h, t.PluralTemplates["other"].Src)
+	return fmt.Sprintf("sha1-%x", h.Sum(nil))
 }
