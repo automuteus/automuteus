@@ -16,8 +16,12 @@ var ctx = context.Background()
 const LockTimeoutSecs = 3
 const LinearBackoffMs = 200
 const MaxRetries = 10
+const SnowflakeLockMs = 100
 
 const SecsPerHour = 3600
+
+//10 minute threshold for games to not be loaded up
+const StaleGameThresholdSec = 600
 
 type RedisInterface struct {
 	client *redis.Client
@@ -85,6 +89,10 @@ func cacheHash(guildID string) string {
 
 func matchIDKey() string {
 	return "automuteus:match:counter"
+}
+
+func snowflakeLockID(snowflake string) string {
+	return "automuteus:snowflake:" + snowflake + ":lock"
 }
 
 func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
@@ -297,15 +305,16 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 }
 
-func (redisInterface *RedisInterface) AppendToActiveGames(guildID, connectCode string) {
+func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
-
-	count, err := redisInterface.client.SAdd(ctx, key, connectCode).Result()
+	t := time.Now().Unix()
+	_, err := redisInterface.client.ZAdd(ctx, key, &redis.Z{
+		Score:  float64(t),
+		Member: connectCode,
+	}).Result()
 
 	if err != nil {
 		log.Println(err)
-	} else {
-		log.Printf("Active games: %d", count)
 	}
 }
 
@@ -319,19 +328,23 @@ func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string)
 }
 
 //only deletes from the guild's responsibility, NOT the entire guild counter!
-func (redisInterface *RedisInterface) LoadAllActiveGamesAndDelete(guildID string) []string {
+func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []string {
 	hash := activeGamesKey(guildID)
 
-	games, err := redisInterface.client.SMembers(ctx, hash).Result()
+	before := time.Now().Add(-time.Second * StaleGameThresholdSec).Unix()
+
+	games, err := redisInterface.client.ZRangeByScore(ctx, hash, &redis.ZRangeBy{
+		Min:    fmt.Sprintf("%d", before),
+		Max:    fmt.Sprintf("%d", time.Now().Unix()),
+		Offset: 0,
+		Count:  0,
+	}).Result()
+
 	if err != nil {
 		log.Println(err)
 		return []string{}
 	}
 
-	_, err = redisInterface.client.Del(ctx, hash).Result()
-	if err != nil {
-		log.Println(err)
-	}
 	return games
 }
 
@@ -447,6 +460,18 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 	}
 
 	return redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
+}
+
+func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
+	locker := redislock.New(redisInterface.client)
+	lock, err := locker.Obtain(ctx, snowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
+	if err == redislock.ErrNotObtained {
+		return nil
+	} else if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return lock
 }
 
 func (redisInterface *RedisInterface) Close() error {

@@ -144,6 +144,7 @@ func (bot *Bot) GracefulClose() {
 func (bot *Bot) Close() {
 	bot.SessionManager.Close()
 	bot.RedisInterface.Close()
+	bot.StorageInterface.Close()
 }
 
 func (bot *Bot) PurgeConnection(socketID string) {
@@ -200,7 +201,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 		}
 
-		games := bot.RedisInterface.LoadAllActiveGamesAndDelete(m.Guild.ID)
+		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
 
 		for _, connCode := range games {
 			gsr := GameStateRequest{
@@ -208,7 +209,10 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				ConnectCode: connCode,
 			}
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-			if lock != nil && dgs != nil && !dgs.Subscribed && dgs.ConnectCode != "" {
+			for lock == nil {
+				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			}
+			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
 				killChan := make(chan EndGameMessage)
 				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
@@ -219,19 +223,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
-			} else if lock != nil {
-				//log.Println("UNLOCKING")
-				lock.Release(ctx)
 			}
+			lock.Release(ctx)
 		}
-
-		//if len(games) == 0 {
-		//	dsg := NewDiscordGameState(m.Guild.ID)
-		//
-		//	//put an empty entry in Redis
-		//	bot.RedisInterface.SetDiscordGameState(dsg, nil)
-		//}
-
 	}
 }
 

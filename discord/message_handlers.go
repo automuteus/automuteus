@@ -23,6 +23,13 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
+	lock := bot.RedisInterface.LockSnowflake(m.ID)
+	//couldn't obtain lock; bail bail bail!
+	if lock == nil {
+		return
+	}
+	defer lock.Release(ctx)
+
 	g, err := s.State.Guild(m.GuildID)
 	if err != nil {
 		log.Println(err)
@@ -89,6 +96,12 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	if m.UserID == s.State.User.ID {
 		return
 	}
+	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.MessageID)
+	//couldn't obtain lock; bail bail bail!
+	if lock == nil {
+		return
+	}
+	defer lock.Release(ctx)
 
 	g, err := s.State.Guild(m.GuildID)
 	if err != nil {
@@ -157,6 +170,13 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 //relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
+	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
+	//couldn't obtain lock; bail bail bail!
+	if lock == nil {
+		return
+	}
+	defer lock.Release(ctx)
+
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
 		GuildID:      m.GuildID,
@@ -241,7 +261,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	dgs.ConnectCode = connectCode
 
-	bot.RedisInterface.AppendToActiveGames(m.GuildID, connectCode)
+	bot.RedisInterface.RefreshActiveGame(m.GuildID, connectCode)
 
 	killChan := make(chan EndGameMessage)
 

@@ -170,11 +170,10 @@ func discordMainWrapper() error {
 	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
 
 	<-sc
-	bot.GracefulClose()
+	//bot.GracefulClose()
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
 	bot.Close()
-	redisClient.Close()
 	return nil
 }

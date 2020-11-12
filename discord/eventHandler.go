@@ -58,6 +58,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				}
 				log.Println("Popped job w/ payload " + job.Payload.(string))
 				bot.refreshGameLiveness(connectCode)
+				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
 
 				switch job.JobType {
 				case broker.Connection:
