@@ -16,7 +16,7 @@ var ctx = context.Background()
 const LockTimeoutSecs = 3
 const LinearBackoffMs = 200
 const MaxRetries = 10
-const SnowflakeLockMs = 100
+const SnowflakeLockMs = 3000
 
 const SecsPerHour = 3600
 

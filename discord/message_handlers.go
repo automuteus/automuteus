@@ -96,7 +96,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	if m.UserID == s.State.User.ID {
 		return
 	}
-	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.MessageID)
+	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
 	//couldn't obtain lock; bail bail bail!
 	if lock == nil {
 		return
