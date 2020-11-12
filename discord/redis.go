@@ -64,7 +64,7 @@ func totalGuildsKey(version string) string {
 }
 
 func activeGamesKey(guildID string) string {
-	return "automuteus:discord:" + guildID + ":games:set"
+	return "automuteus:discord:" + guildID + ":games:zset"
 }
 
 func discordKeyTextChannelPtr(guildID, channelID string) string {
