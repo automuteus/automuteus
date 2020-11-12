@@ -8,8 +8,8 @@ other = "was nyot An Impostow. ØwØ"
 
 ["ascii.AsciiStarfield.remains"]
 hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
-one = "Impostow wemain"
-other = "Impostows wemains ☆w☆"
+one = "Impostow wemains"
+other = "Impostows wemain ☆w☆"
 
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
