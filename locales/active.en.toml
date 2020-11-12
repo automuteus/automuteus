@@ -187,5 +187,5 @@
 "state.phase.TASKS" = "TASKS"
 
 ["ascii.AsciiStarfield.remains"]
-one = "Impostor remain"
-other = "Impostors remains"
+one = "Impostor remains"
+other = "Impostors remain"
