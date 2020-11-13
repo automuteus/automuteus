@@ -81,6 +81,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		logPath:          logPath,
 		captureTimeout:   timeoutSecs,
 	}
+	dg.LogLevel = discordgo.LogInformational
 
 	dg.AddHandler(bot.handleVoiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
@@ -118,7 +119,6 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	if listeningTo == "" {
 		listeningTo = ".au help"
 	}
-	dg.LogLevel = discordgo.LogInformational
 
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
