@@ -32,6 +32,7 @@ services:
       - galactus
     volumes:
       - "bot-logs:/app/logs"
+      - "bot-locales:/app/locales"
   galactus:
     ports:
       # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
@@ -54,4 +55,5 @@ services:
 
 volumes:
   bot-logs:
+  bot-locales:
   redis-data:
