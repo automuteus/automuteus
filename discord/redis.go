@@ -321,7 +321,7 @@ func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode str
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
 
-	err := redisInterface.client.SRem(ctx, key, connectCode).Err()
+	err := redisInterface.client.ZRem(ctx, key, connectCode).Err()
 	if err != nil {
 		log.Println(err)
 	}
