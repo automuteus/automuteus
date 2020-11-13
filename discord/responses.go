@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/automuteus/galactus/broker"
 	"strings"
+	"time"
 
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -13,6 +14,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
+
+const ISO8601 = "2006-01-02T15:04:05-0700"
 
 func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
@@ -107,7 +110,7 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 			Other: "Bot Stats",
 		}),
 		Description: "",
-		Timestamp:   "",
+		Timestamp:   time.Now().Format(ISO8601),
 		Color:       2067276, //DARK GREEN
 		Image:       nil,
 		Thumbnail:   nil,
@@ -242,7 +245,7 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.Gu
 			Other: "Main Menu",
 		}),
 		Description: desc,
-		Timestamp:   "",
+		Timestamp:   time.Now().Format(ISO8601),
 		Footer:      footer,
 		Color:       color,
 		Image:       nil,
@@ -288,7 +291,7 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 			Other: "Lobby",
 		}),
 		Description: desc,
-		Timestamp:   "",
+		Timestamp:   time.Now().Format(ISO8601),
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMessage.Footer.Text",
@@ -334,7 +337,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		Type:        "",
 		Title:       sett.LocalizeMessage(phase.ToLocale()),
 		Description: dgs.makeDescription(sett),
-		Timestamp:   "",
+		Timestamp:   time.Now().Format(ISO8601),
 		Color:       color,
 		Footer:      nil,
 		Image:       nil,

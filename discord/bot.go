@@ -118,13 +118,15 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	if listeningTo == "" {
 		listeningTo = ".au help"
 	}
+	dg.LogLevel = discordgo.LogInformational
 
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
-		Game: &discordgo.Game{
-			Name: listeningTo,
-			Type: discordgo.GameTypeListening,
-		},
+		Activities: &[]discordgo.Game{
+			{
+				Name: listeningTo,
+				Type: discordgo.GameTypeListening,
+			}},
 		AFK:    false,
 		Status: "",
 	}

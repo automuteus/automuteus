@@ -400,7 +400,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"stats"},
+		aliases:           []string{"stats", "info"},
 		secret:            false,
 		emoji:             "📊",
 		adminSetting:      false,
