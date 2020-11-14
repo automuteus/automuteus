@@ -265,14 +265,14 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	case game.MENU:
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
 		bot.applyToAll(dgs, false, false)
-		go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
+		//go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
 		break
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, dgsRequest)
 
 		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
-		go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
+
 		break
 	case game.TASKS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)

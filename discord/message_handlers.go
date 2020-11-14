@@ -415,11 +415,5 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	log.Println("Added self game state message")
-
-	if dgs.AmongUsData.GetPhase() != game.MENU {
-		for _, e := range bot.StatusEmojis[true] {
-			go dgs.AddReaction(s, e.FormatForReaction())
-		}
-		dgs.AddReaction(s, "❌")
-	}
+	go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 }

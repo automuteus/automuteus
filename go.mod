@@ -15,6 +15,7 @@ require (
 	github.com/jackc/pgx/v4 v4.9.2
 	github.com/joho/godotenv v1.3.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.1
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
 	golang.org/x/sys v0.0.0-20201113135734-0a15ea8d9b02 // indirect
 	golang.org/x/text v0.3.4
