@@ -77,7 +77,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
 
-					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 					break
 				case broker.Lobby:
 					var lobby game.Lobby
@@ -179,7 +179,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 
 			//only update the message if we're not in the tasks phase (info leaks)
 			if dgs.AmongUsData.GetPhase() != game.TASKS {
-				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 			}
 
 			return true
@@ -195,7 +195,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
-				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 				return true
 			} else if updated {
 				userID := dgs.AttemptPairingByMatchingNames(data)
@@ -209,14 +209,14 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
 					log.Println(sett.GetUnmuteDeadDuringTasks())
 					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
-						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 						return true
 					} else {
 						log.Println("NOT updating the discord status message; would leak info")
 						return false
 					}
 				} else {
-					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 					if player.Action == game.EXILED {
 						return false //don't apply a mute to this player
 					}
@@ -263,7 +263,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 		bot.applyToAll(dgs, false, false)
 		//go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
 		break
@@ -271,7 +271,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, dgsRequest)
 
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 
 		break
 	case game.TASKS:
@@ -283,13 +283,13 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		}
 
 		bot.handleTrackedMembers(bot.SessionManager, sett, delay, priority, dgsRequest)
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 		break
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgsRequest)
 
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 		break
 	}
 }
@@ -302,5 +302,5 @@ func (bot *Bot) processLobby(s *discordgo.Session, sett *storage.GuildSettings, 
 	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+	dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 }

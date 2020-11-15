@@ -59,6 +59,14 @@ func commitKey() string {
 	return "automuteus:commit"
 }
 
+func activeNodesKey() string {
+	return "automuteus:nodes:all"
+}
+
+func discordRequestsZsetKeyByNodeID(nodeID string) string {
+	return "automuteus:requests:" + nodeID
+}
+
 func totalGuildsKey(version string) string {
 	return "automuteus:count:guilds:version-" + version
 }
@@ -93,6 +101,74 @@ func matchIDKey() string {
 
 func snowflakeLockID(snowflake string) string {
 	return "automuteus:snowflake:" + snowflake + ":lock"
+}
+
+func (redisInterface *RedisInterface) GetAllRequestsForAllNodes(numMinutes int) map[string]int {
+	nodes := redisInterface.GetAllActiveNodes(numMinutes)
+
+	allCounts := make(map[string]int)
+
+	for _, v := range nodes {
+		allCounts[v] = redisInterface.GetDiscordRequestsInLastMinutesByNodeID(numMinutes, v)
+	}
+	return allCounts
+}
+
+func (redisInterface *RedisInterface) GetAllActiveNodes(numMinutes int) []string {
+	before := time.Now().Add(-time.Minute * time.Duration(numMinutes)).Unix()
+	nodeIDs, err := redisInterface.client.ZRangeByScore(ctx, activeNodesKey(), &redis.ZRangeBy{
+		Min:    fmt.Sprintf("%d", before),
+		Max:    fmt.Sprintf("%d", time.Now().Unix()),
+		Offset: 0,
+		Count:  0,
+	}).Result()
+	if err != nil {
+		log.Println(err)
+		return []string{}
+	}
+	return nodeIDs
+}
+
+func (redisInterface *RedisInterface) IncrementDiscordRequests(nodeID string, count int) {
+	if nodeID == "" {
+		return
+	}
+
+	t := time.Now()
+
+	//make sure the entry is refreshed in the overall nodes listing
+	_, err := redisInterface.client.ZAdd(ctx, activeNodesKey(), &redis.Z{
+		Score:  float64(t.Unix()),
+		Member: nodeID,
+	}).Result()
+
+	for i := 0; i < count; i++ {
+		t = time.Now()
+		_, err = redisInterface.client.ZAdd(ctx, discordRequestsZsetKeyByNodeID(nodeID), &redis.Z{
+			Score:  float64(t.UnixNano()),
+			Member: t, //add the time as an element as it's always unique PER NODE (no 2 requests in the same ms, for the same node)
+		}).Result()
+		time.Sleep(time.Millisecond)
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (redisInterface *RedisInterface) GetDiscordRequestsInLastMinutesByNodeID(numMinutes int, nodeID string) int {
+	before := time.Now().Add(-time.Minute * time.Duration(numMinutes)).UnixNano()
+
+	games, err := redisInterface.client.ZRangeByScore(ctx, discordRequestsZsetKeyByNodeID(nodeID), &redis.ZRangeBy{
+		Min:    fmt.Sprintf("%d", before),
+		Max:    fmt.Sprintf("%d", time.Now().UnixNano()),
+		Offset: 0,
+		Count:  0,
+	}).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	return len(games)
 }
 
 func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
