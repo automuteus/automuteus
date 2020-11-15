@@ -111,6 +111,8 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
 
+	go bot.PrometheusMetricsServer(os.Getenv("SCW_NODE_ID"), "2112")
+
 	go StartHealthCheckServer("8080")
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
@@ -311,7 +313,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
-	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
 
 	log.Println("Done saving guild data")
 }
