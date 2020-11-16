@@ -4,68 +4,119 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
+	"time"
 )
 
-type RedisObserver struct {
-	NodeID         string
-	RedisInterface *RedisInterface
-}
-
-func (c *RedisObserver) ReallyExpensiveAssessmentOfTheSystemState() (Min1Counts, Min10Counts int) {
-	Min1Counts = c.RedisInterface.GetDiscordRequestsInLastMinutesByNodeID(1, c.NodeID)
-	Min10Counts = c.RedisInterface.GetDiscordRequestsInLastMinutesByNodeID(10, c.NodeID)
-	return
-}
-
-// RedisObserverCollector implements the Collector interface.
-type RedisObserverCollector struct {
-	RedisObserver *RedisObserver
+type MetricsObserver struct {
+	NodeID           string
+	MetricsCollector *MetricsCollector
 }
 
 // Descriptors used by the RedisObserverCollector below.
 var (
-	discordRequests1minDesc = prometheus.NewDesc(
-		"discordrequests_per_1m",
-		"Number of Discord API requests in the past 1 minute by K8s Node ID",
-		[]string{"nodeID"}, nil,
+	discord1minDesc = prometheus.NewDesc(
+		"discord_requests_per_1m",
+		"Number of Discord API requests in the past 1 minute",
+		[]string{"nodeID", "type"}, nil,
 	)
-	discordRequests10minDesc = prometheus.NewDesc(
-		"discordrequests_per_10m",
-		"Number of Discord API requests in the past 10 minutes by K8s Node ID",
-		[]string{"nodeID"}, nil,
+	discord10minDesc = prometheus.NewDesc(
+		"discord_requests_per_10m",
+		"Number of Discord API requests in the past 10 minutes",
+		[]string{"nodeID", "type"}, nil,
 	)
 )
 
-// Describe is implemented with DescribeByCollect. That's possible because the
-// Collect method will always return the same two metrics with the same two
-// descriptors.
-func (cc RedisObserverCollector) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(cc, ch)
-}
+func (cc MetricsObserverCollector) Collect(ch chan<- prometheus.Metric) {
+	//get rid of old entries
+	cc.MetricsObserver.MetricsCollector.prune()
 
-func (cc RedisObserverCollector) Collect(ch chan<- prometheus.Metric) {
-	discReqs1Min, discReqs10Mins := cc.RedisObserver.ReallyExpensiveAssessmentOfTheSystemState()
 	ch <- prometheus.MustNewConstMetric(
-		discordRequests1minDesc,
+		discord1minDesc,
 		prometheus.GaugeValue,
-		float64(discReqs1Min),
-		cc.RedisObserver.NodeID,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, Generic)),
+		cc.MetricsObserver.NodeID,
+		"all",
 	)
 
 	ch <- prometheus.MustNewConstMetric(
-		discordRequests10minDesc,
+		discord10minDesc,
 		prometheus.GaugeValue,
-		float64(discReqs10Mins),
-		cc.RedisObserver.NodeID,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, Generic)),
+		cc.MetricsObserver.NodeID,
+		"all",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafen)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MuteDeafen)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MessageCreateDelete)),
+		cc.MetricsObserver.NodeID,
+		"create/delete",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MessageCreateDelete)),
+		cc.MetricsObserver.NodeID,
+		"create/delete",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MessageEdit)),
+		cc.MetricsObserver.NodeID,
+		"edit",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MessageEdit)),
+		cc.MetricsObserver.NodeID,
+		"edit",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, ReactionAdd)),
+		cc.MetricsObserver.NodeID,
+		"reaction",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, ReactionAdd)),
+		cc.MetricsObserver.NodeID,
+		"reaction",
 	)
 }
 
-func (bot *Bot) NewDiscordAPIRequestObserver(nodeID string, reg prometheus.Registerer) *RedisObserver {
-	c := &RedisObserver{
-		NodeID:         nodeID,
-		RedisInterface: bot.RedisInterface,
+func (bot *Bot) NewDiscordAPIRequestObserver(nodeID string, reg prometheus.Registerer) *MetricsObserver {
+	c := &MetricsObserver{
+		NodeID:           nodeID,
+		MetricsCollector: bot.MetricsCollector,
 	}
-	cc := RedisObserverCollector{RedisObserver: c}
+	cc := MetricsObserverCollector{MetricsObserver: c}
 	prometheus.WrapRegistererWith(nil, reg).MustRegister(cc)
 	return c
 }

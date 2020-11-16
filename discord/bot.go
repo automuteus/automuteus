@@ -28,6 +28,8 @@ type Bot struct {
 
 	StorageInterface *storage.StorageInterface
 
+	MetricsCollector *MetricsCollector
+
 	logPath string
 
 	captureTimeout int
@@ -80,6 +82,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		StorageInterface: storageInterface,
 		logPath:          logPath,
 		captureTimeout:   timeoutSecs,
+		MetricsCollector: NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
 
@@ -313,7 +316,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
-	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 
 	log.Println("Done saving guild data")
 }
