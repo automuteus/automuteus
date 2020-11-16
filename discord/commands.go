@@ -559,6 +559,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			Other: "User does not have the required permissions to execute this command!",
 		}))
 	} else {
+		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
+		//Very approximately, at least
+		bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 2)
+		bot.MetricsCollector.RecordDiscordRequests(MessageCreateDelete, 2)
+
 		switch cmd.cmdType {
 		case Help:
 			if len(args[1:]) == 0 {
@@ -595,7 +600,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			bot.applyToAll(dgs, false, false)
 
-			bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 
 			break
@@ -612,7 +616,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.applyToAll(dgs, false, false)
 			}
 
-			dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+			dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			break
 
 		case Refresh:
@@ -629,8 +633,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			//add the emojis to the refreshed message
 
 			//TODO well this is a little ugly
-			//+12 emojis, 1 for X, and another for the message creation
+			//+12 emojis, 1 for X, and another two the message delete/create
 			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 14)
+			bot.MetricsCollector.RecordDiscordRequests(ReactionAdd, 13)
+			bot.MetricsCollector.RecordDiscordRequest(MessageCreateDelete)
 
 			go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 			break
@@ -647,7 +653,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.linkPlayer(s, dgs, args[1:])
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			}
 			break
 
@@ -671,7 +677,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					//update the state message to reflect the player leaving
-					dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+					dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 				}
 			}
 			break
@@ -695,7 +701,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				dgs.trackChannel(channelName, channels, sett)
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			}
 			break
 		case UnmuteAll:
@@ -776,7 +782,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 				}
 			}
-			bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			break
 
 		case ShowMe:
@@ -800,7 +805,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSend(m.ChannelID, buf.String())
 				}
 			}
-			bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			break
 		case ForgetMe:
 			if m.Author != nil {
@@ -815,7 +819,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						map[string]interface{}{
 							"AuthorID": m.Author.ID,
 						}))
-					bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 				}
 			}
 			break
@@ -824,7 +827,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			if m.Author != nil {
 				embed := bot.statsResponse(sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
-				bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			}
 			break
 
@@ -836,15 +838,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					if len(jBytes) > 1980 {
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s", jBytes[0:1980]))
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s\n```", jBytes[1980:]))
-						bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 2)
-
 					} else {
 						if err != nil {
 							log.Println(err)
 						}
 						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
-						bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
-
 					}
 				}
 			}
@@ -873,7 +871,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(sett, args[1], imposter, count))
 				}
 			}
-			bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -883,10 +880,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				map[string]interface{}{
 					"CommandPrefix": prefix,
 				}))
-			bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			break
 		}
 	}
-	bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+
 	deleteMessage(s, m.ChannelID, m.Message.ID)
 }

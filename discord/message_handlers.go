@@ -160,7 +160,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			//make sure to update any voice changes if they occurred
 			if idMatched {
 				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.RedisInterface)
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			}
 		}
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -221,6 +221,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		}
 
 		if dgs.Running {
+			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
 			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
@@ -418,8 +419,9 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 
 	log.Println("Added self game state message")
 	//TODO well this is a little ugly
-	//+12 emojis, 1 for X, and another for the initial status message
-	go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 14)
+	//+12 emojis, 1 for X
+	go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 13)
+	bot.MetricsCollector.RecordDiscordRequests(ReactionAdd, 13)
 
 	go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 }

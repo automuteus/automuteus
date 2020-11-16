@@ -60,19 +60,19 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, redisInterface *RedisInterface) {
+func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *MetricsCollector, redisInterface *RedisInterface) {
 	DeferredEditsLock.Lock()
 
 	//if it isn't found, then start the worker to wait to start it
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
-		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, redisInterface)
+		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, metricsCollector, redisInterface)
 	}
 	//whether or not it's found, replace the contents with the new message
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
 }
 
-func deferredEditWorker(s *discordgo.Session, channelID, messageID string, redisInterface *RedisInterface) {
+func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metricsCollector *MetricsCollector, redisInterface *RedisInterface) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
@@ -83,6 +83,7 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string, redis
 	if me != nil {
 		editMessageEmbed(s, channelID, messageID, me)
 	}
+	metricsCollector.RecordDiscordRequest(MessageEdit)
 	go redisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 }
 
