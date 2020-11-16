@@ -33,22 +33,6 @@ func (cc MetricsObserverCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		discord1minDesc,
 		prometheus.GaugeValue,
-		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, Generic)),
-		cc.MetricsObserver.NodeID,
-		"all",
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		discord10minDesc,
-		prometheus.GaugeValue,
-		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, Generic)),
-		cc.MetricsObserver.NodeID,
-		"all",
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		discord1minDesc,
-		prometheus.GaugeValue,
 		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafen)),
 		cc.MetricsObserver.NodeID,
 		"mute/deafen",
