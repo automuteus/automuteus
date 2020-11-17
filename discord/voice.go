@@ -4,13 +4,11 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 )
 
 type HandlePriority int
@@ -48,23 +46,22 @@ func (h *PatchPriority) Pop() interface{} {
 }
 
 func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
-	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	log.Println("Forcibly applying mute/deaf to " + userID)
-	userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
-	params := UserPatchParameters{
-		GuildID:  dgs.GuildID,
-		Userdata: userData,
-		Deaf:     deaf,
-		Mute:     mute,
-		Nick:     "",
-	}
+	//userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
+	//params := UserPatchParameters{
+	//	GuildID:  dgs.GuildID,
+	//	Userdata: userData,
+	//	Deaf:     deaf,
+	//	Mute:     mute,
+	//	Nick:     "",
+	//}
 	bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
 	go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
-	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+	err := bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userID, mute, deaf, "")
+	if err != nil {
+		log.Println(err)
+	}
+	//go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 }
 
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
@@ -93,16 +90,20 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 
 		if tracked {
 			log.Println("Forcibly applying mute/deaf to " + userData.User.UserID)
-			params := UserPatchParameters{
-				GuildID:  dgs.GuildID,
-				Userdata: userData,
-				Deaf:     deaf,
-				Mute:     mute,
-				Nick:     "",
-			}
+			//params := UserPatchParameters{
+			//	GuildID:  dgs.GuildID,
+			//	Userdata: userData,
+			//	Deaf:     deaf,
+			//	Mute:     mute,
+			//	Nick:     "",
+			//}
 			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
 			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
-			go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userData.User.UserID, mute, deaf, "")
+			if err != nil {
+				log.Println(err)
+			}
+			//go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 		}
 	}
 }
@@ -218,15 +219,14 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
 			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
-			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
+			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, p.patchParams.Userdata.GetID(), p.patchParams.Mute, p.patchParams.Deaf, "")
+			if err != nil {
+				log.Println(err)
+			}
+			wg.Done()
 		}
 	}
 	wg.Wait()
 	//relinquish the lock once we've sent all the requests
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-}
-
-func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
-	guildMemberUpdate(s, parameters)
-	wg.Done()
 }

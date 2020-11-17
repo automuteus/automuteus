@@ -161,13 +161,20 @@ func discordMainWrapper() error {
 		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
+	galactusAddr := os.Getenv("GALACTUS_ADDR")
+	if galactusAddr == "" {
+		return errors.New("no GALACTUS_ADDR specified; exiting")
+	}
+
+	galactusClient := discord.NewGalactusClient(galactusAddr)
+
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, galactusClient, logPath, captureTimeout)
 
 	<-sc
 	//bot.GracefulClose()

@@ -223,7 +223,11 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		if dgs.Running {
 			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
 			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
-			go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
+			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf, nick)
+			if err != nil {
+				log.Println(err)
+			}
+			//go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

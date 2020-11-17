@@ -24,6 +24,8 @@ type Bot struct {
 
 	SessionManager *SessionManager
 
+	GalactusClient *GalactusClient
+
 	RedisInterface *RedisInterface
 
 	StorageInterface *storage.StorageInterface
@@ -40,7 +42,7 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, gc *GalactusClient, logPath string, timeoutSecs int) *Bot {
 	Version = version
 	Commit = commit
 
@@ -78,6 +80,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		EndGameChannels:  make(map[string]chan EndGameMessage),
 		ChannelsMapLock:  sync.RWMutex{},
 		SessionManager:   NewSessionManager(dg, altDiscordSession),
+		GalactusClient:   gc,
 		RedisInterface:   redisInterface,
 		StorageInterface: storageInterface,
 		logPath:          logPath,
