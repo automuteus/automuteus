@@ -8,8 +8,10 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Bot struct {
@@ -97,6 +99,12 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
+	timer := time.NewTimer(time.Second * 5)
+	cancelChan := make(chan bool)
+
+	//start a timer that exists the program and terminates the Scaleway node if we're rate-limited and can't access Discord
+	go rateLimitCancelTimer(timer, cancelChan)
+
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
@@ -127,6 +135,17 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		listeningTo = ".au help"
 	}
 
+	rl := os.Getenv("AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE")
+	if rl != "" {
+		num, err := strconv.ParseInt(rl, 10, 64)
+		if err != nil {
+			log.Println("Error parsing " + rl + " for AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE. Using 8000 by default")
+		} else {
+			RateLimitNodeThreshold = int(num)
+		}
+	}
+	log.Printf("Using %d as AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE\n", RateLimitNodeThreshold)
+
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
 		Activities: &[]discordgo.Game{
@@ -137,9 +156,37 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		AFK:    false,
 		Status: "",
 	}
-	dg.UpdateStatusComplex(*status)
+	err = dg.UpdateStatusComplex(*status)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//indicate that we made it this far in the code
+	cancelChan <- true
 
 	return &bot
+}
+
+func rateLimitCancelTimer(timer *time.Timer, cancelChan <-chan bool) {
+	for {
+		select {
+		case <-timer.C:
+			orgId := os.Getenv("SCW_ORGANIZATION_ID")
+			accessKey := os.Getenv("SCW_ACCESS_KEY")
+			secretKey := os.Getenv("SCW_SECRET_KEY")
+			nodeID := os.Getenv("SCW_NODE_ID")
+			if orgId == "" || accessKey == "" || secretKey == "" || nodeID == "" {
+				log.Println("One of the Scaleway credentials was null, not replacing any nodes!")
+			} else {
+				metrics.TerminateScalewayNode(orgId, accessKey, secretKey, nodeID)
+			}
+			log.Fatal("I couldn't reach out to Discord after 5 seconds! Killing process!")
+
+		case <-cancelChan:
+			timer.Stop()
+			return
+		}
+	}
 }
 
 func (bot *Bot) GracefulClose() {
