@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bsm/redislock"
+	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -50,25 +51,12 @@ func (bot *Bot) refreshGameLiveness(code string) {
 		Member: code,
 	})
 }
-
-func versionKey() string {
-	return "automuteus:version"
-}
-
-func commitKey() string {
-	return "automuteus:commit"
-}
-
 func activeNodesKey() string {
 	return "automuteus:nodes:all"
 }
 
 func discordRequestsZsetKeyByNodeID(nodeID string) string {
 	return "automuteus:requests:" + nodeID
-}
-
-func totalGuildsKey(version string) string {
-	return "automuteus:count:guilds:version-" + version
 }
 
 func activeGamesKey(guildID string) string {
@@ -93,10 +81,6 @@ func discordKey(guildID, id string) string {
 
 func cacheHash(guildID string) string {
 	return "automuteus:discord:" + guildID + ":cache"
-}
-
-func matchIDKey() string {
-	return "automuteus:match:counter"
 }
 
 func snowflakeLockID(snowflake string) string {
@@ -151,52 +135,18 @@ func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
 	return num
 }
 
-func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
-	err := redisInterface.client.Set(ctx, versionKey(), version, 0).Err()
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = redisInterface.client.Set(ctx, commitKey(), commit, 0).Err()
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (redisInterface *RedisInterface) GetVersionAndCommit() (string, string) {
-	v, err := redisInterface.client.Get(ctx, versionKey()).Result()
-	if err != nil {
-		log.Println(err)
-	}
-
-	c, err := redisInterface.client.Get(ctx, commitKey()).Result()
-	if err != nil {
-		log.Println(err)
-	}
-	return v, c
-}
-
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
-	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID, version string) {
-	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SRem(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func (redisInterface *RedisInterface) GetGuildCounter(version string) int64 {
-	count, err := redisInterface.client.SCard(ctx, totalGuildsKey(version)).Result()
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-	return count
 }
 
 //todo this can technically be a race condition? what happens if one of these is updated while we're fetching...

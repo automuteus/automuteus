@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"os"
 	"strconv"
@@ -561,8 +562,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 	} else {
 		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
 		//Very approximately, at least
-		bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 2)
-		bot.MetricsCollector.RecordDiscordRequests(MessageCreateDelete, 2)
+		metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 2)
+		bot.MetricsCollector.RecordDiscordRequests(metrics.MessageCreateDelete, 2)
 
 		switch cmd.cmdType {
 		case Help:
@@ -634,9 +635,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			//TODO well this is a little ugly
 			//+12 emojis, 1 for X, and another two the message delete/create
-			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 14)
-			bot.MetricsCollector.RecordDiscordRequests(ReactionAdd, 13)
-			bot.MetricsCollector.RecordDiscordRequest(MessageCreateDelete)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 14)
+			bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MessageCreateDelete)
 
 			go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 			break

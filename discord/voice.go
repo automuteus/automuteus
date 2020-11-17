@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"os"
 	"sync"
@@ -55,8 +55,8 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	//	Mute:     mute,
 	//	Nick:     "",
 	//}
-	bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-	go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+	bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 	err := bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userID, mute, deaf, "")
 	if err != nil {
 		log.Println(err)
@@ -97,8 +97,8 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 			//	Mute:     mute,
 			//	Nick:     "",
 			//}
-			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userData.User.UserID, mute, deaf, "")
 			if err != nil {
 				log.Println(err)
@@ -216,8 +216,8 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 
 		if dgs.Running {
 			wg.Add(1)
-			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
 			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, p.patchParams.Userdata.GetID(), p.patchParams.Mute, p.patchParams.Deaf, "")
 			if err != nil {
