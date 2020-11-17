@@ -353,11 +353,11 @@ other = "Verbonden spelers"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
-other = "Regio"
+other = "🌎 Regio"
 
 ["responses.lobbyMetaEmbedFields.RoomCode"]
 hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
-other = "Kamer-Code"
+other = "🔒 Kamer-Code"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
