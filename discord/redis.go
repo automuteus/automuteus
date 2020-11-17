@@ -127,14 +127,6 @@ func (redisInterface *RedisInterface) GetDiscordRequestsInLastMinutesByNodeID(nu
 	return len(games)
 }
 
-func (redisInterface *RedisInterface) GetAndIncrementMatchID() int64 {
-	num, err := redisInterface.client.Incr(ctx, matchIDKey()).Result()
-	if err != nil {
-		log.Println(err)
-	}
-	return num
-}
-
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
 	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
