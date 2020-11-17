@@ -58,7 +58,7 @@
 "commands.HandleCommand.Cache.Success" = "蓄積されたユーザー名の削除に成功しました！"
 "commands.HandleCommand.Cache.cachedNames" = "蓄積されたユーザー名:"
 "commands.HandleCommand.Cache.emptyCachedNames" = "誰のユーザー名も蓄積されてません！"
-"commands.HandleCommand.Force.UNINITIALIZED" = 申し訳ありません。強制移行させたいゲームフェーズが分かりませんでした...。"
+"commands.HandleCommand.Force.UNINITIALIZED" = "申し訳ありません。強制移行させたいゲームフェーズが分かりませんでした...。"
 "commands.HandleCommand.ForgetMe.Success" = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
 "commands.HandleCommand.Help.notFound" = "そのコマンドは存在しません！ `help` で使用可能なコマンドを表示できます！"
 "commands.HandleCommand.ShowMe.cachedNames" = "あなたの蓄積されたユーザー名:"
