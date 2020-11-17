@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/denverquane/amongusdiscord/metrics"
 	"os"
 	"sync"
 	"time"
@@ -60,7 +61,7 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *MetricsCollector, redisInterface *RedisInterface) {
+func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
 	DeferredEditsLock.Lock()
 
 	//if it isn't found, then start the worker to wait to start it
@@ -72,7 +73,7 @@ func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmb
 	DeferredEditsLock.Unlock()
 }
 
-func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metricsCollector *MetricsCollector, redisInterface *RedisInterface) {
+func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
@@ -83,8 +84,8 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metri
 	if me != nil {
 		editMessageEmbed(s, channelID, messageID, me)
 	}
-	metricsCollector.RecordDiscordRequest(MessageEdit)
-	go redisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+	metricsCollector.RecordDiscordRequest(metrics.MessageEdit)
+	go metrics.IncrementDiscordRequests(redisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 }
 
 func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {

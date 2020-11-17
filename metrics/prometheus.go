@@ -1,4 +1,4 @@
-package discord
+package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -95,21 +95,21 @@ func (cc MetricsObserverCollector) Collect(ch chan<- prometheus.Metric) {
 	)
 }
 
-func (bot *Bot) NewDiscordAPIRequestObserver(nodeID string, reg prometheus.Registerer) *MetricsObserver {
+func NewDiscordAPIRequestObserver(nodeID string, reg prometheus.Registerer, collector *MetricsCollector) *MetricsObserver {
 	c := &MetricsObserver{
 		NodeID:           nodeID,
-		MetricsCollector: bot.MetricsCollector,
+		MetricsCollector: collector,
 	}
 	cc := MetricsObserverCollector{MetricsObserver: c}
 	prometheus.WrapRegistererWith(nil, reg).MustRegister(cc)
 	return c
 }
 
-func (bot *Bot) PrometheusMetricsServer(nodeID, port string) error {
+func PrometheusMetricsServer(nodeID, port string, metricsCollector *MetricsCollector) error {
 
 	reg := prometheus.NewPedanticRegistry()
 
-	bot.NewDiscordAPIRequestObserver(nodeID, reg)
+	NewDiscordAPIRequestObserver(nodeID, reg, metricsCollector)
 
 	reg.MustRegister(
 		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),

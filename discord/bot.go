@@ -3,6 +3,8 @@ package discord
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/metrics"
+	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
@@ -28,7 +30,7 @@ type Bot struct {
 
 	StorageInterface *storage.StorageInterface
 
-	MetricsCollector *MetricsCollector
+	MetricsCollector *metrics.MetricsCollector
 
 	logPath string
 
@@ -82,7 +84,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		StorageInterface: storageInterface,
 		logPath:          logPath,
 		captureTimeout:   timeoutSecs,
-		MetricsCollector: NewMetricsCollector(),
+		MetricsCollector: metrics.NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
 
@@ -112,9 +114,9 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		}
 	}
 
-	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
+	rediscommon.SetVersionAndCommit(bot.RedisInterface.client, Version, Commit)
 
-	go bot.PrometheusMetricsServer(os.Getenv("SCW_NODE_ID"), "2112")
+	go metrics.PrometheusMetricsServer(os.Getenv("SCW_NODE_ID"), "2112", bot.MetricsCollector)
 
 	go StartHealthCheckServer("8080")
 

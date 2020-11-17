@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"os"
 	"sync"
@@ -62,8 +63,8 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 		Mute:     mute,
 		Nick:     "",
 	}
-	bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-	go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+	bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 }
 
@@ -100,8 +101,8 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 				Mute:     mute,
 				Nick:     "",
 			}
-			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 		}
 	}
@@ -215,8 +216,8 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 
 		if dgs.Running {
 			wg.Add(1)
-			bot.MetricsCollector.RecordDiscordRequest(MuteDeafen)
-			go bot.RedisInterface.IncrementDiscordRequests(os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
 			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
 		}

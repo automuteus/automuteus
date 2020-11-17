@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
@@ -245,7 +246,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	}
 	//if we started a new game
 	if oldPhase == game.LOBBY && phase == game.TASKS {
-		matchID := bot.RedisInterface.GetAndIncrementMatchID()
+		matchID := rediscommon.GetAndIncrementMatchID(bot.RedisInterface.client)
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
 		dgs.MatchID = matchID
