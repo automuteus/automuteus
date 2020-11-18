@@ -28,7 +28,7 @@ other = "<player> (optionally, \"clear\")"
 
 ["commands.AllCommands.Cache.desc"]
 hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
-other = "蓄積されたIGNを表示、それを/または削除"
+other = "キャッシュ化されたIGNを表示、それを/または削除"
 
 ["commands.AllCommands.Cache.shortDesc"]
 hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
@@ -60,7 +60,7 @@ other = "ゲームを終了"
 
 ["commands.AllCommands.Force.args"]
 hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<フェーズ名> (task, discuss, それか lobby / t,d, or l)"
+other = "<フェーズ名> (task, discuss, lobby / t,d, l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
@@ -112,7 +112,7 @@ other = "<message>"
 
 ["commands.AllCommands.Log.desc"]
 hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
-other = "良からぬ事が起きた場合にログを取り、後から確認できるようにする"
+other = "何かが起きた場合にログを取り、後から確認できるようにする"
 
 ["commands.AllCommands.Log.shortDesc"]
 hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
@@ -232,15 +232,15 @@ other = "例"
 
 ["commands.HandleCommand.Cache.Success"]
 hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "蓄積されたユーザー名の削除に成功しました！"
+other = "キャッシュ化されたユーザー名の削除に成功しました！"
 
 ["commands.HandleCommand.Cache.cachedNames"]
 hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "蓄積されたユーザー名:"
+other = "キャッシュ化されたユーザー名:"
 
 ["commands.HandleCommand.Cache.emptyCachedNames"]
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
-other = "誰のユーザー名も蓄積されてません！"
+other = "誰のユーザー名もキャッシュ化されてません！"
 
 ["commands.HandleCommand.Force.UNINITIALIZED"]
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
@@ -256,11 +256,11 @@ other = "そのコマンドは存在しません！ `help` で使用可能なコ
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
 hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
-other = "あなたの蓄積されたユーザー名:"
+other = "あなたのキャッシュ化されたユーザー名:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
-other = "あなたのユーザー名は蓄積されてません！"
+other = "あなたのユーザー名はキャッシュ化されてません！"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -328,7 +328,7 @@ other = "ゲームを開始しました！"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[GitHubプロジェクト](https://github.com/denverquane/automuteus) か [我々のDiscordに参加！](https://discord.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} help <command>` to see more details on a command!"
+other = "[GitHubプロジェクト](https://github.com/denverquane/automuteus) か [我々のDiscordに参加！](https://discord.gg/ZkqZSWF)\\n\\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
@@ -668,11 +668,11 @@ other = "既に false です！"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "死者のミュートをすぐには解除しないようにします。いいセンスだ！"
+other = "死者のミュートをすぐには解除しないようにします。**いいセンスだ！**"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
 hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "では...これから死者のミュートをすぐに解除するようにします。誰が死んで、誰がImpostorかすぐに明らかになってしまうでしょう...。"
+other = "では...これから死者のミュートをすぐに解除するようにします。**誰が死んで、誰がImpostorかすぐに明らかになってしまうでしょう...。**"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
