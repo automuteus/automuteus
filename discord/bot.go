@@ -102,7 +102,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
-	timer := time.NewTimer(time.Second * 5)
+	timer := time.NewTimer(time.Second * 10)
 	cancelChan := make(chan bool)
 
 	//start a timer that exists the program and terminates the Scaleway node if we're rate-limited and can't access Discord
@@ -183,7 +183,7 @@ func rateLimitCancelTimer(timer *time.Timer, cancelChan <-chan bool) {
 			} else {
 				metrics.TerminateScalewayNode(orgId, accessKey, secretKey, nodeID)
 			}
-			log.Fatal("I couldn't reach out to Discord after 5 seconds! Killing process!")
+			log.Fatal("I couldn't reach out to Discord after 10 seconds! Killing process!")
 
 		case <-cancelChan:
 			timer.Stop()

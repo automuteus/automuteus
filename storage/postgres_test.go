@@ -19,4 +19,20 @@ func TestPsqlInterface_Init(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	guildID := "1234146913"
+
+	guild, err := PsqlInterface.GetGuild(guildID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if guild == nil {
+		err = PsqlInterface.InsertGuild(guildID, "testGuildName")
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Printf("Guild ID: %s, Name: %s, Premium: %s\n", guild.GuildID, guild.GuildName, guild.Premium)
+	}
+
 }
