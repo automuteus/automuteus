@@ -1,5 +1,5 @@
 create table if not exists guilds (
-    guild_id integer PRIMARY KEY,
+    guild_id VARCHAR (20) PRIMARY KEY,
     guild_name VARCHAR (100) NOT NULL,
     premium VARCHAR (20)
 );
@@ -17,14 +17,20 @@ create table if not exists users (
     --TBD
 );
 
+--links userIDs to their hashed variants (wipe a row here on a FORGETME command!)
+create table if not exists unhashed_users (
+    user_id VARCHAR (20) PRIMARY KEY,
+    hashed_user_id CHAR(64) REFERENCES users ON DELETE CASCADE --if a user is deleted, delete linked unhashed_users
+);
+
 create table if not exists guilds_users (
-    guild_id integer REFERENCES guilds,
+    guild_id VARCHAR (20) REFERENCES guilds,
     hashed_user_id CHAR(64) REFERENCES users ON DELETE CASCADE, --if a user is deleted, delete linked guilds_users
     PRIMARY KEY (guild_id, hashed_user_id)
 );
 
 create table if not exists guilds_games (
-    guild_id integer REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked guild_games
+    guild_id VARCHAR (20) REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked guild_games
     game_id integer REFERENCES games,
     PRIMARY KEY (guild_id, game_id)
 );

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
 	"log"
@@ -54,6 +55,24 @@ func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
 	}
 	log.Println(tag.String())
 	return nil
+}
+
+func (psqlInterface *PsqlInterface) InsertGuild(guildID, guildName string) error {
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds VALUES ($1, $2, 'Free');", guildID, guildName)
+	return err
+}
+
+func (psqlInterface *PsqlInterface) GetGuild(guildID string) (*PostgresGuild, error) {
+	guilds := []*PostgresGuild{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &guilds, "SELECT * FROM guilds WHERE guild_id=$1", guildID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(guilds) > 0 {
+		return guilds[0], nil
+	}
+	return nil, nil
 }
 
 func (psqlInterface *PsqlInterface) Close() {
