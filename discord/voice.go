@@ -204,7 +204,6 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 			waitForHigherPriority = false
 		}
 
-		//wait until it goes through
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
