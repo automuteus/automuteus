@@ -1,46 +1,42 @@
 create table if not exists guilds (
-    guild_id VARCHAR (20) PRIMARY KEY,
+    guild_id VARCHAR (24) PRIMARY KEY,
     guild_name VARCHAR (100) NOT NULL,
     premium VARCHAR (20)
 );
 
 create table if not exists games (
-    game_id integer PRIMARY KEY,
+    game_id bigint PRIMARY KEY,
     connect_code CHAR(8) NOT NULL,
-    start_time integer NOT NULL,
+    start_time bigint NOT NULL,
     win_type VARCHAR (20), --imposter win, crewmate win, etc
-    end_time integer
+    end_time bigint
 );
 
+-- links userIDs to their hashed variants.
+-- Use the hashed_id as PKEY so users can wipe their association without deleting all linked data!
 create table if not exists users (
+    user_id VARCHAR (24),
     hashed_user_id CHAR(64) PRIMARY KEY
-    --TBD
-);
-
---links userIDs to their hashed variants (wipe a row here on a FORGETME command!)
-create table if not exists unhashed_users (
-    user_id VARCHAR (20) PRIMARY KEY,
-    hashed_user_id CHAR(64) REFERENCES users ON DELETE CASCADE --if a user is deleted, delete linked unhashed_users
 );
 
 create table if not exists guilds_users (
-    guild_id VARCHAR (20) REFERENCES guilds,
+    guild_id VARCHAR (24) REFERENCES guilds,
     hashed_user_id CHAR(64) REFERENCES users ON DELETE CASCADE, --if a user is deleted, delete linked guilds_users
     PRIMARY KEY (guild_id, hashed_user_id)
 );
 
 create table if not exists guilds_games (
-    guild_id VARCHAR (20) REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked guild_games
-    game_id integer REFERENCES games,
+    guild_id VARCHAR (24) REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked guild_games
+    game_id bigint REFERENCES games,
     PRIMARY KEY (guild_id, game_id)
 );
 
 create table if not exists users_games (
     hashed_user_id CHAR(64) REFERENCES users,
-    game_id integer REFERENCES games ON DELETE CASCADE, --if a game is deleted, delete all linked users_games
+    game_id bigint REFERENCES games ON DELETE CASCADE, --if a game is deleted, delete all linked users_games
     player_name VARCHAR(10) NOT NULL,
-    player_color integer NOT NULL,
-    player_role VARCHAR(20), --futureproofing
+    player_color smallint NOT NULL,
+    player_role VARCHAR(10), --futureproofing
     winner boolean,
     PRIMARY KEY (hashed_user_id, game_id)
 );
