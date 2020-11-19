@@ -1,15 +1,15 @@
 ["ascii.AsciiStarfield.isWas"]
 hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
-other = "was An Impostor."
+other = "était un Imposteur."
 
 ["ascii.AsciiStarfield.isWasNot"]
 hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
-other = "was not An Impostor."
+other = "n'était pas un Imposteur."
 
 ["ascii.AsciiStarfield.remains"]
 hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
 one = "Impostor remains"
-other = "Impostors remain"
+other = "Imposteurs restants"
 
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
@@ -181,7 +181,7 @@ other = "Afficher les données joueur"
 
 ["commands.AllCommands.Stats.shortDesc"]
 hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
-other = "View Bot stats"
+other = "Voir les statistiques du bot"
 
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
@@ -273,11 +273,11 @@ other = "**aucun Salon Vocal ! Utilisez `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "**{{.channelName}}** est le salon vocal !"
+other = "**{{.channelName}}**"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Dé-lié"
+other = "Non lié"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
@@ -289,7 +289,7 @@ other = "Aucun salon vocal trouvé avec ce nom {{.channelName}} !\\n"
 
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
-other = "Le salon \"{{.channelName}}\" est désormais traqué pour l'automute!"
+other = "Le salon \"{{.channelName}}\" est désormais traqué par défaut pour l'automute!"
 
 ["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
@@ -353,11 +353,11 @@ other = "Joueurs liés"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
-other = "Région"
+other = "🌎 Région"
 
 ["responses.lobbyMetaEmbedFields.RoomCode"]
 hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
-other = "Code de la salle"
+other = "🔒 Code de la salle"
 
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
@@ -369,7 +369,7 @@ other = "\\n⚠**Le bot Bot est en pause!**⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> lance une partie d'Among Us !\\nLa partie se déroule dans "
+other = "<@{{.author}}> lance une partie d'Among Us !\\nLa partie se déroule dans le salon "
 
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
@@ -629,7 +629,7 @@ other = "`{{.Number}}` n'est pas un nombre correct ! Essayez encore"
 
 ["settings.SettingLanguage.list"]
 hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
-other = "Available languages: {{.Langs}}"
+other = "Langues disponibles : {{.Langs}}"
 
 ["settings.SettingLanguage.notFound"]
 hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
