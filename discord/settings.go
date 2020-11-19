@@ -19,7 +19,6 @@ type SettingType int
 
 const (
 	Prefix SettingType = iota
-	TrackedChannel
 	Language
 	AdminUserIDs
 	RoleIDs
@@ -59,24 +58,6 @@ var AllSettings = []Setting{
 			Other: "<prefix>",
 		},
 		aliases: []string{"prefix", "cp"},
-	},
-	{
-		settingType: TrackedChannel,
-		name:        "defaultTrackedChannel",
-		example:     "defaultTrackedChannel Among Us Voice",
-		shortDesc: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.shortDesc",
-			Other: "Default tracked voice channel",
-		},
-		desc: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.desc",
-			Other: "Change the default tracked voice channel",
-		},
-		args: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.args",
-			Other: "<voice channel name>",
-		},
-		aliases: []string{"tracked", "channel", "vc", "dtc"},
 	},
 	{
 		settingType: Language,
@@ -130,7 +111,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.RoleIDs.args",
 			Other: "<role @ mentions>...",
 		},
-		aliases: []string{"roles", "role", "prid", "pri", "r"},
+		aliases: []string{"operators", "roles", "role", "prid", "pri", "r"},
 	},
 	{
 		settingType: Nicknames,
@@ -302,9 +283,6 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	case Prefix:
 		isValid = CommandPrefixSetting(s, m, sett, args)
 		break
-	case TrackedChannel:
-		isValid = SettingDefaultTrackedChannel(s, m, sett, args)
-		break
 	case Language:
 		isValid = SettingLanguage(s, m, sett, args)
 		break
@@ -382,65 +360,6 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 
 	sett.SetCommandPrefix(args[2])
 	return true
-}
-
-func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
-	if len(args) == 2 {
-		// give them both command syntax and current voice channel
-		//channelList, _ := s.GuildChannels(m.GuildID)
-		//for _, c := range channelList {
-		//	if c.ID == guild.GetDefaultTrackedChannel() {
-		//		embed := ConstructEmbedForSetting(guild.guildSettings.GetDefaultTrackedChannel(), AllSettings[TrackedChannel])
-		//		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-		//		return false
-		//	}
-		//}
-		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.noDefault",
-			Other: "No default tracked voice channel",
-		}), AllSettings[TrackedChannel], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-		return false
-	}
-
-	// now to find the channel they are referencing
-	channelID := ""
-	channelName := "" // we track name to confirm to the User they selected the right channel
-	channelList, _ := s.GuildChannels(m.GuildID)
-	for _, c := range channelList {
-		// Check if channel is a voice channel
-		if c.Type != discordgo.ChannelTypeGuildVoice {
-			continue
-		}
-		// check if this is the right channel
-		if strings.ToLower(c.Name) == args[2] || c.ID == args[2] {
-			channelID = c.ID
-			channelName = c.Name
-			break
-		}
-	}
-
-	// check if channel was found
-	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.withoutChannelID",
-			Other: "Could not find the voice channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it.",
-		},
-			map[string]interface{}{
-				"channelName": args[2],
-			}))
-		return false
-	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.withChannelName",
-			Other: "Default voice channel changed to `{{.channelName}}`. Use that from now on!",
-		},
-			map[string]interface{}{
-				"channelName": channelName,
-			}))
-		sett.SetDefaultTrackedChannel(channelID)
-		return true
-	}
 }
 
 func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
@@ -655,7 +574,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			if ID == "" {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",
-					Other: "Sorry, I don't know the role `{{.RoleName}}` is. You can pass the role ID, role name or @role",
+					Other: "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role",
 				},
 					map[string]interface{}{
 						"RoleName": roleName,

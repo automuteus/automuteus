@@ -2,7 +2,9 @@ package discord
 
 import (
 	"fmt"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+var RateLimitNodeThreshold = 8000
+
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
@@ -20,6 +24,12 @@ var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?
 func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
+	if reqs > RateLimitNodeThreshold {
 		return
 	}
 
@@ -96,6 +106,13 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	if m.UserID == s.State.User.ID {
 		return
 	}
+
+	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
+	if reqs > RateLimitNodeThreshold {
+		return
+	}
+
 	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
 	//couldn't obtain lock; bail bail bail!
 	if lock == nil {
@@ -159,7 +176,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			//make sure to update any voice changes if they occurred
 			if idMatched {
 				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			}
 		}
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -170,6 +187,13 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 //relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
+
+	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
+	if reqs > RateLimitNodeThreshold {
+		return
+	}
+
 	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	//couldn't obtain lock; bail bail bail!
 	if lock == nil {
@@ -220,6 +244,8 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		}
 
 		if dgs.Running {
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
@@ -415,5 +441,10 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	log.Println("Added self game state message")
+	//TODO well this is a little ugly
+	//+12 emojis, 1 for X
+	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 13)
+	bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
+
 	go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
 }

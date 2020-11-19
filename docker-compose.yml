@@ -27,6 +27,7 @@ services:
 
       # Do **NOT** change this
       - REDIS_ADDR=${AUTOMUTEUS_REDIS_ADDR}
+      - GALACTUS_ADDR=${GALACTUS_ADDR}
     depends_on:
       - redis
       - galactus

@@ -3,11 +3,15 @@ package discord
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/metrics"
+	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Bot struct {
@@ -27,6 +31,8 @@ type Bot struct {
 	RedisInterface *RedisInterface
 
 	StorageInterface *storage.StorageInterface
+
+	MetricsCollector *metrics.MetricsCollector
 
 	logPath string
 
@@ -80,6 +86,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		StorageInterface: storageInterface,
 		logPath:          logPath,
 		captureTimeout:   timeoutSecs,
+		MetricsCollector: metrics.NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
 
@@ -91,6 +98,12 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	dg.AddHandler(bot.leaveGuild)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
+
+	timer := time.NewTimer(time.Second * 10)
+	cancelChan := make(chan bool)
+
+	//start a timer that exists the program and terminates the Scaleway node if we're rate-limited and can't access Discord
+	go rateLimitCancelTimer(timer, cancelChan)
 
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -109,7 +122,9 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		}
 	}
 
-	bot.RedisInterface.SetVersionAndCommit(Version, Commit)
+	rediscommon.SetVersionAndCommit(bot.RedisInterface.client, Version, Commit)
+
+	go metrics.PrometheusMetricsServer(os.Getenv("SCW_NODE_ID"), "2112", bot.MetricsCollector)
 
 	go StartHealthCheckServer("8080")
 
@@ -119,6 +134,17 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	if listeningTo == "" {
 		listeningTo = ".au help"
 	}
+
+	rl := os.Getenv("AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE")
+	if rl != "" {
+		num, err := strconv.ParseInt(rl, 10, 64)
+		if err != nil {
+			log.Println("Error parsing " + rl + " for AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE. Using 8000 by default")
+		} else {
+			RateLimitNodeThreshold = int(num)
+		}
+	}
+	log.Printf("Using %d as AUTOMUTEUS_LIMIT_REQUESTS_PER_10M_PER_NODE\n", RateLimitNodeThreshold)
 
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
@@ -130,9 +156,37 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		AFK:    false,
 		Status: "",
 	}
-	dg.UpdateStatusComplex(*status)
+	err = dg.UpdateStatusComplex(*status)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//indicate that we made it this far in the code
+	cancelChan <- true
 
 	return &bot
+}
+
+func rateLimitCancelTimer(timer *time.Timer, cancelChan <-chan bool) {
+	for {
+		select {
+		case <-timer.C:
+			orgId := os.Getenv("SCW_ORGANIZATION_ID")
+			accessKey := os.Getenv("SCW_ACCESS_KEY")
+			secretKey := os.Getenv("SCW_SECRET_KEY")
+			nodeID := os.Getenv("SCW_NODE_ID")
+			if orgId == "" || accessKey == "" || secretKey == "" || nodeID == "" {
+				log.Println("One of the Scaleway credentials was null, not replacing any nodes!")
+			} else {
+				metrics.TerminateScalewayNode(orgId, accessKey, secretKey, nodeID)
+			}
+			log.Fatal("I couldn't reach out to Discord after 10 seconds! Killing process!")
+
+		case <-cancelChan:
+			timer.Stop()
+			return
+		}
+	}
 }
 
 func (bot *Bot) GracefulClose() {
@@ -311,7 +365,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
-	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett))
+	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 
 	log.Println("Done saving guild data")
 }

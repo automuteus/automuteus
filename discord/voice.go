@@ -4,7 +4,9 @@ import (
 	"container/heap"
 	"fmt"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -61,6 +63,8 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 		Mute:     mute,
 		Nick:     "",
 	}
+	bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 }
 
@@ -97,6 +101,8 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 				Mute:     mute,
 				Nick:     "",
 			}
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
 		}
 	}
@@ -183,13 +189,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
 		time.Sleep(time.Second * time.Duration(delay))
 	}
-	//log.Printf("Mute queue length: %d", priorityQueue.Len())
 
-	lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		log.Println("Couldn't obtain lock in time to apply voice changes to users!")
-		return
-	}
 	for priorityQueue.Len() > 0 {
 		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
 
@@ -203,20 +203,21 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 			waitForHigherPriority = false
 		}
 
-		//wait until it goes through
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 		if dgs.Running {
 			wg.Add(1)
+			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
+			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
 			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
 		}
 	}
 	wg.Wait()
-	//relinquish the lock once we've sent all the requests
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
