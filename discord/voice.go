@@ -189,13 +189,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
 		time.Sleep(time.Second * time.Duration(delay))
 	}
-	//log.Printf("Mute queue length: %d", priorityQueue.Len())
 
-	lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		log.Println("Couldn't obtain lock in time to apply voice changes to users!")
-		return
-	}
 	for priorityQueue.Len() > 0 {
 		p := heap.Pop(priorityQueue).(PrioritizedPatchParams)
 
@@ -212,7 +206,9 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		//wait until it goes through
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 		if dgs.Running {
 			wg.Add(1)
@@ -223,8 +219,6 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		}
 	}
 	wg.Wait()
-	//relinquish the lock once we've sent all the requests
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
 
 func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {

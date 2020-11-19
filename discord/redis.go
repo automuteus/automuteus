@@ -16,7 +16,7 @@ var ctx = context.Background()
 
 const LockTimeoutSecs = 1
 const LinearBackoffMs = 200
-const MaxRetries = 10
+const MaxRetries = 20
 const SnowflakeLockMs = 3000
 
 const SecsPerHour = 3600
@@ -131,7 +131,6 @@ func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRe
 		log.Println(err)
 		return nil, nil
 	}
-	//log.Println("LOCKING " + key)
 
 	return lock, redisInterface.getDiscordGameState(gsr)
 }
