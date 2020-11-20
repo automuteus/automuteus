@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	version = "4.0.0"
+	version = "5.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -37,8 +37,6 @@ func main() {
 	if err != nil {
 		log.Println("Program exited with the following error:")
 		log.Println(err)
-		log.Println("This window will automatically terminate in 10 seconds")
-		time.Sleep(10 * time.Second)
 		return
 	}
 }
