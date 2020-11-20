@@ -15,6 +15,8 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+const MaxDebugMessageSize = 1980
+
 type CommandType int
 
 const (
@@ -845,14 +847,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 				if state != nil {
 					jBytes, err := json.MarshalIndent(state, "", "  ")
-					if len(jBytes) > 1980 {
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s", jBytes[0:1980]))
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s\n```", jBytes[1980:]))
+					if err != nil {
+						log.Println(err)
 					} else {
-						if err != nil {
-							log.Println(err)
+						for i := 0; i < len(jBytes); i += MaxDebugMessageSize {
+							end := i + MaxDebugMessageSize
+							if end > len(jBytes) {
+								end = len(jBytes)
+							}
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
 						}
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 					}
 				}
 			}

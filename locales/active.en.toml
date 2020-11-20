@@ -82,6 +82,7 @@
 "message_handlers.handleNewGameMessage.embed.Fields.URL" = "URL"
 "message_handlers.handleNewGameMessage.embed.Title" = "You just started a game!"
 "message_handlers.handleNewGameMessage.specificRatelimit" = "You're creating games too fast! Please slow down!"
+"message_handlers.softban" = "I'm ignoring your messages for the next 5 minutes, stop spamming"
 "responses.helpResponse.SubTitle" = "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} help <command>` to see more details on a command!"
 "responses.helpResponse.Title" = "AutoMuteUs Bot Commands:\\n"
 "responses.lobbyMessage.Footer.Text" = "React to this message with your in-game color! (or {{.emojiLeave}} to leave)"

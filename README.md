@@ -151,7 +151,7 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 - `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
   If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
 - `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
-- `GALACTUS_ADDR`: The **externally-accessible URL** for Galactus. For example, `http://test.com:8123`.
+- `HOST`: The **externally-accessible URL** for Galactus. For example, `http://test.com:8123`.
   This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.
   **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
 - `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000

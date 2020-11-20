@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 )
 
 type Bot struct {
@@ -96,12 +95,6 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
-	timer := time.NewTimer(time.Second * 15)
-	cancelChan := make(chan bool)
-
-	//start a timer that exists the program and terminates the Scaleway node if we're rate-limited and can't access Discord
-	go rateLimitCancelTimer(timer, cancelChan)
-
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
@@ -137,23 +130,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		log.Println(err)
 	}
 
-	//indicate that we made it this far in the code
-	cancelChan <- true
-
 	return &bot
-}
-
-func rateLimitCancelTimer(timer *time.Timer, cancelChan <-chan bool) {
-	for {
-		select {
-		case <-timer.C:
-			log.Fatal("I couldn't reach out to Discord after 15 seconds! Killing process!")
-
-		case <-cancelChan:
-			timer.Stop()
-			return
-		}
-	}
 }
 
 func (bot *Bot) GracefulClose() {
@@ -165,6 +142,7 @@ func (bot *Bot) GracefulClose() {
 	bot.ChannelsMapLock.RUnlock()
 }
 func (bot *Bot) Close() {
+	bot.PrimarySession.Close()
 	bot.RedisInterface.Close()
 	bot.StorageInterface.Close()
 }

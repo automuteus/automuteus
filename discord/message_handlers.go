@@ -28,6 +28,10 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
+	if redis_common.IsUserBanned(bot.RedisInterface.client, m.Author.ID) {
+		return
+	}
+
 	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
 	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
 	if reqs > RateLimitGlobalThreshold {
@@ -64,10 +68,20 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 	if strings.HasPrefix(contents, prefix) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.generalRatelimit",
-				Other: "You're issuing commands too fast! Please slow down!",
-			}))
+
+			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
+			if banned {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "message_handlers.softban",
+					Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
+				}))
+			} else {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "message_handlers.generalRatelimit",
+					Other: "You're issuing commands too fast! Please slow down!",
+				}))
+			}
+
 			return
 		}
 		redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
@@ -117,7 +131,11 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	if redis_common.IsUserBanned(bot.RedisInterface.client, m.UserID) {
+		return
+	}
+
+	//If we're approaching the ratelimit, completely stop handling messages.
 	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
 	if reqs > RateLimitGlobalThreshold {
 		return
@@ -149,10 +167,18 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		//verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(m) {
 			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
-					Other: "You're reacting too fast! Please slow down!",
-				}))
+				banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.UserID)
+				if banned {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "message_handlers.softban",
+						Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
+					}))
+				} else {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
+						Other: "You're reacting too fast! Please slow down!",
+					}))
+				}
 				return
 			}
 			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", 3000)
@@ -295,25 +321,25 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 			TextChannel: m.ChannelID,
 		})
 	}
-	if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.generalRateLimit",
-			Other: "You're issuing commands too fast! Please slow down!",
-		}))
-		lock.Release(context.Background())
-		return
-	}
 
 	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
-			Other: "You're creating games too fast! Please slow down!",
-		}))
+		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
+		if banned {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.softban",
+				Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
+			}))
+		} else {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
+				Other: "You're creating games too fast! Please slow down!",
+			}))
+		}
 		lock.Release(context.Background())
 		return
 	}
 
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", 5000)
+	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitms)
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...

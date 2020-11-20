@@ -177,7 +177,6 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 	return &embed
 }
 
-// TODO:
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
