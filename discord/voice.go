@@ -208,6 +208,9 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		for lock == nil {
+			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		}
 		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
