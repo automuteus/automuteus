@@ -83,7 +83,7 @@ func discordMainWrapper() error {
 
 	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
 	if discordToken2 != "" {
-		log.Println("You provided a 2nd Discord Bot Token, so I'll try to use it")
+		log.Println("You provided a 2nd Discord Bot Token, so I'll try to add it to galactus")
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
@@ -107,17 +107,6 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	servicePort := os.Getenv("SERVICE_PORT")
-	if servicePort == "" {
-		log.Printf("[Info] No SERVICE_PORT provided. Defaulting to %s\n", DefaultServicePort)
-		servicePort = DefaultServicePort
-	} else {
-		num, err := strconv.Atoi(servicePort)
-		if err != nil || num > 65535 || (num < 1024 && num != 80 && num != 443) {
-			return errors.New("invalid SERVICE_PORT (outside range [1024-65535] or 80/443) provided")
-		}
-	}
-
 	captureTimeout := DefaultSocketTimeoutSecs
 	captureTimeoutStr := os.Getenv("CAPTURE_TIMEOUT")
 	if captureTimeoutStr != "" {
@@ -128,10 +117,6 @@ func discordMainWrapper() error {
 		captureTimeout = num
 	}
 	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
-
-	if os.Getenv("CONFIG_PATH") != "" {
-		log.Print("[Depreciation] Variable `CONFIG_PATH` is depreciated, you can remove it from your `.env`")
-	}
 
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
@@ -172,10 +157,6 @@ func discordMainWrapper() error {
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
-	log.Println("Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-
 	psql := storage.PsqlInterface{}
 	pAddr := os.Getenv("POSTGRES_ADDR")
 	if pAddr == "" {
@@ -198,6 +179,10 @@ func discordMainWrapper() error {
 	}
 
 	err = psql.LoadAndExecFromFile("./storage/postgres.sql")
+
+	log.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath, captureTimeout)
 

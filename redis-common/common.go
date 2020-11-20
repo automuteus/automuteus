@@ -4,7 +4,10 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"log"
+	"time"
 )
+
+const GlobalUserRateLimitSecs = 2
 
 func VersionKey() string {
 	return "automuteus:version"
@@ -16,6 +19,14 @@ func CommitKey() string {
 
 func MatchIDKey() string {
 	return "automuteus:match:counter"
+}
+
+func UserRateLimitGeneralKey(userID string) string {
+	return "automuteus:ratelimit:user:" + userID
+}
+
+func UserRateLimitSpecificKey(userID, cmdType string) string {
+	return "automuteus:ratelimit:user:" + cmdType + ":" + userID
 }
 
 func GetAndIncrementMatchID(client *redis.Client) int64 {
@@ -62,4 +73,36 @@ func GetGuildCounter(client *redis.Client, version string) int64 {
 		return 0
 	}
 	return count
+}
+
+func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttlMS int64) {
+	err := client.Set(context.Background(), UserRateLimitGeneralKey(userID), "", time.Second*GlobalUserRateLimitSecs).Err()
+	if err != nil {
+		log.Println(err)
+	}
+
+	if cmdType != "" && ttlMS > 0 {
+		err = client.Set(context.Background(), UserRateLimitSpecificKey(userID, cmdType), "", time.Millisecond*time.Duration(ttlMS)).Err()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func IsUserRateLimitedGeneral(client *redis.Client, userID string) bool {
+	v, err := client.Exists(context.Background(), UserRateLimitGeneralKey(userID)).Result()
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return v == 1 //=1 means the user is present, and thus rate-limited
+}
+
+func IsUserRateLimitedSpecific(client *redis.Client, userID string, cmdType string) bool {
+	v, err := client.Exists(context.Background(), UserRateLimitSpecificKey(userID, cmdType)).Result()
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return v == 1 //=1 means the user is present, and thus rate-limited
 }

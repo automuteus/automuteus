@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
@@ -34,7 +33,7 @@ const (
 	Cache
 	ShowMe
 	ForgetMe
-	Stats
+	Info
 	DebugState
 	Ascii
 	Null
@@ -271,7 +270,7 @@ var AllCommands = []Command{
 			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
 		},
 		aliases:           []string{"f"},
-		secret:            false,
+		secret:            true, //force is broken rn, so hide it
 		emoji:             "📢",
 		adminSetting:      false,
 		permissionSetting: true,
@@ -315,7 +314,7 @@ var AllCommands = []Command{
 			Other: "<message>",
 		},
 		aliases:           []string{"log"},
-		secret:            false,
+		secret:            true,
 		emoji:             "⁉",
 		adminSetting:      false,
 		permissionSetting: true,
@@ -387,22 +386,22 @@ var AllCommands = []Command{
 		permissionSetting: false,
 	},
 	{
-		cmdType: Stats,
-		command: "stats",
-		example: "stats",
+		cmdType: Info,
+		command: "info",
+		example: "info",
 		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.shortDesc",
-			Other: "View Bot stats",
+			Other: "View Bot info",
 		},
 		desc: &i18n.Message{
 			ID:    "commands.AllCommands.DebugState.desc",
-			Other: "View stats about the bot, like total guild number, active games, etc",
+			Other: "View info about the bot, like total guild number, active games, etc",
 		},
 		args: &i18n.Message{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"stats", "info"},
+		aliases:           []string{"stats", "info", "i"},
 		secret:            false,
 		emoji:             "📊",
 		adminSetting:      false,
@@ -562,8 +561,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 	} else {
 		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
 		//Very approximately, at least
-		metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 2)
-		bot.MetricsCollector.RecordDiscordRequests(metrics.MessageCreateDelete, 2)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 
 		switch cmd.cmdType {
 		case Help:
@@ -617,7 +615,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.applyToAll(dgs, false, false)
 			}
 
-			dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+			edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+			if edited {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			}
 			break
 
 		case Refresh:
@@ -635,9 +636,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			//TODO well this is a little ugly
 			//+12 emojis, 1 for X, and another two the message delete/create
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 14)
-			bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MessageCreateDelete)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 
 			go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 			break
@@ -654,7 +654,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.linkPlayer(s, dgs, args[1:])
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 			break
 
@@ -678,7 +681,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					//update the state message to reflect the player leaving
-					dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					if edited {
+						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					}
 				}
 			}
 			break
@@ -702,7 +708,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				dgs.trackChannel(channelName, channels, sett)
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 			break
 		case UnmuteAll:
@@ -824,9 +833,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 
-		case Stats:
+		case Info:
 			if m.Author != nil {
-				embed := bot.statsResponse(sett)
+				embed := bot.infoResponse(sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			}
 			break

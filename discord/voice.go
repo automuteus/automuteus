@@ -8,7 +8,6 @@ import (
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
@@ -57,8 +56,7 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	//	Mute:     mute,
 	//	Nick:     "",
 	//}
-	bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
+	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 	err := bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userID, mute, deaf)
 	if err != nil {
 		log.Println(err)
@@ -99,8 +97,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 			//	Mute:     mute,
 			//	Nick:     "",
 			//}
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userData.User.UserID, mute, deaf)
 			if err != nil {
 				log.Println(err)
@@ -212,8 +209,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 		if dgs.Running {
 			wg.Add(1)
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
 			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, p.patchParams.Userdata.GetID(), p.patchParams.Mute, p.patchParams.Deaf)
 			if err != nil {

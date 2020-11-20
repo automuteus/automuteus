@@ -1,10 +1,11 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"github.com/denverquane/amongusdiscord/metrics"
+	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var RateLimitNodeThreshold = 8000
+var RateLimitGlobalThreshold = 9000
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
 
@@ -28,8 +29,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	}
 
 	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
-	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
-	if reqs > RateLimitNodeThreshold {
+	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	if reqs > RateLimitGlobalThreshold {
 		return
 	}
 
@@ -62,6 +63,15 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	}
 
 	if strings.HasPrefix(contents, prefix) {
+		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.generalRatelimit",
+				Other: "You're issuing commands too fast! Please slow down!",
+			}))
+			return
+		}
+		redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
+
 		oldLen := len(contents)
 		contents = strings.Replace(contents, prefix+" ", "", 1)
 		if len(contents) == oldLen { //didn't have a space
@@ -108,8 +118,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	}
 
 	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
-	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
-	if reqs > RateLimitNodeThreshold {
+	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	if reqs > RateLimitGlobalThreshold {
 		return
 	}
 
@@ -129,6 +139,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	//TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+
 	gsr := GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -137,6 +148,14 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	if lock != nil && dgs != nil && dgs.Exists() {
 		//verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(m) {
+			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
+					Other: "You're reacting too fast! Please slow down!",
+				}))
+				return
+			}
+			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", 3000)
 			idMatched := false
 			for color, e := range bot.StatusEmojis[true] {
 				if e.ID == m.Emoji.ID {
@@ -176,7 +195,10 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			//make sure to update any voice changes if they occurred
 			if idMatched {
 				bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 		}
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -189,8 +211,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 
 	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
-	reqs := metrics.GetDiscordRequestsInLastMinutesByNodeID(bot.RedisInterface.client, 10, os.Getenv("SCW_NODE_ID"))
-	if reqs > RateLimitNodeThreshold {
+	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	if reqs > RateLimitGlobalThreshold {
 		return
 	}
 
@@ -244,8 +266,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		//}
 
 		if dgs.Running {
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf)
 			if err != nil {
 				log.Println(err)
@@ -274,6 +295,25 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 			TextChannel: m.ChannelID,
 		})
 	}
+	if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "message_handlers.generalRateLimit",
+			Other: "You're issuing commands too fast! Please slow down!",
+		}))
+		lock.Release(context.Background())
+		return
+	}
+
+	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
+			Other: "You're creating games too fast! Please slow down!",
+		}))
+		lock.Release(context.Background())
+		return
+	}
+
+	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", 5000)
 
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
@@ -447,8 +487,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	log.Println("Added self game state message")
 	//TODO well this is a little ugly
 	//+12 emojis, 1 for X
-	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 13)
-	bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
+	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 
 	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 }

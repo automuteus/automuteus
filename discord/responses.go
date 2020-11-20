@@ -101,13 +101,13 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 	return &embed
 }
 
-func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Title",
-			Other: "Bot Stats",
+			Other: "Bot Info",
 		}),
 		Description: "",
 		Timestamp:   time.Now().Format(ISO8601),
@@ -123,7 +123,7 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
 	totalGames := broker.GetActiveGames(bot.RedisInterface.client)
 
-	fields := make([]*discordgo.MessageEmbedField, 4)
+	fields := make([]*discordgo.MessageEmbedField, 6)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Guilds",
@@ -154,6 +154,22 @@ func (bot *Bot) statsResponse(sett *storage.GuildSettings) *discordgo.MessageEmb
 			Other: "Commit",
 		}),
 		Value:  commit,
+		Inline: true,
+	}
+	fields[4] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Shard",
+			Other: "Shard ID",
+		}),
+		Value:  fmt.Sprintf("%d", bot.PrimarySession.ShardID),
+		Inline: true,
+	}
+	fields[5] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.TotalShard",
+			Other: "Total Shards",
+		}),
+		Value:  fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
 		Inline: true,
 	}
 
