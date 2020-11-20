@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/automuteus/galactus/broker"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -46,7 +47,7 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	Version = version
 	Commit = commit
 
@@ -81,7 +82,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		StorageInterface:  storageInterface,
 		PostgresInterface: psql,
 		logPath:           logPath,
-		captureTimeout:    timeoutSecs,
+		captureTimeout:    GameTimeoutSeconds,
 		MetricsCollector:  metrics.NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
@@ -313,17 +314,25 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	log.Println("Done saving guild data")
 }
 
+//TODO don't delete the message, but instead just edit and flag it with a "this game has ended" message?
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		return
+	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+
+	broker.RemoveActiveGame(bot.RedisInterface.client, dgs.ConnectCode)
+
+	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
+	oldPhase := dgs.AmongUsData.GetPhase()
+	//only print a fancy formatted message if the game actually got to the lobby or another phase. Otherwise, delete
+	if oldPhase != game.MENU {
+		dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		if edited {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
+	} else {
+		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
-
-	dgs.AmongUsData.SetAllAlive()
-	dgs.AmongUsData.UpdatePhase(game.LOBBY)
-	dgs.AmongUsData.SetRoomRegion("", "")
-
-	lock.Release(ctx)
 
 	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 

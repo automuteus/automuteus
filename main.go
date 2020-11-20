@@ -27,8 +27,6 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
-const DefaultServicePort = "5000"
-const DefaultSocketTimeoutSecs = 3600
 
 func main() {
 	//seed the rand generator (used for making connection codes)
@@ -107,17 +105,6 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	captureTimeout := DefaultSocketTimeoutSecs
-	captureTimeoutStr := os.Getenv("CAPTURE_TIMEOUT")
-	if captureTimeoutStr != "" {
-		num, err := strconv.Atoi(captureTimeoutStr)
-		if err != nil || num < 0 {
-			return errors.New("invalid or non-numeric CAPTURE_TIMOUT provided")
-		}
-		captureTimeout = num
-	}
-	log.Printf("Using capture timeout of %d seconds\n", captureTimeout)
-
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
@@ -184,7 +171,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath, captureTimeout)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	<-sc
 	//bot.GracefulClose()

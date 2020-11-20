@@ -182,7 +182,6 @@ func (psqlInterface *PsqlInterface) InsertGameAndPlayers(guildID string, game *P
 	}
 
 	return nil
-
 }
 
 func (psqlInterface *PsqlInterface) Close() {

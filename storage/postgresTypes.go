@@ -36,3 +36,11 @@ type PostgresUserGame struct {
 	PlayerColor  int16  `db:"player_color"`
 	PlayerRole   string `db:"player_role"`
 }
+
+type PostgresGameEvent struct {
+	//Note, we don't include eventID here because it gets decided/incremented by postgres
+	GameID    int64  `db:"game_id"`
+	EventTime int64  `db:"event_time"`
+	EventType int16  `db:"event_type"`
+	Payload   string `db:"payload"`
+}

@@ -121,7 +121,7 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 
 	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
 	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
-	totalGames := broker.GetActiveGames(bot.RedisInterface.client)
+	totalGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 
 	fields := make([]*discordgo.MessageEmbedField, 6)
 	fields[0] = &discordgo.MessageEmbedField{
@@ -180,10 +180,11 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
-		game.MENU:    menuMessage,
-		game.LOBBY:   lobbyMessage,
-		game.TASKS:   gamePlayMessage,
-		game.DISCUSS: gamePlayMessage,
+		game.MENU:     menuMessage,
+		game.LOBBY:    lobbyMessage,
+		game.TASKS:    gamePlayMessage,
+		game.DISCUSS:  gamePlayMessage,
+		game.GAMEOVER: gamePlayMessage, //uses the phase to print the info differently
 	}
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
@@ -343,14 +344,23 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		color = 3447003 //BLUE
 	case game.DISCUSS:
 		color = 10181046 //PURPLE
+	case game.GAMEOVER:
+		color = 15844367 //GOLD
 	default:
 		color = 15158332 //RED
+	}
+	title := sett.LocalizeMessage(phase.ToLocale())
+	if phase == game.GAMEOVER {
+		title = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.title.GameOver",
+			Other: "**Game Over**",
+		})
 	}
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
-		Title:       sett.LocalizeMessage(phase.ToLocale()),
+		Title:       title,
 		Description: dgs.makeDescription(sett),
 		Timestamp:   time.Now().Format(ISO8601),
 		Color:       color,
@@ -371,7 +381,7 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	if !dgs.Running {
 		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.makeDescription.GameNotRunning",
-			Other: "\n⚠**Bot is Paused!**⚠\n\n",
+			Other: "\n⚠ **Bot is Paused!** ⚠\n\n",
 		}))
 	}
 

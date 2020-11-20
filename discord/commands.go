@@ -601,8 +601,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			bot.applyToAll(dgs, false, false)
 
-			deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-
 			break
 
 		case Pause:

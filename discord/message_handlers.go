@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	"github.com/automuteus/galactus/broker"
 	"github.com/denverquane/amongusdiscord/metrics"
 	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
@@ -16,7 +17,9 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var RateLimitGlobalThreshold = 9000
+const MaxActiveGames = 140
+
+var RateLimitGlobalThreshold = 9500
 
 const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
 
@@ -32,7 +35,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
-	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	//If we're approaching the ratelimit, completely stop handling messages
 	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
 	if reqs > RateLimitGlobalThreshold {
 		return
@@ -344,6 +347,9 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 
+	//TODO allow donators or those with a second bot to be able to make new games
+
+	//allow people with a previous game going to be able to make new games
 	if dgs.GameStateMsg.MessageID != "" {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- EndGameMessage{EndGameType: EndAndWipe}
@@ -351,6 +357,16 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		delete(bot.EndGameChannels, dgs.ConnectCode)
 
 		dgs.Reset()
+	} else {
+		activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+		if activeGames > MaxActiveGames {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "message_handlers.handleNewGameMessage.lockout",
+				Other: "I'm very sorry, but Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes.",
+			}))
+			lock.Release(context.Background())
+			return
+		}
 	}
 
 	connectCode := generateConnectCode(m.GuildID)
