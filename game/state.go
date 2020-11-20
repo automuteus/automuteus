@@ -32,7 +32,7 @@ const (
 	EXILED       PlayerAction = iota
 )
 
-type GameResult int
+type GameResult int16
 
 const (
 	HumansByVote GameResult = iota

@@ -169,7 +169,7 @@ func discordMainWrapper() error {
 	galactusClient, err := discord.NewGalactusClient(galactusAddr)
 	if err != nil {
 		log.Println("Error connecting to Galactus!")
-		log.Fatal(err)
+		return err
 	}
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
@@ -178,7 +178,30 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, galactusClient, logPath, captureTimeout)
+	psql := storage.PsqlInterface{}
+	pAddr := os.Getenv("POSTGRES_ADDR")
+	if pAddr == "" {
+		return errors.New("no POSTGRES_ADDR specified; exiting")
+	}
+
+	pUser := os.Getenv("POSTGRES_USER")
+	if pUser == "" {
+		return errors.New("no POSTGRES_USER specified; exiting")
+	}
+
+	pPass := os.Getenv("POSTGRES_PASS")
+	if pPass == "" {
+		return errors.New("no POSTGRES_PASS specified; exiting")
+	}
+
+	err = psql.Init(storage.ConstructPsqlConnectURL(pAddr, pUser, pPass))
+	if err != nil {
+		return err
+	}
+
+	err = psql.LoadAndExecFromFile("./storage/postgres.sql")
+
+	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath, captureTimeout)
 
 	<-sc
 	//bot.GracefulClose()

@@ -61,7 +61,8 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
+//Note this is not a pointer; we never expect the underlying DGS to change on an edit
+func (dgs DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
 	DeferredEditsLock.Lock()
 
 	//if it isn't found, then start the worker to wait to start it

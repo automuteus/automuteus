@@ -17,8 +17,8 @@ type PsqlInterface struct {
 	//https://brandur.org/postgres-connections
 }
 
-func ConstructPsqlConnectURL(host, port, username, password string) string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s", username, password, host, port)
+func ConstructPsqlConnectURL(addr, username, password string) string {
+	return fmt.Sprintf("postgres://%s?user=%s&password=%s", addr, username, password)
 }
 
 type PsqlParameters struct {
@@ -38,7 +38,7 @@ func (psqlInterface *PsqlInterface) Init(addr string) error {
 	return nil
 }
 
-func (psqlInterface *PsqlInterface) loadAndExecFromFile(filepath string) error {
+func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (psqlInterface *PsqlInterface) insertGuildUser(guildID, hashedID string) er
 	return err
 }
 
-func (psqlInterface *PsqlInterface) insertGuildGame(guildID string, gameID int32) error {
+func (psqlInterface *PsqlInterface) insertGuildGame(guildID string, gameID int64) error {
 	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds_games VALUES ($1, $2);", guildID, gameID)
 	return err
 }
@@ -122,7 +122,7 @@ func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) error {
 }
 
 func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5, $6);", player.HashedUserID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole, player.Winner)
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5);", player.HashedUserID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole)
 	return err
 }
 

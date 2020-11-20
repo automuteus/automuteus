@@ -28,9 +28,9 @@ FROM alpine:3.12.1 AS final
 # Set up non-root user and app directory
 # * Non-root because of the principle of least privlege
 # * App directory to allow mounting volumes
-RUN addgroup -g 1000 bot && \
-    adduser -HD -u 1000 -G bot bot && \
-    mkdir -p /app/logs /app/locales && \
+RUN groupadd -g 1000 bot && \
+    useradd -HD -u 1000 -G bot bot && \
+    mkdir -p /app/logs /app/locales /app/storage && \
     chown -R bot:bot /app
 USER bot
 WORKDIR /app
@@ -38,6 +38,7 @@ WORKDIR /app
 # Import the compiled executable and locales.
 COPY --from=builder /app /app
 COPY ./locales/ /app/locales
+COPY ./storage/postgres.sql /app/storage/postgres.sql
 
 # Port used for health/liveliness checks
 EXPOSE 8080

@@ -253,9 +253,12 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
 		//if we went to lobby from anywhere else but the menu, assume the game is over
 	} else if phase == game.LOBBY && oldPhase != game.MENU {
-		//TODO process the game's completion and send to Postgres
-		//only process games that actually receive the end-game event from the capture! Might need to start a worker
+
+		//TODO only process games that actually receive the end-game event from the capture! Might need to start a worker
 		//to listen for this
+		go dumpGameToPostgres(*dgs, bot.PostgresInterface)
+
+		//TODO print the match_id in the chat. Let users pull up the info about that match in particular...
 
 		dgs.MatchID = -1
 		dgs.MatchStartUnix = -1
@@ -304,4 +307,51 @@ func (bot *Bot) processLobby(s *discordgo.Session, sett *storage.GuildSettings, 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+}
+
+func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
+	end := time.Now().Unix()
+	pgame := storage.PostgresGame{
+		GameID:      dgs.MatchID,
+		ConnectCode: dgs.ConnectCode,
+		StartTime:   dgs.MatchStartUnix,
+		WinType:     int16(dgs.GameResult),
+		EndTime:     end,
+	}
+
+	userGames := make([]*storage.PostgresUserGame, 0)
+
+	for _, v := range dgs.UserData {
+		if v.GetPlayerName() != game.UnlinkedPlayerName {
+			hashed := storage.HashUserID(v.User.UserID)
+			inGameData, found := dgs.AmongUsData.GetByName(v.GetUserName())
+			if !found {
+				continue
+			}
+			err := psql.EnsureUserExists(v.User.UserID, string(hashed))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			err = psql.EnsureGuildUserExists(dgs.GuildID, string(hashed))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			userGames = append(userGames, &storage.PostgresUserGame{
+				HashedUserID: string(hashed),
+				GameID:       dgs.MatchID,
+				PlayerName:   v.GetUserName(),
+				PlayerColor:  int16(inGameData.Color),
+				//TODO once we have this data, add it
+				PlayerRole: "",
+			})
+		}
+	}
+
+	err := psql.InsertGameAndPlayers(dgs.GuildID, &pgame, userGames)
+	if err != nil {
+		log.Println(err)
+	}
+
 }

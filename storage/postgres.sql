@@ -4,12 +4,12 @@ create table if not exists guilds (
     premium VARCHAR (20)
 );
 
-create table if not exists games (
-    game_id bigint PRIMARY KEY,
-    connect_code CHAR(8) NOT NULL,
-    start_time bigint NOT NULL,
-    win_type VARCHAR (20), --imposter win, crewmate win, etc
-    end_time bigint
+create table if not exists games(
+                                    game_id      bigint PRIMARY KEY,
+                                    connect_code CHAR(8) NOT NULL,
+                                    start_time   bigint  NOT NULL,
+                                    win_type     smallint, --imposter win, crewmate win, etc
+                                    end_time     bigint
 );
 
 -- links userIDs to their hashed variants.
@@ -37,7 +37,6 @@ create table if not exists users_games (
     player_name VARCHAR(10) NOT NULL,
     player_color smallint NOT NULL,
     player_role VARCHAR(10), --futureproofing
-    winner boolean,
     PRIMARY KEY (hashed_user_id, game_id)
 );
 

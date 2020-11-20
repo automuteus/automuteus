@@ -34,6 +34,8 @@ type Bot struct {
 
 	StorageInterface *storage.StorageInterface
 
+	PostgresInterface *storage.PsqlInterface
+
 	MetricsCollector *metrics.MetricsCollector
 
 	logPath string
@@ -46,7 +48,7 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, gc *GalactusClient, logPath string, timeoutSecs int) *Bot {
+func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string, timeoutSecs int) *Bot {
 	Version = version
 	Commit = commit
 
@@ -81,15 +83,16 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		EndGameChannels:  make(map[string]chan EndGameMessage),
-		ChannelsMapLock:  sync.RWMutex{},
-		SessionManager:   NewSessionManager(dg, altDiscordSession),
-		GalactusClient:   gc,
-		RedisInterface:   redisInterface,
-		StorageInterface: storageInterface,
-		logPath:          logPath,
-		captureTimeout:   timeoutSecs,
-		MetricsCollector: metrics.NewMetricsCollector(),
+		EndGameChannels:   make(map[string]chan EndGameMessage),
+		ChannelsMapLock:   sync.RWMutex{},
+		SessionManager:    NewSessionManager(dg, altDiscordSession),
+		GalactusClient:    gc,
+		RedisInterface:    redisInterface,
+		StorageInterface:  storageInterface,
+		PostgresInterface: psql,
+		logPath:           logPath,
+		captureTimeout:    timeoutSecs,
+		MetricsCollector:  metrics.NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
 
@@ -235,6 +238,7 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
+		go bot.PostgresInterface.EnsureGuildExists(m.Guild.ID, m.Guild.Name)
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
