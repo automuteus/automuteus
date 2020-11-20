@@ -13,14 +13,23 @@ type GalactusClient struct {
 	client  *http.Client
 }
 
-func NewGalactusClient(address string) *GalactusClient {
-	//TODO validate/ping galactus here
-	return &GalactusClient{
+func NewGalactusClient(address string) (*GalactusClient, error) {
+	gc := GalactusClient{
 		Address: address,
 		client: &http.Client{
 			Timeout: time.Second * 10,
 		},
 	}
+	r, err := gc.client.Get(gc.Address + "/")
+	if err != nil {
+		return &gc, err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return &gc, errors.New("galactus returned a non-200 status code; ensure it is reachable")
+	}
+	return &gc, nil
+
 }
 
 func (gc *GalactusClient) AddToken(token string) error {
@@ -34,7 +43,7 @@ func (gc *GalactusClient) AddToken(token string) error {
 	return nil
 }
 
-func (gc *GalactusClient) ModifyUser(guildID, connectCode, userID string, mute, deaf bool, nick string) error {
+func (gc *GalactusClient) ModifyUser(guildID, connectCode, userID string, mute, deaf bool) error {
 	fullUrl := fmt.Sprintf("%s/modify/%s/%s/%s?mute=%v&deaf=%v", gc.Address, guildID, connectCode, userID, mute, deaf)
 	resp, err := gc.client.Post(fullUrl, "application/json", bytes.NewBufferString(""))
 	if err != nil {

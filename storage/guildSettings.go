@@ -13,12 +13,12 @@ type GuildSettings struct {
 	DefaultTrackedChannel string `json:"defaultTrackedChannel"`
 	Language              string `json:"language"`
 
-	AdminUserIDs          []string        `json:"adminIDs"`
-	PermissionRoleIDs     []string        `json:"permissionRoleIDs"`
-	Delays                game.GameDelays `json:"delays"`
-	VoiceRules            game.VoiceRules `json:"voiceRules"`
-	ApplyNicknames        bool            `json:"applyNicknames"`
-	UnmuteDeadDuringTasks bool            `json:"unmuteDeadDuringTasks"`
+	AdminUserIDs      []string        `json:"adminIDs"`
+	PermissionRoleIDs []string        `json:"permissionRoleIDs"`
+	Delays            game.GameDelays `json:"delays"`
+	VoiceRules        game.VoiceRules `json:"voiceRules"`
+	//ApplyNicknames        bool            `json:"applyNicknames"`
+	UnmuteDeadDuringTasks bool `json:"unmuteDeadDuringTasks"`
 
 	lock sync.RWMutex
 }
@@ -32,7 +32,7 @@ func MakeGuildSettings() *GuildSettings {
 		PermissionRoleIDs:     []string{},
 		Delays:                game.MakeDefaultDelays(),
 		VoiceRules:            game.MakeMuteAndDeafenRules(),
-		ApplyNicknames:        false,
+		//ApplyNicknames:        false,
 		UnmuteDeadDuringTasks: false,
 		lock:                  sync.RWMutex{},
 	}
@@ -119,13 +119,13 @@ func (gs *GuildSettings) SetLanguage(l string) {
 	gs.Language = l
 }
 
-func (gs *GuildSettings) GetApplyNicknames() bool {
-	return gs.ApplyNicknames
-}
-
-func (gs *GuildSettings) SetApplyNicknames(v bool) {
-	gs.ApplyNicknames = v
-}
+//func (gs *GuildSettings) GetApplyNicknames() bool {
+//	return gs.ApplyNicknames
+//}
+//
+//func (gs *GuildSettings) SetApplyNicknames(v bool) {
+//	gs.ApplyNicknames = v
+//}
 
 func (gs *GuildSettings) GetDelay(oldPhase, newPhase game.Phase) int {
 	return gs.Delays.GetDelay(oldPhase, newPhase)

@@ -19,7 +19,7 @@ type UserPatchParameters struct {
 	Userdata UserData
 	Deaf     bool
 	Mute     bool
-	Nick     string
+	//Nick     string
 }
 
 //func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {

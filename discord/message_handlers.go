@@ -238,15 +238,15 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		dgs.UpdateUserData(m.UserID, userData)
 
-		nick := userData.GetPlayerName()
-		if !sett.GetApplyNicknames() {
-			nick = ""
-		}
+		//nick := userData.GetPlayerName()
+		//if !sett.GetApplyNicknames() {
+		//	nick = ""
+		//}
 
 		if dgs.Running {
 			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
 			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
-			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf, nick)
+			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf)
 			if err != nil {
 				log.Println(err)
 			}

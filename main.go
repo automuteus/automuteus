@@ -166,7 +166,11 @@ func discordMainWrapper() error {
 		return errors.New("no GALACTUS_ADDR specified; exiting")
 	}
 
-	galactusClient := discord.NewGalactusClient(galactusAddr)
+	galactusClient, err := discord.NewGalactusClient(galactusAddr)
+	if err != nil {
+		log.Println("Error connecting to Galactus!")
+		log.Fatal(err)
+	}
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 

@@ -51,13 +51,6 @@ func (bot *Bot) refreshGameLiveness(code string) {
 		Member: code,
 	})
 }
-func activeNodesKey() string {
-	return "automuteus:nodes:all"
-}
-
-func discordRequestsZsetKeyByNodeID(nodeID string) string {
-	return "automuteus:requests:" + nodeID
-}
 
 func activeGamesKey(guildID string) string {
 	return "automuteus:discord:" + guildID + ":games:set"
@@ -85,46 +78,6 @@ func cacheHash(guildID string) string {
 
 func snowflakeLockID(snowflake string) string {
 	return "automuteus:snowflake:" + snowflake + ":lock"
-}
-
-func (redisInterface *RedisInterface) IncrementDiscordRequests(nodeID string, count int) {
-	if nodeID == "" {
-		return
-	}
-
-	t := time.Now()
-
-	//make sure the entry is refreshed in the overall nodes listing
-	_, err := redisInterface.client.ZAdd(ctx, activeNodesKey(), &redis.Z{
-		Score:  float64(t.Unix()),
-		Member: nodeID,
-	}).Result()
-
-	for i := int64(0); i < int64(count); i++ {
-		_, err = redisInterface.client.ZAdd(ctx, discordRequestsZsetKeyByNodeID(nodeID), &redis.Z{
-			Score:  float64(t.UnixNano() + i),
-			Member: float64(t.UnixNano() + i), //add the time as an element as it's always unique PER NODE (no 2 requests in the same ms, for the same node)
-		}).Result()
-	}
-
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (redisInterface *RedisInterface) GetDiscordRequestsInLastMinutesByNodeID(numMinutes int, nodeID string) int {
-	before := time.Now().Add(-time.Minute * time.Duration(numMinutes)).UnixNano()
-
-	games, err := redisInterface.client.ZRangeByScore(ctx, discordRequestsZsetKeyByNodeID(nodeID), &redis.ZRangeBy{
-		Min:    fmt.Sprintf("%d", before),
-		Max:    fmt.Sprintf("%d", time.Now().UnixNano()),
-		Offset: 0,
-		Count:  0,
-	}).Result()
-	if err != nil {
-		log.Println(err)
-	}
-	return len(games)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
