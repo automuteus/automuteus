@@ -207,12 +207,8 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		for lock == nil {
-			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		}
-		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
-		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		//TODO could be a race condition?
+		go bot.updateInBackground(gsr, p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		if dgs.Running {
 			wg.Add(1)
@@ -227,4 +223,13 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		}
 	}
 	wg.Wait()
+}
+
+func (bot *Bot) updateInBackground(gsr GameStateRequest, userID string, data UserData) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	}
+	dgs.UpdateUserData(userID, data)
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }
