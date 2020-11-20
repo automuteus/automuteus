@@ -3,6 +3,7 @@ package discord
 import (
 	"container/heap"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -48,7 +49,7 @@ func (h *PatchPriority) Pop() interface{} {
 
 func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
 	log.Println("Forcibly applying mute/deaf to " + userID)
-	//userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
+	//userData, _ := dgs.checkCacheAndAddUser(g, bot.PrimarySession.GetPrimarySession(), userID)
 	//params := UserPatchParameters{
 	//	GuildID:  dgs.GuildID,
 	//	Userdata: userData,
@@ -62,11 +63,11 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	if err != nil {
 		log.Println(err)
 	}
-	//go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+	//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 }
 
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
-	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	g, err := bot.PrimarySession.State.Guild(dgs.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -77,7 +78,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -104,20 +105,20 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 			if err != nil {
 				log.Println(err)
 			}
-			//go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+			//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 		}
 	}
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		return
 	}
 
-	g, err := sm.GetPrimarySession().State.Guild(dgs.GuildID)
+	g, err := sess.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
 		lock.Release(ctx)
@@ -132,7 +133,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, sm.GetPrimarySession(), voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
 			if !added {
 				continue
 			}

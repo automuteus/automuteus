@@ -639,7 +639,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
 			bot.MetricsCollector.RecordDiscordRequest(metrics.MessageCreateDelete)
 
-			go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
+			go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 			break
 
 		case Link:

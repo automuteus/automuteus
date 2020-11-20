@@ -26,7 +26,7 @@ type Bot struct {
 
 	ChannelsMapLock sync.RWMutex
 
-	SessionManager *SessionManager
+	PrimarySession *discordgo.Session
 
 	GalactusClient *GalactusClient
 
@@ -52,18 +52,15 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	Version = version
 	Commit = commit
 
-	var altDiscordSession *discordgo.Session = nil
-
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
 		return nil
 	}
 	if token2 != "" {
-		altDiscordSession, err = discordgo.New("Bot " + token2)
+		err := gc.AddToken(token2)
 		if err != nil {
-			log.Println("error creating 2nd Discord session,", err)
-			return nil
+			log.Println("error adding 2nd Discord bot token to galactus: ", err)
 		}
 	}
 
@@ -71,11 +68,6 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		log.Printf("Identifying to the Discord API with %d total shards, and shard ID=%d\n", numShards, shardID)
 		dg.ShardCount = numShards
 		dg.ShardID = shardID
-		if altDiscordSession != nil {
-			log.Printf("Identifying to the Discord API for the 2nd Bot with %d total shards, and shard ID=%d\n", numShards, shardID)
-			altDiscordSession.ShardCount = numShards
-			altDiscordSession.ShardID = shardID
-		}
 	}
 
 	bot := Bot{
@@ -85,7 +77,7 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 		EndGameChannels:   make(map[string]chan EndGameMessage),
 		ChannelsMapLock:   sync.RWMutex{},
-		SessionManager:    NewSessionManager(dg, altDiscordSession),
+		PrimarySession:    dg,
 		GalactusClient:    gc,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
@@ -116,16 +108,6 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 	if err != nil {
 		log.Println("Could not connect Bot to the Discord Servers with error:", err)
 		return nil
-	}
-
-	if altDiscordSession != nil {
-		altDiscordSession.AddHandler(bot.newAltGuild)
-		altDiscordSession.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds)
-		err = altDiscordSession.Open()
-		if err != nil {
-			log.Println("Could not connect 2nd Bot to the Discord Servers with error:", err)
-			return nil
-		}
 	}
 
 	rediscommon.SetVersionAndCommit(bot.RedisInterface.client, Version, Commit)
@@ -204,7 +186,6 @@ func (bot *Bot) GracefulClose() {
 	bot.ChannelsMapLock.RUnlock()
 }
 func (bot *Bot) Close() {
-	bot.SessionManager.Close()
 	bot.RedisInterface.Close()
 	bot.StorageInterface.Close()
 }
@@ -302,10 +283,6 @@ func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) newAltGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
-	bot.SessionManager.RegisterGuildSecondSession(m.Guild.ID)
-}
-
 func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []string) {
 	g, err := s.State.Guild(dgs.GuildID)
 	if err != nil {
@@ -358,8 +335,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	//log.Println("lock obtained for game end")
 
 	if dgs.Linked && dgs.GameStateMsg.MessageID != "" && dgs.GameStateMsg.MessageChannelID != "" {
-		sess := bot.SessionManager.GetPrimarySession()
-		sess.ChannelMessageSend(dgs.GameStateMsg.MessageChannelID, "Your game might be momentarily disrupted while I upgrade...")
+		bot.PrimarySession.ChannelMessageSend(dgs.GameStateMsg.MessageChannelID, "Your game might be momentarily disrupted while I upgrade...")
 	}
 
 	dgs.Subscribed = false
@@ -372,7 +348,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
-	dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+	dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 
 	log.Println("Done saving guild data")
 }

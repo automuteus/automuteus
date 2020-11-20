@@ -175,7 +175,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			}
 			//make sure to update any voice changes if they occurred
 			if idMatched {
-				bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, gsr)
+				bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
 				dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
 			}
 		}
@@ -450,5 +450,5 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 13)
 	bot.MetricsCollector.RecordDiscordRequests(metrics.ReactionAdd, 13)
 
-	go dgs.AddAllReactions(bot.SessionManager.GetPrimarySession(), bot.StatusEmojis[true])
+	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 }
