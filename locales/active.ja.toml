@@ -272,7 +272,7 @@ other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってくだ
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "VCは *{{.channelName}}** です！"
+other = "VCは **{{.channelName}}** です！"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
@@ -328,7 +328,7 @@ other = "ゲームを開始しました！"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[GitHubプロジェクト](https://github.com/denverquane/automuteus) か [我々のDiscordに参加！](https://discord.gg/ZkqZSWF)\\n\\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
+other = "[GitHubプロジェクトを見る](https://github.com/denverquane/automuteus) か [私たちのDiscordに参加！](https://discord.gg/ZkqZSWF)\\n\\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
@@ -348,7 +348,7 @@ other = "❌**キャプチャされてません！ DMに送られたリンクを
 
 ["responses.lobbyMetaEmbedFields.PlayersLinked"]
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "プレイヤーが連携されました"
+other = "連携されたプレイヤー"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
@@ -364,7 +364,7 @@ other = "\\n⚠**中断されました！**⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> がAmong Usを開始しました！\\nここでゲームが行われています: "
+other = "<@{{.author}}> が Among Us を開始しました！\\nここでゲームが行われています: "
 
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
