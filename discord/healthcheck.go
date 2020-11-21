@@ -30,7 +30,9 @@ func StartHealthCheckServer(port string) {
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
-			log.Fatal("I'M BEING RATE-LIMITED BY DISCORD")
+			w.WriteHeader(http.StatusTooManyRequests)
+			log.Println("I'M BEING RATE-LIMITED BY DISCORD")
+			return
 			//orgId := os.Getenv("SCW_ORGANIZATION_ID")
 			//accessKey := os.Getenv("SCW_ACCESS_KEY")
 			//secretKey := os.Getenv("SCW_SECRET_KEY")
