@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/automuteus/galactus/broker"
+	"github.com/automuteus/galactus/discord"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -96,6 +97,8 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
+	discord.WaitForToken(bot.RedisInterface.client, token)
+	discord.MarkIdentifyAndLockForToken(bot.RedisInterface.client, token)
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {

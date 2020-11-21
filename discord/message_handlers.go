@@ -7,7 +7,9 @@ import (
 	"github.com/denverquane/amongusdiscord/metrics"
 	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/denverquane/amongusdiscord/game"
@@ -17,7 +19,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-const MaxActiveGames = 140
+const DefaultMaxActiveGames = 150
 
 var RateLimitGlobalThreshold = 9500
 
@@ -359,7 +361,12 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		dgs.Reset()
 	} else {
 		activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
-		if activeGames > MaxActiveGames {
+		act := os.Getenv("MAX_ACTIVE_GAMES")
+		num, err := strconv.ParseInt(act, 10, 64)
+		if err != nil {
+			num = DefaultMaxActiveGames
+		}
+		if activeGames > num {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.lockout",
 				Other: "I'm very sorry, but Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes.",

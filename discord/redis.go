@@ -19,7 +19,6 @@ const LinearBackoffMs = 100
 const MaxRetries = 10
 const SnowflakeLockMs = 3000
 
-//this should match the value in main.go
 const GameTimeoutSeconds = 600
 
 type RedisInterface struct {
