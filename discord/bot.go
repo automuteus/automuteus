@@ -314,7 +314,6 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	log.Println("Done saving guild data")
 }
 
-//TODO don't delete the message, but instead just edit and flag it with a "this game has ended" message?
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 
@@ -329,6 +328,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		if edited {
 			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
+		dgs.RemoveAllReactions(bot.PrimarySession)
 	} else {
 		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)

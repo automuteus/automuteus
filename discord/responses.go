@@ -288,14 +288,16 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 
 	color := 15158332 //red
 	desc := ""
-	if dgs.Linked {
-		desc = dgs.makeDescription(sett)
-		color = 3066993
-	} else {
-		desc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.lobbyMessage.notLinked.Description",
-			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
-		})
+	if dgs.AmongUsData.GetPhase() != game.GAMEOVER {
+		if dgs.Linked {
+			desc = dgs.makeDescription(sett)
+			color = 3066993
+		} else {
+			desc = sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMessage.notLinked.Description",
+				Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+			})
+		}
 	}
 
 	emojiLeave := "❌"
@@ -331,14 +333,21 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 }
 
 func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	//send empty fields because we don't need to display those fields during the game...
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
-	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
-	listResp = append(gameInfoFields, listResp...)
-	var color int
 
 	phase := dgs.AmongUsData.GetPhase()
+	//send empty fields because we don't need to display those fields during the game...
+	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
+	desc := ""
 
+	//if game is over, dont append the player count or the other description fields
+	//TODO include some sort of game summary for gameover
+	if phase != game.GAMEOVER {
+		desc = dgs.makeDescription(sett)
+		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+		listResp = append(gameInfoFields, listResp...)
+	}
+
+	var color int
 	switch phase {
 	case game.TASKS:
 		color = 3447003 //BLUE
@@ -361,7 +370,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		URL:         "",
 		Type:        "",
 		Title:       title,
-		Description: dgs.makeDescription(sett),
+		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),
 		Color:       color,
 		Footer:      nil,
