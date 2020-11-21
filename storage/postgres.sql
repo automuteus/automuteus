@@ -48,7 +48,7 @@ create table if not exists game_events
     game_id    bigint references games ON DELETE CASCADE,
     event_time bigint   NOT NULL,
     event_type smallint NOT NULL,
-    payload    VARCHAR(100)
+    payload jsonb
 );
 
 -- Example queries:

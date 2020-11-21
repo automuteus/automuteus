@@ -121,6 +121,11 @@ func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) error {
 	return err
 }
 
+func (psqlInterface *PsqlInterface) updateGame(gameID int64, winType int16, endTime int64) error {
+	_, err := psqlInterface.pool.Exec(context.Background(), "UPDATE games SET (win_type, end_time) = ($1, $2) WHERE game_id = $3;", winType, endTime, gameID)
+	return err
+}
+
 func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error {
 	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5);", player.HashedUserID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole)
 	return err
@@ -162,14 +167,28 @@ func (psqlInterface *PsqlInterface) EnsureGuildUserExists(guildID, hashedID stri
 	return nil
 }
 
-//make sure to call the relevant "ensure" methods before this one...
-func (psqlInterface *PsqlInterface) InsertGameAndPlayers(guildID string, game *PostgresGame, players []*PostgresUserGame) error {
+func (psqlInterface *PsqlInterface) AddInitialGame(guildID string, game *PostgresGame) error {
 	err := psqlInterface.insertGame(game)
 	if err != nil {
 		return err
 	}
 
 	err = psqlInterface.insertGuildGame(guildID, game.GameID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (psqlInterface *PsqlInterface) AddEvent(event *PostgresGameEvent) error {
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, $1, $2, $3, $4);", event.GameID, event.EventTime, event.EventType, event.Payload)
+	return err
+}
+
+//make sure to call the relevant "ensure" methods before this one...
+func (psqlInterface *PsqlInterface) UpdateGameAndPlayers(gameID int64, winType int16, endTime int64, players []*PostgresUserGame) error {
+
+	err := psqlInterface.updateGame(gameID, winType, endTime)
 	if err != nil {
 		return err
 	}

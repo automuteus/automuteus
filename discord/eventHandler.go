@@ -60,6 +60,23 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				log.Println("Popped job w/ payload " + job.Payload.(string))
 				bot.refreshGameLiveness(connectCode)
 				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
+				if job.JobType != broker.Connection {
+					go func() {
+						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
+						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
+							gameEvent := storage.PostgresGameEvent{
+								GameID:    dgs.MatchID,
+								EventTime: time.Now().Unix(),
+								EventType: int16(job.JobType),
+								Payload:   job.Payload.(string),
+							}
+							err := bot.PostgresInterface.AddEvent(&gameEvent)
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}()
+				}
 
 				switch job.JobType {
 				case broker.Connection:
@@ -266,8 +283,9 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		dgs.MatchStartUnix = matchStart
 		dgs.MatchID = matchID
 		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
+		go startGameInPostgres(*dgs, bot.PostgresInterface)
 		//if we went to lobby from anywhere else but the menu, assume the game is over
-	} else if phase == game.LOBBY && oldPhase != game.MENU {
+	} else if (phase == game.LOBBY || phase == game.MENU) && oldPhase != game.MENU {
 
 		//TODO only process games that actually receive the end-game event from the capture! Might need to start a worker
 		//to listen for this
@@ -275,6 +293,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 
 		//TODO print the match_id in the chat. Let users pull up the info about that match in particular...
 
+		//set the id and start back to invalid values; we're out of a game now
 		dgs.MatchID = -1
 		dgs.MatchStartUnix = -1
 	}
@@ -339,15 +358,28 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 	}
 }
 
-func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
-	end := time.Now().Unix()
-	pgame := storage.PostgresGame{
+func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
+	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		return
+	}
+	pgame := &storage.PostgresGame{
 		GameID:      dgs.MatchID,
 		ConnectCode: dgs.ConnectCode,
 		StartTime:   dgs.MatchStartUnix,
-		WinType:     int16(dgs.GameResult),
-		EndTime:     end,
+		WinType:     -1,
+		EndTime:     -1,
 	}
+	err := psql.AddInitialGame(dgs.GuildID, pgame)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
+	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		return
+	}
+	end := time.Now().Unix()
 
 	userGames := make([]*storage.PostgresUserGame, 0)
 
@@ -379,9 +411,8 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
 		}
 	}
 
-	err := psql.InsertGameAndPlayers(dgs.GuildID, &pgame, userGames)
+	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(dgs.GameResult), end, userGames)
 	if err != nil {
 		log.Println(err)
 	}
-
 }
