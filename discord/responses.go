@@ -102,6 +102,7 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 }
 
 func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -117,30 +118,27 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.statsResponse.BotInfo",
+				Other: "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}",
+			},
+				map[string]interface{}{
+					"Version": version,
+					"Commit":  commit,
+					"ID":      fmt.Sprintf("%d", bot.PrimarySession.ShardID),
+					"Num":     fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
+				}),
+			IconURL:      "",
+			ProxyIconURL: "",
+		},
 	}
 
-	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
 	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
 	totalGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 
-	fields := make([]*discordgo.MessageEmbedField, 6)
+	fields := make([]*discordgo.MessageEmbedField, 8)
 	fields[0] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Guilds",
-			Other: "Total Guilds",
-		}),
-		Value:  fmt.Sprintf("%d", totalGuilds),
-		Inline: true,
-	}
-	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Games",
-			Other: "Active Games",
-		}),
-		Value:  fmt.Sprintf("%d", totalGames),
-		Inline: true,
-	}
-	fields[2] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Version",
 			Other: "Version",
@@ -148,28 +146,60 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 		Value:  version,
 		Inline: true,
 	}
+	fields[1] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Guilds",
+			Other: "Total Guilds",
+		}),
+		Value:  fmt.Sprintf("%d", totalGuilds),
+		Inline: true,
+	}
+	fields[2] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Games",
+			Other: "Active Games",
+		}),
+		Value:  fmt.Sprintf("%d", totalGames),
+		Inline: true,
+	}
 	fields[3] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Commit",
-			Other: "Commit",
+			ID:    "responses.statsResponse.Library",
+			Other: "Library",
 		}),
-		Value:  commit,
+		Value:  "discordgo",
 		Inline: true,
 	}
 	fields[4] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Shard",
-			Other: "Shard ID",
+			ID:    "responses.statsResponse.Creator",
+			Other: "Creator",
 		}),
-		Value:  fmt.Sprintf("%d", bot.PrimarySession.ShardID),
+		Value:  "Soup#4222",
 		Inline: true,
 	}
 	fields[5] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.TotalShard",
-			Other: "Total Shards",
+			ID:    "responses.statsResponse.Website",
+			Other: "Website",
 		}),
-		Value:  fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
+		Value:  "[automute.us](https://automute.us)",
+		Inline: true,
+	}
+	fields[6] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Invite",
+			Other: "Invite",
+		}),
+		Value:  "[add.automute.us](https://add.automute.us)",
+		Inline: true,
+	}
+	fields[7] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Donate",
+			Other: "Donate",
+		}),
+		Value:  "[patreon/automuteus](https://www.patreon.com/automuteus)",
 		Inline: true,
 	}
 

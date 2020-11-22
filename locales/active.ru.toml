@@ -6,13 +6,6 @@ other = "оказался предателем."
 hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
 other = "не был предателем."
 
-["ascii.AsciiStarfield.remains"]
-few = "предателей осталось."
-hash = "sha1-14858b544c4178af3b770e676768cd4a8136aefa"
-many = "предателей осталось."
-one = "предатель остался"
-other = "предателей осталось."
-
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
 other = "<@discord user> <был предателем> (true|false) <x предателей осталось> (число)"
@@ -181,10 +174,6 @@ other = "Отправить все данные игрока пользоват�
 hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
 other = "Показать данные игрока"
 
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
-other = "Посмотреть статистику бота"
-
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
 other = "<название голосового канала>"
@@ -249,21 +238,9 @@ other = "У меня нет никаких кэшированных ников, 
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "Извините, я не понял фазу игры, на которую вы пытались переключиться"
 
-["commands.HandleCommand.ForgetMe.Success"]
-hash = "sha1-fa5049065e85726171d4a53ed857cc3375a5d924"
-other = "Успешно удалены все данные игрока для <@{{.AuthorID}}>"
-
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "Я не распознал эту команду! Просмтри `help` для всех доступных команд!"
-
-["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
-other = "Вот ваши кешированные ники:"
-
-["commands.HandleCommand.ShowMe.emptyCachedNames"]
-hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
-other = "У меня нет никаких кэшированных ников, сохраненных для вас!"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -353,21 +330,9 @@ other = "❌**Сканер не связан! Нажмите ссылку в Л�
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
 other = "Игроков связано"
 
-["responses.lobbyMetaEmbedFields.Region"]
-hash = "sha1-0f217179940c6d89f5cb2c7002a58d91ab7286c1"
-other = "🌎 Регион"
-
-["responses.lobbyMetaEmbedFields.RoomCode"]
-hash = "sha1-a66508a3f88a7e92aef0bb673e1d196ae0f48389"
-other = "🔒 Код комнаты"
-
 ["responses.lobbyMetaEmbedFields.Tracking"]
 hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
 other = "Отслеживается"
-
-["responses.makeDescription.GameNotRunning"]
-hash = "sha1-86cde27b1b68172d5a2ced8c7064619ee439b61c"
-other = "\n⚠**Бот приостановлен!**⚠\n\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
@@ -381,10 +346,6 @@ other = "(Войдите в игровое лобби «Among Us», чтобы �
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
 other = "Главное меню"
 
-["responses.menuMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Сканер не связан! Нажмите ссылку в ЛС, чтобы подключиться!**❌"
-
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "Введи `{{.CommandPrefix}} settings <параметр>` чтобы изменить параметр бота из перечисленных ниже"
@@ -393,10 +354,6 @@ other = "Введи `{{.CommandPrefix}} settings <параметр>` чтобы 
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Настройки"
 
-["responses.statsResponse.Commit"]
-hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
-other = "Commit"
-
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "Активных игр"
@@ -404,10 +361,6 @@ other = "Активных игр"
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
 other = "Всего серверов"
-
-["responses.statsResponse.Title"]
-hash = "sha1-8490902565bf22c8f9bfa748c6377c90aad6d6f0"
-other = "Статистика бота"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"

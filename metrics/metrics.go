@@ -14,7 +14,6 @@ type MetricsEventType int
 const (
 	Generic MetricsEventType = iota
 	MuteDeafen
-	Nick
 	MessageCreateDelete
 	MessageEdit
 	ReactionAdd

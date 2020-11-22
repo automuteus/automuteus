@@ -11,7 +11,6 @@ type User struct {
 	UserID        string `json:"UserID"`
 	UserName      string `json:"UserName"`
 	Discriminator string `json:"Discriminator"`
-	OriginalNick  string `json:"OriginalNick"`
 }
 
 // UserData struct
@@ -29,7 +28,6 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 			UserID:        dUser.ID,
 			UserName:      dUser.Username,
 			Discriminator: dUser.Discriminator,
-			OriginalNick:  nick,
 		},
 		ShouldBeDeaf: false,
 		ShouldBeMute: false,
@@ -45,14 +43,6 @@ func (user *UserData) SetShouldBeMuteDeaf(mute, deaf bool) {
 	user.ShouldBeMute = mute
 	user.ShouldBeDeaf = deaf
 }
-
-//func (user *UserData) GetOriginalNickName() string {
-//	return user.User.OriginalNick
-//}
-//
-//func (user *UserData) NicknamesMatch() bool {
-//	return user.User.Nick == user.User.OriginalNick
-//}
 
 func (user *UserData) GetUserName() string {
 	return user.User.UserName

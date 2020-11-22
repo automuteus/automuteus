@@ -382,6 +382,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
 	end := time.Now().Unix()
 
 	userGames := make([]*storage.PostgresUserGame, 0)
+	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
 
 	for _, v := range dgs.UserData {
 		if v.GetPlayerName() != game.UnlinkedPlayerName {

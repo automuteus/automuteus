@@ -178,10 +178,6 @@ other = "このコマンドを実行したユーザーの情報を表示"
 hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
 other = "プレイヤーデータの表示"
 
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
-other = "Botのステータスを表示"
-
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
 other = "<voice channel name>"
@@ -246,21 +242,9 @@ other = "誰のユーザー名もキャッシュ化されてません！"
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "申し訳ありません。強制移行させたいゲームフェーズが分かりませんでした...。"
 
-["commands.HandleCommand.ForgetMe.Success"]
-hash = "sha1-fa5049065e85726171d4a53ed857cc3375a5d924"
-other = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
-
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "そのコマンドは存在しません！ `help` で使用可能なコマンドを表示できます！"
-
-["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
-other = "あなたのキャッシュ化されたユーザー名:"
-
-["commands.HandleCommand.ShowMe.emptyCachedNames"]
-hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
-other = "あなたのユーザー名はキャッシュ化されてません！"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -358,10 +342,6 @@ other = "🌎 リージョン"
 hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
 other = "🔒 部屋コード"
 
-["responses.makeDescription.GameNotRunning"]
-hash = "sha1-86cde27b1b68172d5a2ced8c7064619ee439b61c"
-other = "\\n⚠**中断されました！**⚠\\n\\n"
-
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
 other = "<@{{.author}}> がAmong Usを開始しました！\\nここでゲームが行われています: "
@@ -374,10 +354,6 @@ other = "(ゲームを開始するには、ロビーに参加してください)
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
 other = "メインメニュー"
 
-["responses.menuMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
-
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設定を変更することができます"
@@ -386,10 +362,6 @@ other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設�
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "設定"
 
-["responses.statsResponse.Commit"]
-hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
-other = "Commit"
-
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "アクティブなゲーム数"
@@ -397,10 +369,6 @@ other = "アクティブなゲーム数"
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
 other = "参加しているサーバー数"
-
-["responses.statsResponse.Title"]
-hash = "sha1-8490902565bf22c8f9bfa748c6377c90aad6d6f0"
-other = "Botの状態"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"

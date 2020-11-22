@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -78,13 +79,26 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			if banned {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.softban",
-					Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
-				}))
+					Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
+				},
+					map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
+
 			} else {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.generalRatelimit",
-					Other: "You're issuing commands too fast! Please slow down!",
-				}))
+					Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
+				},
+					map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
+				if err == nil {
+					go func() {
+						time.Sleep(time.Second * 3)
+						s.ChannelMessageDelete(m.ChannelID, msg.ID)
+					}()
+				}
 			}
 
 			return
@@ -176,13 +190,24 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				if banned {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.softban",
-						Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
-					}))
+						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
+					},
+						map[string]interface{}{
+							"User": "<@!" + m.UserID + ">",
+						}))
 				} else {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
-						Other: "You're reacting too fast! Please slow down!",
+						Other: "{{.User}}, you're reacting too fast! Please slow down!",
+					}, map[string]interface{}{
+						"User": "<@!" + m.UserID + ">",
 					}))
+					if err == nil {
+						go func() {
+							time.Sleep(time.Second * 3)
+							s.ChannelMessageDelete(m.ChannelID, msg.ID)
+						}()
+					}
 				}
 				return
 			}
@@ -360,19 +385,23 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 		dgs.Reset()
 	} else {
-		activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
-		act := os.Getenv("MAX_ACTIVE_GAMES")
-		num, err := strconv.ParseInt(act, 10, 64)
-		if err != nil {
-			num = DefaultMaxActiveGames
-		}
-		if activeGames > num {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.lockout",
-				Other: "I'm very sorry, but Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes.",
-			}))
-			lock.Release(context.Background())
-			return
+		premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+		//Premium users should always be allowed to start new games; only check the free guilds
+		if premStatus == "Free" {
+			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+			act := os.Getenv("MAX_ACTIVE_GAMES")
+			num, err := strconv.ParseInt(act, 10, 64)
+			if err != nil {
+				num = DefaultMaxActiveGames
+			}
+			if activeGames > num {
+				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					ID:    "message_handlers.handleNewGameMessage.lockout",
+					Other: "Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes.",
+				}))
+				lock.Release(context.Background())
+				return
+			}
 		}
 	}
 

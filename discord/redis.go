@@ -19,7 +19,8 @@ const LinearBackoffMs = 100
 const MaxRetries = 10
 const SnowflakeLockMs = 3000
 
-const GameTimeoutSeconds = 600
+//15 minute timeout
+const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
 	client *redis.Client

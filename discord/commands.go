@@ -95,7 +95,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.New.args",
 			Other: "None",
 		},
-		aliases:           []string{"n"},
+		aliases:           []string{"start", "n"},
 		secret:            false,
 		emoji:             "🕹",
 		adminSetting:      false,
@@ -117,7 +117,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.End.args",
 			Other: "None",
 		},
-		aliases:           []string{"e"},
+		aliases:           []string{"stop", "e"},
 		secret:            false,
 		emoji:             "🛑",
 		adminSetting:      false,
@@ -161,7 +161,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Refresh.args",
 			Other: "None",
 		},
-		aliases:           []string{"r"},
+		aliases:           []string{"reload", "r"},
 		secret:            false,
 		emoji:             "♻",
 		adminSetting:      false,
@@ -205,7 +205,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Unlink.args",
 			Other: "<discord User>",
 		},
-		aliases:           []string{"u"},
+		aliases:           []string{"u", "ul"},
 		secret:            false,
 		emoji:             "🚷",
 		adminSetting:      false,
@@ -337,7 +337,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Cache.args",
 			Other: "<player> (optionally, \"clear\")",
 		},
-		aliases:           []string{"cache"},
+		aliases:           []string{"c"},
 		secret:            false,
 		emoji:             "📖",
 		adminSetting:      false,
@@ -392,18 +392,18 @@ var AllCommands = []Command{
 		command: "info",
 		example: "info",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.shortDesc",
+			ID:    "commands.AllCommands.Info.shortDesc",
 			Other: "View Bot info",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.desc",
+			ID:    "commands.AllCommands.Info.desc",
 			Other: "View info about the bot, like total guild number, active games, etc",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.args",
+			ID:    "commands.AllCommands.Info.args",
 			Other: "None",
 		},
-		aliases:           []string{"stats", "info", "i"},
+		aliases:           []string{"info", "i"},
 		secret:            false,
 		emoji:             "📊",
 		adminSetting:      false,
@@ -800,12 +800,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				if len(cached) == 0 {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
-						Other: "I don't have any cached player names stored for you!",
+						Other: "❌ {{.User}} I don't have any cached player names stored for you!",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
 					}))
 				} else {
 					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.cachedNames",
-						Other: "Here's your cached in-game names:",
+						Other: "❗ {{.User}} Here's your cached in-game names:",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
 					})))
 					buf.WriteString("\n```\n")
 					for n := range cached {
@@ -813,6 +817,22 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 					buf.WriteString("```")
 					s.ChannelMessageSend(m.ChannelID, buf.String())
+				}
+				user, _ := bot.PostgresInterface.GetUser(m.Author.ID)
+				if user != nil {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ShowMe.linkedID",
+						Other: "❗ {{.User}} I am storing a link between your Discord UserID and an anonymized ID (for game statistics)",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
+				} else {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ShowMe.unlinkedID",
+						Other: "❌ {{.User}} I am not storing a link to your Discord UserID",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
 				}
 			}
 			break
@@ -824,11 +844,23 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				} else {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ForgetMe.Success",
-						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
+						Other: "✅ {{.User}} I successfully deleted your cached player names",
 					},
 						map[string]interface{}{
-							"AuthorID": m.Author.ID,
+							"User": "<@!" + m.Author.ID + ">",
 						}))
+					err = bot.PostgresInterface.RemoveUser(m.Author.ID)
+					if err != nil {
+						log.Println(err)
+					} else {
+						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.HandleCommand.ForgetMe.SuccessDB",
+							Other: "✅ {{.User}} I successfully deleted the link to your anonymized UserID",
+						},
+							map[string]interface{}{
+								"User": "<@!" + m.Author.ID + ">",
+							}))
+					}
 				}
 			}
 			break
