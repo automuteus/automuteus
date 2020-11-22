@@ -125,6 +125,7 @@ There is a `docker-compose.yml` file in this repository that will provide all th
 - Install Docker and Docker Compose on the machine you will be using to host AutoMuteUs
 - Download the `docker-compose.yml` from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template `sample.env` is provided in this repository for reference. 
 - Provide your specific Environment Variables in the `.env` file, as relevant to your configuration. Please see the Environment Variables reference further down in this Readme for details, as well as the `sample.env` provided.
+- Rename the `sample.env` to `sample` or docker-compose could read it instead of your `.env`.
 - Run `docker-compose pull`. This will download the latest built Docker images from Dockerhub that are required to run AutoMuteUs.
 - Run `docker-compose up -d` to start all the containers required for AutoMuteUs to function. The containers will now be running in the background, but you can view the logs for the containers using `docker-compose logs`, or `docker-compose logs -f` to follow along as new log entries are generated.
 
