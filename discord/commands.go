@@ -279,6 +279,29 @@ var AllCommands = []Command{
 		adminSetting:      false,
 		permissionSetting: true,
 	},
+	//place above settings so this is checked first
+	{
+		cmdType: Stats,
+		command: "sstats", //TODO wrong name while I still work on the command...
+		example: "stats @Soup",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.shortDesc",
+			Other: "",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.desc",
+			Other: "",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.args",
+			Other: "",
+		},
+		aliases:           []string{""},
+		secret:            true,
+		emoji:             "📊",
+		adminSetting:      false,
+		permissionSetting: false,
+	},
 	{
 		cmdType: Settings,
 		command: "settings",
@@ -297,7 +320,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"s"},
 		secret:            false,
-		emoji:             "⚙",
+		emoji:             "🛠",
 		adminSetting:      true,
 		permissionSetting: true,
 	},
@@ -385,7 +408,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"fm"},
 		secret:            false,
-		emoji:             "🗑",
+		emoji:             "💣",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -407,7 +430,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"info", "i"},
 		secret:            false,
-		emoji:             "📊",
+		emoji:             "📰",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -427,7 +450,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"ds"},
+		aliases:           []string{"debug", "ds"},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: true,
@@ -449,27 +472,6 @@ var AllCommands = []Command{
 			Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 		},
 		aliases:           []string{"ascii"},
-		secret:            true,
-		adminSetting:      false,
-		permissionSetting: false,
-	},
-	{
-		cmdType: Stats,
-		command: "sstats", //TODO wrong name while I still work on the command...
-		example: "stats @Soup",
-		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.shortDesc",
-			Other: "",
-		},
-		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.desc",
-			Other: "",
-		},
-		args: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.args",
-			Other: "",
-		},
-		aliases:           []string{""},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: false,
@@ -912,7 +914,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case Info:
 			embed := bot.infoResponse(sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			_, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			if err != nil {
+				log.Println(err)
+			}
 			break
 
 		case DebugState:
