@@ -106,3 +106,19 @@ other = "Website"
 ["responses.title.GameOver"]
 hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
 other = "**Game Over**"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "User stats for {{.User}}"
+
+["responses.userStatsEmbed.FavoriteColor"]
+hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
+other = "Favorite Color"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Played"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "User Stats"
