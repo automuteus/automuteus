@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -79,9 +80,19 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
+	extraTokens := []string{}
+	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
+	if extraTokenStr != "" {
+		extraTokens = strings.Split(extraTokenStr, ",")
+	}
+
 	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
 	if discordToken2 != "" {
-		log.Println("You provided a 2nd Discord Bot Token, so I'll try to add it to galactus")
+		log.Println("[INFO] DISCORD_BOT_TOKEN_2 is deprecated. Please use WORKER_BOT_TOKENS in the future!")
+		extraTokens = append(extraTokens, discordToken2)
+	}
+	if len(extraTokens) > 0 {
+		log.Printf("You provided %d worker tokens so I'll be sending them to Galactus\n", len(extraTokens))
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
@@ -171,7 +182,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, discordToken2, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	<-sc
 	//bot.GracefulClose()

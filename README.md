@@ -147,8 +147,9 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 
 ### Optional
 
-- `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
-  If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
+- **DEPRECATED** `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
+  **Use the new `WORKER_BOT_TOKENS` variable below, instead!**
+- `WORKER_BOT_TOKENS`: A comma-separated list of extra tokens to be used for mute/deafen.
 - `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
 - `HOST`: The **externally-accessible URL** for Galactus. For example, `http://test.com:8123`.
   This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.

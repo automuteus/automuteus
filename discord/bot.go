@@ -48,7 +48,7 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	Version = version
 	Commit = commit
 
@@ -57,10 +57,11 @@ func MakeAndStartBot(version, commit, token, token2, url, emojiGuildID string, n
 		log.Println("error creating Discord session,", err)
 		return nil
 	}
-	if token2 != "" {
-		err := gc.AddToken(token2)
+
+	for _, v := range extraTokens {
+		err := gc.AddToken(v)
 		if err != nil {
-			log.Println("error adding 2nd Discord bot token to galactus: ", err)
+			log.Println("error adding extra bot token to galactus:", err)
 		}
 	}
 
