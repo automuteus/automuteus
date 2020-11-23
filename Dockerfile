@@ -47,7 +47,7 @@ EXPOSE 2112
 
 ENV LOCALE_PATH="/app/locales" \
     LOG_PATH="/app/logs"
-VOLUME ["/app/locales", "/app/logs"]
+VOLUME ["/app/logs"]
 
 # Run the compiled binary.
 ENTRYPOINT ["./app"]

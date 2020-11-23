@@ -62,7 +62,7 @@ func (psqlInterface *PsqlInterface) insertGuild(guildID, guildName string) error
 	return err
 }
 
-func (psqlInterface *PsqlInterface) GetGuild(guildID string) (*PostgresGuild, error) {
+func (psqlInterface *PsqlInterface) getGuild(guildID string) (*PostgresGuild, error) {
 	guilds := []*PostgresGuild{}
 	err := pgxscan.Select(context.Background(), psqlInterface.pool, &guilds, "SELECT * FROM guilds WHERE guild_id=$1", guildID)
 	if err != nil {
@@ -98,7 +98,7 @@ func (psqlInterface *PsqlInterface) GetUser(userID string) (*PostgresUser, error
 	return nil, nil
 }
 
-func (psqlInterface *PsqlInterface) GetGuildUser(guildID, hashedID string) (*PostgresGuildUser, error) {
+func (psqlInterface *PsqlInterface) getGuildUser(guildID, hashedID string) (*PostgresGuildUser, error) {
 	users := []*PostgresGuildUser{}
 	err := pgxscan.Select(context.Background(), psqlInterface.pool, &users, "SELECT * FROM guilds_users WHERE guild_id=$1 AND hashed_user_id=$2", guildID, hashedID)
 	if err != nil {
@@ -137,7 +137,7 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 }
 
 func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) string {
-	guild, err := psqlInterface.GetGuild(guildID)
+	guild, err := psqlInterface.getGuild(guildID)
 	if err != nil {
 		return "Free"
 	}
@@ -145,7 +145,7 @@ func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) string
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID, guildName string) error {
-	guild, _ := psqlInterface.GetGuild(guildID)
+	guild, _ := psqlInterface.getGuild(guildID)
 
 	if guild == nil {
 		err := psqlInterface.insertGuild(guildID, guildName)
@@ -171,13 +171,13 @@ func (psqlInterface *PsqlInterface) EnsureUserExists(userID, hashedID string) er
 	return nil
 }
 
-func (psqlInterface *PsqlInterface) RemoveUser(userID string) error {
+func (psqlInterface *PsqlInterface) RemoveUserMapping(userID string) error {
 	_, err := psqlInterface.pool.Exec(context.Background(), "UPDATE users SET user_id=NULL WHERE user_id=$1", userID)
 	return err
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildUserExists(guildID, hashedID string) error {
-	guild, _ := psqlInterface.GetGuildUser(guildID, hashedID)
+	guild, _ := psqlInterface.getGuildUser(guildID, hashedID)
 
 	if guild == nil {
 		err := psqlInterface.insertGuildUser(guildID, hashedID)

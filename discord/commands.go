@@ -849,7 +849,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						map[string]interface{}{
 							"User": "<@!" + m.Author.ID + ">",
 						}))
-					err = bot.PostgresInterface.RemoveUser(m.Author.ID)
+					err = bot.PostgresInterface.RemoveUserMapping(m.Author.ID)
 					if err != nil {
 						log.Println(err)
 					} else {
