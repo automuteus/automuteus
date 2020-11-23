@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ type MetricsEventType int
 const (
 	Generic MetricsEventType = iota
 	MuteDeafen
-	Nick
 	MessageCreateDelete
 	MessageEdit
 	ReactionAdd
@@ -43,15 +43,7 @@ func NewMetricsCollector() *MetricsCollector {
 	}
 }
 
-func (mc *MetricsCollector) RecordDiscordRequest(requestType MetricsEventType) {
-	t := time.Now().UnixNano()
-
-	mc.lock.Lock()
-	mc.data[t] = requestType
-	mc.lock.Unlock()
-}
-
-func (mc *MetricsCollector) RecordDiscordRequests(requestType MetricsEventType, num int64) {
+func (mc *MetricsCollector) RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
 	t := time.Now().UnixNano()
 
 	mc.lock.Lock()
@@ -60,6 +52,7 @@ func (mc *MetricsCollector) RecordDiscordRequests(requestType MetricsEventType, 
 	}
 
 	mc.lock.Unlock()
+	go incrementDiscordRequests(client, num)
 }
 
 func (mc *MetricsCollector) TotalRequestCountInTimeFiltered(timeBack time.Duration, filter MetricsEventType) int64 {

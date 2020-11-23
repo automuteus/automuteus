@@ -89,9 +89,8 @@ The Discord Bot uses the `.au` prefix for any commands
 | `.au end`      | `.au e` | None        | End the game entirely, and stop tracking players. Unmutes all and resets state                                  |                                    |
 | `.au unlink`   | `.au u` | @name       | Manually unlink a player                                                                                        | `.au u @player`                    |
 | `.au settings` | `.au s` |             | View and change settings for the bot, such as the command prefix or mute behavior                               |                                    |
-| `.au force`    | `.au f` | stage       | Force a transition to a stage if you encounter a problem in the state                                           | `.au f task` or `.au f d`(discuss) |
-| `.au pause`    | `.au p` |             | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
-| `.au log`      |         | message     | Issue a small log message that will help you find the message later, if a problem occurs                        | `.au log Something bad happened`   |
+| `.au pause`    | `.au p` | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
+| `.au info`     | `.au i` | None        | View general info about the Bot                                                                                 |                                    |
 
 _In addition to handful of more secretive Easter Egg commands..._
 
@@ -118,7 +117,7 @@ Now follow any of the specific hosting options provided below:
 
 Docker compose is the simplest and recommended method for self-hosting AutoMuteUs, but it does require an existing physical machine or VPS to run on.
 
-There is a `docker-compose.yml` file in this repository that will provide all the consituent components to run AutoMuteUs.
+There is a `docker-compose.yml` file in this repository that will provide all the constituent components to run AutoMuteUs.
 
 ### Steps:
 
@@ -142,16 +141,20 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
 - `REDIS_ADDR`: The host and port at which your Redis database instance is accessible. Ex: `192.168.1.42:6379`
+- `POSTGRES_ADDR`: Address (host:port) at which Postgres is accessible. Used by automuteus to store game statistics.
+- `POSTGRES_USER`: Username for authentication with Postgres.
+- `POSTGRES_PASS`: Password for authentication with Postgres.
 
 ### Optional
 
-- `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
-  If you play in larger groups of 8+ people, this is recommended to not be rate-limited (delayed) by Discord when rounds change!
+- **DEPRECATED** `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
+  **Use the new `WORKER_BOT_TOKENS` variable below, instead!**
+- `WORKER_BOT_TOKENS`: A comma-separated list of extra tokens to be used for mute/deafen.
 - `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
 - `HOST`: The **externally-accessible URL** for Galactus. For example, `http://test.com:8123`.
   This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.
   **You must specify `http://` or `https://` accordingly, and specify the port if non-8123. For example, `https://your-app.herokuapp.com:443`**
-- `SERVICE_PORT`: Port used for graceful shutdowns and stats via HTTP GET. Defaults to 5000
+- `LOCALE_PATH`: Path to localization files.
 - `LOG_PATH`: Filesystem path for log files. Defaults to `./`
 - `CAPTURE_TIMEOUT`: How many seconds of no capture events received before the Bot will terminate the associated game/connection. Defaults to 36000 seconds.
 - `REDIS_PASS`: Your Redis database password, if necessary.

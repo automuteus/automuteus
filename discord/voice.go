@@ -3,15 +3,13 @@ package discord
 import (
 	"container/heap"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
-	"os"
 	"sync"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 )
 
 type HandlePriority int
@@ -49,27 +47,25 @@ func (h *PatchPriority) Pop() interface{} {
 }
 
 func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
-	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	log.Println("Forcibly applying mute/deaf to " + userID)
+	//userData, _ := dgs.checkCacheAndAddUser(g, bot.PrimarySession.GetPrimarySession(), userID)
+	//params := UserPatchParameters{
+	//	GuildID:  dgs.GuildID,
+	//	Userdata: userData,
+	//	Deaf:     deaf,
+	//	Mute:     mute,
+	//	Nick:     "",
+	//}
+	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
+	err := bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userID, mute, deaf)
 	if err != nil {
 		log.Println(err)
-		return
 	}
-	log.Println("Forcibly applying mute/deaf to " + userID)
-	userData, _ := dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), userID)
-	params := UserPatchParameters{
-		GuildID:  dgs.GuildID,
-		Userdata: userData,
-		Deaf:     deaf,
-		Mute:     mute,
-		Nick:     "",
-	}
-	bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-	go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
-	go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+	//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 }
 
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
-	g, err := bot.SessionManager.GetPrimarySession().State.Guild(dgs.GuildID)
+	g, err := bot.PrimarySession.State.Guild(dgs.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -80,7 +76,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, bot.SessionManager.GetPrimarySession(), voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -94,29 +90,32 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 
 		if tracked {
 			log.Println("Forcibly applying mute/deaf to " + userData.User.UserID)
-			params := UserPatchParameters{
-				GuildID:  dgs.GuildID,
-				Userdata: userData,
-				Deaf:     deaf,
-				Mute:     mute,
-				Nick:     "",
+			//params := UserPatchParameters{
+			//	GuildID:  dgs.GuildID,
+			//	Userdata: userData,
+			//	Deaf:     deaf,
+			//	Mute:     mute,
+			//	Nick:     "",
+			//}
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
+			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, userData.User.UserID, mute, deaf)
+			if err != nil {
+				log.Println(err)
 			}
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
-			go guildMemberUpdate(bot.SessionManager.GetSessionForRequest(dgs.GuildID), params)
+			//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 		}
 	}
 }
 
 //handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		return
 	}
 
-	g, err := sm.GetPrimarySession().State.Guild(dgs.GuildID)
+	g, err := sess.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
 		lock.Release(ctx)
@@ -131,7 +130,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		if err != nil {
 			//the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, sm.GetPrimarySession(), voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -144,17 +143,17 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 		tracked = tracked && (linked || userData.GetPlayerName() == game.SpectatorPlayerName)
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 
-		nick := userData.GetPlayerName()
-		if !sett.GetApplyNicknames() {
-			nick = ""
-		}
+		//nick := userData.GetPlayerName()
+		//if !sett.GetApplyNicknames() {
+		//	nick = ""
+		//}
 
 		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
 
 		//only issue a change if the User isn't in the right state already
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
-		if linked && (incorrectMuteDeafenState || (nick != "" && userData.GetNickName() != userData.GetPlayerName())) {
+		if linked && incorrectMuteDeafenState {
 			priority := 0
 
 			if handlePriority != NoPriority {
@@ -165,7 +164,7 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 				}
 			}
 
-			params := UserPatchParameters{dgs.GuildID, userData, shouldDeaf, shouldMute, nick}
+			params := UserPatchParameters{dgs.GuildID, userData, shouldDeaf, shouldMute}
 
 			heap.Push(priorityQueue, PrioritizedPatchParams{
 				priority:    priority,
@@ -205,22 +204,28 @@ func (bot *Bot) handleTrackedMembers(sm *SessionManager, sett *storage.GuildSett
 
 		p.patchParams.Userdata.SetShouldBeMuteDeaf(p.patchParams.Mute, p.patchParams.Deaf)
 
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		dgs.UpdateUserData(p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
-		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		//TODO could be a race condition?
+		go bot.updateInBackground(gsr, p.patchParams.Userdata.GetID(), p.patchParams.Userdata)
 
 		if dgs.Running {
 			wg.Add(1)
-			bot.MetricsCollector.RecordDiscordRequest(metrics.MuteDeafen)
-			go metrics.IncrementDiscordRequests(bot.RedisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 			//we can issue mutes/deafens from ANY session, not just the primary
-			go muteWorker(sm.GetSessionForRequest(p.patchParams.GuildID), &wg, p.patchParams)
+			err = bot.GalactusClient.ModifyUser(dgs.GuildID, dgs.ConnectCode, p.patchParams.Userdata.GetID(), p.patchParams.Mute, p.patchParams.Deaf)
+			if err != nil {
+				log.Println(err)
+			}
+			wg.Done()
 		}
 	}
 	wg.Wait()
 }
 
-func muteWorker(s *discordgo.Session, wg *sync.WaitGroup, parameters UserPatchParameters) {
-	guildMemberUpdate(s, parameters)
-	wg.Done()
+func (bot *Bot) updateInBackground(gsr GameStateRequest, userID string, data UserData) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	}
+	dgs.UpdateUserData(userID, data)
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 }

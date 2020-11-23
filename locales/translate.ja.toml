@@ -1,0 +1,163 @@
+["commands.AllCommands.Info.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["commands.AllCommands.Info.desc"]
+hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
+other = "View info about the bot, like total guild number, active games, etc"
+
+["commands.AllCommands.Info.shortDesc"]
+hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
+other = "View Bot info"
+
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "View all the features and perks of Premium AutoMuteUs membership"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "View Premium Bot Features"
+
+["commands.AllCommands.Stats.args"]
+hash = "sha1-b0874199cebf2c8a48cd712a3044b3d7a7eba111"
+other = "<@discord user>"
+
+["commands.AllCommands.Stats.desc"]
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "View Player and Guild stats"
+
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-bfac4dcf6b92a6abd16d2c61f8c70f613ace171b"
+other = "View Stats"
+
+["commands.HandleCommand.ForgetMe.Success"]
+hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
+other = "✅ {{.User}} I successfully deleted your cached player names"
+
+["commands.HandleCommand.ForgetMe.SuccessDB"]
+hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
+other = "✅ {{.User}} I successfully deleted the link to your anonymized UserID"
+
+["commands.HandleCommand.ShowMe.cachedNames"]
+hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
+other = "❗ {{.User}} Here's your cached in-game names:"
+
+["commands.HandleCommand.ShowMe.emptyCachedNames"]
+hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
+other = "❌ {{.User}} I don't have any cached player names stored for you!"
+
+["commands.HandleCommand.ShowMe.linkedID"]
+hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
+other = "❗ {{.User}} I am storing a link between your Discord UserID and an anonymized ID (for game statistics)"
+
+["commands.HandleCommand.ShowMe.unlinkedID"]
+hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
+other = "❌ {{.User}} I am not storing a link to your Discord UserID"
+
+["message_handlers.generalRateLimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}, you're issuing commands too fast! Please slow down!"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-4a5c5a538debb3cc3b66c642930a3a3faadc8e2f"
+other = "Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes."
+
+["message_handlers.handleNewGameMessage.specificRatelimit"]
+hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
+other = "You're creating games too fast! Please slow down!"
+
+["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
+hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
+other = "{{.User}}, you're reacting too fast! Please slow down!"
+
+["message_handlers.softban"]
+hash = "sha1-b374e897081fb088a6c5692429c2376c7fe88ad1"
+other = "I'm ignoring {{.User}} for the next 5 minutes, stop spamming"
+
+["responses.lobbyMetaEmbedFields.Tracking"]
+hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
+other = "Tracking"
+
+["responses.makeDescription.GameNotRunning"]
+hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
+other = "\\n⚠ **Bot is Paused!** ⚠\\n\\n"
+
+["responses.menuMessage.notLinked.Description"]
+hash = "sha1-52fb23b8d8ddf97674501c964653128b00643fa1"
+other = "❌ **No capture linked! Click the link in your DMs to connect!** ❌"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-e88df52a7f98838f657751621daebf15fb596c95"
+other = "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
+other = "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs Premium 💎"
+
+["responses.statsResponse.BotInfo"]
+hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
+other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
+
+["responses.statsResponse.Creator"]
+hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
+other = "Creator"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
+other = "Donate"
+
+["responses.statsResponse.Invite"]
+hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
+other = "Invite"
+
+["responses.statsResponse.Library"]
+hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
+other = "Library"
+
+["responses.statsResponse.Title"]
+hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
+other = "Bot Info"
+
+["responses.statsResponse.Website"]
+hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
+other = "Website"
+
+["responses.title.GameOver"]
+hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
+other = "**Game Over**"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "User stats for {{.User}}"
+
+["responses.userStatsEmbed.FavoriteColor"]
+hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
+other = "Favorite Color"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Played"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "User Stats"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "Reset all bot settings to their default values"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "Reset Bot Settings"

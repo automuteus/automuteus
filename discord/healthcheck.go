@@ -1,11 +1,9 @@
 package discord
 
 import (
-	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"os"
 )
 
 func StartHealthCheckServer(port string) {
@@ -32,16 +30,19 @@ func StartHealthCheckServer(port string) {
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
-			orgId := os.Getenv("SCW_ORGANIZATION_ID")
-			accessKey := os.Getenv("SCW_ACCESS_KEY")
-			secretKey := os.Getenv("SCW_SECRET_KEY")
-			nodeID := os.Getenv("SCW_NODE_ID")
-			if orgId == "" || accessKey == "" || secretKey == "" || nodeID == "" {
-				log.Println("One of the Scaleway credentials was null, not replacing any nodes!")
-				return
-			}
-
-			metrics.TerminateScalewayNode(orgId, accessKey, secretKey, nodeID)
+			w.WriteHeader(http.StatusTooManyRequests)
+			log.Println("I'M BEING RATE-LIMITED BY DISCORD")
+			return
+			//orgId := os.Getenv("SCW_ORGANIZATION_ID")
+			//accessKey := os.Getenv("SCW_ACCESS_KEY")
+			//secretKey := os.Getenv("SCW_SECRET_KEY")
+			//nodeID := os.Getenv("SCW_NODE_ID")
+			//if orgId == "" || accessKey == "" || secretKey == "" || nodeID == "" {
+			//	log.Println("One of the Scaleway credentials was null, not replacing any nodes!")
+			//	return
+			//}
+			//
+			//metrics.TerminateScalewayNode(orgId, accessKey, secretKey, nodeID)
 		}
 	})
 

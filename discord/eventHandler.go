@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/denverquane/amongusdiscord/metrics"
 	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/automuteus/galactus/broker"
-	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 )
@@ -60,6 +60,23 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				log.Println("Popped job w/ payload " + job.Payload.(string))
 				bot.refreshGameLiveness(connectCode)
 				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
+				if job.JobType != broker.Connection {
+					go func() {
+						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
+						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
+							gameEvent := storage.PostgresGameEvent{
+								GameID:    dgs.MatchID,
+								EventTime: time.Now().Unix(),
+								EventType: int16(job.JobType),
+								Payload:   job.Payload.(string),
+							}
+							err := bot.PostgresInterface.AddEvent(&gameEvent)
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}()
+				}
 
 				switch job.JobType {
 				case broker.Connection:
@@ -76,9 +93,12 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
 
-					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+					if edited {
+						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					}
 					break
 				case broker.Lobby:
 					var lobby game.Lobby
@@ -89,7 +109,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					bot.processLobby(bot.SessionManager.GetPrimarySession(), sett, lobby, dgsRequest)
+					bot.processLobby(sett, lobby, dgsRequest)
 					break
 				case broker.State:
 					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
@@ -111,7 +131,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					shouldHandleTracked := bot.processPlayer(sett, player, dgsRequest)
 					if shouldHandleTracked {
-						bot.handleTrackedMembers(bot.SessionManager, sett, 0, NoPriority, dgsRequest)
+						bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
 					}
 
 					break
@@ -180,7 +200,10 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 
 			//only update the message if we're not in the tasks phase (info leaks)
 			if dgs.AmongUsData.GetPhase() != game.TASKS {
-				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 
 			return true
@@ -196,7 +219,10 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 					userID = dgs.AttemptPairingByUserIDs(data, uids)
 				}
 
-				dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 				return true
 			} else if updated {
 				userID := dgs.AttemptPairingByMatchingNames(data)
@@ -210,14 +236,20 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
 					log.Println(sett.GetUnmuteDeadDuringTasks())
 					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
-						dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+						edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+						if edited {
+							bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+						}
 						return true
 					} else {
 						log.Println("NOT updating the discord status message; would leak info")
 						return false
 					}
 				} else {
-					dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+					if edited {
+						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					}
 					if player.Action == game.EXILED {
 						return false //don't apply a mute to this player
 					}
@@ -251,12 +283,17 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		dgs.MatchStartUnix = matchStart
 		dgs.MatchID = matchID
 		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
+		go startGameInPostgres(*dgs, bot.PostgresInterface)
 		//if we went to lobby from anywhere else but the menu, assume the game is over
-	} else if phase == game.LOBBY && oldPhase != game.MENU {
-		//TODO process the game's completion and send to Postgres
-		//only process games that actually receive the end-game event from the capture! Might need to start a worker
-		//to listen for this
+	} else if (phase == game.LOBBY || phase == game.MENU) && oldPhase != game.MENU {
 
+		//TODO only process games that actually receive the end-game event from the capture! Might need to start a worker
+		//to listen for this
+		go dumpGameToPostgres(*dgs, bot.PostgresInterface)
+
+		//TODO print the match_id in the chat. Let users pull up the info about that match in particular...
+
+		//set the id and start back to invalid values; we're out of a game now
 		dgs.MatchID = -1
 		dgs.MatchStartUnix = -1
 	}
@@ -264,15 +301,21 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		if edited {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
 		bot.applyToAll(dgs, false, false)
-		//go dgs.RemoveAllReactions(bot.SessionManager.GetPrimarySession())
+		//go dgs.RemoveAllReactions(bot.PrimarySession.GetPrimarySession())
 		break
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.SessionManager, sett, delay, NoPriority, dgsRequest)
+		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
 
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		if edited {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
 
 		break
 	case game.TASKS:
@@ -283,19 +326,25 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			priority = NoPriority
 		}
 
-		bot.handleTrackedMembers(bot.SessionManager, sett, delay, priority, dgsRequest)
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, priority, dgsRequest)
+		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		if edited {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
 		break
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.SessionManager, sett, delay, DeadPriority, dgsRequest)
+		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, DeadPriority, dgsRequest)
 
-		dgs.Edit(bot.SessionManager.GetPrimarySession(), bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		if edited {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
 		break
 	}
 }
 
-func (bot *Bot) processLobby(s *discordgo.Session, sett *storage.GuildSettings, lobby game.Lobby, dgsRequest GameStateRequest) {
+func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsRequest GameStateRequest) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	if lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
@@ -303,5 +352,68 @@ func (bot *Bot) processLobby(s *discordgo.Session, sett *storage.GuildSettings, 
 	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	dgs.Edit(s, bot.gameStateResponse(dgs, sett), bot.MetricsCollector, bot.RedisInterface)
+	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+	if edited {
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+	}
+}
+
+func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
+	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		return
+	}
+	pgame := &storage.PostgresGame{
+		GameID:      dgs.MatchID,
+		ConnectCode: dgs.ConnectCode,
+		StartTime:   dgs.MatchStartUnix,
+		WinType:     -1,
+		EndTime:     -1,
+	}
+	err := psql.AddInitialGame(dgs.GuildID, pgame)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
+	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		return
+	}
+	end := time.Now().Unix()
+
+	userGames := make([]*storage.PostgresUserGame, 0)
+	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
+
+	for _, v := range dgs.UserData {
+		if v.GetPlayerName() != game.UnlinkedPlayerName {
+			hashed := storage.HashUserID(v.User.UserID)
+			inGameData, found := dgs.AmongUsData.GetByName(v.GetUserName())
+			if !found {
+				continue
+			}
+			err := psql.EnsureUserExists(v.User.UserID, string(hashed))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			err = psql.EnsureGuildUserExists(dgs.GuildID, string(hashed))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			userGames = append(userGames, &storage.PostgresUserGame{
+				HashedUserID: string(hashed),
+				GameID:       dgs.MatchID,
+				PlayerName:   v.GetUserName(),
+				PlayerColor:  int16(inGameData.Color),
+				//TODO once we have this data, add it
+				PlayerRole: "",
+			})
+		}
+	}
+
+	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(dgs.GameResult), end, userGames)
+	if err != nil {
+		log.Println(err)
+	}
 }

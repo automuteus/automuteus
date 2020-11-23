@@ -38,7 +38,9 @@ func (dgs *DiscordGameState) AttemptPairingByMatchingNames(data game.PlayerData)
 }
 
 func (dgs *DiscordGameState) UpdateUserData(userID string, data UserData) {
-	dgs.UserData[userID] = data
+	if dgs.UserData != nil {
+		dgs.UserData[userID] = data
+	}
 }
 
 func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs map[string]interface{}) string {

@@ -19,6 +19,8 @@ services:
       # These are required and will fail if not present
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
       - HOST=${GALACTUS_HOST:?err}
+      - POSTGRES_USER=${POSTGRES_USER:?err}
+      - POSTGRES_PASS=${POSTGRES_PASS:?err}
 
       # These Variables are optional
       - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2:-}
@@ -28,9 +30,11 @@ services:
       # Do **NOT** change this
       - REDIS_ADDR=${AUTOMUTEUS_REDIS_ADDR}
       - GALACTUS_ADDR=${GALACTUS_ADDR}
+      - POSTGRES_ADDR=${POSTGRES_ADDR}
     depends_on:
       - redis
       - galactus
+      - postgres
     volumes:
       - "bot-logs:/app/logs"
   galactus:
@@ -41,6 +45,7 @@ services:
     restart: always
     environment:
       # Do **NOT** change these
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
       - BROKER_PORT=${BROKER_PORT}
       - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
       - GALACTUS_PORT=${GALACTUS_PORT}
@@ -53,6 +58,16 @@ services:
     volumes:
       - "redis-data:/data"
 
+  postgres:
+    image: postgres:12
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+
 volumes:
   bot-logs:
   redis-data:
+  postgres-data:

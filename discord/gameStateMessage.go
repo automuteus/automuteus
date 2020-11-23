@@ -1,8 +1,6 @@
 package discord
 
 import (
-	"github.com/denverquane/amongusdiscord/metrics"
-	"os"
 	"sync"
 	"time"
 
@@ -61,19 +59,23 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
+//Note this is not a pointer; we never expect the underlying DGS to change on an edit
+func (dgs DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
+	newEdit := false
 	DeferredEditsLock.Lock()
 
-	//if it isn't found, then start the worker to wait to start it
+	//if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
-		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, metricsCollector, redisInterface)
+		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		newEdit = true
 	}
 	//whether or not it's found, replace the contents with the new message
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
+	return newEdit
 }
 
-func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metricsCollector *metrics.MetricsCollector, redisInterface *RedisInterface) {
+func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
@@ -84,8 +86,6 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string, metri
 	if me != nil {
 		editMessageEmbed(s, channelID, messageID, me)
 	}
-	metricsCollector.RecordDiscordRequest(metrics.MessageEdit)
-	go metrics.IncrementDiscordRequests(redisInterface.client, os.Getenv("SCW_NODE_ID"), 1)
 }
 
 func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {

@@ -19,10 +19,8 @@ const LinearBackoffMs = 100
 const MaxRetries = 10
 const SnowflakeLockMs = 3000
 
-const SecsPerHour = 3600
-
-//10 minute threshold for games to not be loaded up
-const StaleGameThresholdSec = 600
+//15 minute timeout
+const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
 	client *redis.Client
@@ -212,7 +210,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 	}
 
 	//log.Printf("Setting %s to JSON", key)
-	err = redisInterface.client.Set(ctx, key, jBytes, SecsPerHour*time.Second).Err()
+	err = redisInterface.client.Set(ctx, key, jBytes, GameTimeoutSeconds*time.Second).Err()
 	if err != nil {
 		log.Println(err)
 	}
@@ -224,7 +222,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.ConnectCode != "" {
 		//log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
-		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, SecsPerHour*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -232,7 +230,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.Tracking.ChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, SecsPerHour*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -240,7 +238,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 	if data.GameStateMsg.MessageChannelID != "" {
 		//log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, SecsPerHour*time.Second).Err()
+		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -273,7 +271,7 @@ func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string)
 func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []string {
 	hash := activeGamesKey(guildID)
 
-	before := time.Now().Add(-time.Second * StaleGameThresholdSec).Unix()
+	before := time.Now().Add(-time.Second * GameTimeoutSeconds).Unix()
 
 	games, err := redisInterface.client.ZRangeByScore(ctx, hash, &redis.ZRangeBy{
 		Min:    fmt.Sprintf("%d", before),

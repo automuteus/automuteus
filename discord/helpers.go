@@ -19,45 +19,6 @@ type UserPatchParameters struct {
 	Userdata UserData
 	Deaf     bool
 	Mute     bool
-	Nick     string
-}
-
-func guildMemberUpdate(s *discordgo.Session, params UserPatchParameters) {
-	g, err := s.Guild(params.GuildID)
-	if err != nil {
-		log.Println(err)
-	}
-
-	//we can't nickname the owner, and we shouldn't nickname with an empty string...
-	if params.Nick == "" || g.OwnerID == params.Userdata.GetID() {
-		guildMemberUpdateNoNick(s, params)
-	} else {
-		newParams := struct {
-			Deaf bool   `json:"deaf"`
-			Mute bool   `json:"mute"`
-			Nick string `json:"nick"`
-		}{params.Deaf, params.Mute, params.Nick}
-		log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v Nick=%s\n", params.Userdata.GetID(), params.Mute, params.Deaf, params.Nick)
-
-		_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
-		if err != nil {
-			log.Println("Failed to change nickname for User: move the bot up in your Roles")
-			log.Println(err)
-			guildMemberUpdateNoNick(s, params)
-		}
-	}
-}
-
-func guildMemberUpdateNoNick(s *discordgo.Session, params UserPatchParameters) {
-	log.Printf("Issuing update request to discord for UserID %s with mute=%v deaf=%v\n", params.Userdata.GetID(), params.Mute, params.Deaf)
-	newParams := struct {
-		Deaf bool `json:"deaf"`
-		Mute bool `json:"mute"`
-	}{params.Deaf, params.Mute}
-	_, err := s.RequestWithBucketID("PATCH", discordgo.EndpointGuildMember(params.GuildID, params.Userdata.GetID()), newParams, discordgo.EndpointGuildMember(params.GuildID, ""))
-	if err != nil {
-		log.Println(err)
-	}
 }
 
 func getPhaseFromString(input string) game.Phase {
