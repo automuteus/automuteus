@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"strconv"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
+
+const MaxDebugMessageSize = 1980
 
 type CommandType int
 
@@ -32,9 +35,11 @@ const (
 	Cache
 	ShowMe
 	ForgetMe
-	Stats
+	Info
 	DebugState
 	Ascii
+	Stats
+	Premium
 	Null
 )
 
@@ -92,7 +97,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.New.args",
 			Other: "None",
 		},
-		aliases:           []string{"n"},
+		aliases:           []string{"start", "n"},
 		secret:            false,
 		emoji:             "🕹",
 		adminSetting:      false,
@@ -114,7 +119,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.End.args",
 			Other: "None",
 		},
-		aliases:           []string{"e"},
+		aliases:           []string{"stop", "e"},
 		secret:            false,
 		emoji:             "🛑",
 		adminSetting:      false,
@@ -158,7 +163,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Refresh.args",
 			Other: "None",
 		},
-		aliases:           []string{"r"},
+		aliases:           []string{"reload", "r"},
 		secret:            false,
 		emoji:             "♻",
 		adminSetting:      false,
@@ -202,7 +207,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Unlink.args",
 			Other: "<discord User>",
 		},
-		aliases:           []string{"u"},
+		aliases:           []string{"u", "ul"},
 		secret:            false,
 		emoji:             "🚷",
 		adminSetting:      false,
@@ -269,10 +274,33 @@ var AllCommands = []Command{
 			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
 		},
 		aliases:           []string{"f"},
-		secret:            false,
+		secret:            true, //force is broken rn, so hide it
 		emoji:             "📢",
 		adminSetting:      false,
 		permissionSetting: true,
+	},
+	//place above settings so this is checked first
+	{
+		cmdType: Stats,
+		command: "stats",
+		example: "stats @Soup",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.shortDesc",
+			Other: "",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.desc",
+			Other: "",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Stats.args",
+			Other: "",
+		},
+		aliases:           []string{"stat"},
+		secret:            true,
+		emoji:             "📊",
+		adminSetting:      false,
+		permissionSetting: false,
 	},
 	{
 		cmdType: Settings,
@@ -292,7 +320,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"s"},
 		secret:            false,
-		emoji:             "⚙",
+		emoji:             "🛠",
 		adminSetting:      true,
 		permissionSetting: true,
 	},
@@ -313,7 +341,7 @@ var AllCommands = []Command{
 			Other: "<message>",
 		},
 		aliases:           []string{"log"},
-		secret:            false,
+		secret:            true,
 		emoji:             "⁉",
 		adminSetting:      false,
 		permissionSetting: true,
@@ -334,7 +362,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Cache.args",
 			Other: "<player> (optionally, \"clear\")",
 		},
-		aliases:           []string{"cache"},
+		aliases:           []string{"c"},
 		secret:            false,
 		emoji:             "📖",
 		adminSetting:      false,
@@ -356,7 +384,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.ShowMe.args",
 			Other: "None",
 		},
-		aliases:           []string{"sm"},
+		aliases:           []string{"show", "sm"},
 		secret:            false,
 		emoji:             "🔍",
 		adminSetting:      false,
@@ -378,31 +406,31 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.ForgetMe.args",
 			Other: "None",
 		},
-		aliases:           []string{"fm"},
+		aliases:           []string{"forget", "fm"},
 		secret:            false,
-		emoji:             "🗑",
+		emoji:             "\U0001F9E8",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
 	{
-		cmdType: Stats,
-		command: "stats",
-		example: "stats",
+		cmdType: Info,
+		command: "info",
+		example: "info",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.shortDesc",
-			Other: "View Bot stats",
+			ID:    "commands.AllCommands.Info.shortDesc",
+			Other: "View Bot info",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.desc",
-			Other: "View stats about the bot, like total guild number, active games, etc",
+			ID:    "commands.AllCommands.Info.desc",
+			Other: "View info about the bot, like total guild number, active games, etc",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.args",
+			ID:    "commands.AllCommands.Info.args",
 			Other: "None",
 		},
-		aliases:           []string{"stats", "info"},
+		aliases:           []string{"info", "i"},
 		secret:            false,
-		emoji:             "📊",
+		emoji:             "📰",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -422,7 +450,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"ds"},
+		aliases:           []string{"debug", "ds", "state"},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: true,
@@ -443,8 +471,30 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Ascii.args",
 			Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 		},
-		aliases:           []string{"ascii"},
+		aliases:           []string{"ascii", "asc"},
 		secret:            true,
+		adminSetting:      false,
+		permissionSetting: false,
+	},
+	{
+		cmdType: Premium,
+		command: "premium",
+		example: "premium",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.shortDesc",
+			Other: "View Premium Bot Features",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.desc",
+			Other: "View all the features and perks of Premium AutoMuteUs membership",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.args",
+			Other: "None",
+		},
+		aliases:           []string{"donate", "prem"},
+		secret:            true,
+		emoji:             "💎",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -514,18 +564,12 @@ func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSet
 func GetCommand(arg string) Command {
 	arg = strings.ToLower(arg)
 	for _, cmd := range AllCommands {
-		if len(arg) == 1 {
-			if cmd.cmdType != Null && cmd.command[0] == arg[0] {
-				return cmd
-			}
+		if arg == cmd.command {
+			return cmd
 		} else {
-			if arg == cmd.command {
-				return cmd
-			} else {
-				for _, al := range cmd.aliases {
-					if arg == al {
-						return cmd
-					}
+			for _, al := range cmd.aliases {
+				if arg == al {
+					return cmd
 				}
 			}
 		}
@@ -558,6 +602,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			Other: "User does not have the required permissions to execute this command!",
 		}))
 	} else {
+		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
+		//Very approximately, at least
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+
 		switch cmd.cmdType {
 		case Help:
 			if len(args[1:]) == 0 {
@@ -594,8 +642,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			bot.applyToAll(dgs, false, false)
 
-			deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-
 			break
 
 		case Pause:
@@ -610,7 +656,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.applyToAll(dgs, false, false)
 			}
 
-			dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+			edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+			if edited {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			}
 			break
 
 		case Refresh:
@@ -624,13 +673,14 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, dgs.GameStateMsg.LeaderID)
 
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-			//add the emojis to the refreshed message if in the right stage
-			if dgs.AmongUsData.GetPhase() != game.MENU {
-				for _, e := range bot.StatusEmojis[true] {
-					dgs.AddReaction(s, e.FormatForReaction())
-				}
-				dgs.AddReaction(s, "❌")
-			}
+			//add the emojis to the refreshed message
+
+			//TODO well this is a little ugly
+			//+12 emojis, 1 for X, and another two the message delete/create
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+
+			go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 			break
 
 		case Link:
@@ -645,7 +695,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.linkPlayer(s, dgs, args[1:])
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 			break
 
@@ -669,7 +722,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					//update the state message to reflect the player leaving
-					dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					if edited {
+						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					}
 				}
 			}
 			break
@@ -693,7 +749,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				dgs.trackChannel(channelName, channels, sett)
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				if edited {
+					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				}
 			}
 			break
 		case UnmuteAll:
@@ -759,6 +818,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							buf.WriteString(fmt.Sprintf("%s\n", n))
 						}
 						buf.WriteString("```")
+
 						s.ChannelMessageSend(m.ChannelID, buf.String())
 					}
 				} else if strings.ToLower(args[2]) == "clear" || strings.ToLower(args[2]) == "c" {
@@ -773,6 +833,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 				}
 			}
+			break
 
 		case ShowMe:
 			if m.Author != nil {
@@ -780,12 +841,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				if len(cached) == 0 {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
-						Other: "I don't have any cached player names stored for you!",
+						Other: "❌ {{.User}} I don't have any cached player names stored for you!",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
 					}))
 				} else {
 					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.cachedNames",
-						Other: "Here's your cached in-game names:",
+						Other: "❗ {{.User}} Here's your cached in-game names:",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
 					})))
 					buf.WriteString("\n```\n")
 					for n := range cached {
@@ -793,6 +858,22 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 					buf.WriteString("```")
 					s.ChannelMessageSend(m.ChannelID, buf.String())
+				}
+				user, _ := bot.PostgresInterface.GetUser(m.Author.ID)
+				if user != nil {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ShowMe.linkedID",
+						Other: "❗ {{.User}} I am storing a link between your Discord UserID and an anonymized ID (for game statistics)",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
+				} else {
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.ShowMe.unlinkedID",
+						Other: "❌ {{.User}} I am not storing a link to your Discord UserID",
+					}, map[string]interface{}{
+						"User": "<@!" + m.Author.ID + ">",
+					}))
 				}
 			}
 			break
@@ -804,19 +885,32 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				} else {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ForgetMe.Success",
-						Other: "Successfully deleted all player data for <@{{.AuthorID}}>",
+						Other: "✅ {{.User}} I successfully deleted your cached player names",
 					},
 						map[string]interface{}{
-							"AuthorID": m.Author.ID,
+							"User": "<@!" + m.Author.ID + ">",
 						}))
+					err = bot.PostgresInterface.RemoveUserMapping(m.Author.ID)
+					if err != nil {
+						log.Println(err)
+					} else {
+						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.HandleCommand.ForgetMe.SuccessDB",
+							Other: "✅ {{.User}} I successfully deleted the link to your anonymized UserID",
+						},
+							map[string]interface{}{
+								"User": "<@!" + m.Author.ID + ">",
+							}))
+					}
 				}
 			}
 			break
 
-		case Stats:
-			if m.Author != nil {
-				embed := bot.statsResponse(sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+		case Info:
+			embed := bot.infoResponse(sett)
+			_, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			if err != nil {
+				log.Println(err)
 			}
 			break
 
@@ -825,14 +919,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 				if state != nil {
 					jBytes, err := json.MarshalIndent(state, "", "  ")
-					if len(jBytes) > 1980 {
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s", jBytes[0:1980]))
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s\n```", jBytes[1980:]))
+					if err != nil {
+						log.Println(err)
 					} else {
-						if err != nil {
-							log.Println(err)
+						for i := 0; i < len(jBytes); i += MaxDebugMessageSize {
+							end := i + MaxDebugMessageSize
+							if end > len(jBytes) {
+								end = len(jBytes)
+							}
+							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
 						}
-						s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 					}
 				}
 			}
@@ -862,6 +958,24 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 			}
 			break
+		case Stats:
+			if len(args[1:]) == 0 {
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			} else {
+				userID, err := extractUserIDFromMention(args[1])
+				if userID == "" || err != nil {
+					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+				} else {
+					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, sett))
+				}
+
+			}
+			break
+		case Premium:
+			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.default",
@@ -873,5 +987,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 		}
 	}
+
 	deleteMessage(s, m.ChannelID, m.Message.ID)
 }

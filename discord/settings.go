@@ -19,15 +19,14 @@ type SettingType int
 
 const (
 	Prefix SettingType = iota
-	TrackedChannel
 	Language
 	AdminUserIDs
 	RoleIDs
-	Nicknames
 	UnmuteDead
 	Delays
 	VoiceRules
 	Show
+	Reset
 	NullSetting
 )
 
@@ -59,24 +58,6 @@ var AllSettings = []Setting{
 			Other: "<prefix>",
 		},
 		aliases: []string{"prefix", "cp"},
-	},
-	{
-		settingType: TrackedChannel,
-		name:        "defaultTrackedChannel",
-		example:     "defaultTrackedChannel Among Us Voice",
-		shortDesc: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.shortDesc",
-			Other: "Default tracked voice channel",
-		},
-		desc: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.desc",
-			Other: "Change the default tracked voice channel",
-		},
-		args: &i18n.Message{
-			ID:    "settings.AllSettings.TrackedChannel.args",
-			Other: "<voice channel name>",
-		},
-		aliases: []string{"tracked", "channel", "vc", "dtc"},
 	},
 	{
 		settingType: Language,
@@ -130,25 +111,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.RoleIDs.args",
 			Other: "<role @ mentions>...",
 		},
-		aliases: []string{"roles", "role", "prid", "pri", "r"},
-	},
-	{
-		settingType: Nicknames,
-		name:        "applyNicknames",
-		example:     "applyNicknames false",
-		shortDesc: &i18n.Message{
-			ID:    "settings.AllSettings.Nicknames.shortDesc",
-			Other: "Bot renames Discord users",
-		},
-		desc: &i18n.Message{
-			ID:    "settings.AllSettings.Nicknames.desc",
-			Other: "Specify if the bot should rename Discord users to match their in-game names or not",
-		},
-		args: &i18n.Message{
-			ID:    "settings.AllSettings.Nicknames.args",
-			Other: "<true/false>",
-		},
-		aliases: []string{"nick", "nicknames", "nickname", "an"},
+		aliases: []string{"operators", "roles", "role", "prid", "pri", "r"},
 	},
 	{
 		settingType: UnmuteDead,
@@ -221,6 +184,24 @@ var AllSettings = []Setting{
 			Other: "None",
 		},
 		aliases: []string{"sh", "s"},
+	},
+	{
+		settingType: Reset,
+		name:        "reset",
+		example:     "reset",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.Reset.shortDesc",
+			Other: "Reset Bot Settings",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.Reset.desc",
+			Other: "Reset all bot settings to their default values",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.Reset.args",
+			Other: "None",
+		},
+		aliases: []string{},
 	},
 }
 
@@ -302,9 +283,6 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	case Prefix:
 		isValid = CommandPrefixSetting(s, m, sett, args)
 		break
-	case TrackedChannel:
-		isValid = SettingDefaultTrackedChannel(s, m, sett, args)
-		break
 	case Language:
 		isValid = SettingLanguage(s, m, sett, args)
 		break
@@ -313,9 +291,6 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		break
 	case RoleIDs:
 		isValid = SettingPermissionRoleIDs(s, m, sett, args)
-		break
-	case Nicknames:
-		isValid = SettingApplyNicknames(s, m, sett, args)
 		break
 	case UnmuteDead:
 		isValid = SettingUnmuteDeadDuringTasks(s, m, sett, args)
@@ -334,6 +309,11 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 		return
+	case Reset:
+		sett = storage.MakeGuildSettings()
+		s.ChannelMessageSend(m.ChannelID, "Resetting guild settings to default values")
+		isValid = true
+		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
@@ -382,65 +362,6 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 
 	sett.SetCommandPrefix(args[2])
 	return true
-}
-
-func SettingDefaultTrackedChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
-	if len(args) == 2 {
-		// give them both command syntax and current voice channel
-		//channelList, _ := s.GuildChannels(m.GuildID)
-		//for _, c := range channelList {
-		//	if c.ID == guild.GetDefaultTrackedChannel() {
-		//		embed := ConstructEmbedForSetting(guild.guildSettings.GetDefaultTrackedChannel(), AllSettings[TrackedChannel])
-		//		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-		//		return false
-		//	}
-		//}
-		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.noDefault",
-			Other: "No default tracked voice channel",
-		}), AllSettings[TrackedChannel], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-		return false
-	}
-
-	// now to find the channel they are referencing
-	channelID := ""
-	channelName := "" // we track name to confirm to the User they selected the right channel
-	channelList, _ := s.GuildChannels(m.GuildID)
-	for _, c := range channelList {
-		// Check if channel is a voice channel
-		if c.Type != discordgo.ChannelTypeGuildVoice {
-			continue
-		}
-		// check if this is the right channel
-		if strings.ToLower(c.Name) == args[2] || c.ID == args[2] {
-			channelID = c.ID
-			channelName = c.Name
-			break
-		}
-	}
-
-	// check if channel was found
-	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.withoutChannelID",
-			Other: "Could not find the voice channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it.",
-		},
-			map[string]interface{}{
-				"channelName": args[2],
-			}))
-		return false
-	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingDefaultTrackedChannel.withChannelName",
-			Other: "Default voice channel changed to `{{.channelName}}`. Use that from now on!",
-		},
-			map[string]interface{}{
-				"channelName": channelName,
-			}))
-		sett.SetDefaultTrackedChannel(channelID)
-		return true
-	}
 }
 
 func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
@@ -655,7 +576,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			if ID == "" {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",
-					Other: "Sorry, I don't know the role `{{.RoleName}}` is. You can pass the role ID, role name or @role",
+					Other: "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role",
 				},
 					map[string]interface{}{
 						"RoleName": roleName,
@@ -692,57 +613,57 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	return true
 }
 
-func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
-	applyNicknames := sett.GetApplyNicknames()
-	if len(args) == 2 {
-		current := "false"
-		if applyNicknames {
-			current = "true"
-		}
-		embed := ConstructEmbedForSetting(current, AllSettings[Nicknames], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-		return false
-	}
-
-	if args[2] == "true" {
-		if applyNicknames {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingApplyNicknames.true_applyNicknames",
-				Other: "It's already true!",
-			}))
-		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingApplyNicknames.true_noApplyNicknames",
-				Other: "I will now rename the players in the voice chat.",
-			}))
-			sett.SetApplyNicknames(true)
-			return true
-		}
-	} else if args[2] == "false" {
-		if applyNicknames {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingApplyNicknames.false_applyNicknames",
-				Other: "I will no longer rename the players in the voice chat.",
-			}))
-			sett.SetApplyNicknames(false)
-			return true
-		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingApplyNicknames.false_noApplyNicknames",
-				Other: "It's already false!",
-			}))
-		}
-	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingApplyNicknames.wrongArg",
-			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
-		},
-			map[string]interface{}{
-				"Arg": args[2],
-			}))
-	}
-	return false
-}
+//func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+//	applyNicknames := sett.GetApplyNicknames()
+//	if len(args) == 2 {
+//		current := "false"
+//		if applyNicknames {
+//			current = "true"
+//		}
+//		embed := ConstructEmbedForSetting(current, AllSettings[Nicknames], sett)
+//		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+//		return false
+//	}
+//
+//	if args[2] == "true" {
+//		if applyNicknames {
+//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "settings.SettingApplyNicknames.true_applyNicknames",
+//				Other: "It's already true!",
+//			}))
+//		} else {
+//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "settings.SettingApplyNicknames.true_noApplyNicknames",
+//				Other: "I will now rename the players in the voice chat.",
+//			}))
+//			sett.SetApplyNicknames(true)
+//			return true
+//		}
+//	} else if args[2] == "false" {
+//		if applyNicknames {
+//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "settings.SettingApplyNicknames.false_applyNicknames",
+//				Other: "I will no longer rename the players in the voice chat.",
+//			}))
+//			sett.SetApplyNicknames(false)
+//			return true
+//		} else {
+//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "settings.SettingApplyNicknames.false_noApplyNicknames",
+//				Other: "It's already false!",
+//			}))
+//		}
+//	} else {
+//		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//			ID:    "settings.SettingApplyNicknames.wrongArg",
+//			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
+//		},
+//			map[string]interface{}{
+//				"Arg": args[2],
+//			}))
+//	}
+//	return false
+//}
 
 func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()

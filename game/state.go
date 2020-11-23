@@ -16,7 +16,7 @@ const (
 	DISCUSS Phase = iota
 	MENU    Phase = iota
 	//VOTING        Phase = iota
-	//GAMEOVER      Phase = iota
+	GAMEOVER      Phase = iota
 	UNINITIALIZED Phase = iota
 )
 
@@ -32,7 +32,7 @@ const (
 	EXILED       PlayerAction = iota
 )
 
-type GameResult int
+type GameResult int16
 
 const (
 	HumansByVote GameResult = iota

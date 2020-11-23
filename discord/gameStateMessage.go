@@ -59,16 +59,20 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-func (dgs *DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) {
+//Note this is not a pointer; we never expect the underlying DGS to change on an edit
+func (dgs DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
+	newEdit := false
 	DeferredEditsLock.Lock()
 
-	//if it isn't found, then start the worker to wait to start it
+	//if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
 		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		newEdit = true
 	}
 	//whether or not it's found, replace the contents with the new message
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
+	return newEdit
 }
 
 func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
