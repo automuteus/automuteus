@@ -59,7 +59,7 @@ services:
       - "redis-data:/data"
 
   postgres:
-    image: postgres:12
+    image: postgres:12-alpine
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
