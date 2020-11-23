@@ -408,7 +408,7 @@ var AllCommands = []Command{
 		},
 		aliases:           []string{"fm"},
 		secret:            false,
-		emoji:             "💣",
+		emoji:             "\U0001F9E8",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
