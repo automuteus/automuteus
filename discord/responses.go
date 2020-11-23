@@ -384,7 +384,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	case game.DISCUSS:
 		color = 10181046 //PURPLE
 	case game.GAMEOVER:
-		color = 15844367 //GOLD
+		color = 12745742 //DARK GOLD
 	default:
 		color = 15158332 //RED
 	}
@@ -438,6 +438,67 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	buf.WriteString(dgs.Tracking.ToDescString(sett))
 
 	return buf.String()
+}
+
+func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	desc := sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.premiumResponse.FreeDescription",
+		Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
+	})
+
+	//TODO localize
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "🙊 Fast Mute/Deafen",
+			Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
+			Inline: false,
+		},
+		{
+			Name:   "📊 Game Stats and Leaderboards",
+			Value:  "Premium users have access to a full suite of player stats and leaderboards!",
+			Inline: false,
+		},
+		{
+			Name:   "👑 Priority Game Access",
+			Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
+			Inline: false,
+		},
+		{
+			Name:   "👂 Premium Support",
+			Value:  "Premium users get access to private channels on our official Discord channel!",
+			Inline: false,
+		},
+	}
+
+	if tier != "Free" {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumResponse.PremiumDescription",
+			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!",
+		},
+			map[string]interface{}{
+				"Tier": tier,
+			})
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:  "https://patreon.com/automuteus",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumResponse.Title",
+			Other: "💎 AutoMuteUs Premium 💎",
+		}),
+		Description: desc,
+		Timestamp:   time.Now().Format(ISO8601),
+		Color:       10181046, //PURPLE
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      fields,
+	}
+	return &msg
 }
 
 func extractUserIDFromMention(mention string) (string, error) {

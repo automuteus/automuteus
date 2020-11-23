@@ -39,6 +39,7 @@ const (
 	DebugState
 	Ascii
 	Stats
+	Premium
 	Null
 )
 
@@ -457,19 +458,41 @@ var AllCommands = []Command{
 		command: "sstats", //TODO wrong name while I still work on the command...
 		example: "stats @Soup",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Ascii.shortDesc",
+			ID:    "commands.AllCommands.Stats.shortDesc",
 			Other: "",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Ascii.desc",
+			ID:    "commands.AllCommands.Stats.desc",
 			Other: "",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.Ascii.args",
+			ID:    "commands.AllCommands.Stats.args",
 			Other: "",
 		},
 		aliases:           []string{""},
 		secret:            true,
+		adminSetting:      false,
+		permissionSetting: false,
+	},
+	{
+		cmdType: Premium,
+		command: "premium",
+		example: "premium",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.shortDesc",
+			Other: "View Premium Bot Features",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.desc",
+			Other: "View all the features and perks of Premium AutoMuteUs membership",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Premium.args",
+			Other: "None",
+		},
+		aliases:           []string{""},
+		secret:            true,
+		emoji:             "💎",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -951,7 +974,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 
 			}
-
+			break
+		case Premium:
+			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
 			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{

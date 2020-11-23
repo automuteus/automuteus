@@ -17,6 +17,30 @@ other = "View info about the bot, like total guild number, active games, etc"
 hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
 other = "View Bot info"
 
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "View all the features and perks of Premium AutoMuteUs membership"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "View Premium Bot Features"
+
+["commands.AllCommands.Stats.args"]
+hash = "sha1-b0874199cebf2c8a48cd712a3044b3d7a7eba111"
+other = "<@discord user>"
+
+["commands.AllCommands.Stats.desc"]
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "View Player and Guild stats"
+
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-bfac4dcf6b92a6abd16d2c61f8c70f613ace171b"
+other = "View Stats"
+
 ["commands.HandleCommand.ForgetMe.Success"]
 hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
 other = "✅ {{.User}} I successfully deleted your cached player names"
@@ -76,6 +100,18 @@ other = "\\n⚠ **Bot is Paused!** ⚠\\n\\n"
 ["responses.menuMessage.notLinked.Description"]
 hash = "sha1-52fb23b8d8ddf97674501c964653128b00643fa1"
 other = "❌ **No capture linked! Click the link in your DMs to connect!** ❌"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-e88df52a7f98838f657751621daebf15fb596c95"
+other = "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
+other = "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs Premium 💎"
 
 ["responses.statsResponse.BotInfo"]
 hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
