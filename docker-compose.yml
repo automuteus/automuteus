@@ -23,7 +23,7 @@ services:
       - POSTGRES_PASS=${POSTGRES_PASS:?err}
 
       # These Variables are optional
-      - DISCORD_BOT_TOKEN_2=${DISCORD_BOT_TOKEN_2:-}
+      - WORKER_BOT_TOKENS=${WORKER_BOT_TOKENS:-}
       - EMOJI_GUILD_ID=${EMOJI_GUILD_ID:-}
       - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
 
