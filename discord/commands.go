@@ -911,10 +911,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case Info:
-			if m.Author != nil {
-				embed := bot.infoResponse(sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
-			}
+			embed := bot.infoResponse(sett)
+			s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			break
 
 		case DebugState:

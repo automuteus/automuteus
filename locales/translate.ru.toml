@@ -160,3 +160,15 @@ other = "Games Played"
 ["responses.userStatsEmbed.Title"]
 hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
 other = "User Stats"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "Reset all bot settings to their default values"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "Reset Bot Settings"
