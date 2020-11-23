@@ -45,6 +45,7 @@ services:
     restart: always
     environment:
       # Do **NOT** change these
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
       - BROKER_PORT=${BROKER_PORT}
       - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
       - GALACTUS_PORT=${GALACTUS_PORT}
@@ -64,8 +65,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASS}
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+      - "postgres-data:/var/lib/postgresql/data"
 
 volumes:
   bot-logs:
   redis-data:
+  postgres-data:

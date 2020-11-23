@@ -52,28 +52,28 @@ create table if not exists game_events
 );
 
 --query for a specific guild's information by ID
-create index concurrently if not exists guilds_id_index ON guilds (guild_id);
+create index if not exists guilds_id_index ON guilds (guild_id);
 
 --query for a game's info by its ID
-create index concurrently if not exists games_id_index ON games (game_id);
+create index if not exists games_id_index ON games (game_id);
 
 --query for user info by their ID
-create index concurrently if not exists users_id_index ON users (user_id);
+create index if not exists users_id_index ON users (user_id);
 
 --query for guild users by the guild ID
-create index concurrently if not exists guild_users_id_index ON guilds_users (guild_id);
+create index if not exists guild_users_id_index ON guilds_users (guild_id);
 
 --query for guild games by the guild ID
-create index concurrently if not exists guild_games_id_index ON guilds_games (guild_id);
+create index if not exists guild_games_id_index ON guilds_games (guild_id);
 
 --query for user games by the user's hashed ID
-create index concurrently if not exists users_games_hashed_id_index ON users_games (hashed_user_id);
+create index if not exists users_games_hashed_id_index ON users_games (hashed_user_id);
 
 --query for user games by the game ID
-create index concurrently if not exists users_games_game_id_index ON users_games (game_id);
+create index if not exists users_games_game_id_index ON users_games (game_id);
 
 --query for game events by the game ID
-create index concurrently if not exists game_events_game_id_index on game_events (game_id);
+create index if not exists game_events_game_id_index on game_events (game_id);
 
 -- Example queries:
 -- How many games has (h_uid) played? `SELECT COUNT(game_id) FROM users_games WHERE hashed_user_id=huid`
