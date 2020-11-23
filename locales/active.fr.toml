@@ -348,7 +348,7 @@ other = "Menu principal"
 
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Écrivez `{{.CommandPrefix}} settings <paramètre>` pour changer un des paramètres listés ci-dessousw"
+other = "Écrivez `{{.CommandPrefix}} settings <paramètre>` pour changer un des paramètres listés ci-dessous"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
@@ -356,11 +356,11 @@ other = "Paramètres"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "Des Jeux Actifs"
+other = "Parties en cours"
 
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "Total Guilds"
+other = "Total des Serveurs"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
@@ -616,7 +616,7 @@ other = "<@&{{.UserID}}>s sont désormais adminstrateurs du bot !"
 
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "Aucun role n'est admin"
+other = "Aucun role n'est administrateur du bot"
 
 ["settings.SettingPermissionRoleIDs.notFound"]
 hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
