@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"testing"
 )
@@ -27,10 +28,13 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
+	gamesPlayed := psql.NumGamesPlayedByUser("140581066283941888")
 
-	err = psql.EnsureUserExists("140581066283941888", string(HashUserID("140581066283941888")))
-	if err != nil {
-		log.Fatal(err)
+	r := psql.ColorRankingForPlayer("140581066283941888")
+	log.Printf("Games played: %d", gamesPlayed)
+
+	for _, v := range r {
+		log.Printf("Mode: %s, Count: %d\n", game.GetColorStringForInt(int(v.Mode)), v.Count)
 	}
 
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)

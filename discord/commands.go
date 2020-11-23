@@ -38,6 +38,7 @@ const (
 	Info
 	DebugState
 	Ascii
+	Stats
 	Null
 )
 
@@ -447,6 +448,27 @@ var AllCommands = []Command{
 			Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 		},
 		aliases:           []string{"ascii"},
+		secret:            true,
+		adminSetting:      false,
+		permissionSetting: false,
+	},
+	{
+		cmdType: Stats,
+		command: "sstats", //TODO wrong name while I still work on the command...
+		example: "stats @Soup",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.shortDesc",
+			Other: "",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.desc",
+			Other: "",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Ascii.args",
+			Other: "",
+		},
+		aliases:           []string{""},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: false,
@@ -915,6 +937,21 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(sett, args[1], imposter, count))
 				}
 			}
+			break
+		case Stats:
+			if len(args[1:]) == 0 {
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			} else {
+				userID, err := extractUserIDFromMention(args[1])
+				if userID == "" || err != nil {
+					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+				} else {
+					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, sett))
+				}
+
+			}
+
 			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
