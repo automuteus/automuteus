@@ -282,7 +282,7 @@ var AllCommands = []Command{
 	//place above settings so this is checked first
 	{
 		cmdType: Stats,
-		command: "sstats", //TODO wrong name while I still work on the command...
+		command: "stats",
 		example: "stats @Soup",
 		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.shortDesc",
@@ -296,7 +296,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Stats.args",
 			Other: "",
 		},
-		aliases:           []string{""},
+		aliases:           []string{"stat"},
 		secret:            true,
 		emoji:             "📊",
 		adminSetting:      false,
@@ -384,7 +384,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.ShowMe.args",
 			Other: "None",
 		},
-		aliases:           []string{"sm"},
+		aliases:           []string{"show", "sm"},
 		secret:            false,
 		emoji:             "🔍",
 		adminSetting:      false,
@@ -406,7 +406,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.ForgetMe.args",
 			Other: "None",
 		},
-		aliases:           []string{"fm"},
+		aliases:           []string{"forget", "fm"},
 		secret:            false,
 		emoji:             "\U0001F9E8",
 		adminSetting:      false,
@@ -450,7 +450,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"debug", "ds"},
+		aliases:           []string{"debug", "ds", "state"},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: true,
@@ -471,7 +471,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Ascii.args",
 			Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 		},
-		aliases:           []string{"ascii"},
+		aliases:           []string{"ascii", "asc"},
 		secret:            true,
 		adminSetting:      false,
 		permissionSetting: false,
@@ -492,7 +492,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Premium.args",
 			Other: "None",
 		},
-		aliases:           []string{""},
+		aliases:           []string{"donate", "prem"},
 		secret:            true,
 		emoji:             "💎",
 		adminSetting:      false,
@@ -564,18 +564,12 @@ func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSet
 func GetCommand(arg string) Command {
 	arg = strings.ToLower(arg)
 	for _, cmd := range AllCommands {
-		if len(arg) == 1 {
-			if cmd.cmdType != Null && cmd.command[0] == arg[0] {
-				return cmd
-			}
+		if arg == cmd.command {
+			return cmd
 		} else {
-			if arg == cmd.command {
-				return cmd
-			} else {
-				for _, al := range cmd.aliases {
-					if arg == al {
-						return cmd
-					}
+			for _, al := range cmd.aliases {
+				if arg == al {
+					return cmd
 				}
 			}
 		}
