@@ -144,6 +144,7 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 - `POSTGRES_ADDR`: Address (host:port) at which Postgres is accessible. Used by automuteus to store game statistics.
 - `POSTGRES_USER`: Username for authentication with Postgres.
 - `POSTGRES_PASS`: Password for authentication with Postgres.
+- `GALACTUS_ADDR`: Address at which Galactus is accessible. Typically something like `http://localhost:5858` (or see docker-compose.yml)
 
 ### Optional
 
@@ -176,12 +177,3 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
   Their project works like a traditional Discord bot; very easy installation!
 
 - [Silence Among Us](https://github.com/tanndev/silence-among-us#silence-among-us): Another bot quite similar to this one, which also uses AmongUsCapture. Now in early-access with a publicly-hosted instance!
-
-# Troubleshooting
-
-- **"Websocket 400-something: Authentication Failed" Error!**
-  Your `DISCORD_BOT_TOKEN` is incorrect or invalid. Make sure you copied/pasted the Bot _token_, NOT the "client secret" from the Discord Developer portal
-
-- **"Emoji ID is not a snowflake" Error! Or the bot doesn't provide emojis as reactions on the status message!**
-  The discord API is agonizingly slow to upload new emojis, inform bots about the presence of new/updated emojis, and delete emojis.
-  The easiest answer is to **give it a while** (sometimes can take almost 30 minutes), and try again.
