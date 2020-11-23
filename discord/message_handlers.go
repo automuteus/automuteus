@@ -24,7 +24,7 @@ const DefaultMaxActiveGames = 150
 
 var RateLimitGlobalThreshold = 9500
 
-const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.exe"
+const downloadURL = "https://github.com/denverquane/amonguscapture/releases/latest/download/amonguscapture.zip"
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
 
