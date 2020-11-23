@@ -6,6 +6,11 @@ other = "was An Impostor."
 hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
 other = "was not An Impostor."
 
+["ascii.AsciiStarfield.remains"]
+hash = "sha1-d5aa7e4ca57db6752bd427d0978adbe9fa346fab"
+one = "Impostors remain"
+other = "Impostors remain"
+
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
 other = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
@@ -90,6 +95,18 @@ other = "Zeigt die Hilfe für den Bot oder für einen Befehl an"
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
 other = "Zeigt die Hilfe an"
 
+["commands.AllCommands.Info.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "None"
+
+["commands.AllCommands.Info.desc"]
+hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
+other = "Zeigt Informationen z.B. wieviele Gilden verbunden sind, laufende Spiele, usw."
+
+["commands.AllCommands.Info.shortDesc"]
+hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
+other = "Zeige Bot Info"
+
 ["commands.AllCommands.Link.args"]
 hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
 other = "<Discord Benutzer> <Ingamefarbe oder -namen>"
@@ -137,6 +154,18 @@ other = "Pausiert den Bot, damit er nicht automatisch den Status stumm/taub setz
 ["commands.AllCommands.Pause.shortDesc"]
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
 other = "Pausiert den Bot"
+
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Keine"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "Zeige alle Funktionen der Premium AutoMuteUs Mitgliedschaft"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "Premium Bot Funktionen anzeigen"
 
 ["commands.AllCommands.Refresh.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -238,9 +267,33 @@ other = "Ich habe keine zwischengespeicherten Namen für diesen Benutzer gespeic
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "Entschuldigung, ich habe die Spielphase, die du erzwingen wolltest, nicht verstanden"
 
+["commands.HandleCommand.ForgetMe.Success"]
+hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
+other = "✅ {{.User}} Ich habe deine zwischengespeicherten Spielernamen erfolgreich gelöscht"
+
+["commands.HandleCommand.ForgetMe.SuccessDB"]
+hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
+other = "✅ {{.User}} Ich habe den Link zu deiner anonymisierten Benutzer-ID erfolgreich gelöscht"
+
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "Ich habe diesen Befehl nicht erkannt! Siehe `{{.CommandPrefix}} help` für alle verfügbaren Befehle!"
+
+["commands.HandleCommand.ShowMe.cachedNames"]
+hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
+other = "❗ {{.User}} Hier sind deine zwischengespeicherten Namen im Spiel:"
+
+["commands.HandleCommand.ShowMe.emptyCachedNames"]
+hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
+other = "❌ {{.User}} Ich habe keine zwischengespeicherten Spielernamen für dich gespeichert!"
+
+["commands.HandleCommand.ShowMe.linkedID"]
+hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
+other = "❗ {{.User}} Ich speichere einen Link zwischen deiner Discord-Benutzer-ID und einer anonymisierten ID (für Spielstatistiken)"
+
+["commands.HandleCommand.ShowMe.unlinkedID"]
+hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
+other = "❌ {{.User}} Ich speichere keinen Link zu Ihrer Discord UserID"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -282,6 +335,10 @@ other = "Nicht festgelegt"
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
 other = "Deutsch"
 
+["message_handlers.generalRatelimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}, du sendest Befehle zu schnell! Bitte mach langsamer!"
+
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "Der Benutzer hat nicht die erforderlichen Berechtigungen, um diesen Befehl auszuführen!"
@@ -305,6 +362,22 @@ other = "URL"
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "Du hast gerade ein neues Spiel begonnen!"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-d8739a8b2858a6a8d317b0b0b7e946f2b112bab3"
+other = "Discord limitiert mich und ich kann im Moment keine neuen Spiele anlegen 😦\nBitte versuche es in ein paar Minuten noch einmal."
+
+["message_handlers.handleNewGameMessage.specificRatelimit"]
+hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
+other = "Du erstellst Spiele zu schnell! Mach bitte langsamer!"
+
+["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
+hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
+other = "{{.User}}, du reagierst zu schnell! Mach bitte langsamer!"
+
+["message_handlers.softban"]
+hash = "sha1-8d6ebe95b2b4bac98889ad6cfe4200c1e0099416"
+other = "Ich ignoriere {{.User}} für die nächsten 5 Minuten, hör auf zu spammen"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -330,9 +403,17 @@ other = "❌**Kein Capture Programm verbunden! Klicke auf den Link in deinen DMs
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
 other = "Verbundene Spieler"
 
-["responses.lobbyMetaEmbedFields.Tracking"]
-hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "Überwache"
+["responses.lobbyMetaEmbedFields.Region"]
+hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
+other = "🌎 REGION"
+
+["responses.lobbyMetaEmbedFields.RoomCode"]
+hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
+other = "🔒 ROOM CODE"
+
+["responses.makeDescription.GameNotRunning"]
+hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
+other = "\\n⚠ **Bot ist pausiert!** ⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
@@ -346,6 +427,22 @@ other = "(Tritt einer Spiellobby in Among Us bei, um das Spiel zu starten)"
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
 other = "Hauptmenü"
 
+["responses.menuMessage.notLinked.Description"]
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**Kein Capture Programm verbunden! Klicke auf den Link in deinen DMs um dich zu verbinden!**❌"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-3dd67596c94c32f45765549f24e3bcf347aea172"
+other = "Sieh dir die coolen Features von Premium AutoMuteUs an!\n\n[Hole dir AutoMuteUs Premium](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
+other = "Sieht so aus als ob du AutoMuteUs **{{.Tier}}** hast! Danke für die Unterstützung!"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs Premium 💎"
+
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "Schreibe `{{.CommandPrefix}} settings <Einstellung>`, um eine Einstellung aus der folgenden Liste anzupassen"
@@ -353,6 +450,18 @@ other = "Schreibe `{{.CommandPrefix}} settings <Einstellung>`, um eine Einstellu
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Einstellungen"
+
+["responses.statsResponse.BotInfo"]
+hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
+other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
+
+["responses.statsResponse.Creator"]
+hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
+other = "Ersteller"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
+other = "Spenden"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
@@ -362,9 +471,45 @@ other = "Aktive Spiele"
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
 other = "Total Guilds"
 
+["responses.statsResponse.Invite"]
+hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
+other = "Einladen"
+
+["responses.statsResponse.Library"]
+hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
+other = "Bibliothek"
+
+["responses.statsResponse.Title"]
+hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
+other = "Bot Info"
+
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
 other = "Version"
+
+["responses.statsResponse.Website"]
+hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
+other = "Webseite"
+
+["responses.title.GameOver"]
+hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
+other = "**Game Over**"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "Benutzer Statistik für {{.User}}"
+
+["responses.userStatsEmbed.FavoriteColor"]
+hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
+other = "Favorisierte Farbe"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Spiele Gespielt"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "Benutzer Statistik"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -402,18 +547,6 @@ other = "Ändert die Sprache des Bots"
 hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
 other = "Bot Sprache"
 
-["settings.AllSettings.Nicknames.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.Nicknames.desc"]
-hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
-other = "Gibt an, ob der Bot Discord Benutzer umbenennt, damit der Name mit dem Ingamenamen übereinstimmt oder nicht"
-
-["settings.AllSettings.Nicknames.shortDesc"]
-hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Bot benennt Discord Benutzer um"
-
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<Präfix>"
@@ -425,6 +558,18 @@ other = "Ändert das Präfix, welches der Bot zur Erkennung von Befehlen verwend
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
 other = "Bot-Präfix"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Kein"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "Setze alle Einstellungen des Bots auf Standard zurück"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "Bot Einstellungen zurücksetzen"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -449,18 +594,6 @@ other = "Alle Bot-Einstellungen für diesen Server anzeigen"
 ["settings.AllSettings.Show.shortDesc"]
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
 other = "Zeige alle Einstellungen"
-
-["settings.AllSettings.TrackedChannel.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<Sprachkanalname>"
-
-["settings.AllSettings.TrackedChannel.desc"]
-hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
-other = "Ändern des standardmäßig überwachten Sprachkanals"
-
-["settings.AllSettings.TrackedChannel.shortDesc"]
-hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
-other = "Standardmäßig überwachter Sprachkanal"
 
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -530,38 +663,6 @@ other = "Keine Bot-Admins vorhanden!"
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
 other = "Entschuldigung, ich weiß nicht wer `{{.UserName}}` ist. Du kannst ID, Benutzernamen, Benutzernamen#XXXX, Nickname oder @Erwähnungen eingeben."
 
-["settings.SettingApplyNicknames.false_applyNicknames"]
-hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
-other = "Ich werde die Spieler im Voice-Chat nicht mehr umbenennen."
-
-["settings.SettingApplyNicknames.false_noApplyNicknames"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "Es ist bereits deaktivert!"
-
-["settings.SettingApplyNicknames.true_applyNicknames"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "Es ist bereits aktiviert!"
-
-["settings.SettingApplyNicknames.true_noApplyNicknames"]
-hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "Ich werde nun die Spieler im Voice-Chat umbenennen."
-
-["settings.SettingApplyNicknames.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Entschuldigung, `{{.Arg}}` ist weder `true` noch `false`."
-
-["settings.SettingDefaultTrackedChannel.noDefault"]
-hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
-other = "Kein standardmäßig überwachter Sprachkanal"
-
-["settings.SettingDefaultTrackedChannel.withChannelName"]
-hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
-other = "Der Standard-Sprachkanal wurde geändert zu `{{.channelName}}`. Verwende ihn von nun an!"
-
-["settings.SettingDefaultTrackedChannel.withoutChannelID"]
-hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
-other = "Konnte den Sprachkanal `{{.channelName}}` nicht finden! Gib den Namen oder die ID ein und stelle sicher, dass der Bot ihn sehen kann."
-
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
 other = "Ich weiß nicht, was `{{.PhaseName}}` ist. Die Liste der Spielphasen sind `Lobby`, `Tasks` und `Discussion`."
@@ -619,8 +720,8 @@ hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
 other = "Keine Rolle Admins"
 
 ["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
-other = "Tut mir leid, ich kenne die Rolle `{{.RoleName}}` nicht. Du kannst die Rollen-ID, den Rollennamen oder @Rolle eingeben"
+hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
+other = "Entschuldigung, Ich kenne die Rolle `{{.RoleName}}` nicht. Bitte nutze @role"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
