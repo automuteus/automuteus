@@ -95,6 +95,18 @@ other = "Visualizza il messaggio di aiuto del bot, o visualizza le informazioni 
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
 other = "Visualizza aiuto"
 
+["commands.AllCommands.Info.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nulla"
+
+["commands.AllCommands.Info.desc"]
+hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
+other = "Visualizza le info del bot, come il numero di gilde totali, partite attive, ecc"
+
+["commands.AllCommands.Info.shortDesc"]
+hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
+other = "Visualizza info del bot"
+
 ["commands.AllCommands.Link.args"]
 hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
 other = "<Utente discord> <colore in-game o nome>"
@@ -143,6 +155,18 @@ other = "Metti in pausa il bot in modo che non muti. Smuterà tutti i giocatori!
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
 other = "Metti in pausa il bot"
 
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nulla"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "Visualizza tutte le funzionalità e i vantaggi dell'abbonamento AutoMuteUs Premium"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "Visualizza le Funzionalità Premium dei Bot"
+
 ["commands.AllCommands.Refresh.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
 other = "Nulla"
@@ -178,10 +202,6 @@ other = "Invia tutti i dati del giocatore che esegue il comando"
 ["commands.AllCommands.ShowMe.shortDesc"]
 hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
 other = "Mostra i dati del giocatore"
-
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-f518aea6443d121da6b1ae60834dfcab9f23d239"
-other = "Visualizza lo stato del Bot"
 
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
@@ -248,20 +268,32 @@ hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "Mi spiace, non ho capito la fase di gioco che hai tentato di forzare"
 
 ["commands.HandleCommand.ForgetMe.Success"]
-hash = "sha1-fa5049065e85726171d4a53ed857cc3375a5d924"
-other = "Eliminati correttamente tutti i dati del giocatore per <@{{.AuthorID}}>"
+hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
+other = "✅ {{.User}} Ho cancellato con successo i tuoi nomi di giochi memorizzati nella cache"
+
+["commands.HandleCommand.ForgetMe.SuccessDB"]
+hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
+other = "✅ {{.User}} Ho eliminato con successo il collegamento al tuo ID utente anonimo"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "Non ho riconosciuto questo comando! Visualizza `help` per tutti i comandi disponibili!!"
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-4b9fbc0fa6e130c94a5ba83d7bbd3b35b2b92cb1"
-other = "Ecco i tuoi nomi di gioco memorizzati nella cache:"
+hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
+other = "❗ {{.User}} Ecco i tuoi nomi di gioco memorizzati nella cache:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
-hash = "sha1-b117c99214b8ed77ea442ebda5d280d2c966f06b"
-other = "Non ho tuoi nomi di giocatore memorizzati nella cache!"
+hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
+other = "❌ {{.User}} Non ho nessun tuo nome di gioco memorizzato nella cache!"
+
+["commands.HandleCommand.ShowMe.linkedID"]
+hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
+other = "❗ {{.User}} Sto memorizzando un collegamento tra il tuo ID utente Discord e un ID anonimo (per le statistiche di gioco)"
+
+["commands.HandleCommand.ShowMe.unlinkedID"]
+hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
+other = "❌ {{.User}} Non sto memorizzando un collegamento col tuo ID utente Discord"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -303,6 +335,10 @@ other = "Non Fornito"
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
 other = "Italiano"
 
+["message_handlers.generalRatelimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}, stai scrivendo troppo velocemente i comandi, per piacere calmati!"
+
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "L'utente non dispone delle autorizzazioni necessarie per eseguire questo comando!"
@@ -326,6 +362,22 @@ other = "URL"
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "Hai appena iniziato una partita!"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-d8739a8b2858a6a8d317b0b0b7e946f2b112bab3"
+other = "Discord mi limita la velocità e non posso accettare nuove partite in questo momento 😦 \\nRiprova tra qualche minuto."
+
+["message_handlers.handleNewGameMessage.specificRatelimit"]
+hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
+other = "Stai creando delle partite troppo velocemente, per piacere calmati!"
+
+["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
+hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
+other = "{{.User}}, stai premendo sulle reazioni troppo velocemente, per piacere calmati!"
+
+["message_handlers.softban"]
+hash = "sha1-8d6ebe95b2b4bac98889ad6cfe4200c1e0099416"
+other = "Ignororò i tuoi messaggi per i prossimi 5 minuti, smettila di spammare"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -360,8 +412,8 @@ hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
 other = "🔒 CODICE STANZA"
 
 ["responses.makeDescription.GameNotRunning"]
-hash = "sha1-86cde27b1b68172d5a2ced8c7064619ee439b61c"
-other = "\\n⚠**Bot in Pausa!**⚠\\n\\n"
+hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
+other = "\\n⚠ **Bot in Pausa!** ⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
@@ -379,6 +431,18 @@ other = "Menu Principale"
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
 other = "❌**Nessun programma di acquisizione collegato! Fai click sul link nei tuoi Messaggi Privati per collegarlo!**❌"
 
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-3dd67596c94c32f45765549f24e3bcf347aea172"
+other = "Dai un'occhiata alle cose interessanti che AutoMuteUs Premium  ha da offrire!\\n\\n[Ricevi AutoMuteUs Premium](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
+other = "Sembra che tu l'abbia fatto AutoMuteUs **{{.Tier}}**! Grazie per il supporto!"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs Premium 💎"
+
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "Scrivi `{{.CommandPrefix}} impostazioni <impostazione>` per modificare un'impostazione da quelle elencate di seguito"
@@ -387,9 +451,17 @@ other = "Scrivi `{{.CommandPrefix}} impostazioni <impostazione>` per modificare 
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Impostazioni"
 
-["responses.statsResponse.Commit"]
-hash = "sha1-1a1873ab51c74e8b39327ee42dade7a407e5a22d"
-other = "Commit"
+["responses.statsResponse.BotInfo"]
+hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
+other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
+
+["responses.statsResponse.Creator"]
+hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
+other = "Creatore"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
+other = "Dona"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
@@ -399,13 +471,45 @@ other = "Partite attive"
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
 other = "Numero Totale di Gilde"
 
+["responses.statsResponse.Invite"]
+hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
+other = "Invita"
+
+["responses.statsResponse.Library"]
+hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
+other = "Libreria"
+
 ["responses.statsResponse.Title"]
-hash = "sha1-8490902565bf22c8f9bfa748c6377c90aad6d6f0"
-other = "Statistiche Bot"
+hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
+other = "Bot Info"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
 other = "Versione"
+
+["responses.statsResponse.Website"]
+hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
+other = "Website"
+
+["responses.title.GameOver"]
+hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
+other = "**Partita terminata**"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "Statistiche Utente per {{.User}}"
+
+["responses.userStatsEmbed.FavoriteColor"]
+hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
+other = "Colore Preferito"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Partite Giocate"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "Statistiche Utente"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -443,18 +547,6 @@ other = "Cambia la lingua dei messaggi del bot"
 hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
 other = "Lingua del Bot"
 
-["settings.AllSettings.Nicknames.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<vero/falso>"
-
-["settings.AllSettings.Nicknames.desc"]
-hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
-other = "Specifica se il bot deve rinominare gli utenti Discord col nome di gioco o meno"
-
-["settings.AllSettings.Nicknames.shortDesc"]
-hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Il Bot rinomina gli utenti Discord"
-
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<prefisso>"
@@ -466,6 +558,18 @@ other = "CModificare il prefisso utilizzato dal bot per rilevare i comandi"
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
 other = "Prefisso del Bot"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nulla"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "Ripristina tutte le impostazioni del bot ai valori iniziali"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "Ripristina le Impostazioni del Bot"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -558,26 +662,6 @@ other = "Nessun Amministratore del Bot"
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
 other = "Mi dispiace, non so chi sia `{{.UserName}}` . Puoi fornire l' ID, username, username#XXXX, nickname o @menzione"
-
-["settings.SettingApplyNicknames.false_applyNicknames"]
-hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
-other = "Non rinominerò più i giocatori nel canale vocale."
-
-["settings.SettingApplyNicknames.false_noApplyNicknames"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "È già falso!"
-
-["settings.SettingApplyNicknames.true_applyNicknames"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "È già vero!"
-
-["settings.SettingApplyNicknames.true_noApplyNicknames"]
-hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "Ora rinominerò i giocatori nel canale vocale."
-
-["settings.SettingApplyNicknames.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Mi dispiace, `{{.Arg}}` non è né `vero` né `falso`."
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
