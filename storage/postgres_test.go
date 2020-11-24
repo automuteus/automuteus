@@ -28,13 +28,23 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-	gamesPlayed := psql.NumGamesPlayedByUser("140581066283941888")
 
-	r := psql.ColorRankingForPlayer("140581066283941888")
+	uid := "140581066283941888"
+	gamesPlayed := psql.NumGamesPlayedByUser(uid)
+
+	r := psql.ColorRankingForPlayer(uid)
 	log.Printf("Games played: %d", gamesPlayed)
 
 	for _, v := range r {
 		log.Printf("Mode: %s, Count: %d\n", game.GetColorStringForInt(int(v.Mode)), v.Count)
+	}
+
+	rs := psql.NumGamesPlayedByUserOnServer(uid, "141082723635691521")
+	log.Println(rs)
+
+	dd := psql.NamesRanking(uid)
+	for _, v := range dd {
+		log.Printf("Mode: %s, Count: %d\n", v.Mode, v.Count)
 	}
 
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)

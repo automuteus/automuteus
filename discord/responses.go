@@ -441,43 +441,55 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 }
 
 func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	desc := sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.premiumResponse.FreeDescription",
-		Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
-	})
-
-	//TODO localize
-	fields := []*discordgo.MessageEmbedField{
-		{
-			Name:   "🙊 Fast Mute/Deafen",
-			Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
-			Inline: false,
-		},
-		{
-			Name:   "📊 Game Stats and Leaderboards",
-			Value:  "Premium users have access to a full suite of player stats and leaderboards!",
-			Inline: false,
-		},
-		{
-			Name:   "👑 Priority Game Access",
-			Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
-			Inline: false,
-		},
-		{
-			Name:   "👂 Premium Support",
-			Value:  "Premium users get access to private channels on our official Discord channel!",
-			Inline: false,
-		},
-	}
+	desc := ""
+	fields := []*discordgo.MessageEmbedField{}
 
 	if tier != "Free" {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.PremiumDescription",
-			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!",
+			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are commands you can invoke with `{{.CommandPrefix}} premium <command>`",
 		},
 			map[string]interface{}{
-				"Tier": tier,
+				"Tier":          tier,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			})
+
+		//TODO localize
+		fields = []*discordgo.MessageEmbedField{
+			{
+				Name:   "invites",
+				Value:  "View a list of Premium bots you can invite",
+				Inline: false,
+			},
+		}
+	} else {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumResponse.FreeDescription",
+			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
+		})
+		//TODO localize
+		fields = []*discordgo.MessageEmbedField{
+			{
+				Name:   "🙊 Fast Mute/Deafen",
+				Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
+				Inline: false,
+			},
+			{
+				Name:   "📊 Game Stats and Leaderboards",
+				Value:  "Premium users have access to a full suite of player stats and leaderboards!",
+				Inline: false,
+			},
+			{
+				Name:   "👑 Priority Game Access",
+				Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
+				Inline: false,
+			},
+			{
+				Name:   "👂 Premium Support",
+				Value:  "Premium users get access to private channels on our official Discord channel!",
+				Inline: false,
+			},
+		}
 	}
 
 	msg := discordgo.MessageEmbed{
