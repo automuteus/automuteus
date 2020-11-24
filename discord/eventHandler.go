@@ -387,7 +387,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
 	for _, v := range dgs.UserData {
 		if v.GetPlayerName() != game.UnlinkedPlayerName {
 			hashed := storage.HashUserID(v.User.UserID)
-			inGameData, found := dgs.AmongUsData.GetByName(v.GetUserName())
+			inGameData, found := dgs.AmongUsData.GetByName(v.GetPlayerName())
 			if !found {
 				continue
 			}
