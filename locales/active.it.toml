@@ -185,7 +185,7 @@ other = "<impostazione> <valore>"
 
 ["commands.AllCommands.Settings.desc"]
 hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
-other = "Modifica le impostazioni del bot. Digita `{{.CommandPrefix}} impostazioni` wisenza ulteriori argomenti per saperne di più."
+other = "Modifica le impostazioni del bot. Digita `{{.CommandPrefix}} settings` senza ulteriori argomenti per saperne di più."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
@@ -297,11 +297,11 @@ other = "❌ {{.User}} Non sto memorizzando un collegamento col tuo ID utente Di
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
-other = "Mi dispiace, non ho capito questo comando! Per favore scrivi `{{.CommandPrefix}} aiuto` per i comandi"
+other = "Mi dispiace, non ho capito questo comando! Per favore scrivi `{{.CommandPrefix}} help` per i comandi"
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
-other = "**nessun Canale Vocale! Usa `{{.CommandPrefix}} traccia`!**"
+other = "**nessun Canale Vocale! Usa `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
@@ -313,7 +313,7 @@ other = "Scollegato"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
-other = "**Nessun Canale Vocale! Usa `{{.CommandPrefix}} traccia`!**"
+other = "**Nessun Canale Vocale! Usa `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
@@ -381,7 +381,7 @@ other = "Ignororò i tuoi messaggi per i prossimi 5 minuti, smettila di spammare
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Visualizza il progetto Github](https://github.com/denverquane/automuteus) o [Unisciti al serer Discord](https://discord.gg/ZkqZSWF)\\n\\nScrivi `{{.CommandPrefix}} aiuto <comando>` per visualizzare maggiori dettagli su un comando!"
+other = "[Visualizza il progetto Github](https://github.com/denverquane/automuteus) o [Unisciti al serer Discord](https://discord.gg/ZkqZSWF)\\n\\nScrivi `{{.CommandPrefix}} help <comando>` per visualizzare maggiori dettagli su un comando!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
@@ -417,7 +417,7 @@ other = "\\n⚠ **Bot in Pausa!** ⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> sta eseguendo una partita ad Among Us!\\nLa partita inizerà tra "
+other = "<@{{.author}}> sta eseguendo una partita ad Among Us!\\nLa partita inizerà nel "
 
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
@@ -445,7 +445,7 @@ other = "💎 AutoMuteUs Premium 💎"
 
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Scrivi `{{.CommandPrefix}} impostazioni <impostazione>` per modificare un'impostazione da quelle elencate di seguito"
+other = "Scrivi `{{.CommandPrefix}} settings <impostazione>` per modificare un'impostazione da quelle elencate di seguito"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
