@@ -94,6 +94,18 @@ other = "BotのHelpを表示するか、指定されたコマンドの詳細を�
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
 other = "ヘルプを表示"
 
+["commands.AllCommands.Info.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "無し"
+
+["commands.AllCommands.Info.desc"]
+hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
+other = "BOTの参加サーバー数、アクティブなゲーム数等を表示"
+
+["commands.AllCommands.Info.shortDesc"]
+hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
+other = "BOTの詳細表示"
+
 ["commands.AllCommands.Link.args"]
 hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
 other = "<Discord ユーザー名> <ゲーム内の色か名前>"
@@ -142,6 +154,18 @@ other = "Botを一時停止し、全ユーザーのミュートを解除"
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
 other = "Botを一時停止"
 
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "無し"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "AuteMuteUs プレミアムメンバーシップの特典等を表示"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "プレミアムBOTの詳細表示"
+
 ["commands.AllCommands.Refresh.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
 other = "無し"
@@ -177,6 +201,18 @@ other = "このコマンドを実行したユーザーの情報を表示"
 ["commands.AllCommands.ShowMe.shortDesc"]
 hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
 other = "プレイヤーデータの表示"
+
+["commands.AllCommands.Stats.args"]
+hash = "sha1-b0874199cebf2c8a48cd712a3044b3d7a7eba111"
+other = "<@discord user>"
+
+["commands.AllCommands.Stats.desc"]
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "プレイヤーとサーバーの情報表示"
+
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-bfac4dcf6b92a6abd16d2c61f8c70f613ace171b"
+other = "Botのステータスを表示"
 
 ["commands.AllCommands.Track.args"]
 hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
@@ -242,9 +278,33 @@ other = "誰のユーザー名もキャッシュ化されてません！"
 hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
 other = "申し訳ありません。強制移行させたいゲームフェーズが分かりませんでした...。"
 
+["commands.HandleCommand.ForgetMe.Success"]
+hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
+other = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
+
+["commands.HandleCommand.ForgetMe.SuccessDB"]
+hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
+other = "✅ {{.User}} の匿名化されたユーザーIDの削除に成功しました！"
+
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "そのコマンドは存在しません！ `help` で使用可能なコマンドを表示できます！"
+
+["commands.HandleCommand.ShowMe.cachedNames"]
+hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
+other = "あなたのキャッシュ化されたユーザー名:"
+
+["commands.HandleCommand.ShowMe.emptyCachedNames"]
+hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
+other = "あなたのユーザー名はキャッシュ化されてません！"
+
+["commands.HandleCommand.ShowMe.linkedID"]
+hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
+other = "❗ {{.User}} 、あなたのDiscord IDと統計用の匿名化されたIDを保存しています。"
+
+["commands.HandleCommand.ShowMe.unlinkedID"]
+hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
+other = "❌ {{.User}} 、あなたのDiscordIDは保存されていません。"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -286,6 +346,10 @@ other = "未提供"
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
 other = "日本語(不完全)"
 
+["message_handlers.generalRateLimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}、 コマンドを打つ速度が速すぎます！もう少し遅くしてください！"
+
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "あなたにはこのコマンドを実行可能な権限がありません！"
@@ -309,6 +373,22 @@ other = "URL"
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "ゲームを開始しました！"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-4a5c5a538debb3cc3b66c642930a3a3faadc8e2f"
+other = "現在、Discordから制限を受けたため、新しいゲームを始める事ができません😦 \n数分後にもう一度お試しください。"
+
+["message_handlers.handleNewGameMessage.specificRatelimit"]
+hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
+other = "ゲームを作るのが早すぎます！もう少し遅くしてください！"
+
+["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
+hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
+other = "{{.User}} 、リアクションを付けるのが早すぎます！もう少し遅くしてください！"
+
+["message_handlers.softban"]
+hash = "sha1-b374e897081fb088a6c5692429c2376c7fe88ad1"
+other = "現在、 {{.User}} を5分間無視しています。スパムを辞めてください。"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -342,6 +422,14 @@ other = "🌎 リージョン"
 hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
 other = "🔒 部屋コード"
 
+["responses.lobbyMetaEmbedFields.Tracking"]
+hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
+other = "トラッキング"
+
+["responses.makeDescription.GameNotRunning"]
+hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
+other = "\\n⚠**中断されました！**⚠\\n\\n"
+
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
 other = "<@{{.author}}> が Among Us を開始しました！\\nここでゲームが行われています: "
@@ -354,6 +442,22 @@ other = "(ゲームを開始するには、ロビーに参加してください)
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
 other = "メインメニュー"
 
+["responses.menuMessage.notLinked.Description"]
+hash = "sha1-52fb23b8d8ddf97674501c964653128b00643fa1"
+other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-e88df52a7f98838f657751621daebf15fb596c95"
+other = "プレミアムな AuteMuteUs をチェックしよう！\n\n[AuteMuteUs プレミアムを入手！](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
+other = "あなたの AuteMuteUs プレミアムランクは **{{.Tier}}** です！ ご支援ありがとうございます！"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs プレミアム 💎"
+
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設定を変更することができます"
@@ -362,17 +466,65 @@ other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設�
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "設定"
 
+["responses.statsResponse.BotInfo"]
+hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
+other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
+
+["responses.statsResponse.Creator"]
+hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
+other = "制作者"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
+other = "寄付"
+
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "アクティブなゲーム数"
 
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "参加しているサーバー数"
+other = "総参加サーバー数"
+
+["responses.statsResponse.Invite"]
+hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
+other = "招待"
+
+["responses.statsResponse.Library"]
+hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
+other = "ライブラリ"
+
+["responses.statsResponse.Title"]
+hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
+other = "Botの詳細"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
 other = "バージョン"
+
+["responses.statsResponse.Website"]
+hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
+other = "ウェブサイト"
+
+["responses.title.GameOver"]
+hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
+other = "**Game Over**"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "{{.User}} の詳細情報"
+
+["responses.userStatsEmbed.FavoriteColor"]
+hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
+other = "好きな色"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "ゲームのプレイ回数"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "ユーザーの詳細"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -433,6 +585,18 @@ other = "Botが使用するプレフィクスを変更"
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
 other = "Botのプレフィクス"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "無し"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "BOTのすべての設定を初期値に戻します。"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "BOTの設定をリセット"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
