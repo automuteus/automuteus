@@ -286,18 +286,18 @@ var AllCommands = []Command{
 		example: "stats @Soup",
 		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.shortDesc",
-			Other: "",
+			Other: "View Player and Guild stats",
 		},
 		desc: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.desc",
-			Other: "",
+			Other: "View Player and Guild stats",
 		},
 		args: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.args",
-			Other: "",
+			Other: "<@discord user> or \"guild\"",
 		},
 		aliases:           []string{"stat"},
-		secret:            true,
+		secret:            false,
 		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: false,
@@ -493,7 +493,7 @@ var AllCommands = []Command{
 			Other: "None",
 		},
 		aliases:           []string{"donate", "prem"},
-		secret:            true,
+		secret:            false,
 		emoji:             "💎",
 		adminSetting:      false,
 		permissionSetting: false,
@@ -959,22 +959,38 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 		case Stats:
+			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
-					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+					if strings.ReplaceAll(strings.ToLower(args[1]), "\"", "") == "guild" {
+						s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+					} else {
+						s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, or you mistyped 'guild'...")
+					}
+
 				} else {
-					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, sett))
+					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
 				}
 
 			}
 			break
 		case Premium:
 			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+			if len(args[1:]) == 0 {
+				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+			} else {
+				arg := strings.ToLower(args[1])
+				if arg == "invite" || arg == "inv" {
+					_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+					if err != nil {
+						log.Println(err)
+					}
+				}
+			}
 			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{

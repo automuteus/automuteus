@@ -15,6 +15,9 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+var BotInvites = []string{"bot1", "bot2", "bot3"}
+var EmojiNums = []string{":one:", ":two:", ":three:"}
+
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
 func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
@@ -441,43 +444,55 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 }
 
 func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	desc := sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.premiumResponse.FreeDescription",
-		Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
-	})
-
-	//TODO localize
-	fields := []*discordgo.MessageEmbedField{
-		{
-			Name:   "🙊 Fast Mute/Deafen",
-			Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
-			Inline: false,
-		},
-		{
-			Name:   "📊 Game Stats and Leaderboards",
-			Value:  "Premium users have access to a full suite of player stats and leaderboards!",
-			Inline: false,
-		},
-		{
-			Name:   "👑 Priority Game Access",
-			Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
-			Inline: false,
-		},
-		{
-			Name:   "👂 Premium Support",
-			Value:  "Premium users get access to private channels on our official Discord channel!",
-			Inline: false,
-		},
-	}
+	desc := ""
+	fields := []*discordgo.MessageEmbedField{}
 
 	if tier != "Free" {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.PremiumDescription",
-			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!",
+			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are commands you can invoke with `{{.CommandPrefix}} premium <command>`",
 		},
 			map[string]interface{}{
-				"Tier": tier,
+				"Tier":          tier,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			})
+
+		//TODO localize
+		fields = []*discordgo.MessageEmbedField{
+			{
+				Name:   "invites",
+				Value:  "View a list of Premium bots you can invite",
+				Inline: false,
+			},
+		}
+	} else {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumResponse.FreeDescription",
+			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
+		})
+		//TODO localize
+		fields = []*discordgo.MessageEmbedField{
+			{
+				Name:   "🙊 Fast Mute/Deafen",
+				Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
+				Inline: false,
+			},
+			{
+				Name:   "📊 Game Stats and Leaderboards",
+				Value:  "Premium users have access to a full suite of player stats and leaderboards!",
+				Inline: false,
+			},
+			{
+				Name:   "👑 Priority Game Access",
+				Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
+				Inline: false,
+			},
+			{
+				Name:   "👂 Premium Support",
+				Value:  "Premium users get access to private channels on our official Discord channel!",
+				Inline: false,
+			},
+		}
 	}
 
 	msg := discordgo.MessageEmbed{
@@ -486,6 +501,64 @@ func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.M
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.Title",
 			Other: "💎 AutoMuteUs Premium 💎",
+		}),
+		Description: desc,
+		Timestamp:   time.Now().Format(ISO8601),
+		Color:       10181046, //PURPLE
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      fields,
+	}
+	return &msg
+}
+
+func premiumInvitesEmbed(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	desc := ""
+	fields := []*discordgo.MessageEmbedField{}
+
+	if tier == "Free" || tier == "Bronze" {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponseNoAccess.desc",
+			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
+		}, map[string]interface{}{
+			"Tier":          tier,
+			"CommandPrefix": sett.GetCommandPrefix(),
+		})
+	} else {
+		count := 0
+		if tier == "Silver" {
+			count = 1
+		} else if tier == "Gold" {
+			count = 3
+		}
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponse.desc",
+			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
+		}, map[string]interface{}{
+			"Tier":          tier,
+			"Count":         count,
+			"CommandPrefix": sett.GetCommandPrefix(),
+		})
+
+		for i := 0; i < count; i++ {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("Bot %s", EmojiNums[i]),
+				Value:  fmt.Sprintf("[Invite](%s)", BotInvites[i]),
+				Inline: false,
+			})
+		}
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponse.Title",
+			Other: "Premium Bot Invites",
 		}),
 		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),
