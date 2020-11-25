@@ -15,6 +15,9 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+var BotInvites = []string{"bot1", "bot2", "bot3"}
+var EmojiNums = []string{":one:", ":two:", ":three:"}
+
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
 func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
@@ -498,6 +501,64 @@ func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.M
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.Title",
 			Other: "💎 AutoMuteUs Premium 💎",
+		}),
+		Description: desc,
+		Timestamp:   time.Now().Format(ISO8601),
+		Color:       10181046, //PURPLE
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      fields,
+	}
+	return &msg
+}
+
+func premiumInvitesEmbed(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	desc := ""
+	fields := []*discordgo.MessageEmbedField{}
+
+	if tier == "Free" || tier == "Bronze" {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponseNoAccess.desc",
+			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
+		}, map[string]interface{}{
+			"Tier":          tier,
+			"CommandPrefix": sett.GetCommandPrefix(),
+		})
+	} else {
+		count := 0
+		if tier == "Silver" {
+			count = 1
+		} else if tier == "Gold" {
+			count = 3
+		}
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponse.desc",
+			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
+		}, map[string]interface{}{
+			"Tier":          tier,
+			"Count":         count,
+			"CommandPrefix": sett.GetCommandPrefix(),
+		})
+
+		for i := 0; i < count; i++ {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("Bot %s", EmojiNums[i]),
+				Value:  fmt.Sprintf("[Invite](%s)", BotInvites[i]),
+				Inline: false,
+			})
+		}
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.premiumInviteResponse.Title",
+			Other: "Premium Bot Invites",
 		}),
 		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),

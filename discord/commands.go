@@ -980,7 +980,17 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 		case Premium:
 			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+			if len(args[1:]) == 0 {
+				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+			} else {
+				arg := strings.ToLower(args[1])
+				if arg == "invite" || arg == "inv" {
+					_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+					if err != nil {
+						log.Println(err)
+					}
+				}
+			}
 			break
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
