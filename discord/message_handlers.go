@@ -272,6 +272,8 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		return
 	}
 
+	prem := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+
 	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	//couldn't obtain lock; bail bail bail!
 	if lock == nil {
@@ -316,14 +318,19 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		dgs.UpdateUserData(m.UserID, userData)
 
-		//nick := userData.GetPlayerName()
-		//if !sett.GetApplyNicknames() {
-		//	nick = ""
-		//}
-
 		if dgs.Running {
 			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
-			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf)
+			req := UserModifyRequest{
+				Premium: prem,
+				Users: []UserModify{
+					{
+						UserID: m.UserID,
+						Mute:   mute,
+						Deaf:   deaf,
+					},
+				},
+			}
+			err := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req)
 			if err != nil {
 				log.Println(err)
 			}

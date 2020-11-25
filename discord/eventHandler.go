@@ -404,7 +404,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
 			userGames = append(userGames, &storage.PostgresUserGame{
 				HashedUserID: string(hashed),
 				GameID:       dgs.MatchID,
-				PlayerName:   v.GetUserName(),
+				PlayerName:   v.GetPlayerName(),
 				PlayerColor:  int16(inGameData.Color),
 				//TODO once we have this data, add it
 				PlayerRole: "",

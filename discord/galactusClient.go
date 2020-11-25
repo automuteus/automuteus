@@ -2,8 +2,10 @@ package discord
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -11,6 +13,17 @@ import (
 type GalactusClient struct {
 	Address string
 	client  *http.Client
+}
+
+type UserModify struct {
+	UserID string `json:"userID"`
+	Mute   bool   `json:"mute"`
+	Deaf   bool   `json:"deaf"`
+}
+
+type UserModifyRequest struct {
+	Premium string       `json:"premium"`
+	Users   []UserModify `json:"users"`
 }
 
 func NewGalactusClient(address string) (*GalactusClient, error) {
@@ -46,14 +59,21 @@ func (gc *GalactusClient) AddToken(token string) error {
 	return nil
 }
 
-func (gc *GalactusClient) ModifyUser(guildID, connectCode, userID string, mute, deaf bool) error {
-	fullUrl := fmt.Sprintf("%s/modify/%s/%s/%s?mute=%v&deaf=%v", gc.Address, guildID, connectCode, userID, mute, deaf)
-	resp, err := gc.client.Post(fullUrl, "application/json", bytes.NewBufferString(""))
+func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest) error {
+	fullUrl := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
+	jBytes, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	log.Println(request)
+
+	resp, err := gc.client.Post(fullUrl, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("non-okay response from modifying user")
+		return errors.New("non-okay response from modifying users")
 	}
 	return nil
 }
