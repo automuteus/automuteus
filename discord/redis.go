@@ -78,6 +78,10 @@ func snowflakeLockID(snowflake string) string {
 	return "automuteus:snowflake:" + snowflake + ":lock"
 }
 
+func voiceChangesForGameCodeLockKey(connectCode string) string {
+	return "automuteus:voice:game:" + connectCode + ":lock"
+}
+
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
 	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
@@ -109,6 +113,22 @@ type GameStateRequest struct {
 	TextChannel  string
 	VoiceChannel string
 	ConnectCode  string
+}
+
+func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
+	locker := redislock.New(redisInterface.client)
+	lock, err := locker.Obtain(ctx, voiceChangesForGameCodeLockKey(connectCode), dur, &redislock.Options{
+		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
+		Metadata:      "",
+	})
+	if err == redislock.ErrNotObtained {
+		return nil
+	} else if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return lock
 }
 
 //need at least one of these fields to fetch

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/metrics"
 	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
@@ -272,14 +273,14 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		return
 	}
 
-	prem := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-
-	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
+	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	//couldn't obtain lock; bail bail bail!
-	if lock == nil {
+	if snowFlakeLock == nil {
 		return
 	}
-	defer lock.Release(ctx)
+	defer snowFlakeLock.Release(ctx)
+
+	prem := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
@@ -287,15 +288,23 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		VoiceChannel: m.ChannelID,
 	}
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
+	stateLock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	if stateLock == nil {
 		return
+	}
+	defer stateLock.Release(ctx)
+
+	var voiceLock *redislock.Lock
+	if dgs.ConnectCode != "" {
+		voiceLock = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		if voiceLock == nil {
+			return
+		}
 	}
 
 	g, err := s.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release(ctx)
 		return
 	}
 
@@ -331,14 +340,14 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 					},
 				},
 			}
-			err := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req)
+			err := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
 				log.Println(err)
 			}
 			//go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
 func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings, room, region string) {

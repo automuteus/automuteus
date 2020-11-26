@@ -34,7 +34,8 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 			},
 		},
 	}
-	err := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req)
+	//nil lock because this is an override; we don't care about legitimately obtaining the lock
+	err := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 	if err != nil {
 		log.Println(err)
 	}
@@ -84,7 +85,8 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 			Premium: prem,
 			Users:   users,
 		}
-		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req)
+		//nil lock because this is an override; we don't care about legitimately obtaining the lock
+		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 		if err != nil {
 			log.Println(err)
 		}
@@ -161,18 +163,20 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 	//we relinquish the lock while we wait
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
+	voiceLock := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
+
 	if delay > 0 {
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
 		time.Sleep(time.Second * time.Duration(delay))
 	}
 
-	if len(users) > 0 {
+	if dgs.Running && len(users) > 0 {
 		prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 		req := UserModifyRequest{
 			Premium: prem,
 			Users:   users,
 		}
-		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req)
+		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 		if err != nil {
 			log.Println(err)
 		}

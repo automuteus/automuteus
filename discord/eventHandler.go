@@ -138,10 +138,12 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
-					dgs.MatchID = -1
-					dgs.MatchStartUnix = -1
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					if lock != nil && dgs != nil {
+						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
+						dgs.MatchID = -1
+						dgs.MatchStartUnix = -1
+						bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					}
 				}
 				if job.JobType != broker.Connection {
 					go func() {
@@ -150,7 +152,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							gameEvent.GameID = dgs.MatchID
 							if correlatedUserID != "" {
 								user, err := bot.PostgresInterface.GetUserByString(correlatedUserID)
-								if err == nil {
+								if err == nil && user != nil {
 									gameEvent.HashedUserID = user.HashedUserID
 								}
 							}

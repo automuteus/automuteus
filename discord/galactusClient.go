@@ -2,9 +2,11 @@ package discord
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"net/http"
@@ -60,7 +62,11 @@ func (gc *GalactusClient) AddToken(token string) error {
 	return nil
 }
 
-func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest) error {
+func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest, lock *redislock.Lock) error {
+	if lock != nil {
+		defer lock.Release(context.Background())
+	}
+
 	fullUrl := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
