@@ -10,6 +10,7 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -181,7 +182,11 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
-		go bot.PostgresInterface.EnsureGuildExists(m.Guild.ID, m.Guild.Name)
+		gid, err := strconv.ParseUint(m.Guild.ID, 10, 64)
+		if err != nil {
+			log.Println(err)
+		}
+		go bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)

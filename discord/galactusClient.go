@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"net/http"
 	"time"
@@ -16,14 +17,14 @@ type GalactusClient struct {
 }
 
 type UserModify struct {
-	UserID string `json:"userID"`
+	UserID uint64 `json:"userID"`
 	Mute   bool   `json:"mute"`
 	Deaf   bool   `json:"deaf"`
 }
 
 type UserModifyRequest struct {
-	Premium string       `json:"premium"`
-	Users   []UserModify `json:"users"`
+	Premium storage.PremiumTier `json:"premium"`
+	Users   []UserModify        `json:"users"`
 }
 
 func NewGalactusClient(address string) (*GalactusClient, error) {

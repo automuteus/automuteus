@@ -320,11 +320,12 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		if dgs.Running {
 			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
+			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := UserModifyRequest{
 				Premium: prem,
 				Users: []UserModify{
 					{
-						UserID: m.UserID,
+						UserID: uid,
 						Mute:   mute,
 						Deaf:   deaf,
 					},
@@ -394,7 +395,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	} else {
 		premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		//Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == "Free" {
+		if premStatus == storage.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)

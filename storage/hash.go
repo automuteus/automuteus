@@ -7,10 +7,6 @@ import (
 
 type HashedID string
 
-func HashUserID(userID string) HashedID {
-	return genericHash(userID)
-}
-
 func HashGuildID(guildID string) HashedID {
 	return genericHash(guildID)
 }

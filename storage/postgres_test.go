@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"github.com/denverquane/amongusdiscord/game"
 	"log"
 	"testing"
 )
@@ -15,10 +14,25 @@ func TestPsqlInterface_Init(t *testing.T) {
 	}
 	defer psql.Close()
 
-	//err = psql.LoadAndExecFromFile("./postgres.sql")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	err = psql.LoadAndExecFromFile("./postgres.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+	gid := uint64(141082723635691521)
+	uid := uint64(140581066283941888)
+
+	_, err = psql.EnsureGuildExists(gid, "test")
+	if err != nil {
+		log.Println(err)
+		t.Fail()
+	}
+
+	_, err = psql.EnsureUserExists(uid)
+	if err != nil {
+		log.Println(err)
+		t.Fail()
+	}
+
 	//
 	//guildID := "1234146913"
 	//guildName := "testGuildName"
@@ -29,23 +43,23 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//	log.Fatal(err)
 	//}
 
-	uid := "140581066283941888"
-	gamesPlayed := psql.NumGamesPlayedByUser(uid)
-
-	r := psql.ColorRankingForPlayer(uid)
-	log.Printf("Games played: %d", gamesPlayed)
-
-	for _, v := range r {
-		log.Printf("Mode: %s, Count: %d\n", game.GetColorStringForInt(int(v.Mode)), v.Count)
-	}
-
-	rs := psql.NumGamesPlayedByUserOnServer(uid, "141082723635691521")
-	log.Println(rs)
-
-	dd := psql.NamesRanking(uid)
-	for _, v := range dd {
-		log.Printf("Mode: %s, Count: %d\n", v.Mode, v.Count)
-	}
+	//uid := "140581066283941888"
+	//gamesPlayed := psql.NumGamesPlayedByUser(uid)
+	//
+	//r := psql.ColorRankingForPlayer(uid)
+	//log.Printf("Games played: %d", gamesPlayed)
+	//
+	//for _, v := range r {
+	//	log.Printf("Mode: %s, Count: %d\n", game.GetColorStringForInt(int(v.Mode)), v.Count)
+	//}
+	//
+	//rs := psql.NumGamesPlayedByUserOnServer(uid, "141082723635691521")
+	//log.Println(rs)
+	//
+	//dd := psql.NamesRanking(uid)
+	//for _, v := range dd {
+	//	log.Printf("Mode: %s, Count: %d\n", v.Mode, v.Count)
+	//}
 
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)
 	//if err != nil {

@@ -443,17 +443,17 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	return buf.String()
 }
 
-func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier != "Free" {
+	if tier != storage.FreeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.PremiumDescription",
 			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are commands you can invoke with `{{.CommandPrefix}} premium <command>`",
 		},
 			map[string]interface{}{
-				"Tier":          tier,
+				"Tier":          storage.PremiumTierStrings[tier],
 				"CommandPrefix": sett.GetCommandPrefix(),
 			})
 
@@ -516,23 +516,23 @@ func premiumEmbedResponse(tier string, sett *storage.GuildSettings) *discordgo.M
 	return &msg
 }
 
-func premiumInvitesEmbed(tier string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier == "Free" || tier == "Bronze" {
+	if tier == storage.FreeTier || tier == storage.BronzeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
 		}, map[string]interface{}{
-			"Tier":          tier,
+			"Tier":          storage.PremiumTierStrings[tier],
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})
 	} else {
 		count := 0
-		if tier == "Silver" {
+		if tier == storage.SilverTier {
 			count = 1
-		} else if tier == "Gold" {
+		} else if tier == storage.GoldTier {
 			count = 3
 		}
 		desc = sett.LocalizeMessage(&i18n.Message{

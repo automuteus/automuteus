@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium string) *discordgo.MessageEmbed {
+func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
 	gamesPlayedServer := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
 
@@ -46,7 +46,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if premium != "Free" {
+	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!",
@@ -122,7 +122,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	return &embed
 }
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, premium string) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarUrl := ""
 	g, err := bot.PrimarySession.Guild(guildID)
@@ -154,7 +154,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if premium != "Free" {
+	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.guildStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!",

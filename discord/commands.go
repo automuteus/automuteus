@@ -859,7 +859,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					buf.WriteString("```")
 					s.ChannelMessageSend(m.ChannelID, buf.String())
 				}
-				user, _ := bot.PostgresInterface.GetUser(m.Author.ID)
+				user, _ := bot.PostgresInterface.GetUserByString(m.Author.ID)
 				if user != nil {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.ShowMe.linkedID",

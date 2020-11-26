@@ -7,6 +7,7 @@ import (
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -22,12 +23,12 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	log.Println("Forcibly applying mute/deaf to " + userID)
 	prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
-
+	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := UserModifyRequest{
 		Premium: prem,
 		Users: []UserModify{
 			{
-				UserID: userID,
+				UserID: uid,
 				Mute:   mute,
 				Deaf:   deaf,
 			},
@@ -67,8 +68,9 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		tracked = tracked && linked
 
 		if tracked {
+			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
 			users = append(users, UserModify{
-				UserID: userData.User.UserID,
+				UserID: uid,
 				Mute:   mute,
 				Deaf:   deaf,
 			})
@@ -130,8 +132,9 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		//nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
 		if linked && incorrectMuteDeafenState {
+			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
 			userModify := UserModify{
-				UserID: userData.User.UserID,
+				UserID: uid,
 				Mute:   shouldMute,
 				Deaf:   shouldDeaf,
 			}
