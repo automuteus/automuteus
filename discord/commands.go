@@ -27,14 +27,13 @@ const (
 	Refresh
 	Link
 	Unlink
-	Track
+	//Track
 	UnmuteAll
 	Force
 	Settings
 	Log
 	Cache
-	ShowMe
-	ForgetMe
+	Privacy
 	Info
 	DebugState
 	Ascii
@@ -213,28 +212,28 @@ var AllCommands = []Command{
 		adminSetting:      false,
 		permissionSetting: true,
 	},
-	{
-		cmdType: Track,
-		command: "track",
-		example: "track Among Us Voice",
-		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Track.shortDesc",
-			Other: "Track a voice channel",
-		},
-		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Track.desc",
-			Other: "Tell the bot which voice channel you'll be playing in",
-		},
-		args: &i18n.Message{
-			ID:    "commands.AllCommands.Track.args",
-			Other: "<voice channel name>",
-		},
-		aliases:           []string{"t"},
-		secret:            false,
-		emoji:             "📌",
-		adminSetting:      false,
-		permissionSetting: true,
-	},
+	//{
+	//	cmdType: Track,
+	//	command: "track",
+	//	example: "track Among Us Voice",
+	//	shortDesc: &i18n.Message{
+	//		ID:    "commands.AllCommands.Track.shortDesc",
+	//		Other: "Track a voice channel",
+	//	},
+	//	desc: &i18n.Message{
+	//		ID:    "commands.AllCommands.Track.desc",
+	//		Other: "Tell the bot which voice channel you'll be playing in",
+	//	},
+	//	args: &i18n.Message{
+	//		ID:    "commands.AllCommands.Track.args",
+	//		Other: "<voice channel name>",
+	//	},
+	//	aliases:           []string{"t"},
+	//	secret:            false,
+	//	emoji:             "📌",
+	//	adminSetting:      false,
+	//	permissionSetting: true,
+	//},
 	{
 		cmdType: UnmuteAll,
 		command: "unmuteall",
@@ -279,26 +278,47 @@ var AllCommands = []Command{
 		adminSetting:      false,
 		permissionSetting: true,
 	},
-	//place above settings so this is checked first
 	{
-		cmdType: Stats,
-		command: "stats",
-		example: "stats @Soup",
+		cmdType: Cache,
+		command: "cache",
+		example: "cache @Soup",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.shortDesc",
-			Other: "View Player and Guild stats",
+			ID:    "commands.AllCommands.Cache.shortDesc",
+			Other: "View cached usernames",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.desc",
-			Other: "View Player and Guild stats",
+			ID:    "commands.AllCommands.Cache.desc",
+			Other: "View a player's cached in-game names, and/or clear them",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.Stats.args",
-			Other: "<@discord user> or \"guild\"",
+			ID:    "commands.AllCommands.Cache.args",
+			Other: "<player> (optionally, \"clear\")",
 		},
-		aliases:           []string{"stat"},
+		aliases:           []string{"c"},
 		secret:            false,
-		emoji:             "📊",
+		emoji:             "📖",
+		adminSetting:      false,
+		permissionSetting: true,
+	},
+	{
+		cmdType: Privacy,
+		command: "privacy",
+		example: "privacy show",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Privacy.shortDesc",
+			Other: "View AutoMuteUs privacy information",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Privacy.desc",
+			Other: "AutoMuteUs privacy and data collection details.\nMore details [here](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Privacy.args",
+			Other: "showme, optin, or optout",
+		},
+		aliases:           []string{"private", "priv"},
+		secret:            false,
+		emoji:             "🔍",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -347,68 +367,46 @@ var AllCommands = []Command{
 		permissionSetting: true,
 	},
 	{
-		cmdType: Cache,
-		command: "cache",
-		example: "cache @Soup",
+		cmdType: Premium,
+		command: "premium",
+		example: "premium",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Cache.shortDesc",
-			Other: "View cached usernames",
+			ID:    "commands.AllCommands.Premium.shortDesc",
+			Other: "View Premium Bot Features",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Cache.desc",
-			Other: "View a player's cached in-game names, and/or clear them",
+			ID:    "commands.AllCommands.Premium.desc",
+			Other: "View all the features and perks of Premium AutoMuteUs membership",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.Cache.args",
-			Other: "<player> (optionally, \"clear\")",
-		},
-		aliases:           []string{"c"},
-		secret:            false,
-		emoji:             "📖",
-		adminSetting:      false,
-		permissionSetting: true,
-	},
-	{
-		cmdType: ShowMe,
-		command: "showme",
-		example: "showme",
-		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.ShowMe.shortDesc",
-			Other: "Show player data",
-		},
-		desc: &i18n.Message{
-			ID:    "commands.AllCommands.ShowMe.desc",
-			Other: "Send all the player data for the User issuing the command",
-		},
-		args: &i18n.Message{
-			ID:    "commands.AllCommands.ShowMe.args",
+			ID:    "commands.AllCommands.Premium.args",
 			Other: "None",
 		},
-		aliases:           []string{"show", "sm"},
+		aliases:           []string{"donate", "prem"},
 		secret:            false,
-		emoji:             "🔍",
+		emoji:             "💎",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
 	{
-		cmdType: ForgetMe,
-		command: "forgetme",
-		example: "forgetme",
+		cmdType: Stats,
+		command: "stats",
+		example: "stats @Soup",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.ForgetMe.shortDesc",
-			Other: "Delete player data",
+			ID:    "commands.AllCommands.Stats.shortDesc",
+			Other: "View Player and Guild stats",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.ForgetMe.desc",
-			Other: "Delete all the data associated with the User issuing the command",
+			ID:    "commands.AllCommands.Stats.desc",
+			Other: "View Player and Guild stats",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.ForgetMe.args",
-			Other: "None",
+			ID:    "commands.AllCommands.Stats.args",
+			Other: "<@discord user> or \"guild\"",
 		},
-		aliases:           []string{"forget", "fm"},
+		aliases:           []string{"stat"},
 		secret:            false,
-		emoji:             "\U0001F9E8",
+		emoji:             "📊",
 		adminSetting:      false,
 		permissionSetting: false,
 	},
@@ -435,27 +433,6 @@ var AllCommands = []Command{
 		permissionSetting: false,
 	},
 	{
-		cmdType: DebugState,
-		command: "debugstate",
-		example: "debugstate",
-		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.shortDesc",
-			Other: "View the full state of the Discord Guild Data",
-		},
-		desc: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.desc",
-			Other: "View the full state of the Discord Guild Data",
-		},
-		args: &i18n.Message{
-			ID:    "commands.AllCommands.DebugState.args",
-			Other: "None",
-		},
-		aliases:           []string{"debug", "ds", "state"},
-		secret:            true,
-		adminSetting:      false,
-		permissionSetting: true,
-	},
-	{
 		cmdType: Ascii,
 		command: "ascii",
 		example: "ascii @Soup t 10",
@@ -477,26 +454,25 @@ var AllCommands = []Command{
 		permissionSetting: false,
 	},
 	{
-		cmdType: Premium,
-		command: "premium",
-		example: "premium",
+		cmdType: DebugState,
+		command: "debugstate",
+		example: "debugstate",
 		shortDesc: &i18n.Message{
-			ID:    "commands.AllCommands.Premium.shortDesc",
-			Other: "View Premium Bot Features",
+			ID:    "commands.AllCommands.DebugState.shortDesc",
+			Other: "View the full state of the Discord Guild Data",
 		},
 		desc: &i18n.Message{
-			ID:    "commands.AllCommands.Premium.desc",
-			Other: "View all the features and perks of Premium AutoMuteUs membership",
+			ID:    "commands.AllCommands.DebugState.desc",
+			Other: "View the full state of the Discord Guild Data",
 		},
 		args: &i18n.Message{
-			ID:    "commands.AllCommands.Premium.args",
+			ID:    "commands.AllCommands.DebugState.args",
 			Other: "None",
 		},
-		aliases:           []string{"donate", "prem"},
-		secret:            false,
-		emoji:             "💎",
+		aliases:           []string{"debug", "ds", "state"},
+		secret:            true,
 		adminSetting:      false,
-		permissionSetting: false,
+		permissionSetting: true,
 	},
 	{
 		cmdType:           Null,
@@ -663,26 +639,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case Refresh:
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-			if lock == nil {
-				break
-			}
-			dgs.DeleteGameStateMsg(s) //delete the old message
-
-			//create a new instance of the new one
-			dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, dgs.GameStateMsg.LeaderID)
-
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-			//add the emojis to the refreshed message
-
-			//TODO well this is a little ugly
-			//+12 emojis, 1 for X, and another two the message delete/create
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
-
-			go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
+			bot.RefreshGameStateMessage(gsr, sett)
 			break
-
 		case Link:
 			if len(args[1:]) < 2 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
@@ -730,31 +688,31 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 
-		case Track:
-			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
-			} else {
-				channelName := strings.Join(args[1:], " ")
-
-				channels, err := s.GuildChannels(m.GuildID)
-				if err != nil {
-					log.Println(err)
-				}
-
-				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-				if lock == nil {
-					break
-				}
-				dgs.trackChannel(channelName, channels, sett)
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
-				if edited {
-					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-				}
-			}
-			break
+		//case Track:
+		//	if len(args[1:]) == 0 {
+		//		embed := ConstructEmbedForCommand(prefix, cmd, sett)
+		//		s.ChannelMessageSendEmbed(m.ChannelID, embed)
+		//	} else {
+		//		channelName := strings.Join(args[1:], " ")
+		//
+		//		channels, err := s.GuildChannels(m.GuildID)
+		//		if err != nil {
+		//			log.Println(err)
+		//		}
+		//
+		//		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		//		if lock == nil {
+		//			break
+		//		}
+		//		dgs.trackChannel(channelName, channels, sett)
+		//		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		//
+		//		edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+		//		if edited {
+		//			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		//		}
+		//	}
+		//	break
 		case UnmuteAll:
 			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			bot.applyToAll(dgs, false, false)
@@ -835,73 +793,18 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 
-		case ShowMe:
+		case Privacy:
 			if m.Author != nil {
-				cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, m.Author.ID)
-				if len(cached) == 0 {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
-						Other: "❌ {{.User}} I don't have any cached player names stored for you!",
-					}, map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
-					}))
-				} else {
-					buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ShowMe.cachedNames",
-						Other: "❗ {{.User}} Here's your cached in-game names:",
-					}, map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
-					})))
-					buf.WriteString("\n```\n")
-					for n := range cached {
-						buf.WriteString(fmt.Sprintf("%s\n", n))
-					}
-					buf.WriteString("```")
-					s.ChannelMessageSend(m.ChannelID, buf.String())
+				var arg = ""
+				if len(args[1:]) > 0 {
+					arg = args[1]
 				}
-				user, _ := bot.PostgresInterface.GetUserByString(m.Author.ID)
-				if user != nil {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ShowMe.linkedID",
-						Other: "❗ {{.User}} I am storing a link between your Discord UserID and an anonymized ID (for game statistics)",
-					}, map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
-					}))
+				if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
+					embed := ConstructEmbedForCommand(prefix, cmd, sett)
+					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ShowMe.unlinkedID",
-						Other: "❌ {{.User}} I am not storing a link to your Discord UserID",
-					}, map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
-					}))
-				}
-			}
-			break
-		case ForgetMe:
-			if m.Author != nil {
-				err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, m.Author.ID)
-				if err != nil {
-					log.Println(err)
-				} else {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.ForgetMe.Success",
-						Other: "✅ {{.User}} I successfully deleted your cached player names",
-					},
-						map[string]interface{}{
-							"User": "<@!" + m.Author.ID + ">",
-						}))
-					err = bot.PostgresInterface.RemoveUserMapping(m.Author.ID)
-					if err != nil {
-						log.Println(err)
-					} else {
-						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.HandleCommand.ForgetMe.SuccessDB",
-							Other: "✅ {{.User}} I successfully deleted the link to your anonymized UserID",
-						},
-							map[string]interface{}{
-								"User": "<@!" + m.Author.ID + ">",
-							}))
-					}
+					embed := bot.privacyResponse(m.GuildID, m.Author.ID, arg, sett)
+					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				}
 			}
 			break

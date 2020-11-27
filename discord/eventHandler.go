@@ -2,6 +2,8 @@ package discord
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/metrics"
 	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/go-redis/redis/v8"
@@ -137,12 +139,37 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						log.Println(err)
 						break
 					}
+
+					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+
 					if lock != nil && dgs != nil {
+						delTime := sett.GetDeleteGameSummaryMinutes()
+						if delTime != 0 {
+							oldPhase := dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+							embed := bot.gameStateResponse(dgs, sett)
+							dgs.AmongUsData.Phase = oldPhase
+							embed.Description = fmt.Sprintf("Game over. View stats using Match ID: `%d:%s`", dgs.MatchID, dgs.ConnectCode)
+							if delTime > 0 {
+								embed.Footer = &discordgo.MessageEmbedFooter{
+									Text:         fmt.Sprintf("Deleting message %d mins from", delTime),
+									IconURL:      "",
+									ProxyIconURL: "",
+								}
+							}
+							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(dgs.GameStateMsg.MessageChannelID, embed)
+							if delTime > 0 && err == nil {
+								bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+								go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, msg.ID, time.Minute*time.Duration(delTime))
+							} else if err == nil {
+								bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+							}
+						}
 						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
 						dgs.MatchID = -1
 						dgs.MatchStartUnix = -1
 						bot.RedisInterface.SetDiscordGameState(dgs, lock)
+						bot.RefreshGameStateMessage(dgsRequest, sett)
 					}
 				}
 				if job.JobType != broker.Connection {
@@ -152,7 +179,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							gameEvent.GameID = dgs.MatchID
 							if correlatedUserID != "" {
 								user, err := bot.PostgresInterface.GetUserByString(correlatedUserID)
-								if err == nil && user != nil {
+								if err == nil && user != nil && user.Opt {
 									gameEvent.HashedUserID = user.HashedUserID
 								}
 							}

@@ -17,6 +17,7 @@ type PostgresGame struct {
 
 type PostgresUser struct {
 	UserID       uint64 `db:"user_id"`
+	Opt          bool   `db:"opt"`
 	HashedUserID int64  `db:"hashed_user_id"` //this is a serial value; don't set this
 }
 

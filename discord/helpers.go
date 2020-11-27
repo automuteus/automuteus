@@ -185,3 +185,10 @@ func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
 		log.Println(err)
 	}
 }
+
+func removeReaction(s *discordgo.Session, channelID, messageID, emojiNameOrID, userID string) {
+	err := s.MessageReactionRemove(channelID, messageID, emojiNameOrID, userID)
+	if err != nil {
+		log.Println(err)
+	}
+}

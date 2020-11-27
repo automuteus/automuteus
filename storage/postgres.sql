@@ -14,10 +14,11 @@ create table if not exists games
     end_time     integer                                      --2038 problem, but I do not care
 );
 
--- links userIDs to their hashed variants. Allows for deletion of users without deleting underlying data
+-- links userIDs to their hashed variants. Allows for deletion of users without deleting underlying game_event data
 create table if not exists users
 (
     user_id        numeric PRIMARY KEY,
+    opt            boolean, --opt-out to data collection
     hashed_user_id bigserial
 );
 

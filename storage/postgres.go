@@ -93,8 +93,27 @@ func (psqlInterface *PsqlInterface) GetGuild(guildID uint64) (*PostgresGuild, er
 }
 
 func (psqlInterface *PsqlInterface) insertUser(userID uint64) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, DEFAULT);", userID)
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, true, DEFAULT);", userID)
 	return err
+}
+
+func (psqlInterface *PsqlInterface) OptUserByString(userID string, opt bool) (bool, error) {
+	uid, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return false, err
+	}
+	user, err := psqlInterface.EnsureUserExists(uid)
+	if err != nil {
+		return false, err
+	}
+	if user.Opt == opt {
+		return false, nil
+	}
+	_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE users SET (opt) = ($1) WHERE user_id = $2;", opt, uid)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (psqlInterface *PsqlInterface) GetUserByString(userID string) (*PostgresUser, error) {
@@ -176,11 +195,6 @@ func (psqlInterface *PsqlInterface) EnsureUserExists(userID uint64) (*PostgresUs
 		return psqlInterface.GetUser(userID)
 	}
 	return user, err
-}
-
-func (psqlInterface *PsqlInterface) RemoveUserMapping(userID string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "UPDATE users SET user_id=NULL WHERE user_id=$1", userID)
-	return err
 }
 
 func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) error {

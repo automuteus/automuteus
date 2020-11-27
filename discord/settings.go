@@ -25,6 +25,7 @@ const (
 	UnmuteDead
 	Delays
 	VoiceRules
+	MatchSummary
 	Show
 	Reset
 	NullSetting
@@ -97,8 +98,8 @@ var AllSettings = []Setting{
 	},
 	{
 		settingType: RoleIDs,
-		name:        "permissionRoleIDs",
-		example:     "permissionRoleIDs @Bot Admins @Bot Mods",
+		name:        "operatorRoles",
+		example:     "operatorRoles @Bot Admins @Bot Mods",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.RoleIDs.shortDesc",
 			Other: "Bot Operators",
@@ -111,7 +112,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.RoleIDs.args",
 			Other: "<role @ mentions>...",
 		},
-		aliases: []string{"operators", "roles", "role", "prid", "pri", "r"},
+		aliases: []string{"operators", "op", "oproles", "roles", "role"},
 	},
 	{
 		settingType: UnmuteDead,
@@ -166,6 +167,24 @@ var AllSettings = []Setting{
 			Other: "<mute/deaf> <game phase> <dead/alive> <true/false>",
 		},
 		aliases: []string{"voice", "vr"},
+	},
+	{
+		settingType: MatchSummary,
+		name:        "matchSummary",
+		example:     "matchSummary 5",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.MatchSummary.shortDesc",
+			Other: "Match summary msg deletion",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.MatchSummary.desc",
+			Other: "Specify minutes before the match summary message is deleted. 0 for instant deletion, -1 for never delete",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.MatchSummary.args",
+			Other: "<minutes>",
+		},
+		aliases: []string{"matchsum", "summary", "match"},
 	},
 	{
 		settingType: Show,
@@ -300,6 +319,9 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		break
 	case VoiceRules:
 		isValid = SettingVoiceRules(s, m, sett, args)
+		break
+	case MatchSummary:
+		isValid = SettingMatchSummary(s, m, sett, args)
 		break
 	case Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
@@ -955,5 +977,56 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 				"PlayerDiscordState": args[2],
 			}))
 	}
+	return true
+}
+
+func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), AllSettings[MatchSummary], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	num, err := strconv.ParseInt(args[2], 10, 64)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummary.Unrecognized",
+			Other: "{{.Minutes}} is not a valid number. See `{{.CommandPrefix}} settings matchSummary` for usage",
+		},
+			map[string]interface{}{
+				"Minutes":       args[2],
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+	if num > 60 || num < -1 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummary.OutOfRange",
+			Other: "You provided a number too high or too low. Please specify a number between [0-60], or -1 to never delete match summaries",
+		}))
+		return false
+	}
+
+	sett.SetDeleteGameSummaryMinutes(int(num))
+	if num == -1 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummary.Success0",
+			Other: "From now on, I'll never delete match summary messages.",
+		}))
+	} else if num == 0 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummary.Success0",
+			Other: "From now on, I'll delete match summary messages immediately.",
+		}))
+	} else {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummary.Success",
+			Other: "From now on, I'll delete match summary messages after {{.Minutes}} minutes.",
+		},
+			map[string]interface{}{
+				"Minutes": num,
+			}))
+	}
+
 	return true
 }
