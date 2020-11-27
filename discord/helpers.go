@@ -192,3 +192,7 @@ func removeReaction(s *discordgo.Session, channelID, messageID, emojiNameOrID, u
 		log.Println(err)
 	}
 }
+
+func matchIDCode(connectCode string, matchID int64) string {
+	return fmt.Sprintf("%s:%d", connectCode, matchID)
+}

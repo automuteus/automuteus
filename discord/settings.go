@@ -174,7 +174,7 @@ var AllSettings = []Setting{
 		example:     "matchSummary 5",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummary.shortDesc",
-			Other: "Match summary msg deletion",
+			Other: "Match summary deletion",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummary.desc",

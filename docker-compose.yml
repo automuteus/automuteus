@@ -4,7 +4,7 @@ services:
   automuteus:
     # Either:
     # - Use a prebuilt image
-    image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:-5}
+    image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
     # - Build image from local source
     #build: .
     # - Build image from github directly
@@ -42,7 +42,7 @@ services:
     ports:
       # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
       - ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT}
-    image: automuteus/galactus:${GALACTUS_TAG:-1.0.3}
+    image: automuteus/galactus:${GALACTUS_TAG:?err}
     restart: always
     environment:
       # Do **NOT** change these

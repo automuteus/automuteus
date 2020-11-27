@@ -20,6 +20,7 @@ func TestPsqlInterface_Init(t *testing.T) {
 	}
 	gid := uint64(141082723635691521)
 	uid := uint64(140581066283941888)
+	userID := "140581066283941888"
 
 	_, err = psql.EnsureGuildExists(gid, "test")
 	if err != nil {
@@ -87,4 +88,6 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//	log.Fatal(err)
 	//}
 
+	log.Println(psql.NumWinsAsRole(userID, 0))
+	log.Println(psql.NumWinsAsRole(userID, 1))
 }

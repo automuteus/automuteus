@@ -2,11 +2,11 @@ package discord
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/metrics"
 	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/go-redis/redis/v8"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"strconv"
 	"time"
@@ -149,10 +149,22 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							oldPhase := dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 							embed := bot.gameStateResponse(dgs, sett)
 							dgs.AmongUsData.Phase = oldPhase
-							embed.Description = fmt.Sprintf("Game over. View stats using Match ID: `%d:%s`", dgs.MatchID, dgs.ConnectCode)
+							embed.Description = sett.LocalizeMessage(&i18n.Message{
+								ID:    "eventHandler.gameOver.matchID",
+								Other: "Game Over. View the match's stats using Match ID: `{{.MatchID}}`",
+							},
+								map[string]interface{}{
+									"MatchID": matchIDCode(dgs.ConnectCode, dgs.MatchID),
+								})
 							if delTime > 0 {
 								embed.Footer = &discordgo.MessageEmbedFooter{
-									Text:         fmt.Sprintf("Deleting message %d mins from", delTime),
+									Text: sett.LocalizeMessage(&i18n.Message{
+										ID:    "eventHandler.gameOver.deleteMessageFooter",
+										Other: "Deleting message {{.Mins}} mins from:",
+									},
+										map[string]interface{}{
+											"Mins": delTime,
+										}),
 									IconURL:      "",
 									ProxyIconURL: "",
 								}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -12,6 +13,7 @@ import (
 func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
 	gamesPlayedServer := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
+	winsOnServer := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
 
 	avatarUrl := ""
 	mem, err := bot.PrimarySession.GuildMember(guildID, userID)
@@ -21,7 +23,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		avatarUrl = mem.User.AvatarURL("")
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, 2)
+	fields := make([]*discordgo.MessageEmbedField, 3)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.GamesPlayed",
@@ -36,7 +38,15 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			Other: "On This Server",
 		}),
 		Value:  fmt.Sprintf("%d", gamesPlayedServer),
-		Inline: false,
+		Inline: true,
+	}
+	fields[2] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.userStatsEmbed.TotalWins",
+			Other: "Total Wins",
+		}),
+		Value:  fmt.Sprintf("%d", winsOnServer),
+		Inline: true,
 	}
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
@@ -90,6 +100,42 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "\u200b",
+			Value:  "\u200b",
+			Inline: true,
+		})
+
+		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+		if totalCrewmateGames > 0 {
+			crewmateWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.CrewmateWins",
+					Other: "Crewmate Wins",
+				}),
+				Value:  fmt.Sprintf("%d/%d games | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
+				Inline: true,
+			})
+		}
+		totalImposterGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+		if totalImposterGames > 0 {
+			imposterWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ImposterWins",
+					Other: "Imposter Wins",
+				}),
+				Value:  fmt.Sprintf("%d/%d games | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
+				Inline: true,
+			})
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "\u200b",
+			Value:  "\u200b",
+			Inline: true,
+		})
+
 	}
 
 	var embed = discordgo.MessageEmbed{

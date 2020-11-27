@@ -45,6 +45,33 @@ func (psqlInterface *PsqlInterface) NumGamesPlayedByUserOnServer(userID, guildID
 	return r[0]
 }
 
+func (psqlInterface *PsqlInterface) NumWinsAsRoleOnServer(userID, guildID string, role int16) int64 {
+	r := []int64{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true;", userID, guildID, role)
+	if err != nil || len(r) < 1 {
+		return -1
+	}
+	return r[0]
+}
+
+func (psqlInterface *PsqlInterface) NumGamesAsRoleOnServer(userID, guildID string, role int16) int64 {
+	r := []int64{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3;", userID, guildID, role)
+	if err != nil || len(r) < 1 {
+		return -1
+	}
+	return r[0]
+}
+
+func (psqlInterface *PsqlInterface) NumWinsOnServer(userID, guildID string) int64 {
+	r := []int64{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_won=true;", userID, guildID)
+	if err != nil || len(r) < 1 {
+		return -1
+	}
+	return r[0]
+}
+
 type IntModeCount struct {
 	Count int64 `db:"count"`
 	Mode  int16 `db:"mode"`
