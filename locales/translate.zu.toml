@@ -27,25 +27,33 @@ other = "View all the features and perks of Premium AutoMuteUs membership"
 hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
 other = "View Premium Bot Features"
 
+["commands.AllCommands.Privacy.args"]
+hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
+other = "showme, optin, or optout"
+
+["commands.AllCommands.Privacy.desc"]
+hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
+other = "AutoMuteUs privacy and data collection details.\\nMore details [here](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
+
+["commands.AllCommands.Privacy.shortDesc"]
+hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
+other = "View AutoMuteUs privacy information"
+
 ["commands.AllCommands.Stats.args"]
-hash = "sha1-b0874199cebf2c8a48cd712a3044b3d7a7eba111"
-other = "<@discord user>"
+hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
+other = "<@discord user> or \"guild\""
 
 ["commands.AllCommands.Stats.desc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
 other = "View Player and Guild stats"
 
 ["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-bfac4dcf6b92a6abd16d2c61f8c70f613ace171b"
-other = "View Stats"
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "View Player and Guild stats"
 
 ["commands.HandleCommand.ForgetMe.Success"]
 hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
 other = "✅ {{.User}} I successfully deleted your cached player names"
-
-["commands.HandleCommand.ForgetMe.SuccessDB"]
-hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
-other = "✅ {{.User}} I successfully deleted the link to your anonymized UserID"
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
 hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
@@ -56,32 +64,92 @@ hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
 other = "❌ {{.User}} I don't have any cached player names stored for you!"
 
 ["commands.HandleCommand.ShowMe.linkedID"]
-hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
-other = "❗ {{.User}} I am storing a link between your Discord UserID and an anonymized ID (for game statistics)"
+hash = "sha1-ca1be91310babf06d344413ec8c473a63f9382ca"
+other = "❗ {{.User}} You are opted **in** to data collection for game statistics"
 
 ["commands.HandleCommand.ShowMe.unlinkedID"]
-hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
-other = "❌ {{.User}} I am not storing a link to your Discord UserID"
+hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
+other = "❌ {{.User}} You are opted **out** of data collection for game statistics, or you haven't played a game yet"
 
-["message_handlers.generalRateLimit"]
+["commands.HandleCommand.optin.FailDB"]
+hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
+other = "❌ {{.User}} You are already opted into data collection"
+
+["commands.HandleCommand.optin.SuccessDB"]
+hash = "sha1-d6b06c52ea81ebd4706188a5fa458fae87d2cfc0"
+other = "✅ {{.User}} I successfully opted you into data collection"
+
+["commands.HandleCommand.optout.FailDB"]
+hash = "sha1-44bc33283d79d608b5f55000562cd08a951da08b"
+other = "❌ {{.User}} You are already opted out of data collection"
+
+["commands.HandleCommand.optout.SuccessDB"]
+hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
+other = "✅ {{.User}} I successfully opted you out of data collection"
+
+["eventHandler.gameOver.deleteMessageFooter"]
+hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
+other = "Deleting message {{.Mins}} mins from:"
+
+["eventHandler.gameOver.matchID"]
+hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
+other = "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\\n{{.Winners}}"
+
+["message_handlers.generalRatelimit"]
 hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
 other = "{{.User}}, you're issuing commands too fast! Please slow down!"
 
 ["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-4a5c5a538debb3cc3b66c642930a3a3faadc8e2f"
-other = "Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes."
+hash = "sha1-735414ddf0a22c9373080833ffcaca9f57b3db6e"
+other = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium"
+
+["message_handlers.handleNewGameMessage.noChannel"]
+hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
+other = "{{.User}}, please join a voice channel before starting a match!"
 
 ["message_handlers.handleNewGameMessage.specificRatelimit"]
-hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
-other = "You're creating games too fast! Please slow down!"
+hash = "sha1-33e13e7ab0034ae74fd2d89df60959d797f0b5b2"
+other = "{{.User}} You're creating games too fast! Please slow down!"
 
 ["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
 hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
 other = "{{.User}}, you're reacting too fast! Please slow down!"
 
 ["message_handlers.softban"]
-hash = "sha1-b374e897081fb088a6c5692429c2376c7fe88ad1"
-other = "I'm ignoring {{.User}} for the next 5 minutes, stop spamming"
+hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
+other = "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming"
+
+["responses.guildStatsEmbed.CrewmateWins"]
+hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
+other = "Crewmate Wins"
+
+["responses.guildStatsEmbed.Desc"]
+hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
+other = "Guild stats for {{.GuildName}}"
+
+["responses.guildStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Played"
+
+["responses.guildStatsEmbed.ImposterWins"]
+hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
+other = "Imposter Wins"
+
+["responses.guildStatsEmbed.MostGames"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Played"
+
+["responses.guildStatsEmbed.NoPremium"]
+hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
+other = "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more"
+
+["responses.guildStatsEmbed.Premium"]
+hash = "sha1-6da7691eb71e70ed60c719517096d93643420052"
+other = "Showing additional Premium Stats!"
+
+["responses.guildStatsEmbed.Title"]
+hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
+other = "Guild Stats"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
@@ -96,20 +164,84 @@ hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Bot is Paused!** ⚠\\n\\n"
 
 ["responses.menuMessage.notLinked.Description"]
-hash = "sha1-52fb23b8d8ddf97674501c964653128b00643fa1"
-other = "❌ **No capture linked! Click the link in your DMs to connect!** ❌"
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**No capture linked! Click the link in your DMs to connect!**❌"
+
+["responses.nonPremiumSetting.Desc"]
+hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
+other = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `{{.CommandPrefix}} premium` for details"
+
+["responses.premiumInviteResponse.Title"]
+hash = "sha1-e537f34134926749225e31f93c2cc121cc4e23e0"
+other = "Premium Bot Invites"
+
+["responses.premiumInviteResponse.desc"]
+hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
+other = "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!"
+
+["responses.premiumInviteResponseNoAccess.desc"]
+hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
+other = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium"
+
+["responses.premiumResponse.FastMute"]
+hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
+other = "🙊 Fast Mute/Deafen"
+
+["responses.premiumResponse.FastMuteDesc"]
+hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
+other = "Premium users get access to \"helper\" bots that make sure muting is fast!"
 
 ["responses.premiumResponse.FreeDescription"]
-hash = "sha1-e88df52a7f98838f657751621daebf15fb596c95"
-other = "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)"
+hash = "sha1-3dd67596c94c32f45765549f24e3bcf347aea172"
+other = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)"
+
+["responses.premiumResponse.Invites"]
+hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
+other = "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!"
 
 ["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
-other = "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!"
+hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
+other = "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
+
+["responses.premiumResponse.PriorityGameAccess"]
+hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
+other = "👑 Priority Game Access"
+
+["responses.premiumResponse.PriorityGameAccessDesc"]
+hash = "sha1-9b42956892e65576edb6cc2aa3bf6eef8eb6efa3"
+other = "If the Bot is under heavy load, Premium users will always be able to make new games!"
+
+["responses.premiumResponse.Settings"]
+hash = "sha1-8f2e3dbc7ea805faa7b03ed533abfcd504a1ab1a"
+other = "🛠 Special Settings"
+
+["responses.premiumResponse.SettingsDesc"]
+hash = "sha1-50f761e465fbcafc6caaa815ecd94c6fc7ee5bd5"
+other = "Premium users can specify additional settings, like displaying an end-game status message, or auto-refreshing the status message!"
+
+["responses.premiumResponse.Stats"]
+hash = "sha1-790006f1ec07733eda3338ac22e046ef2b809421"
+other = "📊 Game Stats and Leaderboards"
+
+["responses.premiumResponse.StatsDesc"]
+hash = "sha1-ae7d71d8ca051a31d94d8f48b7e448c8e773eea4"
+other = "Premium users have access to a full suite of player stats and leaderboards!"
+
+["responses.premiumResponse.Support"]
+hash = "sha1-af23e1d668669b533eb01655c121c807587e7fa2"
+other = "👂 Premium Support"
+
+["responses.premiumResponse.SupportDesc"]
+hash = "sha1-66af605f1485951ab3d3e7a7762f2182f2c7f21b"
+other = "Premium users get access to private channels on our official Discord channel!"
 
 ["responses.premiumResponse.Title"]
 hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
 other = "💎 AutoMuteUs Premium 💎"
+
+["responses.privacyResponse.Title"]
+hash = "sha1-c7ffd5c92085976d3ec361c3797b5650af65c8d1"
+other = "AutoMuteUs Privacy"
 
 ["responses.statsResponse.BotInfo"]
 hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
@@ -143,21 +275,81 @@ other = "Website"
 hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
 other = "**Game Over**"
 
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
-other = "User stats for {{.User}}"
+["responses.userStatsEmbed.CrewmateWins"]
+hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
+other = "Crewmate Wins"
 
-["responses.userStatsEmbed.FavoriteColor"]
-hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
-other = "Favorite Color"
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-08c07af59136c14ed926ffc9548679782d1a5e9c"
+other = "User stats for {{.User}} on this Server"
+
+["responses.userStatsEmbed.FavoriteColors"]
+hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
+other = "Favorite Colors"
+
+["responses.userStatsEmbed.FavoriteNames"]
+hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
+other = "Favorite Names"
 
 ["responses.userStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Games Played"
 
+["responses.userStatsEmbed.ImposterWins"]
+hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
+other = "Imposter Wins"
+
+["responses.userStatsEmbed.NoPremium"]
+hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
+other = "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more"
+
+["responses.userStatsEmbed.Premium"]
+hash = "sha1-6da7691eb71e70ed60c719517096d93643420052"
+other = "Showing additional Premium Stats!"
+
 ["responses.userStatsEmbed.Title"]
 hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
 other = "User Stats"
+
+["responses.userStatsEmbed.TotalWins"]
+hash = "sha1-f4c419e3e3f3df631d62827a5320ec2631d299d7"
+other = "Total Wins"
+
+["settings.AllSettings.AutoRefresh.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.AutoRefresh.desc"]
+hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
+other = "Specify if the bot should auto-refresh the status message after a match ends"
+
+["settings.AllSettings.AutoRefresh.shortDesc"]
+hash = "sha1-688986b39f678f57ce90907ef39ab68a3a5db902"
+other = "Autorefresh Status Message"
+
+["settings.AllSettings.Delays.shortDesc"]
+hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
+other = "Delays Between Stages"
+
+["settings.AllSettings.Language.shortDesc"]
+hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
+other = "Bot Language"
+
+["settings.AllSettings.MatchSummary.args"]
+hash = "sha1-e43bd32e20d628f793b8b15314ed938d74d56565"
+other = "<minutes>"
+
+["settings.AllSettings.MatchSummary.desc"]
+hash = "sha1-bd285de3a118841b872c4b58baf24388c5384fb0"
+other = "Specify minutes before the match summary message is deleted. 0 for instant deletion, -1 for never delete"
+
+["settings.AllSettings.MatchSummary.shortDesc"]
+hash = "sha1-5099f472410435fb996091311c84ee8425d8bfe4"
+other = "Match Summary Message"
+
+["settings.AllSettings.Prefix.shortDesc"]
+hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
+other = "Bot Prefix"
 
 ["settings.AllSettings.Reset.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -170,3 +362,47 @@ other = "Reset all bot settings to their default values"
 ["settings.AllSettings.Reset.shortDesc"]
 hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
 other = "Reset Bot Settings"
+
+["settings.AllSettings.UnmuteDead.shortDesc"]
+hash = "sha1-bb68a42e779c9eeabc57a5986fa31fd99414c4ae"
+other = "Bot Unmutes Deaths"
+
+["settings.AllSettings.VoiceRules.shortDesc"]
+hash = "sha1-446a8c075113693fdef53eae652e2421a379234d"
+other = "Mute/deafen Rules"
+
+["settings.SettingAutoRefresh.False"]
+hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
+other = "From now on, I will not AutoRefresh the game status message"
+
+["settings.SettingAutoRefresh.True"]
+hash = "sha1-b3e5138940abfd14605d7565f2807c5957c89c18"
+other = "From now on, I'll AutoRefresh the game status message"
+
+["settings.SettingAutoRefresh.Unrecognized"]
+hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
+other = "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage"
+
+["settings.SettingMatchSummary.OutOfRange"]
+hash = "sha1-b6996f804f1fc4e59784621e2adaea8b88ceafb9"
+other = "You provided a number too high or too low. Please specify a number between [0-60], or -1 to never delete match summaries"
+
+["settings.SettingMatchSummary.Success"]
+hash = "sha1-32a0eda9ca856cee12ede89ad46f35803cd0fb68"
+other = "From now on, I'll delete match summary messages after {{.Minutes}} minutes."
+
+["settings.SettingMatchSummary.Success-1"]
+hash = "sha1-6d710f38a479364512a9a0787674d4e05c1a33b4"
+other = "From now on, I'll never delete match summary messages."
+
+["settings.SettingMatchSummary.Success0"]
+hash = "sha1-cca0192d2890122597dc6923fcdd84e03a91c057"
+other = "From now on, I'll delete match summary messages immediately."
+
+["settings.SettingMatchSummary.Unrecognized"]
+hash = "sha1-15dbbdff49c219e8e202ee09c8d7ceaaa4987b87"
+other = "{{.Minutes}} is not a valid number. See `{{.CommandPrefix}} settings matchSummary` for usage"
+
+["settings.SettingPermissionRoleIDs.notFound"]
+hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
+other = "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role"

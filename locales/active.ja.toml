@@ -70,18 +70,6 @@ other = "Botが正常に動作しない場合、強制的に選択されたフ�
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
 other = "フェーズの強制変更"
 
-["commands.AllCommands.ForgetMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.ForgetMe.desc"]
-hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
-other = "このコマンドを実行したユーザーの情報を削除する"
-
-["commands.AllCommands.ForgetMe.shortDesc"]
-hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
-other = "プレイヤーデータの削除"
-
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
 other = "無し、または詳細を見たいコマンドを指定"
@@ -190,41 +178,9 @@ other = "Botの設定を変更。引数無しで`{{.CommandPrefix}} settings`と
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
 other = "Botの設定を変更"
 
-["commands.AllCommands.ShowMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.ShowMe.desc"]
-hash = "sha1-f0fa9b743f84a92cef4aca88f2b2baf8c6b9c91f"
-other = "このコマンドを実行したユーザーの情報を表示"
-
-["commands.AllCommands.ShowMe.shortDesc"]
-hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
-other = "プレイヤーデータの表示"
-
-["commands.AllCommands.Stats.args"]
-hash = "sha1-b0874199cebf2c8a48cd712a3044b3d7a7eba111"
-other = "<@discord user>"
-
 ["commands.AllCommands.Stats.desc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
 other = "プレイヤーとサーバーの情報表示"
-
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-bfac4dcf6b92a6abd16d2c61f8c70f613ace171b"
-other = "Botのステータスを表示"
-
-["commands.AllCommands.Track.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<voice channel name>"
-
-["commands.AllCommands.Track.desc"]
-hash = "sha1-36eed0725dbf0269ba9d968d34c45259e7df6968"
-other = "どのVCでプレイ中かBotに教える"
-
-["commands.AllCommands.Track.shortDesc"]
-hash = "sha1-e47592076ff1077a81570c1ddce1de4cf6e7e975"
-other = "VCを追跡"
 
 ["commands.AllCommands.Unlink.args"]
 hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
@@ -274,17 +230,9 @@ other = "キャッシュ化されたユーザー名:"
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
 other = "誰のユーザー名もキャッシュ化されてません！"
 
-["commands.HandleCommand.Force.UNINITIALIZED"]
-hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
-other = "申し訳ありません。強制移行させたいゲームフェーズが分かりませんでした...。"
-
 ["commands.HandleCommand.ForgetMe.Success"]
 hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
 other = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
-
-["commands.HandleCommand.ForgetMe.SuccessDB"]
-hash = "sha1-3c587a1d8712b52eb5a673e45737ee438e5f7f7b"
-other = "✅ {{.User}} の匿名化されたユーザーIDの削除に成功しました！"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
@@ -297,14 +245,6 @@ other = "あなたのキャッシュ化されたユーザー名:"
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
 other = "あなたのユーザー名はキャッシュ化されてません！"
-
-["commands.HandleCommand.ShowMe.linkedID"]
-hash = "sha1-1dad30cec6d7885876ba36cc1f3a130e48633b67"
-other = "❗ {{.User}} 、あなたのDiscord IDと統計用の匿名化されたIDを保存しています。"
-
-["commands.HandleCommand.ShowMe.unlinkedID"]
-hash = "sha1-742c197c990d85c7ebd4680b888edae576b87772"
-other = "❌ {{.User}} 、あなたのDiscordIDは保存されていません。"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
@@ -346,10 +286,6 @@ other = "未提供"
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
 other = "日本語(不完全)"
 
-["message_handlers.generalRateLimit"]
-hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
-other = "{{.User}}、 コマンドを打つ速度が速すぎます！もう少し遅くしてください！"
-
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
 other = "あなたにはこのコマンドを実行可能な権限がありません！"
@@ -374,21 +310,9 @@ other = "URL"
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "ゲームを開始しました！"
 
-["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-4a5c5a538debb3cc3b66c642930a3a3faadc8e2f"
-other = "現在、Discordから制限を受けたため、新しいゲームを始める事ができません😦 \n数分後にもう一度お試しください。"
-
-["message_handlers.handleNewGameMessage.specificRatelimit"]
-hash = "sha1-994afbfda98be5a5a0eec5bcc39c9fc4b86a40b9"
-other = "ゲームを作るのが早すぎます！もう少し遅くしてください！"
-
 ["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
 hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
 other = "{{.User}} 、リアクションを付けるのが早すぎます！もう少し遅くしてください！"
-
-["message_handlers.softban"]
-hash = "sha1-b374e897081fb088a6c5692429c2376c7fe88ad1"
-other = "現在、 {{.User}} を5分間無視しています。スパムを辞めてください。"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -422,10 +346,6 @@ other = "🌎 リージョン"
 hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
 other = "🔒 部屋コード"
 
-["responses.lobbyMetaEmbedFields.Tracking"]
-hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "トラッキング"
-
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠**中断されました！**⚠\\n\\n"
@@ -441,18 +361,6 @@ other = "(ゲームを開始するには、ロビーに参加してください)
 ["responses.menuMessage.Title"]
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
 other = "メインメニュー"
-
-["responses.menuMessage.notLinked.Description"]
-hash = "sha1-52fb23b8d8ddf97674501c964653128b00643fa1"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
-
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-e88df52a7f98838f657751621daebf15fb596c95"
-other = "プレミアムな AuteMuteUs をチェックしよう！\n\n[AuteMuteUs プレミアムを入手！](https://patreon.com/automuteus)"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-945b6d2c19d1881d9132f025e866c0296da72059"
-other = "あなたの AuteMuteUs プレミアムランクは **{{.Tier}}** です！ ご支援ありがとうございます！"
 
 ["responses.premiumResponse.Title"]
 hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
@@ -510,14 +418,6 @@ other = "ウェブサイト"
 hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
 other = "**Game Over**"
 
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
-other = "{{.User}} の詳細情報"
-
-["responses.userStatsEmbed.FavoriteColor"]
-hash = "sha1-18394d53ea7da8e63a5bb5817d3118f591385353"
-other = "好きな色"
-
 ["responses.userStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "ゲームのプレイ回数"
@@ -546,10 +446,6 @@ other = "<start phase> <end phase> <delay>"
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
 other = "ロビー → タスク のような、ゲームのフェーズ間の自動ミュートの遅延を指定"
 
-["settings.AllSettings.Delays.shortDesc"]
-hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
-other = "ステージ間の遅延調整"
-
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
 other = "<language> または reload"
@@ -558,22 +454,6 @@ other = "<language> または reload"
 hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
 other = "Botの言語を変更"
 
-["settings.AllSettings.Language.shortDesc"]
-hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
-other = "Botの言語設定"
-
-["settings.AllSettings.Nicknames.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.Nicknames.desc"]
-hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
-other = "BotがDiscordのニックネームとゲーム内ネームを同じにするかどうか"
-
-["settings.AllSettings.Nicknames.shortDesc"]
-hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Botのニックネーム変更設定"
-
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<prefix>"
@@ -581,10 +461,6 @@ other = "<prefix>"
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
 other = "Botが使用するプレフィクスを変更"
-
-["settings.AllSettings.Prefix.shortDesc"]
-hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
-other = "Botのプレフィクス"
 
 ["settings.AllSettings.Reset.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -622,18 +498,6 @@ other = "このサーバーの全部のBot設定を表示"
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
 other = "全設定を表示"
 
-["settings.AllSettings.TrackedChannel.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<voice channel name>"
-
-["settings.AllSettings.TrackedChannel.desc"]
-hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
-other = "デフォルトでトラッキングするVCを指定"
-
-["settings.AllSettings.TrackedChannel.shortDesc"]
-hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
-other = "デフォルトで追跡するVC"
-
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false>"
@@ -642,10 +506,6 @@ other = "<true/false>"
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
 other = "死亡したユーザーをミュートするかどうかを設定。**警告！ 死者から情報が漏れる可能性があります！**"
 
-["settings.AllSettings.UnmuteDead.shortDesc"]
-hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
-other = "死者のミュート設定"
-
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
 other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
@@ -653,10 +513,6 @@ other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
 other = "ゲーム内フェーズに応じて、自動ミュートするかどうかを設定。例えば、タスクフェーズでは死者はミュートされる。"
-
-["settings.AllSettings.VoiceRules.shortDesc"]
-hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
-other = "自動ミュートのルール"
 
 ["settings.CommandPrefixSetting.changes"]
 hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
@@ -701,38 +557,6 @@ other = "Botの管理者はいません。"
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
 other = "申し訳ありませんが、`{{.UserName}}`が誰だかわかりません...。\\n ID、ユーザー名、`ユーザー名#XXXX`、ニックネーム、@メンション が使用可能です。"
-
-["settings.SettingApplyNicknames.false_applyNicknames"]
-hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
-other = "VC参加者のニックネームは変更しません"
-
-["settings.SettingApplyNicknames.false_noApplyNicknames"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "既に false です！"
-
-["settings.SettingApplyNicknames.true_applyNicknames"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "既に true です！"
-
-["settings.SettingApplyNicknames.true_noApplyNicknames"]
-hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "VC参加者のニックネームを変更します。"
-
-["settings.SettingApplyNicknames.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "申し訳ありませんが、 `{{.Arg}}` は `true` でも `false` でもありません。"
-
-["settings.SettingDefaultTrackedChannel.noDefault"]
-hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
-other = "デフォルトでトラッキングするVCはありません。"
-
-["settings.SettingDefaultTrackedChannel.withChannelName"]
-hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
-other = "デフォルトでトラッキングされるVCが `{{.channelName}}` に変更されました。今後はこれを使ってね！"
-
-["settings.SettingDefaultTrackedChannel.withoutChannelID"]
-hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
-other = "`{{.channelName}}`が見つかりませんでした！ チャンネル名かIDを入力し、Botがそれを見られるようにしてください！"
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
@@ -789,10 +613,6 @@ other = "<@&{{.UserID}}> 等がBotの管理者になりました！"
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
 other = "Botの管理役職はありません。"
-
-["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
-other = "申し訳ありませんが、`{{.RoleName}}` が何の役職なのか分かりません...。 役職ID、役職名、@役職メンション が使用可能です。"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"

@@ -66,18 +66,6 @@ other = "Forceer de bot om naar een andere spelfase te gaan, als hij niet correc
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
 other = "Forceer de bot om over te schakelen"
 
-["commands.AllCommands.ForgetMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.ForgetMe.desc"]
-hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
-other = "Verwijder alle spelerdata van de gebruiker die het commando uitvoert"
-
-["commands.AllCommands.ForgetMe.shortDesc"]
-hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
-other = "Verwijder spelerdata"
-
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
 other = "Geen, of een optioneel commando, om informatie over te zien"
@@ -162,30 +150,6 @@ other = "Past de instellingen van de bot aan. Typ `{{.CommandPrefix}} settings` 
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
 other = "Instellingen van de bot aanpassen"
 
-["commands.AllCommands.ShowMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.ShowMe.desc"]
-hash = "sha1-f0fa9b743f84a92cef4aca88f2b2baf8c6b9c91f"
-other = "Stuur alle spelerdata van de gebruiker die het commando uitvoert"
-
-["commands.AllCommands.ShowMe.shortDesc"]
-hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
-other = "Stuur spelerdata"
-
-["commands.AllCommands.Track.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<Naam van spraakkanaal>"
-
-["commands.AllCommands.Track.desc"]
-hash = "sha1-36eed0725dbf0269ba9d968d34c45259e7df6968"
-other = "Vertel de bot in welk spraakkanaal je speelt"
-
-["commands.AllCommands.Track.shortDesc"]
-hash = "sha1-e47592076ff1077a81570c1ddce1de4cf6e7e975"
-other = "Volg een spraakkanaal"
-
 ["commands.AllCommands.Unlink.args"]
 hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
 other = "<Discord Gebruiker>"
@@ -233,10 +197,6 @@ other = "Gecachte in-game namen:"
 ["commands.HandleCommand.Cache.emptyCachedNames"]
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
 other = "Ik heb geen gecachte spelernamen voor die gebruiker!"
-
-["commands.HandleCommand.Force.UNINITIALIZED"]
-hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
-other = "Sorry, ik begreep niet welke spelfase je probeerde te forceren"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
@@ -330,10 +290,6 @@ other = "❌**Geen Capture programma verbonden! Klik op de link in je DMs om te 
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
 other = "Verbonden spelers"
 
-["responses.lobbyMetaEmbedFields.Tracking"]
-hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "Volgend"
-
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
 other = "<@{{.author}}> speelt een Among Us spel!\\nHet spel vind plaats in "
@@ -386,10 +342,6 @@ other = "<Startfase> <Eindfase> <Vertraging>"
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
 other = "Specificeer de vertraging voor het automatisch dempen/doven tussen de fases van het spel, bijvoorbeeld lobby->taken"
 
-["settings.AllSettings.Delays.shortDesc"]
-hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
-other = "Vertraging tussen de fases"
-
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
 other = "<Taal> of herladen"
@@ -398,22 +350,6 @@ other = "<Taal> of herladen"
 hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
 other = "Verander de taal van de bot"
 
-["settings.AllSettings.Language.shortDesc"]
-hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
-other = "Taal van de bot"
-
-["settings.AllSettings.Nicknames.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.Nicknames.desc"]
-hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
-other = "Specificeer of de bot de naam van Discord Gebruikers moet aanpassen, zodat deze gelijk is aan hun in-game naam of niet"
-
-["settings.AllSettings.Nicknames.shortDesc"]
-hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Bot hernoemt Discord Gebruikers"
-
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<Voorvoegsel>"
@@ -421,10 +357,6 @@ other = "<Voorvoegsel>"
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
 other = "Verander het voorvoegsel dat de bot gebruikt om commando's te detecteren"
-
-["settings.AllSettings.Prefix.shortDesc"]
-hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
-other = "Bot voorvoegsel"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -450,18 +382,6 @@ other = "Alle bot instellingen voor deze server laten zien"
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
 other = "Alle instellingen laten zien"
 
-["settings.AllSettings.TrackedChannel.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<Spraakkanaal naam>"
-
-["settings.AllSettings.TrackedChannel.desc"]
-hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
-other = "Verander het standaard gevolgde spraakkanaal"
-
-["settings.AllSettings.TrackedChannel.shortDesc"]
-hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
-other = "Standaard gevolgde spraakkanaal"
-
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false>"
@@ -470,10 +390,6 @@ other = "<true/false>"
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
 other = "Specificeer of de bot gelijk spelers moet ontdempen als ze doodgaan. **LET OP. Dit kan informatie lekken!**"
 
-["settings.AllSettings.UnmuteDead.shortDesc"]
-hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
-other = "Bot ontdempt spelers als ze dood gaan"
-
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
 other = "<mute/deaf> <spelfase> <dead/alive> <true/false>"
@@ -481,10 +397,6 @@ other = "<mute/deaf> <spelfase> <dead/alive> <true/false>"
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
 other = "Specificeer de demp/doof regels van het spel, afhankelijk van de spelfase en of de spelers nog leven. In het voorbeeld zouden dode spelers gedempt zijn tijdens de fase van de taken"
-
-["settings.AllSettings.VoiceRules.shortDesc"]
-hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
-other = "Demp/doof regels"
 
 ["settings.CommandPrefixSetting.changes"]
 hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
@@ -529,38 +441,6 @@ other = "Geen bot administrators"
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
 other = "Sorry, ik weet niet wie `{{.UserName}}` is. Je kan het proberen met ID, gebruikersnaam, gebruikersnaam#XXXX, bijnaam of @noemen"
-
-["settings.SettingApplyNicknames.false_applyNicknames"]
-hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
-other = "Ik zal vanaf nu geen gebruikers in de spraakkanalen hernoemen."
-
-["settings.SettingApplyNicknames.false_noApplyNicknames"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "Is al gedeactiveerd!"
-
-["settings.SettingApplyNicknames.true_applyNicknames"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "Is al geactiveerd!"
-
-["settings.SettingApplyNicknames.true_noApplyNicknames"]
-hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "Ik zal vanaf nu gebruikers in de spraakkanalen hernoemen."
-
-["settings.SettingApplyNicknames.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Sorry, `{{.Arg}}` is niet `true` en ook niet `false`."
-
-["settings.SettingDefaultTrackedChannel.noDefault"]
-hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
-other = "Geen standaard gevolgd spraakkanaal"
-
-["settings.SettingDefaultTrackedChannel.withChannelName"]
-hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
-other = "Standaard gevolgd spraakkanaal veranderd naar `{{.channelName}}`. Gebruik die vanaf nu!"
-
-["settings.SettingDefaultTrackedChannel.withoutChannelID"]
-hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
-other = "Kon het spraakkanaal `{{.channelName}}` niet vinden! Geef de naam of het ID op, en zorg ervoor dat de bot deze kan zien."
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
@@ -617,10 +497,6 @@ other = "<@&{{.UserID}}>s zijn nu bot administrators!"
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
 other = "Geen rol administrators"
-
-["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
-other = "Sorry, ik ken de rol `{{.RoleName}}` niet. Je kan het proberen met ID, rolnaam of @rol"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"

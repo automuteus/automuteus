@@ -66,18 +66,6 @@ other = "Forcer le bot à passer à une autre phase, si ça ne s'est pas fait au
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
 other = "Forcer le bot à changer de phase"
 
-["commands.AllCommands.ForgetMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Nul"
-
-["commands.AllCommands.ForgetMe.desc"]
-hash = "sha1-960f723c171f94e57f6db8f9a3cce0b94ad85bbf"
-other = "Supprimer toutes les donnés associées au joueur qui envoie la commande"
-
-["commands.AllCommands.ForgetMe.shortDesc"]
-hash = "sha1-b7a00a38feb706b79ebb2bdf5515a6b44abde0f5"
-other = "Supprimer les donnés joueur"
-
 ["commands.AllCommands.Help.args"]
 hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
 other = "Nul, or optional command to see info for"
@@ -162,30 +150,6 @@ other = "Ajuster les réglages du bot. Écrivez `{{.CommandPrefix}} settings` po
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
 other = "Ajuster les réglages"
 
-["commands.AllCommands.ShowMe.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Nul"
-
-["commands.AllCommands.ShowMe.desc"]
-hash = "sha1-f0fa9b743f84a92cef4aca88f2b2baf8c6b9c91f"
-other = "Afficher toutes les donnés associées au joueur qui envoie la commande"
-
-["commands.AllCommands.ShowMe.shortDesc"]
-hash = "sha1-2f16b8f3b367225dd7d3b89c88b023d6997f2590"
-other = "Afficher les données joueur"
-
-["commands.AllCommands.Track.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<nom du salon vocal>"
-
-["commands.AllCommands.Track.desc"]
-hash = "sha1-36eed0725dbf0269ba9d968d34c45259e7df6968"
-other = "Indiquer au bot dans quel salon vocal vous allez jouer"
-
-["commands.AllCommands.Track.shortDesc"]
-hash = "sha1-e47592076ff1077a81570c1ddce1de4cf6e7e975"
-other = "Utiliser un salon vocal spécifique"
-
 ["commands.AllCommands.Unlink.args"]
 hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
 other = "<Utilisateur discord>"
@@ -233,10 +197,6 @@ other = "Utilisateurs du jeu en cache :"
 ["commands.HandleCommand.Cache.emptyCachedNames"]
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
 other = "Je n'ai aucun pseudos en cache pour cet utilisateur !"
-
-["commands.HandleCommand.Force.UNINITIALIZED"]
-hash = "sha1-408a99a8a01ee7eb772f5e7233fdeb7146a6554e"
-other = "Désolé, je n'ai pas compris la phase que vous essayez de forcer"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
@@ -330,10 +290,6 @@ other = "❌**Pas de capture liée ! Cliquez sur le lien dans vos DM pour vous c
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
 other = "Joueurs liés"
 
-["responses.lobbyMetaEmbedFields.Tracking"]
-hash = "sha1-e81a151bd05091f9935dc3aba219eed346e7bb4f"
-other = "Traqué"
-
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
 other = "<@{{.author}}> lance une partie d'Among Us !\\nLa partie se déroule dans le salon "
@@ -386,10 +342,6 @@ other = "<phase du début> <phase de fin> <délai>"
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
 other = "Spécifiez un délai pour rendre sourd/muet entre les différentes phases du jeu, ex : lobby->tasks"
 
-["settings.AllSettings.Delays.shortDesc"]
-hash = "sha1-a4a54101ce78ce4c6ca48e7b36638943c36d82a5"
-other = "Délai entre les phases"
-
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
 other = "<langage> ou actualiser"
@@ -398,22 +350,6 @@ other = "<langage> ou actualiser"
 hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
 other = "Change la langue des messages du bot"
 
-["settings.AllSettings.Language.shortDesc"]
-hash = "sha1-57a5c189fc3106c69d60caee67c83d39b96a52a4"
-other = "Langage du Bot"
-
-["settings.AllSettings.Nicknames.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.Nicknames.desc"]
-hash = "sha1-988c7869e6dae42a1f6e0d95db99a9c06169528f"
-other = "Spécifier si le bot doit renommer les utilisateurs Discord avec les pseudos qu'ils utilisent dans Among Us, ou non."
-
-["settings.AllSettings.Nicknames.shortDesc"]
-hash = "sha1-9e55ed57e2dd4b25c7feb9e5f28a4434ed313638"
-other = "Bot renomme les utilisateurs discord"
-
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<prefix>"
@@ -421,10 +357,6 @@ other = "<prefix>"
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
 other = "Changer le prefixe qu'utilise le bot pour detecter les commandes"
-
-["settings.AllSettings.Prefix.shortDesc"]
-hash = "sha1-869e950ded0e2b5ea8390857d2f5627ab2553598"
-other = "Bot prefixe"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -450,18 +382,6 @@ other = "Voir tous les paramètres du bot pour ce serveur"
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
 other = "Voir les paramètres"
 
-["settings.AllSettings.TrackedChannel.args"]
-hash = "sha1-513da5d790ccc58d5adcc22b4deb930ce57e1823"
-other = "<nom du salon vocal>"
-
-["settings.AllSettings.TrackedChannel.desc"]
-hash = "sha1-7eb2a90d2b1dc0b4fbfbb3a4e2720e6fa29f068c"
-other = "Changer le salon traqué par défaut"
-
-["settings.AllSettings.TrackedChannel.shortDesc"]
-hash = "sha1-e8709c1d6bb012aa113109efd91fc8c1190d5e6f"
-other = "Salon traqué par défaut"
-
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false>"
@@ -470,10 +390,6 @@ other = "<true/false>"
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
 other = "Spécifier si le bot doit immédiatement rétablir le son des joueurs morts. **ATTENTION. Fuite d'informations!**"
 
-["settings.AllSettings.UnmuteDead.shortDesc"]
-hash = "sha1-ad61c63d437d5b33d35a03ff69671e8e8d1c7713"
-other = "Bot rétablit le son des morts"
-
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
 other = "<mute/deaf> <phase de la partie> <dead/alive> <true/false>"
@@ -481,10 +397,6 @@ other = "<mute/deaf> <phase de la partie> <dead/alive> <true/false>"
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
 other = "Specifier les règles de muet/sourd pour la partie, en fonction de la phase et de l'état des joueurs (vivant/mort). L'exemple indiqué rend muet les joueurs morts durant la phase des tâches."
-
-["settings.AllSettings.VoiceRules.shortDesc"]
-hash = "sha1-8ae4d455e555a333b6c47d1138db7fb3665fa1f8"
-other = "Règles muet/sourd"
 
 ["settings.CommandPrefixSetting.changes"]
 hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
@@ -529,38 +441,6 @@ other = "Aucun admin du bot"
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
 other = "Désolé, je ne reconnais pas `{{.UserName}}`. Vous pouvez utiliser son ID, pseudo, pseudo#XXXX, surnom ou @mention"
-
-["settings.SettingApplyNicknames.false_applyNicknames"]
-hash = "sha1-87cb9edbf9b8aa594b81d23456c570357b2c80bb"
-other = "Je ne renommerai plus les joueurs dans le salon vocal."
-
-["settings.SettingApplyNicknames.false_noApplyNicknames"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "C'est déjà désactivé (false) !"
-
-["settings.SettingApplyNicknames.true_applyNicknames"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "C'est déjà activé (true) !"
-
-["settings.SettingApplyNicknames.true_noApplyNicknames"]
-hash = "sha1-d8c61468fc442ea8a0d5d5a6c407e014e5d46e6b"
-other = "Je renommerai désormais les joueurs dans le salon vocal."
-
-["settings.SettingApplyNicknames.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Désolé, `{{.Arg}}` n'est pas valide. Ecrivez `true` (activé) ou `false` (désactivé)"
-
-["settings.SettingDefaultTrackedChannel.noDefault"]
-hash = "sha1-8cd58dcf4a01bc36e3e4a92bcd1ff7bcd7d050ff"
-other = "Aucun salon traqué par défaut"
-
-["settings.SettingDefaultTrackedChannel.withChannelName"]
-hash = "sha1-3e4a964df234ba3361610cb5ff744e7fa0e6535b"
-other = "Le salon par défaut est désormais `{{.channelName}}`. Utilisez-le dorénavant !"
-
-["settings.SettingDefaultTrackedChannel.withoutChannelID"]
-hash = "sha1-9921689166ebbf20a7ab79aa55a6fd753dc07cca"
-other = "Je n'ai pas pu trouver le salon vocal `{{.channelName}}` ! Indiquez le nom ou l'identifiant, et faites en sorte que le bot puisse voir le salon."
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
@@ -617,10 +497,6 @@ other = "<@&{{.UserID}}>s sont désormais adminstrateurs du bot !"
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
 other = "Aucun role n'est administrateur du bot"
-
-["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-c397beab7f804375d205b69b8b1b51f67c9ab424"
-other = "Désolé, je ne reconnais pas le rôle `{{.RoleName}}`. Vous pouvez indiquer l'ID du rôle, le nom ou le mentionner @rôle"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
