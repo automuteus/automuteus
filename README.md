@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/AutoMuteUsBanner_cropped.png" width="800">
+    <a href="automute.us" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
@@ -75,9 +75,12 @@ The bot will send you a private message (make sure your Discord settings allow D
 
 If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
 
+## Galactus 
+
+Galactus is a system used to speed up people's muting (which is normally slow to due to Discord limiting bot actions to 5 calls in 5 seconds per server) by having the user provide a second token (created by the user) to the bot which helps mute/deafen players quicker. You can find a guide to set this up [here.](https://youtu.be/jKcEW5qpk8E)
 ## Commands
 
-The Discord Bot uses the `.au` prefix for any commands
+The Discord Bot uses the `.au` prefix for any commands my default; if you change your prefix remember to replace `.au` with your custom prefix
 
 | Command        | Alias   | Arguments   | Description                                                                                                     | Example                            |
 | -------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
@@ -109,7 +112,7 @@ If you are certain that you would prefer to self-host the bot, please follow any
 
 ## Pre-Installation Steps, Important!
 
-- Create an Application and Bot account (requires Admin privileges on the Server in question). [Instructions here](https://github.com/denverquane/amongusdiscord/blob/master/BOT_README.md)
+- Create an Application and Bot account (requires Admin privileges on the Server in question). [Instructions here](BOT_README.md)
 
 Now follow any of the specific hosting options provided below:
 
@@ -117,13 +120,13 @@ Now follow any of the specific hosting options provided below:
 
 Docker compose is the simplest and recommended method for self-hosting AutoMuteUs, but it does require an existing physical machine or VPS to run on.
 
-There is a `docker-compose.yml` file in this repository that will provide all the constituent components to run AutoMuteUs.
+There is a [`docker-compose.yml`](docker-compose.yml) file in this repository that will provide all the constituent components to run AutoMuteUs.
 
 ### Steps:
 
 - Install Docker and Docker Compose on the machine you will be using to host AutoMuteUs
-- Download the `docker-compose.yml` from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template `sample.env` is provided in this repository for reference. 
-- Provide your specific Environment Variables in the `.env` file, as relevant to your configuration. Please see the Environment Variables reference further down in this Readme for details, as well as the `sample.env` provided.
+- Download the [`docker-compose.yml`](docker-compose.yml) from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template [`sample.env`](sample.env) is provided in this repository for reference. 
+- Provide your specific Environment Variables in the `.env` file, as relevant to your configuration. Please see the Environment Variables reference further down in this Readme for details, as well as the [`sample.env`](sample.env) provided.
 - Run `docker-compose pull`. This will download the latest built Docker images from Dockerhub that are required to run AutoMuteUs.
 - Run `docker-compose up -d` to start all the containers required for AutoMuteUs to function. The containers will now be running in the background, but you can view the logs for the containers using `docker-compose logs`, or `docker-compose logs -f` to follow along as new log entries are generated.
 
@@ -135,13 +138,16 @@ unRAID hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 
 Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
 
+## Old version
+If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and hate Docker because of it (I don't blame you) you can self host [2.4.3](https://github.com/denverquane/automuteus/releases/tag/2.4.3) instead. **If you are using this method, continue using the newest capture!**
+
 ## Environment Variables
 
 ### Required
 
 - `DISCORD_BOT_TOKEN`: The Bot Token used by the bot to authenticate with Discord.
 - `REDIS_ADDR`: The host and port at which your Redis database instance is accessible. Ex: `192.168.1.42:6379`
-- `POSTGRES_ADDR`: Address (host:port) at which Postgres is accessible. Used by automuteus to store game statistics.
+- `POSTGRES_ADDR`: Address (host:port) at which Postgres is accessible. Used by automuteus to store game statistics. 
 - `POSTGRES_USER`: Username for authentication with Postgres.
 - `POSTGRES_PASS`: Password for authentication with Postgres.
 - `GALACTUS_ADDR`: Address at which Galactus is accessible. Typically something like `http://localhost:5858` (or see docker-compose.yml)
