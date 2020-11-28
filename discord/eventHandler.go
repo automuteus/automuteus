@@ -184,31 +184,32 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						bot.RedisInterface.SetDiscordGameState(dgs, lock)
 						//in this context, only refresh the game message automatically
 						if sett.AutoRefresh {
-							bot.RefreshGameStateMessage(dgsRequest, sett)
+							bot.RefreshGameStateMessage(dgsRequest, sett, dgs.GameStateMsg.MessageChannelID)
 						}
 
 					}
 				}
 				if job.JobType != broker.Connection {
-					go func() {
+					go func(userID string, ge storage.PostgresGameEvent) {
 						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
 						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
-							gameEvent.GameID = dgs.MatchID
-							if correlatedUserID != "" {
-								num, err := strconv.ParseUint(correlatedUserID, 10, 64)
+							ge.GameID = dgs.MatchID
+							if userID != "" {
+								num, err := strconv.ParseUint(userID, 10, 64)
 								if err != nil {
 									log.Println(err)
 								} else {
-									gameEvent.UserID = num
+									ge.UserID = num
 								}
+								log.Printf("Adding postgres event with user id %d\n", ge.UserID)
 							}
 
-							err := bot.PostgresInterface.AddEvent(&gameEvent)
+							err := bot.PostgresInterface.AddEvent(&ge)
 							if err != nil {
 								log.Println(err)
 							}
 						}
-					}()
+					}(correlatedUserID, gameEvent)
 				}
 			}
 			break
@@ -398,10 +399,15 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, DeadPriority, dgsRequest)
 
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		if edited {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		if sett.AutoRefresh {
+			bot.RefreshGameStateMessage(dgsRequest, sett, dgs.GameStateMsg.MessageChannelID)
+		} else {
+			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+			if edited {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			}
 		}
+
 		break
 	}
 }

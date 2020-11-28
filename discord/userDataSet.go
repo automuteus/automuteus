@@ -45,10 +45,12 @@ func (dgs *DiscordGameState) UpdateUserData(userID string, data UserData) {
 
 func (dgs *DiscordGameState) AttemptPairingByUserIDs(data game.PlayerData, userIDs map[string]interface{}) string {
 	for userID := range userIDs {
-		//only attempt to link players that aren't paired already
-		if v, ok := dgs.UserData[userID]; ok && v.GetPlayerName() == game.UnlinkedPlayerName {
-			v.Link(data)
-			dgs.UserData[userID] = v
+		if v, ok := dgs.UserData[userID]; ok {
+			//only attempt to link players that aren't paired already
+			if v.GetPlayerName() == game.UnlinkedPlayerName {
+				v.Link(data)
+				dgs.UserData[userID] = v
+			}
 			return userID
 		}
 	}

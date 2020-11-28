@@ -635,7 +635,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case Refresh:
-			bot.RefreshGameStateMessage(gsr, sett)
+			bot.RefreshGameStateMessage(gsr, sett, m.ChannelID)
 			break
 		case Link:
 			if len(args[1:]) < 2 {

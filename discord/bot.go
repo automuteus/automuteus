@@ -352,7 +352,7 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 	deleteMessage(s, msgChannelID, msgID)
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings, channelID string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		return
@@ -363,6 +363,8 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	//create a new instance of the new one
 	if oldChannelId != "" {
 		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), oldChannelId, dgs.GameStateMsg.LeaderID)
+	} else if channelID != "" {
+		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), channelID, dgs.GameStateMsg.LeaderID)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
