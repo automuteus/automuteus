@@ -47,15 +47,18 @@ create table if not exists users_games
 create index if not exists guilds_id_index ON guilds (guild_id); --query guilds by ID
 create index if not exists guilds_premium_index ON guilds (premium); --query guilds by prem status
 
-create index if not exists games_id_index ON games (game_id); --query games by ID
-create index if not exists guild_games_id_index ON games (guild_id); --query games by guild ID
+create index if not exists games_game_id_index ON games (game_id); --query games by ID
+create index if not exists games_guild_id_index ON games (guild_id); --query games by guild ID
+create index if not exists games_win_type_index on games (win_type); --query games by win type
+create index if not exists games_connect_code_index on games (connect_code); --query games by connect code
 
-create index if not exists users_id_index ON users (user_id); --query for user info by their ID
+create index if not exists users_user_id_index ON users (user_id); --query for user info by their ID
 
-create index if not exists users_games_hashed_id_index ON users_games (user_id); --query games by hashed ID
+create index if not exists users_games_user_id_index ON users_games (user_id); --query games by user ID
 create index if not exists users_games_game_id_index ON users_games (game_id); --query games by game ID
 create index if not exists users_games_guild_id_index ON users_games (guild_id); --query games by guild ID
 create index if not exists users_games_role_index ON users_games (player_role); --query games by win status
 create index if not exists users_games_won_index ON users_games (player_won); --query games by win status
 
 create index if not exists game_events_game_id_index on game_events (game_id); --query for game events by the game ID
+create index if not exists game_events_hashed_user_id_index on game_events (hashed_user_id); --query for game events by the game ID

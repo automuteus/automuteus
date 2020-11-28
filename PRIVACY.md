@@ -10,14 +10,14 @@ General Data Protection Regulation](https://eur-lex.europa.eu/legal-content/EN/T
 3. Users can opt-out of data collection at any time if they don't wish for AutoMuteUs to gather this data. (`.au priv optout`)
 
 # What Data does AutoMuteUs collect?
-AutoMuteUs collects a very small amount of user information for statistics. Your Discord UserID is the only
-Personally-Identifiable Information (PII) that the bot requires to gather statistics. All other data collected by AutoMuteUs
-is non-identifiable in-game data, such as in-game player names, player color, etc. An example of a game data record recorded
+AutoMuteUs collects a very small amount of user information for statistics. Your Discord UserID, and any in-game names you have used
+are the only Personally-Identifiable Information (PII) that the bot requires to gather statistics. All other data collected by AutoMuteUs
+is non-identifiable in-game data, such as player color, crewmate/imposter role, etc. An example of a game data record recorded
 by AutoMuteUs is shown below:
 ```
 {
     "color": 11,
-    "name": "mouse",
+    "name": "Soup",
     "isAlive": true
 }
 ```
@@ -27,3 +27,5 @@ choose to delete the data that AutoMuteUs stores about you (with `.au privacy op
 and the full history of your past games is deleted. Because of this, re-opting into data collection with AutoMuteUs (`.au privacy optin`) means
 your past games and game events **are not recoverable**. Please carefully consider this before opting out, if you plan to
 view your game statistics at any point in the future!
+
+Questions and concerns about your Data Collection and Privacy can be addressed to gdpr@automute.us

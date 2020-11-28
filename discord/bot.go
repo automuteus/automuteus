@@ -192,14 +192,6 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
 
-		//f, err := os.Create(path.Join(bot.logPath, m.Guild.ID+"_log.txt"))
-		//w := io.MultiWriter(os.Stdout)
-		//if err != nil {
-		//	log.Println("Couldn't create logger for " + m.Guild.ID + "; only using stdout for logging")
-		//} else {
-		//	w = io.MultiWriter(f, os.Stdout)
-		//}
-
 		if emojiGuildID == "" {
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
 			emojiGuildID = m.Guild.ID

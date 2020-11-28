@@ -10,5 +10,8 @@ Dockerfile
 LICENSE
 renovate.json
 TODO.org
+LOCALIZATION.md
+PRIVACY.md
+README.md
 
 *.md

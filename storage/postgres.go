@@ -25,6 +25,8 @@ const (
 	BronzeTier
 	SilverTier
 	GoldTier
+	PlatTier
+	SelfHostTier
 )
 
 var PremiumTierStrings = []string{
@@ -32,6 +34,8 @@ var PremiumTierStrings = []string{
 	"Bronze",
 	"Silver",
 	"Gold",
+	"Platinum",
+	"SelfHost",
 }
 
 func ConstructPsqlConnectURL(addr, username, password string) string {
@@ -113,6 +117,13 @@ func (psqlInterface *PsqlInterface) OptUserByString(userID string, opt bool) (bo
 	if err != nil {
 		return false, err
 	}
+	if !opt {
+		_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE game_events SET (hashed_user_id) = (NULL) WHERE hashed_user_id = $1;", user.HashedUserID)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	return true, nil
 }
 
@@ -153,15 +164,15 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 }
 
 func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) PremiumTier {
+	//self-hosting; only return the true guild status if this variable is set
+	if os.Getenv("OFFICIAL") == "" {
+		return SelfHostTier
+	}
+
 	gid, err := strconv.ParseUint(guildID, 10, 64)
 	if err != nil {
 		log.Println(err)
 		return FreeTier
-	}
-
-	//self-hosting; only return the true guild status if this variable is set
-	if os.Getenv("OFFICIAL") == "" {
-		return GoldTier
 	}
 
 	guild, err := psqlInterface.GetGuild(gid)

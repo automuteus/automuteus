@@ -75,7 +75,7 @@ func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands [
 	return embed
 }
 
-func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -99,12 +99,18 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 		Author:    nil,
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, len(settings))
-	for i, v := range settings {
-		fields[i] = &discordgo.MessageEmbedField{
-			Name:   v.name,
-			Value:  sett.LocalizeMessage(v.shortDesc),
-			Inline: true,
+	fields := make([]*discordgo.MessageEmbedField, 0)
+	for _, v := range settings {
+		if !v.premium || v.premium == prem {
+			name := v.name
+			if v.premium {
+				name = "💎 " + name
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   name,
+				Value:  sett.LocalizeMessage(v.shortDesc),
+				Inline: true,
+			})
 		}
 	}
 
@@ -316,11 +322,6 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.Gu
 }
 
 func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	//gameInfoFields[2] = &discordgo.MessageEmbedField{
-	//	Name:   "\u200B",
-	//	Value:  "\u200B",
-	//	Inline: false,
-	//}
 	room, region := dgs.AmongUsData.GetRoomRegion()
 	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
@@ -381,7 +382,6 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	desc := ""
 
 	//if game is over, dont append the player count or the other description fields
-	//TODO include some sort of game summary for gameover
 	if phase != game.GAMEOVER {
 		desc = dgs.makeDescription(sett)
 		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
@@ -458,18 +458,31 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 	if tier != storage.FreeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.PremiumDescription",
-			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are commands you can invoke with `{{.CommandPrefix}} premium <command>`",
+			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
 		},
 			map[string]interface{}{
-				"Tier":          storage.PremiumTierStrings[tier],
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Tier": storage.PremiumTierStrings[tier],
 			})
 
-		//TODO localize
 		fields = []*discordgo.MessageEmbedField{
 			{
-				Name:   "invites",
-				Value:  "View a list of Premium bots you can invite",
+				Name: "Bot Invites",
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.Invites",
+					Other: "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!",
+				}, map[string]interface{}{
+					"CommandPrefix": sett.GetCommandPrefix(),
+				}),
+				Inline: false,
+			},
+			{
+				Name: "Premium Settings",
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.Settings",
+					Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
+				}, map[string]interface{}{
+					"CommandPrefix": sett.GetCommandPrefix(),
+				}),
 				Inline: false,
 			},
 		}
@@ -481,23 +494,58 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 		//TODO localize
 		fields = []*discordgo.MessageEmbedField{
 			{
-				Name:   "🙊 Fast Mute/Deafen",
-				Value:  "Premium users get access to \"helper\" bots that make sure muting is fast!",
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.PriorityGameAccess",
+					Other: "👑 Priority Game Access",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.PriorityGameAccessDesc",
+					Other: "If the Bot is under heavy load, Premium users will always be able to make new games!",
+				}),
 				Inline: false,
 			},
 			{
-				Name:   "📊 Game Stats and Leaderboards",
-				Value:  "Premium users have access to a full suite of player stats and leaderboards!",
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.FastMute",
+					Other: "🙊 Fast Mute/Deafen",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.FastMuteDesc",
+					Other: "Premium users get access to \"helper\" bots that make sure muting is fast!",
+				}),
 				Inline: false,
 			},
 			{
-				Name:   "👑 Priority Game Access",
-				Value:  "If the Bot is under heavy load, Premium users will always be able to make new games!",
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.Stats",
+					Other: "📊 Game Stats and Leaderboards",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.StatsDesc",
+					Other: "Premium users have access to a full suite of player stats and leaderboards!",
+				}),
 				Inline: false,
 			},
 			{
-				Name:   "👂 Premium Support",
-				Value:  "Premium users get access to private channels on our official Discord channel!",
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.Settings",
+					Other: "🛠 Special Settings",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.SettingsDesc",
+					Other: "Premium users can specify additional settings, like displaying an end-game status message, or auto-refreshing the status message!",
+				}),
+				Inline: false,
+			},
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.Support",
+					Other: "👂 Premium Support",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.SupportDesc",
+					Other: "Premium users get access to private channels on our official Discord channel!",
+				}),
 				Inline: false,
 			},
 		}
@@ -524,6 +572,15 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 	return &msg
 }
 
+func nonPremiumSettingResponse(sett *storage.GuildSettings) string {
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.nonPremiumSetting.Desc",
+		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `{{.CommandPrefix}} premium` for details",
+	}, map[string]interface{}{
+		"CommandPrefix": sett.GetCommandPrefix(),
+	})
+}
+
 func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
@@ -540,9 +597,10 @@ func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) 
 		count := 0
 		if tier == storage.SilverTier {
 			count = 1
-		} else if tier == storage.GoldTier {
+		} else if tier == storage.GoldTier || tier == storage.PlatTier {
 			count = 3
 		}
+		//TODO account for Platinum
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",

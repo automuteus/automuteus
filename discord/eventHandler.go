@@ -176,12 +176,17 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							} else if err == nil {
 								bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 							}
+
 						}
 						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
 						dgs.MatchID = -1
 						dgs.MatchStartUnix = -1
 						bot.RedisInterface.SetDiscordGameState(dgs, lock)
-						bot.RefreshGameStateMessage(dgsRequest, sett)
+						//in this context, only refresh the game message automatically
+						if sett.AutoRefresh {
+							bot.RefreshGameStateMessage(dgsRequest, sett)
+						}
+
 					}
 				}
 				if job.JobType != broker.Connection {

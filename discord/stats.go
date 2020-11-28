@@ -8,7 +8,10 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
+	"strconv"
 )
+
+const UserLeaderboardCount = 3
 
 func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
@@ -23,24 +26,16 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		avatarUrl = mem.User.AvatarURL("")
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, 3)
+	fields := make([]*discordgo.MessageEmbedField, 2)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.GamesPlayed",
-			Other: "Total Games Played",
-		}),
-		Value:  fmt.Sprintf("%d", gamesPlayed),
-		Inline: true,
-	}
-	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.userStatsEmbed.GamesPlayedOnServer",
-			Other: "On This Server",
+			Other: "Games Played",
 		}),
 		Value:  fmt.Sprintf("%d", gamesPlayedServer),
 		Inline: true,
 	}
-	fields[2] = &discordgo.MessageEmbedField{
+	fields[1] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.TotalWins",
 			Other: "Total Wins",
@@ -48,6 +43,11 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		Value:  fmt.Sprintf("%d", winsOnServer),
 		Inline: true,
 	}
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "\u200b",
+		Value:  "\u200b",
+		Inline: true,
+	})
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.userStatsEmbed.NoPremium",
@@ -64,11 +64,11 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		colorRankings := bot.PostgresInterface.ColorRankingForPlayer(userID)
 		if len(colorRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
-			for i := 0; i < len(colorRankings); i++ {
+			for i := 0; i < len(colorRankings) && i < UserLeaderboardCount; i++ {
 				elem := colorRankings[i]
 				emoji := bot.StatusEmojis[true][elem.Mode]
 				buf.WriteString(fmt.Sprintf("%s | %.0f%%", emoji.FormatForInline(), 100.0*float64(elem.Count)/float64(gamesPlayed)))
-				if i < len(colorRankings)-1 {
+				if i < len(colorRankings)-1 && i < UserLeaderboardCount-1 {
 					buf.WriteByte('\n')
 				}
 			}
@@ -81,13 +81,13 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		nameRankings := bot.PostgresInterface.NamesRanking(userID)
+		nameRankings := bot.PostgresInterface.NamesRankingForPlayer(userID)
 		if len(nameRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
-			for i := 0; i < len(nameRankings); i++ {
+			for i := 0; i < len(nameRankings) && i < UserLeaderboardCount; i++ {
 				elem := nameRankings[i]
 				buf.WriteString(fmt.Sprintf("%s | %.0f%%", elem.Mode, 100.0*float64(elem.Count)/float64(gamesPlayed)))
-				if i < len(nameRankings)-1 {
+				if i < len(nameRankings)-1 && i < UserLeaderboardCount-1 {
 					buf.WriteByte('\n')
 				}
 			}
@@ -147,7 +147,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Desc",
-			Other: "User stats for {{.User}}",
+			Other: "User stats for {{.User}} on this Server",
 		}, map[string]interface{}{
 			"User": "<@!" + userID + ">",
 		}) + "\n\n" + extraDesc,
@@ -168,6 +168,8 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	return &embed
 }
 
+const LeaderboardSize = 5
+
 func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarUrl := ""
@@ -187,7 +189,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.guildStatsEmbed.GamesPlayed",
-			Other: "Total Games Played",
+			Other: "Games Played",
 		}),
 		Value:  fmt.Sprintf("%d", gamesPlayed),
 		Inline: true,
@@ -205,6 +207,64 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 			ID:    "responses.guildStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!",
 		})
+		gid, err := strconv.ParseUint(guildID, 10, 64)
+		if err == nil {
+			totalGameRankings := bot.PostgresInterface.TotalGamesRankingForServer(gid)
+
+			buf := bytes.NewBuffer([]byte{})
+			for i := 0; i < len(totalGameRankings) && i < LeaderboardSize; i++ {
+				elem := totalGameRankings[i]
+				buf.WriteString(fmt.Sprintf("<@%d> | %d Games", elem.Mode, elem.Count))
+				if i < len(totalGameRankings)-1 && i < LeaderboardSize-1 {
+					buf.WriteByte('\n')
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.guildStatsEmbed.MostGames",
+					Other: "Games Played",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+
+			crewmateGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 0)
+			buf = bytes.NewBuffer([]byte{})
+			for i := 0; i < len(crewmateGameRankings) && i < LeaderboardSize; i++ {
+				elem := crewmateGameRankings[i]
+				buf.WriteString(fmt.Sprintf("<@%d> | %d Wins", elem.Mode, elem.Count))
+				if i < len(crewmateGameRankings)-1 && i < LeaderboardSize-1 {
+					buf.WriteByte('\n')
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.guildStatsEmbed.CrewmateWins",
+					Other: "Crewmate Wins",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+
+			imposterGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 1)
+			buf = bytes.NewBuffer([]byte{})
+			for i := 0; i < len(imposterGameRankings) && i < LeaderboardSize; i++ {
+				elem := imposterGameRankings[i]
+				buf.WriteString(fmt.Sprintf("<@%d> | %d Wins", elem.Mode, elem.Count))
+				if i < len(imposterGameRankings)-1 && i < LeaderboardSize-1 {
+					buf.WriteByte('\n')
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.guildStatsEmbed.ImposterWins",
+					Other: "Imposter Wins",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+
+		}
 	}
 
 	var embed = discordgo.MessageEmbed{

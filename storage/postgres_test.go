@@ -20,7 +20,8 @@ func TestPsqlInterface_Init(t *testing.T) {
 	}
 	gid := uint64(141082723635691521)
 	uid := uint64(140581066283941888)
-	userID := "140581066283941888"
+	//userID := "140581066283941888"
+	//guildID := "140581066283941888"
 
 	_, err = psql.EnsureGuildExists(gid, "test")
 	if err != nil {
@@ -57,10 +58,10 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//rs := psql.NumGamesPlayedByUserOnServer(uid, "141082723635691521")
 	//log.Println(rs)
 	//
-	//dd := psql.NamesRanking(uid)
-	//for _, v := range dd {
-	//	log.Printf("Mode: %s, Count: %d\n", v.Mode, v.Count)
-	//}
+	dd := psql.TotalGamesRankingForServer(gid)
+	for _, v := range dd {
+		log.Printf("Mode: %d, Count: %d\n", v.Mode, v.Count)
+	}
 
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)
 	//if err != nil {
@@ -87,7 +88,4 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
-
-	log.Println(psql.NumWinsAsRole(userID, 0))
-	log.Println(psql.NumWinsAsRole(userID, 1))
 }

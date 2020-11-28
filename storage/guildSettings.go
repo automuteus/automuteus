@@ -18,6 +18,7 @@ type GuildSettings struct {
 	VoiceRules               game.VoiceRules `json:"voiceRules"`
 	UnmuteDeadDuringTasks    bool            `json:"unmuteDeadDuringTasks"`
 	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
+	AutoRefresh              bool            `json:"autoRefresh"`
 
 	lock sync.RWMutex
 }
@@ -32,6 +33,7 @@ func MakeGuildSettings() *GuildSettings {
 		VoiceRules:               game.MakeMuteAndDeafenRules(),
 		UnmuteDeadDuringTasks:    false,
 		DeleteGameSummaryMinutes: 0, //-1 for never delete the match summary
+		AutoRefresh:              false,
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -103,6 +105,14 @@ func (gs *GuildSettings) GetDeleteGameSummaryMinutes() int {
 
 func (gs *GuildSettings) SetDeleteGameSummaryMinutes(num int) {
 	gs.DeleteGameSummaryMinutes = num
+}
+
+func (gs *GuildSettings) GetAutoRefresh() bool {
+	return gs.AutoRefresh
+}
+
+func (gs *GuildSettings) SetAutoRefresh(n bool) {
+	gs.AutoRefresh = n
 }
 
 func (gs *GuildSettings) SetUnmuteDeadDuringTasks(v bool) {

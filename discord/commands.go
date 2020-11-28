@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -490,9 +489,6 @@ var AllCommands = []Command{
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
 func ConstructEmbedForCommand(prefix string, cmd Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	if cmd.cmdType == Settings {
-		return settingResponse(prefix, AllSettings, sett)
-	}
 	return &discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
@@ -718,30 +714,31 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			bot.applyToAll(dgs, false, false)
 			break
 
-		case Force:
-			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
-			} else {
-				phase := getPhaseFromString(args[1])
-				if phase == game.UNINITIALIZED {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.Force.UNINITIALIZED",
-						Other: "Sorry, I didn't understand the game phase you tried to force",
-					}))
-				} else {
-					//TODO fix
-					//dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-					//if dgs.ConnectCode != "" {
-					//	i := strconv.FormatInt(int64(phase), 10)
-					//	bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
-					//}
-				}
-			}
-			break
+		//case Force:
+		//	if len(args[1:]) == 0 {
+		//		embed := ConstructEmbedForCommand(prefix, cmd, sett)
+		//		s.ChannelMessageSendEmbed(m.ChannelID, embed)
+		//	} else {
+		//		phase := getPhaseFromString(args[1])
+		//		if phase == game.UNINITIALIZED {
+		//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		//				ID:    "commands.HandleCommand.Force.UNINITIALIZED",
+		//				Other: "Sorry, I didn't understand the game phase you tried to force",
+		//			}))
+		//		} else {
+		//			//TODO fix
+		//			//dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+		//			//if dgs.ConnectCode != "" {
+		//			//	i := strconv.FormatInt(int64(phase), 10)
+		//			//	bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
+		//			//}
+		//		}
+		//	}
+		//	break
 
 		case Settings:
-			bot.HandleSettingsCommand(s, m, sett, args)
+			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			bot.HandleSettingsCommand(s, m, sett, args, premStatus != 0)
 			break
 
 		case Log:

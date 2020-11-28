@@ -26,6 +26,7 @@ const (
 	Delays
 	VoiceRules
 	MatchSummary
+	AutoRefresh
 	Show
 	Reset
 	NullSetting
@@ -39,6 +40,7 @@ type Setting struct {
 	desc        *i18n.Message
 	args        *i18n.Message
 	aliases     []string
+	premium     bool
 }
 
 var AllSettings = []Setting{
@@ -48,7 +50,7 @@ var AllSettings = []Setting{
 		example:     "commandPrefix !",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.Prefix.shortDesc",
-			Other: "Bot prefix",
+			Other: "Bot Prefix",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.Prefix.desc",
@@ -59,6 +61,7 @@ var AllSettings = []Setting{
 			Other: "<prefix>",
 		},
 		aliases: []string{"prefix", "cp"},
+		premium: false,
 	},
 	{
 		settingType: Language,
@@ -66,7 +69,7 @@ var AllSettings = []Setting{
 		example:     "language ru",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.Language.shortDesc",
-			Other: "Bot language",
+			Other: "Bot Language",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.Language.desc",
@@ -77,6 +80,7 @@ var AllSettings = []Setting{
 			Other: "<language> or reload",
 		},
 		aliases: []string{"lang", "l"},
+		premium: false,
 	},
 	{
 		settingType: AdminUserIDs,
@@ -95,6 +99,7 @@ var AllSettings = []Setting{
 			Other: "<User @ mentions>...",
 		},
 		aliases: []string{"admins", "admin", "auid", "aui", "a"},
+		premium: false,
 	},
 	{
 		settingType: RoleIDs,
@@ -113,6 +118,7 @@ var AllSettings = []Setting{
 			Other: "<role @ mentions>...",
 		},
 		aliases: []string{"operators", "op", "oproles", "roles", "role"},
+		premium: false,
 	},
 	{
 		settingType: UnmuteDead,
@@ -120,7 +126,7 @@ var AllSettings = []Setting{
 		example:     "unmuteDeadDuringTasks false",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.UnmuteDead.shortDesc",
-			Other: "Bot unmutes players on death",
+			Other: "Bot Unmutes Deaths",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.UnmuteDead.desc",
@@ -131,6 +137,7 @@ var AllSettings = []Setting{
 			Other: "<true/false>",
 		},
 		aliases: []string{"unmute", "uddt"},
+		premium: false,
 	},
 	{
 		settingType: Delays,
@@ -138,7 +145,7 @@ var AllSettings = []Setting{
 		example:     "delays lobby tasks 5",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.Delays.shortDesc",
-			Other: "Delays between stages",
+			Other: "Delays Between Stages",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.Delays.desc",
@@ -149,6 +156,7 @@ var AllSettings = []Setting{
 			Other: "<start phase> <end phase> <delay>",
 		},
 		aliases: []string{"delays", "d"},
+		premium: false,
 	},
 	{
 		settingType: VoiceRules,
@@ -156,7 +164,7 @@ var AllSettings = []Setting{
 		example:     "voiceRules mute tasks dead true",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.VoiceRules.shortDesc",
-			Other: "Mute/deafen rules",
+			Other: "Mute/deafen Rules",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.VoiceRules.desc",
@@ -167,6 +175,7 @@ var AllSettings = []Setting{
 			Other: "<mute/deaf> <game phase> <dead/alive> <true/false>",
 		},
 		aliases: []string{"voice", "vr"},
+		premium: false,
 	},
 	{
 		settingType: MatchSummary,
@@ -174,7 +183,7 @@ var AllSettings = []Setting{
 		example:     "matchSummary 5",
 		shortDesc: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummary.shortDesc",
-			Other: "Match summary deletion",
+			Other: "Match Summary Message",
 		},
 		desc: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummary.desc",
@@ -185,6 +194,26 @@ var AllSettings = []Setting{
 			Other: "<minutes>",
 		},
 		aliases: []string{"matchsum", "summary", "match"},
+		premium: true,
+	},
+	{
+		settingType: AutoRefresh,
+		name:        "autoRefresh",
+		example:     "autoRefresh true",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.AutoRefresh.shortDesc",
+			Other: "Autorefresh Status Message",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.AutoRefresh.desc",
+			Other: "Specify if the bot should auto-refresh the status message after a match ends",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.AutoRefresh.args",
+			Other: "<true/false>",
+		},
+		aliases: []string{"refresh", "auto"},
+		premium: true,
 	},
 	{
 		settingType: Show,
@@ -203,6 +232,7 @@ var AllSettings = []Setting{
 			Other: "None",
 		},
 		aliases: []string{"sh", "s"},
+		premium: false,
 	},
 	{
 		settingType: Reset,
@@ -221,10 +251,15 @@ var AllSettings = []Setting{
 			Other: "None",
 		},
 		aliases: []string{},
+		premium: false,
 	},
 }
 
 func ConstructEmbedForSetting(value string, setting Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
+	title := setting.name
+	if setting.premium {
+		title = "💎 " + title
+	}
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
@@ -289,9 +324,9 @@ func getSetting(arg string) SettingType {
 	return NullSetting
 }
 
-func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) {
+func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) {
 	if len(args) == 1 {
-		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, AllSettings, sett))
+		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, AllSettings, sett, prem))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
@@ -321,7 +356,18 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		isValid = SettingVoiceRules(s, m, sett, args)
 		break
 	case MatchSummary:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
 		isValid = SettingMatchSummary(s, m, sett, args)
+		break
+	case AutoRefresh:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingAutoRefresh(s, m, sett, args)
 		break
 	case Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
@@ -634,58 +680,6 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	sett.SetPermissionRoleIDs(newRoleIDs)
 	return true
 }
-
-//func SettingApplyNicknames(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
-//	applyNicknames := sett.GetApplyNicknames()
-//	if len(args) == 2 {
-//		current := "false"
-//		if applyNicknames {
-//			current = "true"
-//		}
-//		embed := ConstructEmbedForSetting(current, AllSettings[Nicknames], sett)
-//		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-//		return false
-//	}
-//
-//	if args[2] == "true" {
-//		if applyNicknames {
-//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "settings.SettingApplyNicknames.true_applyNicknames",
-//				Other: "It's already true!",
-//			}))
-//		} else {
-//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "settings.SettingApplyNicknames.true_noApplyNicknames",
-//				Other: "I will now rename the players in the voice chat.",
-//			}))
-//			sett.SetApplyNicknames(true)
-//			return true
-//		}
-//	} else if args[2] == "false" {
-//		if applyNicknames {
-//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "settings.SettingApplyNicknames.false_applyNicknames",
-//				Other: "I will no longer rename the players in the voice chat.",
-//			}))
-//			sett.SetApplyNicknames(false)
-//			return true
-//		} else {
-//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "settings.SettingApplyNicknames.false_noApplyNicknames",
-//				Other: "It's already false!",
-//			}))
-//		}
-//	} else {
-//		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//			ID:    "settings.SettingApplyNicknames.wrongArg",
-//			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
-//		},
-//			map[string]interface{}{
-//				"Arg": args[2],
-//			}))
-//	}
-//	return false
-//}
 
 func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
@@ -1026,6 +1020,43 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 			map[string]interface{}{
 				"Minutes": num,
 			}))
+	}
+
+	return true
+}
+
+func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), AllSettings[AutoRefresh], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	val := args[2]
+	if val != "t" && val != "true" && val != "f" && val != "false" {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingAutoRefresh.Unrecognized",
+			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage",
+		},
+			map[string]interface{}{
+				"Arg":           val,
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+
+	newSet := val == "t" || val == "true"
+	sett.SetAutoRefresh(newSet)
+	if newSet {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingAutoRefresh.True",
+			Other: "From now on, I'll AutoRefresh the game status message",
+		}))
+	} else {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingAutoRefresh.False",
+			Other: "From now on, I will not AutoRefresh the game status message",
+		}))
 	}
 
 	return true
