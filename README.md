@@ -77,10 +77,10 @@ If you want to view command usage or see the available options, type `.au` or `.
 
 ## Galactus 
 
-Galactus is a system used to speed up people's muting (which is normally slow to due to Discord limiting bot actions to 5 calls in 5 seconds per server) by having the user provide a second token (created by the user) to the bot which helps mute/deafen players quicker. You can find a guide to set this up [here.](https://youtu.be/jKcEW5qpk8E)
+Galactus is a system used to speed up people's muting (which is normally slow to due to Discord limiting bot actions to 5 calls in 5 seconds per server) by having the user provide a second token (created by the user) to the bot which helps mute/deafen players quicker. You can find a guide to set this up [here,](https://youtu.be/jKcEW5qpk8E) and the repo for this feature can be found [here.](https://github.com/automuteus/galactus)
 ## Commands
 
-The Discord Bot uses the `.au` prefix for any commands my default; if you change your prefix remember to replace `.au` with your custom prefix
+The Discord Bot uses the `.au` prefix for any commands my default; if you change your prefix remember to replace `.au` with your custom prefix. If you forget your prefix, you can @mention the bot and it will respond with whatever it's prefix currently is.
 
 | Command        | Alias   | Arguments   | Description                                                                                                     | Example                            |
 | -------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
