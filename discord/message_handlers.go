@@ -335,7 +335,6 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		dgs.UpdateUserData(m.UserID, userData)
 
 		if dgs.Running {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := UserModifyRequest{
 				Premium: prem,
@@ -347,10 +346,15 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 					},
 				},
 			}
-			err := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
-			if err != nil {
-				log.Println(err)
+			mdsc := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			if mdsc == nil {
+				log.Println("Nil response from modifyUsers, probably not good...")
+			} else {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 			}
+
 			//go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
@@ -459,7 +463,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 			if activeGames > num {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.lockout",
-					Other: "Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes, or consider AutoMuteUs Premium",
+					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\nPlease try again in a few minutes, or consider AutoMuteUs Premium",
 				}))
 				lock.Release(context.Background())
 				return

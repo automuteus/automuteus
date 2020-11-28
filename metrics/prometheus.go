@@ -33,17 +33,49 @@ func (cc MetricsObserverCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		discord1minDesc,
 		prometheus.GaugeValue,
-		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafen)),
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafenOfficial)),
 		cc.MetricsObserver.NodeID,
-		"mute/deafen",
+		"mute/deafen official",
 	)
 
 	ch <- prometheus.MustNewConstMetric(
 		discord10minDesc,
 		prometheus.GaugeValue,
-		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MuteDeafen)),
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MuteDeafenOfficial)),
 		cc.MetricsObserver.NodeID,
-		"mute/deafen",
+		"mute/deafen official",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafenCapture)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen capture",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MuteDeafenCapture)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen capture",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord1minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute, MuteDeafenWorker)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen worker",
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		discord10minDesc,
+		prometheus.GaugeValue,
+		float64(cc.MetricsObserver.MetricsCollector.TotalRequestCountInTimeFiltered(time.Minute*10, MuteDeafenWorker)),
+		cc.MetricsObserver.NodeID,
+		"mute/deafen worker",
 	)
 
 	ch <- prometheus.MustNewConstMetric(

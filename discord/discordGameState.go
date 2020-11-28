@@ -187,7 +187,7 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *st
 		}
 	}
 	//balance out the last row of embeds with an extra inline field
-	if num == 2 || num == 5 || num == 8 {
+	if num%3 == 2 {
 		sorted = append(sorted, &discordgo.MessageEmbedField{
 			Name:   "\u200b",
 			Value:  "\u200b",

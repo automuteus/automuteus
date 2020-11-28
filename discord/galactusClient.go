@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/storage"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -62,7 +63,14 @@ func (gc *GalactusClient) AddToken(token string) error {
 	return nil
 }
 
-func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest, lock *redislock.Lock) error {
+//a response indicating how the mutes/deafens were issued
+type MuteDeafenSuccessCounts struct {
+	Worker   int64 `json:"worker"`
+	Capture  int64 `json:"capture"`
+	Official int64 `json:"official"`
+}
+
+func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest, lock *redislock.Lock) *MuteDeafenSuccessCounts {
 	if lock != nil {
 		defer lock.Release(context.Background())
 	}
@@ -70,17 +78,30 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserM
 	fullUrl := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	log.Println(request)
 
 	resp, err := gc.client.Post(fullUrl, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
-		return err
+		return nil
 	}
+
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("non-okay response from modifying users")
+		return nil
 	}
-	return nil
+
+	mds := MuteDeafenSuccessCounts{}
+	jBytes, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return &mds
+	}
+	err = json.Unmarshal(jBytes, &mds)
+	if err != nil {
+		log.Println(err)
+		return &mds
+	}
+	return &mds
 }

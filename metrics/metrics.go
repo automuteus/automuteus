@@ -13,10 +13,12 @@ type MetricsEventType int
 
 const (
 	Generic MetricsEventType = iota
-	MuteDeafen
+	MuteDeafenOfficial
 	MessageCreateDelete
 	MessageEdit
 	ReactionAdd
+	MuteDeafenCapture
+	MuteDeafenWorker
 )
 
 type MetricsCollector struct {
@@ -52,7 +54,10 @@ func (mc *MetricsCollector) RecordDiscordRequests(client *redis.Client, requestT
 	}
 
 	mc.lock.Unlock()
-	go incrementDiscordRequests(client, num)
+	//capture/worker requests don't count
+	if requestType != MuteDeafenCapture && requestType != MuteDeafenWorker {
+		go incrementDiscordRequests(client, num)
+	}
 }
 
 func (mc *MetricsCollector) TotalRequestCountInTimeFiltered(timeBack time.Duration, filter MetricsEventType) int64 {
@@ -62,7 +67,8 @@ func (mc *MetricsCollector) TotalRequestCountInTimeFiltered(timeBack time.Durati
 	mc.lock.RLock()
 	for i, v := range mc.data {
 		if i > cutoff {
-			if filter == Generic || filter == v {
+			//If a generic filter, ignore the requests that go out on other bot tokens
+			if (filter == Generic && v != MuteDeafenWorker && v != MuteDeafenCapture) || filter == v {
 				count++
 			}
 		} else {

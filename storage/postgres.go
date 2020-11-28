@@ -170,7 +170,7 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 
 func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) PremiumTier {
 	//self-hosting; only return the true guild status if this variable is set
-	if os.Getenv("OFFICIAL") == "" {
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
 		return SelfHostTier
 	}
 

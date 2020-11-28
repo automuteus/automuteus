@@ -43,11 +43,13 @@ func activeGamesCode() string {
 }
 
 func (bot *Bot) refreshGameLiveness(code string) {
-	t := time.Now().Unix()
+	t := time.Now()
 	bot.RedisInterface.client.ZAdd(ctx, activeGamesCode(), &redis.Z{
-		Score:  float64(t),
+		Score:  float64(t.Unix()),
 		Member: code,
 	})
+	before := t.Add(-time.Second * GameTimeoutSeconds)
+	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func activeGamesKey(guildID string) string {
@@ -267,15 +269,17 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
-	t := time.Now().Unix()
+	t := time.Now()
 	_, err := redisInterface.client.ZAdd(ctx, key, &redis.Z{
-		Score:  float64(t),
+		Score:  float64(t.Unix()),
 		Member: connectCode,
 	}).Result()
 
 	if err != nil {
 		log.Println(err)
 	}
+	before := t.Add(-time.Second * GameTimeoutSeconds)
+	go redisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {

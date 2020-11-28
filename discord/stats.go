@@ -238,6 +238,11 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				}
 			}
 			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: true,
+			})
+			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.guildStatsEmbed.CrewmateWins",
 					Other: "Crewmate Wins",
@@ -261,6 +266,11 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					Other: "Imposter Wins",
 				}),
 				Value:  buf.String(),
+				Inline: true,
+			})
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
 				Inline: true,
 			})
 

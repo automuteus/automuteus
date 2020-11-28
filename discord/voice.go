@@ -22,7 +22,6 @@ const (
 func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
 	log.Println("Forcibly applying mute/deaf to " + userID)
 	prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
-	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := UserModifyRequest{
 		Premium: prem,
@@ -35,9 +34,13 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 		},
 	}
 	//nil lock because this is an override; we don't care about legitimately obtaining the lock
-	err := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
-	if err != nil {
-		log.Println(err)
+	mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+	if mdsc == nil {
+		log.Println("Nil response from modifyUsers, probably not good...")
+	} else {
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 	}
 	//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 }
@@ -76,7 +79,6 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 				Deaf:   deaf,
 			})
 			log.Println("Forcibly applying mute/deaf to " + userData.User.UserID)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
 		}
 	}
 	if len(users) > 0 {
@@ -86,9 +88,13 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 			Users:   users,
 		}
 		//nil lock because this is an override; we don't care about legitimately obtaining the lock
-		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
-		if err != nil {
-			log.Println(err)
+		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+		if mdsc == nil {
+			log.Println("Nil response from modifyUsers, probably not good...")
+		} else {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 		}
 	}
 }
@@ -148,9 +154,6 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			}
 			userData.SetShouldBeMuteDeaf(shouldMute, shouldDeaf)
 			dgs.UpdateUserData(userData.User.UserID, userData)
-			if dgs.Running {
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
-			}
 		} else if linked {
 			if shouldMute {
 				log.Print(fmt.Sprintf("Not muting %s because they're already muted\n", userData.GetUserName()))
@@ -176,9 +179,13 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			Premium: prem,
 			Users:   users,
 		}
-		err = bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
-		if err != nil {
-			log.Println(err)
+		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+		if mdsc == nil {
+			log.Println("Nil response from modifyUsers, probably not good...")
+		} else {
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 		}
 	}
 

@@ -16,7 +16,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var BotInvites = []string{"bot1", "bot2", "bot3"}
 var EmojiNums = []string{":one:", ":two:", ":three:"}
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
@@ -580,6 +579,13 @@ func nonPremiumSettingResponse(sett *storage.GuildSettings) string {
 		"CommandPrefix": sett.GetCommandPrefix(),
 	})
 }
+
+//if you're reading this, adding these bots won't help you.
+//Galactus+AutoMuteUs verify the premium status internally before using these bots ;)
+var BotInvites = []string{
+	"https://discord.com/api/oauth2/authorize?client_id=780323275624546304&permissions=12582912&scope=bot",
+	"https://discord.com/api/oauth2/authorize?client_id=769022114229125181&permissions=12582912&scope=bot",
+	"https://discord.com/api/oauth2/authorize?client_id=780323801173983262&permissions=25165824&scope=bot"}
 
 func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""

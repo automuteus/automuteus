@@ -181,6 +181,9 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 	log.Println("Finished gracefully shutting down")
 }
 
+var EmojiLock = sync.Mutex{}
+var AllEmojisStartup []*discordgo.Emoji = nil
+
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
 		gid, err := strconv.ParseUint(m.Guild.ID, 10, 64)
@@ -196,14 +199,22 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
 			emojiGuildID = m.Guild.ID
 		}
-		allEmojis, err := s.GuildEmojis(emojiGuildID)
-		if err != nil {
-			log.Println(err)
-		} else {
-			bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 
-			bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+		EmojiLock.Lock()
+		if AllEmojisStartup == nil {
+			allEmojis, err := s.GuildEmojis(emojiGuildID)
+			if err != nil {
+				log.Println(err)
+			} else {
+				AllEmojisStartup = allEmojis
+			}
+		} else {
+			log.Println("Skipping extra calls to fetch emojis")
+			bot.addAllMissingEmojis(s, m.Guild.ID, true, AllEmojisStartup)
+
+			bot.addAllMissingEmojis(s, m.Guild.ID, false, AllEmojisStartup)
 		}
+		EmojiLock.Unlock()
 
 		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
 

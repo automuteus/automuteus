@@ -1004,7 +1004,7 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	sett.SetDeleteGameSummaryMinutes(int(num))
 	if num == -1 {
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingMatchSummary.Success0",
+			ID:    "settings.SettingMatchSummary.Success-1",
 			Other: "From now on, I'll never delete match summary messages.",
 		}))
 	} else if num == 0 {

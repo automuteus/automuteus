@@ -146,15 +146,37 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
 						if delTime != 0 {
-							oldPhase := dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+							oldPhase := dgs.AmongUsData.GetPhase()
+
+							dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 							embed := bot.gameStateResponse(dgs, sett)
+
+							//TODO doesn't work
+							//winners := getWinners(*dgs, gameOverResult)
+							//buf := bytes.NewBuffer([]byte{})
+							//for i, v := range winners {
+							//	roleStr := "Crewmate"
+							//	if v.role == game.ImposterRole {
+							//		roleStr = "Imposter"
+							//	}
+							//	buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
+							//	if i < len(winners)-1 {
+							//		buf.WriteRune(',')
+							//	} else {
+							//		buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
+							//	}
+							//}
+
+							//manually set all alive AFTER making the embed
+							dgs.AmongUsData.SetAllAlive()
 							dgs.AmongUsData.Phase = oldPhase
 							embed.Description = sett.LocalizeMessage(&i18n.Message{
 								ID:    "eventHandler.gameOver.matchID",
-								Other: "Game Over. View the match's stats using Match ID: `{{.MatchID}}`",
+								Other: "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\n{{.Winners}}",
 							},
 								map[string]interface{}{
 									"MatchID": matchIDCode(dgs.ConnectCode, dgs.MatchID),
+									"Winners": "", //buf.String(),
 								})
 							if delTime > 0 {
 								embed.Footer = &discordgo.MessageEmbedFooter{
@@ -243,6 +265,41 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			return
 		}
 	}
+}
+
+type winnerRecord struct {
+	userID string
+	role   game.GameRole
+}
+
+func getWinners(dgs DiscordGameState, gameOver game.Gameover) []winnerRecord {
+	winners := []winnerRecord{}
+
+	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
+		gameOver.GameOverReason == game.ImpostorByVote ||
+		gameOver.GameOverReason == game.ImpostorBySabotage ||
+		gameOver.GameOverReason == game.ImpostorDisconnect
+
+	for _, player := range dgs.UserData {
+		if player.GetPlayerName() != game.UnlinkedPlayerName {
+			for _, v := range gameOver.PlayerInfos {
+				//only override for the imposters
+				if player.GetPlayerName() == v.Name {
+					if (v.IsImpostor && imposterWin) || (!v.IsImpostor && !imposterWin) {
+						role := game.CrewmateRole
+						if v.IsImpostor {
+							role = game.ImposterRole
+						}
+						winners = append(winners, winnerRecord{
+							userID: player.User.UserID,
+							role:   role,
+						})
+					}
+				}
+			}
+		}
+	}
+	return winners
 }
 
 func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string) {
