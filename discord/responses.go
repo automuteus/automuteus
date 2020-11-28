@@ -670,7 +670,7 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *storage.Gui
 		desc += "\n"
 		user, _ := bot.PostgresInterface.GetUserByString(authorID)
 
-		if user != nil && user.Opt && user.HashedUserID != 0 {
+		if user != nil && user.Opt && user.UserID != 0 {
 			desc += sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.ShowMe.linkedID",
 				Other: "❗ {{.User}} You are opted **in** to data collection for game statistics",

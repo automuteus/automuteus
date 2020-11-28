@@ -97,7 +97,7 @@ func (psqlInterface *PsqlInterface) GetGuild(guildID uint64) (*PostgresGuild, er
 }
 
 func (psqlInterface *PsqlInterface) insertUser(userID uint64) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, true, DEFAULT);", userID)
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, true);", userID)
 	return err
 }
 
@@ -113,12 +113,17 @@ func (psqlInterface *PsqlInterface) OptUserByString(userID string, opt bool) (bo
 	if user.Opt == opt {
 		return false, nil
 	}
-	_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE users SET (opt) = ($1) WHERE user_id = $2;", opt, uid)
+	_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE users SET opt = $1 WHERE user_id = $2;", opt, uid)
 	if err != nil {
 		return false, err
 	}
 	if !opt {
-		_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE game_events SET (hashed_user_id) = (NULL) WHERE hashed_user_id = $1;", user.HashedUserID)
+		_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE game_events SET user_id = NULL WHERE user_id = $1;", uid)
+		if err != nil {
+			log.Println(err)
+		}
+
+		_, err = psqlInterface.pool.Exec(context.Background(), "DELETE FROM users_games WHERE user_id = $1;", uid)
 		if err != nil {
 			log.Println(err)
 		}
@@ -218,11 +223,11 @@ func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) error {
 }
 
 func (psqlInterface *PsqlInterface) AddEvent(event *PostgresGameEvent) error {
-	if event.HashedUserID < 0 {
+	if event.UserID == 0 {
 		_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, NULL, $1, $2, $3, $4);", event.GameID, event.EventTime, event.EventType, event.Payload)
 		return err
 	}
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, $1, $2, $3, $4, $5);", event.HashedUserID, event.GameID, event.EventTime, event.EventType, event.Payload)
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, $1, $2, $3, $4, $5);", event.UserID, event.GameID, event.EventTime, event.EventType, event.Payload)
 	return err
 }
 

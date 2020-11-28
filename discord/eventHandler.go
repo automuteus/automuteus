@@ -64,11 +64,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
 
 				gameEvent := storage.PostgresGameEvent{
-					GameID:       -1,
-					HashedUserID: -1,
-					EventTime:    int32(time.Now().Unix()),
-					EventType:    int16(job.JobType),
-					Payload:      job.Payload.(string),
+					GameID:    -1,
+					UserID:    0,
+					EventTime: int32(time.Now().Unix()),
+					EventType: int16(job.JobType),
+					Payload:   job.Payload.(string),
 				}
 				correlatedUserID := ""
 
@@ -195,9 +195,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
 							gameEvent.GameID = dgs.MatchID
 							if correlatedUserID != "" {
-								user, err := bot.PostgresInterface.GetUserByString(correlatedUserID)
-								if err == nil && user != nil && user.Opt {
-									gameEvent.HashedUserID = user.HashedUserID
+								num, err := strconv.ParseUint(correlatedUserID, 10, 64)
+								if err != nil {
+									log.Println(err)
+								} else {
+									gameEvent.UserID = num
 								}
 							}
 
@@ -474,7 +476,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameO
 			}
 
 			puser, err := psql.EnsureUserExists(uid)
-			if err != nil {
+			if err != nil || puser == nil {
 				log.Println(err)
 				continue
 			}
@@ -490,7 +492,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameO
 					}
 				}
 			}
-			log.Println(puser)
+
 			userGames = append(userGames, &storage.PostgresUserGame{
 				UserID:      puser.UserID,
 				GuildID:     gid,

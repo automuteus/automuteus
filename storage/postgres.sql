@@ -17,19 +17,18 @@ create table if not exists games
 -- links userIDs to their hashed variants. Allows for deletion of users without deleting underlying game_event data
 create table if not exists users
 (
-    user_id        numeric PRIMARY KEY,
-    opt            boolean, --opt-out to data collection
-    hashed_user_id bigserial
+    user_id numeric PRIMARY KEY,
+    opt     boolean --opt-out to data collection
 );
 
 create table if not exists game_events
 (
-    event_id       bigserial,
-    hashed_user_id bigint,                                               --actually references users, but can be null, so implied reference, not literal
-    game_id        bigint   NOT NULL references games ON DELETE CASCADE, --delete all events from a game that's deleted
-    event_time     integer  NOT NULL,                                    --2038 problem, but I do not care
-    event_type     smallint NOT NULL,
-    payload        jsonb
+    event_id   bigserial,
+    user_id    numeric,                                              --actually references users, but can be null, so implied reference, not literal
+    game_id    bigint   NOT NULL references games ON DELETE CASCADE, --delete all events from a game that's deleted
+    event_time integer  NOT NULL,                                    --2038 problem, but I do not care
+    event_type smallint NOT NULL,
+    payload    jsonb
 );
 
 create table if not exists users_games
@@ -61,4 +60,4 @@ create index if not exists users_games_role_index ON users_games (player_role); 
 create index if not exists users_games_won_index ON users_games (player_won); --query games by win status
 
 create index if not exists game_events_game_id_index on game_events (game_id); --query for game events by the game ID
-create index if not exists game_events_hashed_user_id_index on game_events (hashed_user_id); --query for game events by the game ID
+create index if not exists game_events_user_id_index on game_events (user_id); --query for game events by the user ID

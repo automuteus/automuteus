@@ -16,9 +16,8 @@ type PostgresGame struct {
 }
 
 type PostgresUser struct {
-	UserID       uint64 `db:"user_id"`
-	Opt          bool   `db:"opt"`
-	HashedUserID int64  `db:"hashed_user_id"` //this is a serial value; don't set this
+	UserID uint64 `db:"user_id"`
+	Opt    bool   `db:"opt"`
 }
 
 type PostgresGuildUser struct {
@@ -38,9 +37,9 @@ type PostgresUserGame struct {
 
 type PostgresGameEvent struct {
 	//Note, we don't include eventID here because it gets decided/incremented by postgres
-	HashedUserID int64  `db:"hashed_user_id"`
-	GameID       int64  `db:"game_id"`
-	EventTime    int32  `db:"event_time"`
-	EventType    int16  `db:"event_type"`
-	Payload      string `db:"payload"`
+	UserID    uint64 `db:"hashed_user_id"`
+	GameID    int64  `db:"game_id"`
+	EventTime int32  `db:"event_time"`
+	EventType int16  `db:"event_type"`
+	Payload   string `db:"payload"`
 }
