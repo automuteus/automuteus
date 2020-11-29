@@ -346,7 +346,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		if deleteTime != -1 {
 			go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, time.Minute*time.Duration(deleteTime))
 		}
-	} else if deleteTime == 0 {
+	} else {
 		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
@@ -363,19 +363,20 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 	deleteMessage(s, msgChannelID, msgID)
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings, channelID string) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
 		return
 	}
-	oldChannelId := dgs.GameStateMsg.MessageChannelID
-	dgs.DeleteGameStateMsg(bot.PrimarySession) //delete the old message
 
-	//create a new instance of the new one
-	if oldChannelId != "" {
-		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), oldChannelId, dgs.GameStateMsg.LeaderID)
-	} else if channelID != "" {
-		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), channelID, dgs.GameStateMsg.LeaderID)
+	del := dgs.DeleteGameStateMsg(bot.PrimarySession) //delete the old message
+	if del {
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+	}
+
+	if dgs.GameStateMsg.MessageChannelID != "" && del {
+		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -383,8 +384,6 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-
 		dgs.AddReaction(bot.PrimarySession, "▶️")
 		//go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}

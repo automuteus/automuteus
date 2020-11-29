@@ -611,7 +611,7 @@ func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) 
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
 		}, map[string]interface{}{
-			"Tier":          tier,
+			"Tier":          storage.PremiumTierStrings[tier],
 			"Count":         count,
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})

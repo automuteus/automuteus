@@ -219,14 +219,16 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					buf.WriteByte('\n')
 				}
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.guildStatsEmbed.MostGames",
-					Other: "Games Played",
-				}),
-				Value:  buf.String(),
-				Inline: true,
-			})
+			if len(totalGameRankings) > 0 {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.guildStatsEmbed.MostGames",
+						Other: "Games Played",
+					}),
+					Value:  buf.String(),
+					Inline: true,
+				})
+			}
 
 			crewmateGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 0)
 			buf = bytes.NewBuffer([]byte{})
@@ -237,19 +239,21 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					buf.WriteByte('\n')
 				}
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "\u200b",
-				Value:  "\u200b",
-				Inline: true,
-			})
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.guildStatsEmbed.CrewmateWins",
-					Other: "Crewmate Wins",
-				}),
-				Value:  buf.String(),
-				Inline: true,
-			})
+			if len(crewmateGameRankings) > 0 {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:   "\u200b",
+					Value:  "\u200b",
+					Inline: true,
+				})
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.guildStatsEmbed.CrewmateWins",
+						Other: "Crewmate Wins",
+					}),
+					Value:  buf.String(),
+					Inline: true,
+				})
+			}
 
 			imposterGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 1)
 			buf = bytes.NewBuffer([]byte{})
@@ -260,20 +264,21 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					buf.WriteByte('\n')
 				}
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.guildStatsEmbed.ImposterWins",
-					Other: "Imposter Wins",
-				}),
-				Value:  buf.String(),
-				Inline: true,
-			})
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "\u200b",
-				Value:  "\u200b",
-				Inline: true,
-			})
-
+			if len(imposterGameRankings) > 0 {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.guildStatsEmbed.ImposterWins",
+						Other: "Imposter Wins",
+					}),
+					Value:  buf.String(),
+					Inline: true,
+				})
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:   "\u200b",
+					Value:  "\u200b",
+					Inline: true,
+				})
+			}
 		}
 	}
 

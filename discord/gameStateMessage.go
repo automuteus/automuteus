@@ -48,12 +48,13 @@ func (dgs *DiscordGameState) AddAllReactions(s *discordgo.Session, emojis []Emoj
 	dgs.AddReaction(s, "❌")
 }
 
-func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) {
+func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) bool {
 	if dgs.GameStateMsg.MessageID != "" {
-		go deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		dgs.GameStateMsg.MessageID = ""
-		dgs.GameStateMsg.MessageChannelID = ""
+		return true
 	}
+	return false
 }
 
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)

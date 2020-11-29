@@ -205,7 +205,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						bot.RedisInterface.SetDiscordGameState(dgs, lock)
 						//in this context, only refresh the game message automatically
 						if sett.AutoRefresh {
-							bot.RefreshGameStateMessage(dgsRequest, sett, dgs.GameStateMsg.MessageChannelID)
+							bot.RefreshGameStateMessage(dgsRequest, sett)
 						}
 
 					}
@@ -455,7 +455,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, DeadPriority, dgsRequest)
 
 		if sett.AutoRefresh {
-			bot.RefreshGameStateMessage(dgsRequest, sett, dgs.GameStateMsg.MessageChannelID)
+			bot.RefreshGameStateMessage(dgsRequest, sett)
 		} else {
 			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 			if edited {

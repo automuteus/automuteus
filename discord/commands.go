@@ -211,28 +211,6 @@ var AllCommands = []Command{
 		adminSetting:      false,
 		permissionSetting: true,
 	},
-	//{
-	//	cmdType: Track,
-	//	command: "track",
-	//	example: "track Among Us Voice",
-	//	shortDesc: &i18n.Message{
-	//		ID:    "commands.AllCommands.Track.shortDesc",
-	//		Other: "Track a voice channel",
-	//	},
-	//	desc: &i18n.Message{
-	//		ID:    "commands.AllCommands.Track.desc",
-	//		Other: "Tell the bot which voice channel you'll be playing in",
-	//	},
-	//	args: &i18n.Message{
-	//		ID:    "commands.AllCommands.Track.args",
-	//		Other: "<voice channel name>",
-	//	},
-	//	aliases:           []string{"t"},
-	//	secret:            false,
-	//	emoji:             "📌",
-	//	adminSetting:      false,
-	//	permissionSetting: true,
-	//},
 	{
 		cmdType: UnmuteAll,
 		command: "unmuteall",
@@ -635,7 +613,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case Refresh:
-			bot.RefreshGameStateMessage(gsr, sett, m.ChannelID)
+			bot.RefreshGameStateMessage(gsr, sett)
 			break
 		case Link:
 			if len(args[1:]) < 2 {
@@ -683,58 +661,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 			}
 			break
-
-		//case Track:
-		//	if len(args[1:]) == 0 {
-		//		embed := ConstructEmbedForCommand(prefix, cmd, sett)
-		//		s.ChannelMessageSendEmbed(m.ChannelID, embed)
-		//	} else {
-		//		channelName := strings.Join(args[1:], " ")
-		//
-		//		channels, err := s.GuildChannels(m.GuildID)
-		//		if err != nil {
-		//			log.Println(err)
-		//		}
-		//
-		//		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		//		if lock == nil {
-		//			break
-		//		}
-		//		dgs.trackChannel(channelName, channels, sett)
-		//		bot.RedisInterface.SetDiscordGameState(dgs, lock)
-		//
-		//		edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
-		//		if edited {
-		//			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		//		}
-		//	}
-		//	break
 		case UnmuteAll:
 			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			bot.applyToAll(dgs, false, false)
 			break
-
-		//case Force:
-		//	if len(args[1:]) == 0 {
-		//		embed := ConstructEmbedForCommand(prefix, cmd, sett)
-		//		s.ChannelMessageSendEmbed(m.ChannelID, embed)
-		//	} else {
-		//		phase := getPhaseFromString(args[1])
-		//		if phase == game.UNINITIALIZED {
-		//			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		//				ID:    "commands.HandleCommand.Force.UNINITIALIZED",
-		//				Other: "Sorry, I didn't understand the game phase you tried to force",
-		//			}))
-		//		} else {
-		//			//TODO fix
-		//			//dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-		//			//if dgs.ConnectCode != "" {
-		//			//	i := strconv.FormatInt(int64(phase), 10)
-		//			//	bot.RedisInterface.PublishPhaseUpdate(dgs.ConnectCode, i)
-		//			//}
-		//		}
-		//	}
-		//	break
 
 		case Settings:
 			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
@@ -867,7 +797,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
 					if strings.ReplaceAll(strings.ToLower(args[1]), "\"", "") == "guild" {
-						s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+						if err != nil {
+							log.Println(err)
+						}
 					} else {
 						s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, or you mistyped 'guild'...")
 					}
@@ -884,11 +817,15 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
 			} else {
 				arg := strings.ToLower(args[1])
-				if arg == "invite" || arg == "inv" {
-					_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
-					if err != nil {
-						log.Println(err)
+				if isAdmin {
+					if arg == "invite" || arg == "inv" {
+						_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+						if err != nil {
+							log.Println(err)
+						}
 					}
+				} else {
+					s.ChannelMessageSend(m.ChannelID, "Viewing the premium invites is an Admin command")
 				}
 			}
 			break
