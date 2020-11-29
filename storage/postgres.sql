@@ -6,7 +6,7 @@ create table if not exists guilds(
 
 create table if not exists games
 (
-    game_id      bigint PRIMARY KEY,
+    game_id      bigserial PRIMARY KEY,
     guild_id     numeric references guilds ON DELETE CASCADE, --if the guild is deleted, delete their games, too
     connect_code CHAR(8) NOT NULL,
     start_time   integer NOT NULL,                            --2038 problem, but I do not care

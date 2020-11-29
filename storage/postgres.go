@@ -153,9 +153,23 @@ func (psqlInterface *PsqlInterface) GetUser(userID uint64) (*PostgresUser, error
 	return nil, nil
 }
 
-func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO games VALUES ($1, $2, $3, $4, $5, $6);", game.GameID, game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
-	return err
+func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) (uint64, error) {
+	t, err := psqlInterface.pool.Query(context.Background(), "INSERT INTO games VALUES (DEFAULT, $1, $2, $3, $4, $5) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
+	if t != nil {
+		for t.Next() {
+			g := uint64(0)
+			err := t.Scan(&g)
+
+			if err != nil {
+				log.Println(err)
+				t.Close()
+				return 0, err
+			}
+			t.Close()
+			return g, nil
+		}
+	}
+	return 0, err
 }
 
 func (psqlInterface *PsqlInterface) updateGame(gameID int64, winType int16, endTime int64) error {
@@ -213,13 +227,8 @@ func (psqlInterface *PsqlInterface) EnsureUserExists(userID uint64) (*PostgresUs
 	return user, err
 }
 
-func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) error {
-	err := psqlInterface.insertGame(game)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) (uint64, error) {
+	return psqlInterface.insertGame(game)
 }
 
 func (psqlInterface *PsqlInterface) AddEvent(event *PostgresGameEvent) error {

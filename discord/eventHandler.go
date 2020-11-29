@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/metrics"
-	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -410,12 +409,11 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	}
 	//if we started a new game
 	if oldPhase == game.LOBBY && phase == game.TASKS {
-		matchID := rediscommon.GetAndIncrementMatchID(bot.RedisInterface.client)
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
-		dgs.MatchID = matchID
-		log.Printf("New match has begun. ID %d and starttime %d\n", matchID, matchStart)
-		go startGameInPostgres(*dgs, bot.PostgresInterface)
+		gameID := startGameInPostgres(*dgs, bot.PostgresInterface)
+		dgs.MatchID = int64(gameID)
+		log.Printf("New match has begun. ID %d and starttime %d\n", gameID, matchStart)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -483,27 +481,28 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 	}
 }
 
-func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) {
-	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
-		return
+func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) uint64 {
+	if dgs.MatchStartUnix < 0 {
+		return 0
 	}
 	gid, err := strconv.ParseUint(dgs.GuildID, 10, 64)
 	if err != nil {
 		log.Println(err)
-		return
+		return 0
 	}
 	pgame := &storage.PostgresGame{
-		GameID:      dgs.MatchID,
+		GameID:      -1,
 		GuildID:     gid,
 		ConnectCode: dgs.ConnectCode,
 		StartTime:   int32(dgs.MatchStartUnix),
 		WinType:     -1,
 		EndTime:     -1,
 	}
-	err = psql.AddInitialGame(pgame)
+	i, err := psql.AddInitialGame(pgame)
 	if err != nil {
 		log.Println(err)
 	}
+	return i
 }
 
 func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameOver game.Gameover) {

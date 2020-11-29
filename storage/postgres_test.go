@@ -63,6 +63,19 @@ func TestPsqlInterface_Init(t *testing.T) {
 		log.Printf("Mode: %d, Count: %d\n", v.Mode, v.Count)
 	}
 
+	i, err := psql.AddInitialGame(&PostgresGame{
+		GameID:      425,
+		GuildID:     141082723635691521,
+		ConnectCode: "ABCDEFGH",
+		StartTime:   1234,
+		WinType:     -1,
+		EndTime:     -1,
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(i)
+
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)
 	//if err != nil {
 	//	log.Fatal(err)
