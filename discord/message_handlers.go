@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/metrics"
 	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
@@ -213,47 +214,54 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			}
 			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", 3000)
 			idMatched := false
-			for color, e := range bot.StatusEmojis[true] {
-				if e.ID == m.Emoji.ID {
-					idMatched = true
-					log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
-					//the User doesn't exist in our userdata cache; add them
-					user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
-					if !added {
-						log.Println("No users found in Discord for UserID " + m.UserID)
-						idMatched = false
-					} else {
-						auData, found := dgs.AmongUsData.GetByColor(game.GetColorStringForInt(color))
-						if found {
-							user.Link(auData)
-							dgs.UpdateUserData(m.UserID, user)
-							go bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
-						} else {
-							log.Println("I couldn't find any player data for that color; is your capture linked?")
+			if m.Emoji.Name == "▶️" {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
+				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
+				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
+				go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
+			} else {
+				for color, e := range bot.StatusEmojis[true] {
+					if e.ID == m.Emoji.ID {
+						idMatched = true
+						log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
+						//the User doesn't exist in our userdata cache; add them
+						user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
+						if !added {
+							log.Println("No users found in Discord for UserID " + m.UserID)
 							idMatched = false
+						} else {
+							auData, found := dgs.AmongUsData.GetByColor(game.GetColorStringForInt(color))
+							if found {
+								user.Link(auData)
+								dgs.UpdateUserData(m.UserID, user)
+								go bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
+							} else {
+								log.Println("I couldn't find any player data for that color; is your capture linked?")
+								idMatched = false
+							}
 						}
-					}
 
-					//then remove the player's reaction if we matched, or if we didn't
-					go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
-					break
+						//then remove the player's reaction if we matched, or if we didn't
+						go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+						break
+					}
 				}
-			}
-			if !idMatched {
-				//log.Println(m.Emoji.Name)
-				if m.Emoji.Name == "❌" {
-					log.Println("Removing player " + m.UserID)
-					dgs.ClearPlayerData(m.UserID)
-					go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
-					idMatched = true
+				if !idMatched {
+					//log.Println(m.Emoji.Name)
+					if m.Emoji.Name == "❌" {
+						log.Println("Removing player " + m.UserID)
+						dgs.ClearPlayerData(m.UserID)
+						go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
+						idMatched = true
+					}
 				}
-			}
-			//make sure to update any voice changes if they occurred
-			if idMatched {
-				bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
-				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
-				if edited {
-					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				//make sure to update any voice changes if they occurred
+				if idMatched {
+					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
+					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					if edited {
+						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					}
 				}
 			}
 		}
@@ -272,12 +280,14 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		return
 	}
 
-	lock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
+	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	//couldn't obtain lock; bail bail bail!
-	if lock == nil {
+	if snowFlakeLock == nil {
 		return
 	}
-	defer lock.Release(ctx)
+	defer snowFlakeLock.Release(ctx)
+
+	prem := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
@@ -285,15 +295,23 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		VoiceChannel: m.ChannelID,
 	}
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
+	stateLock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	if stateLock == nil {
 		return
+	}
+	defer stateLock.Release(ctx)
+
+	var voiceLock *redislock.Lock
+	if dgs.ConnectCode != "" {
+		voiceLock = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		if voiceLock == nil {
+			return
+		}
 	}
 
 	g, err := s.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release(ctx)
 		return
 	}
 
@@ -316,21 +334,31 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		dgs.UpdateUserData(m.UserID, userData)
 
-		//nick := userData.GetPlayerName()
-		//if !sett.GetApplyNicknames() {
-		//	nick = ""
-		//}
-
 		if dgs.Running {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafen, 1)
-			err := bot.GalactusClient.ModifyUser(m.GuildID, dgs.ConnectCode, m.UserID, mute, deaf)
-			if err != nil {
-				log.Println(err)
+			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
+			req := UserModifyRequest{
+				Premium: prem,
+				Users: []UserModify{
+					{
+						UserID: uid,
+						Mute:   mute,
+						Deaf:   deaf,
+					},
+				},
 			}
+			mdsc := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			if mdsc == nil {
+				log.Println("Nil response from modifyUsers, probably not good...")
+			} else {
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+			}
+
 			//go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
 func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings, room, region string) {
@@ -357,12 +385,16 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		if banned {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.softban",
-				Other: "I'm ignoring your messages for the next 5 minutes, stop spamming",
+				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
+			}, map[string]interface{}{
+				"User": "<@!" + m.Author.ID + ">",
 			}))
 		} else {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
-				Other: "You're creating games too fast! Please slow down!",
+				Other: "{{.User}} You're creating games too fast! Please slow down!",
+			}, map[string]interface{}{
+				"User": "<@!" + m.Author.ID + ">",
 			}))
 		}
 		lock.Release(context.Background())
@@ -374,7 +406,41 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
 	//we don't have enough info to go off of when remaking the game...
 
-	//TODO allow donators or those with a second bot to be able to make new games
+	channels, err := s.GuildChannels(m.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	tracking := TrackingChannel{}
+
+	//loop over all the channels in the discord and cross-reference with the one that the .au new author is in
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice {
+			for _, v := range g.VoiceStates {
+				//if the User who typed au new is in a voice channel
+				if v.UserID == m.Author.ID {
+					//once we find the voice channel
+					if channel.ID == v.ChannelID {
+						tracking = TrackingChannel{
+							ChannelID:   channel.ID,
+							ChannelName: channel.Name,
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+	if tracking.ChannelID == "" {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "message_handlers.handleNewGameMessage.noChannel",
+			Other: "{{.User}}, please join a voice channel before starting a match!",
+		}, map[string]interface{}{
+			"User": "<@!" + m.Author.ID + ">",
+		}))
+		lock.Release(context.Background())
+		return
+	}
 
 	//allow people with a previous game going to be able to make new games
 	if dgs.GameStateMsg.MessageID != "" {
@@ -387,7 +453,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	} else {
 		premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		//Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == "Free" {
+		if premStatus == storage.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)
@@ -397,7 +463,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 			if activeGames > num {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.handleNewGameMessage.lockout",
-					Other: "Discord is rate-limiting me and I cannot accept any new games right now 😦\nPlease try again in a few minutes.",
+					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\nPlease try again in a few minutes, or consider AutoMuteUs Premium",
 				}))
 				lock.Release(context.Background())
 				return
@@ -499,33 +565,6 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	log.Println("Generated URL for connection: " + hyperlink)
 
 	sendMessageDM(s, m.Author.ID, &embed)
-
-	channels, err := s.GuildChannels(m.GuildID)
-	if err != nil {
-		log.Println(err)
-	}
-
-	tracking := TrackingChannel{}
-
-	//loop over all the channels in the discord and cross-reference with the one that the .au new author is in
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			for _, v := range g.VoiceStates {
-				//if the User who typed au new is in a voice channel
-				if v.UserID == m.Author.ID {
-					//once we find the voice channel
-					if channel.ID == v.ChannelID {
-						tracking = TrackingChannel{
-							ChannelID:   channel.ID,
-							ChannelName: channel.Name,
-						}
-						log.Print(fmt.Sprintf("User that typed new is in the \"%s\" voice channel; using that for Tracking", channel.Name))
-						break
-					}
-				}
-			}
-		}
-	}
 
 	bot.handleGameStartMessage(s, m, sett, room, region, tracking, g, connectCode)
 }

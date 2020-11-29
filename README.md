@@ -75,27 +75,37 @@ The bot will send you a private message (make sure your Discord settings allow D
 
 If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
 
-## Galactus 
+## Galactus
 
-Galactus is a system used to speed up people's muting (which is normally slow to due to Discord limiting bot actions to 5 calls in 5 seconds per server) by having the user provide a second token (created by the user) to the bot which helps mute/deafen players quicker. You can find a guide to set this up [here,](https://youtu.be/jKcEW5qpk8E) and the repo for this feature can be found [here.](https://github.com/automuteus/galactus)
+Galactus is a program used to speed up muting and deafening (which is typically constrained by Discord rate-limits). It allows for an arbitrary number of tokens to be provided for faster muting/deafening, but also supports capture-side bots.
+A guide to setup your own capture-side bot can be found [here,](https://youtu.be/jKcEW5qpk8E) and the repo for Galactus is [here.](https://github.com/automuteus/galactus)
+
 ## Commands
 
-The Discord Bot uses the `.au` prefix for any commands my default; if you change your prefix remember to replace `.au` with your custom prefix. If you forget your prefix, you can @mention the bot and it will respond with whatever it's prefix currently is.
+The Discord Bot uses the `.au` prefix for any commands by default; if you change your prefix remember to replace `.au` with your custom prefix. If you forget your prefix, you can @mention the bot and it will respond with whatever it's prefix currently is.
 
 | Command        | Alias   | Arguments   | Description                                                                                                     | Example                            |
 | -------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | `.au help`     | `.au h` | None        | Print help info and command usage                                                                               |                                    |
 | `.au new`      | `.au n` | None        | Start a new game in the current text channel. Optionally accepts the room code and region                       | `.au n CODE eu`                    |
-| `.au track`    | `.au t` | VC Name     | Tell Bot to use a single voice channel for mute/unmute, and ignore any other channels                           | `.au t Test Voice`                 |
 | `.au link`     | `.au l` | @name color | Manually link a discord user to their in-game color                                                             | `.au l @Soup cyan`                 |
 | `.au refresh`  | `.au r` | None        | Remake the bot's status message entirely, in case it ends up too far up in the chat.                            |                                    |
 | `.au end`      | `.au e` | None        | End the game entirely, and stop tracking players. Unmutes all and resets state                                  |                                    |
 | `.au unlink`   | `.au u` | @name       | Manually unlink a player                                                                                        | `.au u @player`                    |
 | `.au settings` | `.au s` |             | View and change settings for the bot, such as the command prefix or mute behavior                               |                                    |
 | `.au pause`    | `.au p` | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
+| `.au privacy`  |         |             | View privacy and data collection information about the bot                                                      |                                    |
 | `.au info`     | `.au i` | None        | View general info about the Bot                                                                                 |                                    |
 
 _In addition to handful of more secretive Easter Egg commands..._
+
+# Privacy
+
+You can view privacy and data collection details for the Official Bot [here](PRIVACY.md).
+
+# Localization
+
+View details on Localization and Multi-Language support [here](LOCALIZATION.md).
 
 # Self-Hosting
 
@@ -154,9 +164,7 @@ If, for whatever reason, you _really_ want to self host, but also don't want to 
 
 ### Optional
 
-- **DEPRECATED** `DISCORD_BOT_TOKEN_2`: A second Bot Token to be used to distribute the mute/deafen requests to Discord.
-  **Use the new `WORKER_BOT_TOKENS` variable below, instead!**
-- `WORKER_BOT_TOKENS`: A comma-separated list of extra tokens to be used for mute/deafen.
+- `WORKER_BOT_TOKENS`: A comma-separated list of extra tokens to be used for mute/deafen. (Sent to Galactus, and stored in Redis after first start-up)
 - `EMOJI_GUILD_ID`: If your bot is a member of multiple guilds, this ID can be used to specify the single guild that it should use for emojis (no need to add the emojis to ALL servers).
 - `HOST`: The **externally-accessible URL** for Galactus. For example, `http://test.com:8123`.
   This is used to provide the linking URI to the capture, via the Direct Message the bot sends you when typing `.au new`.

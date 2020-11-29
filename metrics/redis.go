@@ -43,5 +43,6 @@ func GetDiscordRequestsInLastMinutes(client *redis.Client, numMinutes int) int {
 	if err != nil {
 		log.Println(err)
 	}
+	go client.ZRemRangeByScore(context.Background(), discordRequestsZsetKeyByCommit(comm), "-inf", fmt.Sprintf("%d", before))
 	return len(games)
 }

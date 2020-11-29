@@ -59,10 +59,8 @@ type DiscordGameState struct {
 	Running    bool `json:"running"`
 	Subscribed bool `json:"subscribed"`
 
-	MatchID        int64             `json:"matchID"`
-	MatchStartUnix int64             `json:"matchStartUnix"`
-	Winners        []game.GameWinner `json:"winners"`
-	GameResult     game.GameResult   `json:"gameResult"`
+	MatchID        int64 `json:"matchID"`
+	MatchStartUnix int64 `json:"matchStartUnix"`
 
 	UserData UserDataSet     `json:"userData"`
 	Tracking TrackingChannel `json:"tracking"`
@@ -86,8 +84,6 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.Subscribed = false
 	dgs.MatchID = -1
 	dgs.MatchStartUnix = -1
-	dgs.Winners = []game.GameWinner{}
-	dgs.GameResult = -1
 	dgs.UserData = map[string]UserData{}
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
@@ -191,7 +187,7 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *st
 		}
 	}
 	//balance out the last row of embeds with an extra inline field
-	if num == 2 || num == 5 || num == 8 {
+	if num%3 == 2 {
 		sorted = append(sorted, &discordgo.MessageEmbedField{
 			Name:   "\u200b",
 			Value:  "\u200b",

@@ -119,14 +119,19 @@ func IncrementRateLimitExceed(client *redis.Client, userID string) bool {
 		log.Println(err)
 	}
 
+	beforeStr := fmt.Sprintf("%d", time.Now().Add(-time.Minute*SoftbanExpMinutes).Unix())
+
 	count, err := client.ZCount(context.Background(), UserSoftbanCountKey(userID),
-		fmt.Sprintf("%d", time.Now().Add(-time.Minute*SoftbanExpMinutes).Unix()),
+		beforeStr,
 		fmt.Sprintf("%d", t),
 	).Result()
 	if count > SoftbanThreshold {
 		softbanUser(client, userID)
 		return true
 	}
+
+	go client.ZRemRangeByScore(context.Background(), UserSoftbanCountKey(userID), "-inf", beforeStr)
+
 	return false
 }
 

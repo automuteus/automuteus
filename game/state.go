@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -42,10 +43,15 @@ const (
 	ImpostorBySabotage
 	ImpostorDisconnect
 	HumansDisconnect
+	Unknown
 )
 
-type GameWinner struct {
-}
+type GameRole int16
+
+const (
+	CrewmateRole GameRole = iota
+	ImposterRole
+)
 
 type PhaseNameString string
 
@@ -109,4 +115,23 @@ func (r Region) ToString() string {
 		return "Asia"
 	}
 	return "Unknown"
+}
+
+func UnmarshalGameover(data []byte) (Gameover, error) {
+	var r Gameover
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *Gameover) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type Gameover struct {
+	GameOverReason GameResult   `json:"GameOverReason"`
+	PlayerInfos    []PlayerInfo `json:"PlayerInfos"`
+}
+type PlayerInfo struct {
+	Name       string `json:"Name"`
+	IsImpostor bool   `json:"IsImpostor"`
 }

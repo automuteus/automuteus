@@ -12,25 +12,29 @@ type GuildSettings struct {
 	CommandPrefix string `json:"commandPrefix"`
 	Language      string `json:"language"`
 
-	AdminUserIDs          []string        `json:"adminIDs"`
-	PermissionRoleIDs     []string        `json:"permissionRoleIDs"`
-	Delays                game.GameDelays `json:"delays"`
-	VoiceRules            game.VoiceRules `json:"voiceRules"`
-	UnmuteDeadDuringTasks bool            `json:"unmuteDeadDuringTasks"`
+	AdminUserIDs             []string        `json:"adminIDs"`
+	PermissionRoleIDs        []string        `json:"permissionRoleIDs"`
+	Delays                   game.GameDelays `json:"delays"`
+	VoiceRules               game.VoiceRules `json:"voiceRules"`
+	UnmuteDeadDuringTasks    bool            `json:"unmuteDeadDuringTasks"`
+	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
+	AutoRefresh              bool            `json:"autoRefresh"`
 
 	lock sync.RWMutex
 }
 
 func MakeGuildSettings() *GuildSettings {
 	return &GuildSettings{
-		CommandPrefix:         ".au",
-		Language:              locale.DefaultLang,
-		AdminUserIDs:          []string{},
-		PermissionRoleIDs:     []string{},
-		Delays:                game.MakeDefaultDelays(),
-		VoiceRules:            game.MakeMuteAndDeafenRules(),
-		UnmuteDeadDuringTasks: false,
-		lock:                  sync.RWMutex{},
+		CommandPrefix:            ".au",
+		Language:                 locale.DefaultLang,
+		AdminUserIDs:             []string{},
+		PermissionRoleIDs:        []string{},
+		Delays:                   game.MakeDefaultDelays(),
+		VoiceRules:               game.MakeMuteAndDeafenRules(),
+		UnmuteDeadDuringTasks:    false,
+		DeleteGameSummaryMinutes: 0, //-1 for never delete the match summary
+		AutoRefresh:              false,
+		lock:                     sync.RWMutex{},
 	}
 }
 
@@ -93,6 +97,22 @@ func (gs *GuildSettings) SetPermissionRoleIDs(ids []string) {
 
 func (gs *GuildSettings) GetUnmuteDeadDuringTasks() bool {
 	return gs.UnmuteDeadDuringTasks
+}
+
+func (gs *GuildSettings) GetDeleteGameSummaryMinutes() int {
+	return gs.DeleteGameSummaryMinutes
+}
+
+func (gs *GuildSettings) SetDeleteGameSummaryMinutes(num int) {
+	gs.DeleteGameSummaryMinutes = num
+}
+
+func (gs *GuildSettings) GetAutoRefresh() bool {
+	return gs.AutoRefresh
+}
+
+func (gs *GuildSettings) SetAutoRefresh(n bool) {
+	gs.AutoRefresh = n
 }
 
 func (gs *GuildSettings) SetUnmuteDeadDuringTasks(v bool) {

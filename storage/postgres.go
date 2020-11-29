@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 )
 
 type PsqlInterface struct {
@@ -15,6 +16,26 @@ type PsqlInterface struct {
 
 	//TODO does this require a lock? How should stuff be written/read from psql in an async way? Is this even a concern?
 	//https://brandur.org/postgres-connections
+}
+
+type PremiumTier int16
+
+const (
+	FreeTier PremiumTier = iota
+	BronzeTier
+	SilverTier
+	GoldTier
+	PlatTier
+	SelfHostTier
+)
+
+var PremiumTierStrings = []string{
+	"Free",
+	"Bronze",
+	"Silver",
+	"Gold",
+	"Platinum",
+	"SelfHost",
 }
 
 func ConstructPsqlConnectURL(addr, username, password string) string {
@@ -57,12 +78,12 @@ func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
 	return nil
 }
 
-func (psqlInterface *PsqlInterface) insertGuild(guildID, guildName string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds VALUES ($1, $2, 'Free');", guildID, guildName)
+func (psqlInterface *PsqlInterface) insertGuild(guildID uint64, guildName string) error {
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds VALUES ($1, $2, 0);", guildID, guildName)
 	return err
 }
 
-func (psqlInterface *PsqlInterface) getGuild(guildID string) (*PostgresGuild, error) {
+func (psqlInterface *PsqlInterface) GetGuild(guildID uint64) (*PostgresGuild, error) {
 	guilds := []*PostgresGuild{}
 	err := pgxscan.Select(context.Background(), psqlInterface.pool, &guilds, "SELECT * FROM guilds WHERE guild_id=$1", guildID)
 	if err != nil {
@@ -75,17 +96,51 @@ func (psqlInterface *PsqlInterface) getGuild(guildID string) (*PostgresGuild, er
 	return nil, nil
 }
 
-func (psqlInterface *PsqlInterface) insertUser(userID, hashedUserID string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, $2);", userID, hashedUserID)
+func (psqlInterface *PsqlInterface) insertUser(userID uint64) error {
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users VALUES ($1, true);", userID)
 	return err
 }
 
-func (psqlInterface *PsqlInterface) updateUser(userID, hashedUserID string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "UPDATE users SET user_id = $1 WHERE hashed_user_id = $2", userID, hashedUserID)
-	return err
+func (psqlInterface *PsqlInterface) OptUserByString(userID string, opt bool) (bool, error) {
+	uid, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return false, err
+	}
+	user, err := psqlInterface.EnsureUserExists(uid)
+	if err != nil {
+		return false, err
+	}
+	if user.Opt == opt {
+		return false, nil
+	}
+	_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE users SET opt = $1 WHERE user_id = $2;", opt, uid)
+	if err != nil {
+		return false, err
+	}
+	if !opt {
+		_, err = psqlInterface.pool.Exec(context.Background(), "UPDATE game_events SET user_id = NULL WHERE user_id = $1;", uid)
+		if err != nil {
+			log.Println(err)
+		}
+
+		_, err = psqlInterface.pool.Exec(context.Background(), "DELETE FROM users_games WHERE user_id = $1;", uid)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	return true, nil
 }
 
-func (psqlInterface *PsqlInterface) GetUser(userID string) (*PostgresUser, error) {
+func (psqlInterface *PsqlInterface) GetUserByString(userID string) (*PostgresUser, error) {
+	uid, err := strconv.ParseUint(userID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return psqlInterface.GetUser(uid)
+}
+
+func (psqlInterface *PsqlInterface) GetUser(userID uint64) (*PostgresUser, error) {
 	users := []*PostgresUser{}
 	err := pgxscan.Select(context.Background(), psqlInterface.pool, &users, "SELECT * FROM users WHERE user_id = $1", userID)
 	if err != nil {
@@ -98,32 +153,23 @@ func (psqlInterface *PsqlInterface) GetUser(userID string) (*PostgresUser, error
 	return nil, nil
 }
 
-func (psqlInterface *PsqlInterface) getGuildUser(guildID, hashedID string) (*PostgresGuildUser, error) {
-	users := []*PostgresGuildUser{}
-	err := pgxscan.Select(context.Background(), psqlInterface.pool, &users, "SELECT * FROM guilds_users WHERE guild_id=$1 AND hashed_user_id=$2", guildID, hashedID)
-	if err != nil {
-		return nil, err
+func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) (uint64, error) {
+	t, err := psqlInterface.pool.Query(context.Background(), "INSERT INTO games VALUES (DEFAULT, $1, $2, $3, $4, $5) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
+	if t != nil {
+		for t.Next() {
+			g := uint64(0)
+			err := t.Scan(&g)
+
+			if err != nil {
+				log.Println(err)
+				t.Close()
+				return 0, err
+			}
+			t.Close()
+			return g, nil
+		}
 	}
-
-	if len(users) > 0 {
-		return users[0], nil
-	}
-	return nil, nil
-}
-
-func (psqlInterface *PsqlInterface) insertGuildUser(guildID, hashedID string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds_users VALUES ($1, $2);", guildID, hashedID)
-	return err
-}
-
-func (psqlInterface *PsqlInterface) insertGuildGame(guildID string, gameID int64) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO guilds_games VALUES ($1, $2);", guildID, gameID)
-	return err
-}
-
-func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO games VALUES ($1, $2, $3, $4, $5);", game.GameID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
-	return err
+	return 0, err
 }
 
 func (psqlInterface *PsqlInterface) updateGame(gameID int64, winType int16, endTime int64) error {
@@ -132,77 +178,65 @@ func (psqlInterface *PsqlInterface) updateGame(gameID int64, winType int16, endT
 }
 
 func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5);", player.HashedUserID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole)
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5, $6, $7);", player.UserID, player.GuildID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole, player.PlayerWon)
 	return err
 }
 
-func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) string {
-	guild, err := psqlInterface.getGuild(guildID)
-	if err != nil {
-		return "Free"
+func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) PremiumTier {
+	//self-hosting; only return the true guild status if this variable is set
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
+		return SelfHostTier
 	}
-	return guild.Premium
+
+	gid, err := strconv.ParseUint(guildID, 10, 64)
+	if err != nil {
+		log.Println(err)
+		return FreeTier
+	}
+
+	guild, err := psqlInterface.GetGuild(gid)
+	if err != nil {
+		return FreeTier
+	}
+	return PremiumTier(guild.Premium)
 }
 
-func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID, guildName string) error {
-	guild, _ := psqlInterface.getGuild(guildID)
+func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {
+	guild, err := psqlInterface.GetGuild(guildID)
 
 	if guild == nil {
 		err := psqlInterface.insertGuild(guildID, guildName)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		return psqlInterface.GetGuild(guildID)
 	}
-	return nil
+	return guild, err
 }
 
-func (psqlInterface *PsqlInterface) EnsureUserExists(userID, hashedID string) error {
-	user, _ := psqlInterface.GetUser(userID)
+func (psqlInterface *PsqlInterface) EnsureUserExists(userID uint64) (*PostgresUser, error) {
+	user, err := psqlInterface.GetUser(userID)
 
 	if user == nil {
-		err := psqlInterface.insertUser(userID, hashedID)
+		err := psqlInterface.insertUser(userID)
 		if err != nil {
-			err = psqlInterface.updateUser(userID, hashedID)
-			if err != nil {
-				return err
-			}
+			log.Println(err)
 		}
+		return psqlInterface.GetUser(userID)
 	}
-	return nil
+	return user, err
 }
 
-func (psqlInterface *PsqlInterface) RemoveUserMapping(userID string) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "UPDATE users SET user_id=NULL WHERE user_id=$1", userID)
-	return err
-}
-
-func (psqlInterface *PsqlInterface) EnsureGuildUserExists(guildID, hashedID string) error {
-	guild, _ := psqlInterface.getGuildUser(guildID, hashedID)
-
-	if guild == nil {
-		err := psqlInterface.insertGuildUser(guildID, hashedID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (psqlInterface *PsqlInterface) AddInitialGame(guildID string, game *PostgresGame) error {
-	err := psqlInterface.insertGame(game)
-	if err != nil {
-		return err
-	}
-
-	err = psqlInterface.insertGuildGame(guildID, game.GameID)
-	if err != nil {
-		return err
-	}
-	return nil
+func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) (uint64, error) {
+	return psqlInterface.insertGame(game)
 }
 
 func (psqlInterface *PsqlInterface) AddEvent(event *PostgresGameEvent) error {
-	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, $1, $2, $3, $4);", event.GameID, event.EventTime, event.EventType, event.Payload)
+	if event.UserID == 0 {
+		_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, NULL, $1, $2, $3, $4);", event.GameID, event.EventTime, event.EventType, event.Payload)
+		return err
+	}
+	_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, $1, $2, $3, $4, $5);", event.UserID, event.GameID, event.EventTime, event.EventType, event.Payload)
 	return err
 }
 

@@ -43,11 +43,13 @@ func activeGamesCode() string {
 }
 
 func (bot *Bot) refreshGameLiveness(code string) {
-	t := time.Now().Unix()
+	t := time.Now()
 	bot.RedisInterface.client.ZAdd(ctx, activeGamesCode(), &redis.Z{
-		Score:  float64(t),
+		Score:  float64(t.Unix()),
 		Member: code,
 	})
+	before := t.Add(-time.Second * GameTimeoutSeconds)
+	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func activeGamesKey(guildID string) string {
@@ -76,6 +78,10 @@ func cacheHash(guildID string) string {
 
 func snowflakeLockID(snowflake string) string {
 	return "automuteus:snowflake:" + snowflake + ":lock"
+}
+
+func voiceChangesForGameCodeLockKey(connectCode string) string {
+	return "automuteus:voice:game:" + connectCode + ":lock"
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
@@ -109,6 +115,22 @@ type GameStateRequest struct {
 	TextChannel  string
 	VoiceChannel string
 	ConnectCode  string
+}
+
+func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
+	locker := redislock.New(redisInterface.client)
+	lock, err := locker.Obtain(ctx, voiceChangesForGameCodeLockKey(connectCode), dur, &redislock.Options{
+		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
+		Metadata:      "",
+	})
+	if err == redislock.ErrNotObtained {
+		return nil
+	} else if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return lock
 }
 
 //need at least one of these fields to fetch
@@ -247,15 +269,17 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 
 func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode string) {
 	key := activeGamesKey(guildID)
-	t := time.Now().Unix()
+	t := time.Now()
 	_, err := redisInterface.client.ZAdd(ctx, key, &redis.Z{
-		Score:  float64(t),
+		Score:  float64(t.Unix()),
 		Member: connectCode,
 	}).Result()
 
 	if err != nil {
 		log.Println(err)
 	}
+	before := t.Add(-time.Second * GameTimeoutSeconds)
+	go redisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {

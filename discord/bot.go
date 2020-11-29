@@ -10,8 +10,10 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Bot struct {
@@ -179,33 +181,40 @@ func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {
 	log.Println("Finished gracefully shutting down")
 }
 
+var EmojiLock = sync.Mutex{}
+var AllEmojisStartup []*discordgo.Emoji = nil
+
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
-		go bot.PostgresInterface.EnsureGuildExists(m.Guild.ID, m.Guild.Name)
+		gid, err := strconv.ParseUint(m.Guild.ID, 10, 64)
+		if err != nil {
+			log.Println(err)
+		}
+		go bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
-
-		//f, err := os.Create(path.Join(bot.logPath, m.Guild.ID+"_log.txt"))
-		//w := io.MultiWriter(os.Stdout)
-		//if err != nil {
-		//	log.Println("Couldn't create logger for " + m.Guild.ID + "; only using stdout for logging")
-		//} else {
-		//	w = io.MultiWriter(f, os.Stdout)
-		//}
 
 		if emojiGuildID == "" {
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
 			emojiGuildID = m.Guild.ID
 		}
-		allEmojis, err := s.GuildEmojis(emojiGuildID)
-		if err != nil {
-			log.Println(err)
-		} else {
-			bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 
-			bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+		EmojiLock.Lock()
+		if AllEmojisStartup == nil {
+			allEmojis, err := s.GuildEmojis(emojiGuildID)
+			if err != nil {
+				log.Println(err)
+			} else {
+				AllEmojisStartup = allEmojis
+			}
+		} else {
+			log.Println("Skipping extra calls to fetch emojis")
+			bot.addAllMissingEmojis(s, m.Guild.ID, true, AllEmojisStartup)
+
+			bot.addAllMissingEmojis(s, m.Guild.ID, false, AllEmojisStartup)
 		}
+		EmojiLock.Unlock()
 
 		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
 
@@ -325,15 +334,19 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
 	oldPhase := dgs.AmongUsData.GetPhase()
+	deleteTime := sett.GetDeleteGameSummaryMinutes()
 	//only print a fancy formatted message if the game actually got to the lobby or another phase. Otherwise, delete
-	if oldPhase != game.MENU {
+	if oldPhase != game.MENU && deleteTime != 0 {
 		dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
 			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		dgs.RemoveAllReactions(bot.PrimarySession)
-	} else {
+		if deleteTime != -1 {
+			go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, time.Minute*time.Duration(deleteTime))
+		}
+	} else if deleteTime == 0 {
 		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
@@ -342,4 +355,37 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	//TODO this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
+}
+
+func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
+	log.Printf("Message worker is sleeping for %s before deleting message", waitDur.String())
+	time.Sleep(waitDur)
+	deleteMessage(s, msgChannelID, msgID)
+}
+
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings, channelID string) {
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	if lock == nil {
+		return
+	}
+	oldChannelId := dgs.GameStateMsg.MessageChannelID
+	dgs.DeleteGameStateMsg(bot.PrimarySession) //delete the old message
+
+	//create a new instance of the new one
+	if oldChannelId != "" {
+		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), oldChannelId, dgs.GameStateMsg.LeaderID)
+	} else if channelID != "" {
+		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), channelID, dgs.GameStateMsg.LeaderID)
+	}
+
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	//add the emojis to the refreshed message
+
+	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+
+		dgs.AddReaction(bot.PrimarySession, "▶️")
+		//go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
+	}
 }
