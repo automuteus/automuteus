@@ -206,10 +206,15 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			if err != nil {
 				log.Println(err)
 			} else {
-				AllEmojisStartup = allEmojis
+				bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
+				bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+
+				if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+					AllEmojisStartup = allEmojis
+					log.Println("Skipping subsequent guilds; emojis added successfully")
+				}
 			}
 		} else {
-			log.Println("Skipping extra calls to fetch emojis")
 			bot.addAllMissingEmojis(s, m.Guild.ID, true, AllEmojisStartup)
 
 			bot.addAllMissingEmojis(s, m.Guild.ID, false, AllEmojisStartup)
