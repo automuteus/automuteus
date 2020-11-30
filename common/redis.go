@@ -1,4 +1,4 @@
-package redis_common
+package common
 
 import (
 	"context"

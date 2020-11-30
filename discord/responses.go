@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/denverquane/amongusdiscord/discord/command"
 	"log"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ var EmojiNums = []string{":one:", ":two:", ":three:"}
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -52,11 +53,11 @@ func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands [
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
-		if !v.secret && v.cmdType != Help && v.cmdType != Null {
-			if (!v.adminSetting || isAdmin) && (!v.permissionSetting || isPermissioned) {
+		if !v.IsSecret && v.CommandType != command.Help && v.CommandType != command.Null {
+			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
 				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   v.emoji + " " + v.command,
-					Value:  sett.LocalizeMessage(v.shortDesc),
+					Name:   v.Emoji + " " + v.Command,
+					Value:  sett.LocalizeMessage(v.ShortDesc),
 					Inline: true,
 				})
 			}

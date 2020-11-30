@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
-	redis_common "github.com/denverquane/amongusdiscord/redis-common"
+	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/go-redis/redis/v8"
 	"log"
 	"time"

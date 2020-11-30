@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bsm/redislock"
-	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
+	rediscommon "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"

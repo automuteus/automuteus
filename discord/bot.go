@@ -4,9 +4,9 @@ import (
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/galactus/discord"
 	"github.com/bwmarrin/discordgo"
+	rediscommon "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
-	rediscommon "github.com/denverquane/amongusdiscord/redis-common"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
@@ -152,14 +152,6 @@ func (bot *Bot) Close() {
 	bot.PrimarySession.Close()
 	bot.RedisInterface.Close()
 	bot.StorageInterface.Close()
-}
-
-func (bot *Bot) PurgeConnection(socketID string) {
-
-	delete(bot.ConnsToGames, socketID)
-
-	//TODO purge all the data in the database here
-
 }
 
 func (bot *Bot) gracefulShutdownWorker(guildID, connCode string) {

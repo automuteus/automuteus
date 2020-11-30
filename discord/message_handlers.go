@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/automuteus/galactus/broker"
 	"github.com/bsm/redislock"
+	redis_common "github.com/denverquane/amongusdiscord/common"
+	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/metrics"
-	redis_common "github.com/denverquane/amongusdiscord/redis-common"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +26,6 @@ const DefaultMaxActiveGames = 150
 var RateLimitGlobalThreshold = 9500
 
 const downloadURL = "https://capture.automute.us"
-
-var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
 
 func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
@@ -83,7 +81,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
 				},
 					map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
+						"User": mentionByUserID(m.Author.ID),
 					}))
 
 			} else {
@@ -92,7 +90,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
 				},
 					map[string]interface{}{
-						"User": "<@!" + m.Author.ID + ">",
+						"User": mentionByUserID(m.Author.ID),
 					}))
 				if err == nil {
 					go func() {
@@ -130,7 +128,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			} else {
-				embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			}
 		} else {
@@ -194,14 +192,14 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
 					},
 						map[string]interface{}{
-							"User": "<@!" + m.UserID + ">",
+							"User": mentionByUserID(m.UserID),
 						}))
 				} else {
 					msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
 						Other: "{{.User}}, you're reacting too fast! Please slow down!",
 					}, map[string]interface{}{
-						"User": "<@!" + m.UserID + ">",
+						"User": mentionByUserID(m.UserID),
 					}))
 					if err == nil {
 						go func() {
@@ -274,7 +272,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 //the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 
-	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up
+	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up (if at all)
 	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
 	if reqs > RateLimitGlobalThreshold {
 		return
@@ -354,8 +352,6 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
 				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 			}
-
-			//go guildMemberUpdate(s, UserPatchParameters{m.GuildID, userData, deaf, mute, nick})
 		}
 	}
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
@@ -387,14 +383,14 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 				ID:    "message_handlers.softban",
 				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
 			}, map[string]interface{}{
-				"User": "<@!" + m.Author.ID + ">",
+				"User": mentionByUserID(m.Author.ID),
 			}))
 		} else {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
 				Other: "{{.User}} You're creating games too fast! Please slow down!",
 			}, map[string]interface{}{
-				"User": "<@!" + m.Author.ID + ">",
+				"User": mentionByUserID(m.Author.ID),
 			}))
 		}
 		lock.Release(context.Background())
@@ -402,9 +398,6 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	}
 
 	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitms)
-
-	//TODO need to send a message to the capture re-questing all the player/game states. Otherwise,
-	//we don't have enough info to go off of when remaking the game...
 
 	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
@@ -436,7 +429,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 			ID:    "message_handlers.handleNewGameMessage.noChannel",
 			Other: "{{.User}}, please join a voice channel before starting a match!",
 		}, map[string]interface{}{
-			"User": "<@!" + m.Author.ID + ">",
+			"User": mentionByUserID(m.Author.ID),
 		}))
 		lock.Release(context.Background())
 		return
@@ -489,35 +482,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	bot.EndGameChannels[connectCode] = killChan
 	bot.ChannelsMapLock.Unlock()
 
-	var hyperlink string
-	var minimalUrl string
-
-	if match := urlregex.FindStringSubmatch(bot.url); match != nil {
-		secure := match[urlregex.SubexpIndex("secure")] == "s"
-		host := match[urlregex.SubexpIndex("host")]
-		port := ":" + match[urlregex.SubexpIndex("port")]
-
-		if port == ":" {
-			if secure {
-				port = ":443"
-			} else {
-				port = ":80"
-			}
-		}
-
-		insecure := "?insecure"
-		protocol := "http://"
-		if secure {
-			insecure = ""
-			protocol = "https://"
-		}
-
-		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
-		minimalUrl = fmt.Sprintf("%s%s%s", protocol, host, port)
-	} else {
-		hyperlink = "Invalid HOST provided (should resemble something like `http://localhost:8123`)"
-		minimalUrl = "Invalid HOST provided"
-	}
+	hyperlink, minimalUrl := formCaptureURL(bot.url, connectCode)
 
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
