@@ -280,7 +280,7 @@ var AllCommands = []Command{
 	{
 		cmdType: Privacy,
 		command: "privacy",
-		example: "privacy show",
+		example: "privacy showme",
 		shortDesc: &i18n.Message{
 			ID:    "commands.AllCommands.Privacy.shortDesc",
 			Other: "View AutoMuteUs privacy information",

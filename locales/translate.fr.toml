@@ -144,8 +144,8 @@ hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more"
 
 ["responses.guildStatsEmbed.Premium"]
-hash = "sha1-6da7691eb71e70ed60c719517096d93643420052"
-other = "Showing additional Premium Stats!"
+hash = "sha1-582842d67a6c0bb9ea84fd8679d27c9dd23a1c5f"
+other = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**,\\nand will be likely be inaccurate while we work to improve them)."
 
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"

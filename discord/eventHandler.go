@@ -145,8 +145,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
 						if delTime != 0 {
-							oldPhase := dgs.AmongUsData.GetPhase()
-
 							dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 							embed := bot.gameStateResponse(dgs, sett)
 
@@ -165,10 +163,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							//		buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
 							//	}
 							//}
-
-							//manually set all alive AFTER making the embed
-							dgs.AmongUsData.SetAllAlive()
-							dgs.AmongUsData.Phase = oldPhase
 							embed.Description = sett.LocalizeMessage(&i18n.Message{
 								ID:    "eventHandler.gameOver.matchID",
 								Other: "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\n{{.Winners}}",

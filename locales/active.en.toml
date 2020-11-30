@@ -100,7 +100,7 @@
 "responses.guildStatsEmbed.ImposterWins" = "Imposter Wins"
 "responses.guildStatsEmbed.MostGames" = "Games Played"
 "responses.guildStatsEmbed.NoPremium" = "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more"
-"responses.guildStatsEmbed.Premium" = "Showing additional Premium Stats!"
+"responses.guildStatsEmbed.Premium" = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**,\\nand will be likely be inaccurate while we work to improve them)."
 "responses.guildStatsEmbed.Title" = "Guild Stats"
 "responses.helpResponse.SubTitle" = "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} help <command>` to see more details on a command!"
 "responses.helpResponse.Title" = "AutoMuteUs Bot Commands:\\n"

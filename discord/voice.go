@@ -1,7 +1,9 @@
 package discord
 
 import (
+	"context"
 	"fmt"
+	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -116,6 +118,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 	users := []UserModify{}
 
+	priorityRequests := 0
 	for _, voiceState := range g.VoiceStates {
 		userData, err := dgs.GetUser(voiceState.UserID)
 		if err != nil {
@@ -149,6 +152,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 			if handlePriority != NoPriority && ((handlePriority == AlivePriority && auData.IsAlive) || (handlePriority == DeadPriority && !auData.IsAlive)) {
 				users = append([]UserModify{userModify}, users...)
+				priorityRequests++ //counter of how many elements on the front of the arr should be sent first
 			} else {
 				users = append(users, userModify)
 			}
@@ -175,18 +179,44 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 	if dgs.Running && len(users) > 0 {
 		prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
-		req := UserModifyRequest{
-			Premium: prem,
-			Users:   users,
-		}
-		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
-		if mdsc == nil {
-			log.Println("Nil response from modifyUsers, probably not good...")
+
+		if priorityRequests > 0 {
+			req := UserModifyRequest{
+				Premium: prem,
+				Users:   users[:priorityRequests],
+			}
+			//no lock; we're not done yet
+			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, nil)
+			log.Println("Finished issuing high priority mutes")
+			rem := users[priorityRequests:]
+			if len(rem) > 0 {
+				req = UserModifyRequest{
+					Premium: prem,
+					Users:   rem,
+				}
+				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+			} else {
+				voiceLock.Release(context.Background())
+			}
 		} else {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+			//no priority; issue all at once
+			log.Println("Issuing mutes/deafens with no particular priority")
+			req := UserModifyRequest{
+				Premium: prem,
+				Users:   users,
+			}
+			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 		}
 	}
+}
 
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req UserModifyRequest, lock *redislock.Lock) {
+	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req, lock)
+	if mdsc == nil {
+		log.Println("Nil response from modifyUsers, probably not good...")
+	} else {
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+	}
 }

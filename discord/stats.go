@@ -205,7 +205,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.guildStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!",
+			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**,\nand will be likely be inaccurate while we work to improve them).",
 		})
 		gid, err := strconv.ParseUint(guildID, 10, 64)
 		if err == nil {

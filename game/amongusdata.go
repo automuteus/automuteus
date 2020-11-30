@@ -44,7 +44,7 @@ func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
 	auData.Phase = phase
 
 	if old != phase {
-		if phase == TASKS && old == LOBBY {
+		if (phase == TASKS && old == LOBBY) || phase == GAMEOVER {
 			auData.SetAllAlive()
 		} else if phase == MENU {
 			auData.SetRoomRegion("", "")
