@@ -38,8 +38,6 @@ type Bot struct {
 
 	PostgresInterface *storage.PsqlInterface
 
-	MetricsCollector *metrics.MetricsCollector
-
 	logPath string
 
 	captureTimeout int
@@ -87,7 +85,6 @@ func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraToke
 		PostgresInterface: psql,
 		logPath:           logPath,
 		captureTimeout:    GameTimeoutSeconds,
-		MetricsCollector:  metrics.NewMetricsCollector(),
 	}
 	dg.LogLevel = discordgo.LogInformational
 
@@ -111,7 +108,8 @@ func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraToke
 
 	rediscommon.SetVersionAndCommit(bot.RedisInterface.client, Version, Commit)
 
-	go metrics.PrometheusMetricsServer(os.Getenv("SCW_NODE_ID"), "2112", bot.MetricsCollector)
+	nodeID := os.Getenv("SCW_NODE_ID")
+	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 
 	go StartHealthCheckServer("8080")
 
@@ -185,7 +183,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		go bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
+		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID)
 
 		if emojiGuildID == "" {
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
@@ -243,7 +241,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
-	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID, Version)
+	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
 
 	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
 	if err != nil {
@@ -318,7 +316,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 	sett := bot.StorageInterface.GetGuildSettings(gsr.GuildID)
 	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 	if edited {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 	}
 
 	log.Println("Done saving guild data")
@@ -337,7 +335,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		dgs.RemoveAllReactions(bot.PrimarySession)
 		if deleteTime != -1 {
@@ -345,7 +343,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		}
 	} else {
 		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
@@ -368,19 +366,19 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 
 	del := dgs.DeleteGameStateMsg(bot.PrimarySession) //delete the old message
 	if del {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
 
 	if dgs.GameStateMsg.MessageChannelID != "" && del {
 		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	//add the emojis to the refreshed message
 
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.PrimarySession, "▶️")
 		//go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}

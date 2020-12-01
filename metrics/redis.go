@@ -10,22 +10,31 @@ import (
 )
 
 func discordRequestsZsetKeyByCommit(commit string) string {
-	return "automuteus:requests:commit:" + commit
+	return "automuteus:requests:commit:zset:" + commit
 }
 
-func incrementDiscordRequests(client *redis.Client, count int64) {
+func discordRequestsKeyByCommitAndType(commit, typeStr string) string {
+	return "automuteus:requests:type:" + typeStr + ":commit:" + commit
+}
+
+func incrementDiscordRequests(client *redis.Client, requestType MetricsEventType, count int64) {
 	_, comm := redis_common.GetVersionAndCommit(client)
 
 	t := time.Now()
 
 	for i := int64(0); i < count; i++ {
-		_, err := client.ZAdd(context.Background(), discordRequestsZsetKeyByCommit(comm), &redis.Z{
-			Score:  float64(t.UnixNano() + i),
-			Member: float64(t.UnixNano() + i), //add the time as the member to ensure (approx.) uniqueness
-		}).Result()
-		if err != nil {
-			log.Println(err)
+		//only record in this zset if it's issued on the main token
+		if requestType != MuteDeafenCapture && requestType != MuteDeafenWorker {
+			_, err := client.ZAdd(context.Background(), discordRequestsZsetKeyByCommit(comm), &redis.Z{
+				Score:  float64(t.UnixNano() + i),
+				Member: float64(t.UnixNano() + i), //add the time as the member to ensure (approx.) uniqueness
+			}).Result()
+			if err != nil {
+				log.Println(err)
+			}
 		}
+		typeStr := MetricTypeStrings[requestType]
+		client.Incr(context.Background(), discordRequestsKeyByCommitAndType(comm, typeStr))
 	}
 }
 

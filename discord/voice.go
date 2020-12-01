@@ -40,9 +40,9 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	} else {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 	}
 	//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 }
@@ -94,9 +94,9 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		if mdsc == nil {
 			log.Println("Nil response from modifyUsers, probably not good...")
 		} else {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 		}
 	}
 }
@@ -215,8 +215,8 @@ func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req UserModifyR
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	} else {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 	}
 }

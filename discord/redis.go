@@ -84,15 +84,15 @@ func voiceChangesForGameCodeLockKey(connectCode string) string {
 	return "automuteus:voice:game:" + connectCode + ":lock"
 }
 
-func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID, version string) {
-	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
+	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID, version string) {
-	_, err := redisInterface.client.SRem(ctx, rediscommon.TotalGuildsKey(version), string(storage.HashGuildID(guildID))).Result()
+func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID string) {
+	_, err := redisInterface.client.SRem(ctx, rediscommon.TotalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}

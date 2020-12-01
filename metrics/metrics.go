@@ -1,13 +1,15 @@
 package metrics
 
 import (
+	"context"
+	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
-	"sync"
-	"time"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"strconv"
 )
-
-const MAX_TTL_MINUTES = 10
 
 type MetricsEventType int
 
@@ -21,71 +23,76 @@ const (
 	MuteDeafenWorker
 )
 
+var MetricTypeStrings = []string{
+	"Generic",
+	"mute_deafen_official",
+	"message_create_delete",
+	"message_edit",
+	"reaction_add_remove",
+	"mute_deafen_capture",
+	"mute_deafen_worker",
+}
+
 type MetricsCollector struct {
-	data map[int64]MetricsEventType
-	lock sync.RWMutex
+	counterDesc *prometheus.Desc
+	client      *redis.Client
+	commit      string
+	nodeID      string
 }
 
-// Describe is implemented with DescribeByCollect. That's possible because the
-// Collect method will always return the same two metrics with the same two
-// descriptors.
-func (cc MetricsObserverCollector) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(cc, ch)
+func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.counterDesc
 }
 
-// RedisObserverCollector implements the Collector interface.
-type MetricsObserverCollector struct {
-	MetricsObserver *MetricsObserver
-}
+func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
+	for i, str := range MetricTypeStrings {
+		if i != 0 {
+			v, err := c.client.Get(context.Background(), discordRequestsKeyByCommitAndType(c.commit, str)).Result()
+			if err != redis.Nil && err != nil {
+				log.Println(err)
+				continue
+			} else {
+				num := int64(0)
+				if v != "" {
+					num, err = strconv.ParseInt(v, 10, 64)
+					if err != nil {
+						log.Println(err)
+						num = 0
+					}
+				}
 
-func NewMetricsCollector() *MetricsCollector {
-	return &MetricsCollector{
-		data: make(map[int64]MetricsEventType),
-		lock: sync.RWMutex{},
-	}
-}
-
-func (mc *MetricsCollector) RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
-	t := time.Now().UnixNano()
-
-	mc.lock.Lock()
-	for i := int64(0); i < num; i++ {
-		mc.data[t+i] = requestType
-	}
-
-	mc.lock.Unlock()
-	//capture/worker requests don't count
-	if requestType != MuteDeafenCapture && requestType != MuteDeafenWorker {
-		go incrementDiscordRequests(client, num)
-	}
-}
-
-func (mc *MetricsCollector) TotalRequestCountInTimeFiltered(timeBack time.Duration, filter MetricsEventType) int64 {
-	cutoff := time.Now().Add(-timeBack).UnixNano()
-
-	count := int64(0)
-	mc.lock.RLock()
-	for i, v := range mc.data {
-		if i > cutoff {
-			//If a generic filter, ignore the requests that go out on other bot tokens
-			if (filter == Generic && v != MuteDeafenWorker && v != MuteDeafenCapture) || filter == v {
-				count++
+				ch <- prometheus.MustNewConstMetric(
+					c.counterDesc,
+					prometheus.CounterValue,
+					float64(num),
+					c.nodeID,
+					str,
+				)
 			}
-		} else {
-			break
 		}
 	}
-	mc.lock.RUnlock()
-	return count
+
 }
 
-func (mc *MetricsCollector) prune() {
-	oldest := time.Now().Add(-MAX_TTL_MINUTES * time.Minute).UnixNano()
-	mc.lock.Lock()
-	for t := range mc.data {
-		if t < oldest {
-			delete(mc.data, t)
-		}
+func RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
+	go incrementDiscordRequests(client, requestType, num)
+}
+
+func NewCollector(client *redis.Client, commit, nodeID string) *MetricsCollector {
+	return &MetricsCollector{
+		counterDesc: prometheus.NewDesc("discord_requests_by_node_and_type", "Number of discord requests made, differentiated by node/type", []string{"nodeID", "type"}, nil),
+		client:      client,
+		commit:      commit,
+		nodeID:      nodeID,
 	}
-	mc.lock.Unlock()
+}
+
+func PrometheusMetricsServer(client *redis.Client, nodeID, port string) error {
+	_, comm := redis_common.GetVersionAndCommit(client)
+
+	prometheus.MustRegister(NewCollector(client, comm, nodeID))
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	return http.ListenAndServe(":"+port, nil)
 }

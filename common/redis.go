@@ -29,10 +29,6 @@ func CommitKey() string {
 	return "automuteus:commit"
 }
 
-func MatchIDKey() string {
-	return "automuteus:match:counter"
-}
-
 func UserRateLimitGeneralKey(userID string) string {
 	return "automuteus:ratelimit:user:" + userID
 }
@@ -47,14 +43,6 @@ func UserSoftbanKey(userID string) string {
 
 func UserSoftbanCountKey(userID string) string {
 	return "automuteus:ratelimit:softban:count:user:" + userID
-}
-
-func GetAndIncrementMatchID(client *redis.Client) int64 {
-	num, err := client.Incr(context.Background(), MatchIDKey()).Result()
-	if err != nil {
-		log.Println(err)
-	}
-	return num
 }
 
 func SetVersionAndCommit(client *redis.Client, version, commit string) {
@@ -82,17 +70,8 @@ func GetVersionAndCommit(client *redis.Client) (string, string) {
 	return v, c
 }
 
-func TotalGuildsKey(version string) string {
-	return "automuteus:count:guilds:version-" + version
-}
-
-func GetGuildCounter(client *redis.Client, version string) int64 {
-	count, err := client.SCard(context.Background(), TotalGuildsKey(version)).Result()
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-	return count
+func TotalGuildsKey() string {
+	return "automuteus:count:guilds"
 }
 
 func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttlMS int64) {

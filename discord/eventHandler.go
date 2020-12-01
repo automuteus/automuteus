@@ -90,7 +90,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 					if edited {
-						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 					break
 				case broker.Lobby:
@@ -186,10 +186,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							}
 							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(dgs.GameStateMsg.MessageChannelID, embed)
 							if delTime > 0 && err == nil {
-								bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 								go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, msg.ID, time.Minute*time.Duration(delTime))
 							} else if err == nil {
-								bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 							}
 
 						}
@@ -327,7 +327,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 			if dgs.AmongUsData.GetPhase() != game.TASKS {
 				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 				if edited {
-					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
 			}
 
@@ -346,7 +346,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 
 				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 				if edited {
-					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
 				return true, userID
 			} else if updated {
@@ -363,7 +363,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 						edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 						if edited {
-							bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+							metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 						}
 						return true, userID
 					} else {
@@ -373,7 +373,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				} else {
 					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 					if edited {
-						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 					if player.Action == game.EXILED {
 						return false, userID //don't apply a mute to this player
@@ -415,7 +415,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	case game.MENU:
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		bot.applyToAll(dgs, false, false)
 		//go dgs.RemoveAllReactions(bot.PrimarySession.GetPrimarySession())
@@ -426,7 +426,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 
 		break
@@ -441,7 +441,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, priority, dgsRequest)
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		break
 	case game.DISCUSS:
@@ -453,7 +453,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		} else {
 			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 			if edited {
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
 		}
 
@@ -471,7 +471,7 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 
 	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 	if edited {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 	}
 }
 

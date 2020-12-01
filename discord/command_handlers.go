@@ -90,7 +90,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 	} else {
 		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
 		//Very approximately, at least
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 
 		switch cmd.CommandType {
 		case command.Help:
@@ -144,7 +144,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 			edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 			if edited {
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
 			break
 
@@ -165,7 +165,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 				if edited {
-					bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
 			}
 			break
@@ -192,7 +192,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					//update the state message to reflect the player leaving
 					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 					if edited {
-						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 				}
 			}

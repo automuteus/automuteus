@@ -213,7 +213,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", 3000)
 			idMatched := false
 			if m.Emoji.Name == "▶️" {
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
 				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
 				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
 				go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
@@ -258,7 +258,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
 					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 					if edited {
-						bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 				}
 			}
@@ -348,9 +348,9 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			if mdsc == nil {
 				log.Println("Nil response from modifyUsers, probably not good...")
 			} else {
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-				bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
 			}
 		}
 	}
@@ -569,7 +569,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	log.Println("Added self game state message")
 	//TODO well this is a little ugly
 	//+12 emojis, 1 for X
-	bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
+	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 
 	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 }
