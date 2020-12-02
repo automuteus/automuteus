@@ -214,7 +214,7 @@
 "settings.SettingAutoRefresh.False" = "From now on, I will not AutoRefresh the game status message"
 "settings.SettingAutoRefresh.True" = "From now on, I'll AutoRefresh the game status message"
 "settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage"
-"settings.SettingMapVersion.Unrecognized" = "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings autorefresh` for usage"
+"settings.SettingMapVersion.Unrecognized" = "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage"
 "settings.SettingMapVersion.Success" = "From now on, I will display map images as {{.Arg}}"
 "settings.SettingDelays.Phase.UNINITIALIZED" = "I don't know what `{{.PhaseName}}` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`."
 "settings.SettingDelays.delayBetweenPhases" = "Currently, the delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` is {{.OldDelay}}."

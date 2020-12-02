@@ -1097,7 +1097,7 @@ func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	if !valid[val] {
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMapVersion.Unrecognized",
-			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings autorefresh` for usage",
+			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage",
 		},
 			map[string]interface{}{
 				"Arg":           val,

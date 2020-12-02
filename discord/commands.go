@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/denverquane/amongusdiscord/metrics"
-
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
