@@ -328,7 +328,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
-					if strings.ReplaceAll(strings.ToLower(args[1]), "\"", "") == "guild" {
+					arg := strings.ReplaceAll(strings.ToLower(args[1]), "\"", "")
+					if arg == "guild" || arg == "server" {
 						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
 						if err != nil {
 							log.Println(err)
@@ -336,11 +337,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					} else {
 						s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, or you mistyped 'guild'...")
 					}
-
 				} else {
 					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
 				}
-
 			}
 			break
 		case command.Premium:
@@ -350,14 +349,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {
-					if arg == "invite" || arg == "inv" {
+					if arg == "invite" || arg == "invites" || arg == "inv" {
 						_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
 						if err != nil {
 							log.Println(err)
 						}
+					} else {
+						s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't recognize that premium command or argument!")
 					}
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Viewing the premium invites is an Admin command")
+					s.ChannelMessageSend(m.ChannelID, "Viewing the premium invites is an Admin-only command")
 				}
 			}
 			break
