@@ -703,7 +703,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
-				Map, err := NewMapFromName(args[1])
+				mapItem, err := NewMapFromName(args[1])
 				if err != nil {
 					log.Println(err)
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -712,8 +712,17 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}))
 					break
 				} else {
-					log.Println(Map)
-					s.ChannelMessageSend(m.ChannelID, "https://i.imgur.com/3B0WWe7.png")
+					if len(args[2:]) > 0 {
+						if args[2] == "simple" {
+							s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
+						} else if args[2] == "detailed" {
+							s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
+						} else {
+							log.Println("Invalid option")
+						}
+					} else {
+						log.Println("Using guild setting")
+					}
 				}
 			}
 			break
