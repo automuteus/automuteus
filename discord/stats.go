@@ -15,8 +15,7 @@ const UserLeaderboardCount = 3
 
 func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
-	gamesPlayedServer := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
-	winsOnServer := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
+	wins := bot.PostgresInterface.NumWins(userID)
 
 	avatarUrl := ""
 	mem, err := bot.PrimarySession.GuildMember(guildID, userID)
@@ -32,7 +31,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			ID:    "responses.userStatsEmbed.GamesPlayed",
 			Other: "Games Played",
 		}),
-		Value:  fmt.Sprintf("%d", gamesPlayedServer),
+		Value:  fmt.Sprintf("%d", gamesPlayed),
 		Inline: true,
 	}
 	fields[1] = &discordgo.MessageEmbedField{
@@ -40,7 +39,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			ID:    "responses.userStatsEmbed.TotalWins",
 			Other: "Total Wins",
 		}),
-		Value:  fmt.Sprintf("%d", winsOnServer),
+		Value:  fmt.Sprintf("%d", wins),
 		Inline: true,
 	}
 	fields = append(fields, &discordgo.MessageEmbedField{
@@ -59,7 +58,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!",
+			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**,\nand will be likely be inaccurate while we work to improve them).",
 		})
 		colorRankings := bot.PostgresInterface.ColorRankingForPlayer(userID)
 		if len(colorRankings) > 0 {
@@ -106,9 +105,9 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			Inline: true,
 		})
 
-		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRole(userID, int16(game.CrewmateRole))
 		if totalCrewmateGames > 0 {
-			crewmateWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+			crewmateWins := bot.PostgresInterface.NumWinsAsRole(userID, int16(game.CrewmateRole))
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.userStatsEmbed.CrewmateWins",
@@ -118,9 +117,9 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		totalImposterGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+		totalImposterGames := bot.PostgresInterface.NumGamesAsRole(userID, int16(game.ImposterRole))
 		if totalImposterGames > 0 {
-			imposterWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+			imposterWins := bot.PostgresInterface.NumWinsAsRole(userID, int16(game.ImposterRole))
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.userStatsEmbed.ImposterWins",
@@ -147,7 +146,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Desc",
-			Other: "User stats for {{.User}} on this Server",
+			Other: "User stats for {{.User}}",
 		}, map[string]interface{}{
 			"User": "<@!" + userID + ">",
 		}) + "\n\n" + extraDesc,
