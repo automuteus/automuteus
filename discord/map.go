@@ -26,8 +26,8 @@ const BaseMapURL = "https://github.com/ShawnHardwick/automuteus/blob/feature/map
 
 func NewMapFromName(name string) (*MapType, error) {
 	switch strings.ToLower(name) {
-	case "the_skeld", "skeld":
-		name = "skeld"
+	case "the skeld", "the_skeld", "skeld":
+		name = "the_skeld"
 	case "mira_hq", "mira hq", "mirahq":
 		name = "mira_hq"
 	case "polus":
