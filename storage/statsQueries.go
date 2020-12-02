@@ -74,7 +74,7 @@ func (psqlInterface *PsqlInterface) NumGamesAsRoleOnServer(userID, guildID strin
 
 func (psqlInterface *PsqlInterface) NumGamesAsRole(userID string, role int16) int64 {
 	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$3;", userID, role)
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2;", userID, role)
 	if err != nil || len(r) < 1 {
 		return -1
 	}
