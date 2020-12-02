@@ -2,12 +2,14 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/automuteus/galactus/broker"
@@ -140,12 +142,22 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					var lock *redislock.Lock
+					var dgs *DiscordGameState
+					i := 0
+					for lock == nil && i < 10 {
+						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+						i++
+					}
+					if i > 9 && lock == nil {
+						log.Println("Couldn't obtain DGS for gameover recording after 10 tries!")
+						break
+					}
 
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
+						dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 						if delTime != 0 {
-							dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 							embed := bot.gameStateResponse(dgs, sett)
 
 							//TODO doesn't work
@@ -201,7 +213,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						if sett.AutoRefresh {
 							bot.RefreshGameStateMessage(dgsRequest, sett)
 						}
-
 					}
 				}
 				if job.JobType != broker.Connection {
@@ -402,7 +413,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		return
 	}
 	//if we started a new game
-	if oldPhase == game.LOBBY && phase == game.TASKS {
+	if (oldPhase == game.LOBBY || oldPhase == game.GAMEOVER) && phase == game.TASKS {
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
 		gameID := startGameInPostgres(*dgs, bot.PostgresInterface)
@@ -501,6 +512,7 @@ func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) uint
 
 func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameOver game.Gameover) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		log.Println("dgs match id or start time is <0; not dumping game to Postgres")
 		return
 	}
 	end := time.Now().Unix()
@@ -513,7 +525,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameO
 		gameOver.GameOverReason == game.ImpostorDisconnect
 
 	for _, v := range dgs.UserData {
-		if v.GetPlayerName() != game.UnlinkedPlayerName {
+		if v.GetPlayerName() != game.UnlinkedPlayerName && v.GetPlayerName() != game.SpectatorPlayerName {
 			inGameData, found := dgs.AmongUsData.GetByName(v.GetPlayerName())
 			if !found {
 				log.Println("No game data found for that player")
@@ -537,14 +549,16 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameO
 				continue
 			}
 
+			//assume crewmate by default
 			won := !imposterWin
 			role := game.CrewmateRole
-			for _, v := range gameOver.PlayerInfos {
+			for _, pi := range gameOver.PlayerInfos {
 				//only override for the imposters
-				if v.IsImpostor {
-					if v.Name == inGameData.Name {
+				if pi.IsImpostor {
+					if strings.ToLower(pi.Name) == strings.ToLower(inGameData.Name) {
 						role = game.ImposterRole
 						won = imposterWin
+						break
 					}
 				}
 			}
