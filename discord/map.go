@@ -1,31 +1,31 @@
 package discord
 
 import (
-	"fmt"
-	"strings"
 	"errors"
-	"net/url"
+	"fmt"
 	"log"
+	"net/url"
+	"strings"
 )
 
 type MapType struct {
-	Name string
+	Name     string
 	MapImage MapImage
 }
 
 type MapImage struct {
-	Simple string
+	Simple   string
 	Detailed string
 }
 
 func (m *MapType) String() string {
-    return m.Name
+	return m.Name
 }
 
 const BaseMapURL = "https://github.com/ShawnHardwick/automuteus/blob/feature/map_command/assets/maps/"
 
 func NewMapFromName(name string) (*MapType, error) {
-    switch strings.ToLower(name) {
+	switch strings.ToLower(name) {
 	case "the_skeld", "skeld":
 		name = "skeld"
 	case "mira_hq", "mira hq", "mirahq":
@@ -37,18 +37,18 @@ func NewMapFromName(name string) (*MapType, error) {
 	}
 
 	base, err := url.Parse(BaseMapURL)
-    if err != nil {
-        log.Println(err)
+	if err != nil {
+		log.Println(err)
 	}
 
 	simpleURL, err := base.Parse(name + ".png?raw=true")
 	if err != nil {
-        log.Println(err)
+		log.Println(err)
 	}
 
 	detailedURL, err := base.Parse(name + "_detailed.png?raw=true")
 	if err != nil {
-        log.Println(err)
+		log.Println(err)
 	}
 
 	mapImage := MapImage{
@@ -58,4 +58,3 @@ func NewMapFromName(name string) (*MapType, error) {
 
 	return &MapType{Name: name, MapImage: mapImage}, nil
 }
-
