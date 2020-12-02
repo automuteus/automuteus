@@ -29,6 +29,7 @@ const (
 	//Track
 	UnmuteAll
 	Force
+	Map
 	Settings
 	Log
 	Cache
@@ -254,6 +255,28 @@ var AllCommands = []Command{
 		emoji:             "📢",
 		adminSetting:      false,
 		permissionSetting: true,
+	},
+	{
+		cmdType: Map,
+		command: "map",
+		example: "map skeld",
+		shortDesc: &i18n.Message{
+			ID:    "commands.AllCommands.Map.shortDesc",
+			Other: "Display an in-game map",
+		},
+		desc: &i18n.Message{
+			ID:    "commands.AllCommands.Map.desc",
+			Other: "Display an image of an in-game map in the text channel. Two supported versions: simple or detailed",
+		},
+		args: &i18n.Message{
+			ID:    "commands.AllCommands.Map.args",
+			Other: "<map_name> (skeld, mira_hq, polus) <version> (optional, simple or detailed)",
+		},
+		aliases:           []string{"map"},
+		secret:            false,
+		emoji:             "🗺",
+		adminSetting:      false,
+		permissionSetting: false,
 	},
 	{
 		cmdType: Cache,
@@ -673,6 +696,26 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case Log:
 			log.Println(fmt.Sprintf("\"%s\"", strings.Join(args, " ")))
+			break
+
+		case Map:
+			if len(args[1:]) == 0 {
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			} else {
+				Map, err := NewMapFromName(args[1])
+				if err != nil {
+					log.Println(err)
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Map.notFound",
+						Other: "I don't have a map by that name!",
+					}))
+					break
+				} else {
+					log.Println(Map)
+					s.ChannelMessageSend(m.ChannelID, "https://i.imgur.com/3B0WWe7.png")
+				}
+			}
 			break
 
 		case Cache:
