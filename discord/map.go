@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type MapType struct {
+type MapItem struct {
 	Name     string
 	MapImage MapImage
 }
@@ -18,17 +18,17 @@ type MapImage struct {
 	Detailed string
 }
 
-func (m *MapType) String() string {
+func (m *MapItem) String() string {
 	return m.Name
 }
 
-const BaseMapURL = "https://github.com/ShawnHardwick/automuteus/blob/feature/map_command/assets/maps/"
+const BaseMapURL = "https://github.com/denverquane/automuteus/blob/master/assets/maps/"
 
-func NewMapFromName(name string) (*MapType, error) {
+func NewMapItem(name string) (*MapItem, error) {
 	switch strings.ToLower(name) {
 	case "the skeld", "the_skeld", "skeld":
 		name = "the_skeld"
-	case "mira_hq", "mira hq", "mirahq":
+	case "mira", "mira_hq", "mira hq", "mirahq":
 		name = "mira_hq"
 	case "polus":
 		name = "polus"
@@ -56,5 +56,5 @@ func NewMapFromName(name string) (*MapType, error) {
 		Detailed: detailedURL.String(),
 	}
 
-	return &MapType{Name: name, MapImage: mapImage}, nil
+	return &MapItem{Name: name, MapImage: mapImage}, nil
 }

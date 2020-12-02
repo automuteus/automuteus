@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -703,7 +704,17 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
-				mapItem, err := NewMapFromName(args[1])
+				mapVersion := args[len(args)-1]
+
+				var mapName string
+				switch mapVersion {
+				case "simple", "detailed":
+					mapName = strings.Join(args[1:len(args)-1], " ")
+				default:
+					mapName = strings.Join(args[1:], " ")
+					mapVersion = sett.GetMapVersion()
+				}
+				mapItem, err := NewMapItem(mapName)
 				if err != nil {
 					log.Println(err)
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -711,18 +722,14 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						Other: "I don't have a map by that name!",
 					}))
 					break
-				} else {
-					if len(args[2:]) > 0 {
-						if args[2] == "simple" {
-							s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
-						} else if args[2] == "detailed" {
-							s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
-						} else {
-							log.Println("Invalid option")
-						}
-					} else {
-						log.Println("Using guild setting")
-					}
+				}
+				switch mapVersion {
+				case "simple":
+					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
+				case "detailed":
+					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
+				default:
+					log.Println("mapVersion has unexpected value for 'map' command")
 				}
 			}
 			break
