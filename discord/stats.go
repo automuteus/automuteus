@@ -25,7 +25,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		avatarUrl = mem.User.AvatarURL("")
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, 2)
+	fields := make([]*discordgo.MessageEmbedField, 3)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.GamesPlayed",
@@ -42,11 +42,18 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		Value:  fmt.Sprintf("%d", wins),
 		Inline: true,
 	}
-	fields = append(fields, &discordgo.MessageEmbedField{
-		Name:   "\u200b",
-		Value:  "\u200b",
+	winrate := 0.0
+	if gamesPlayed > 0 {
+		winrate = 100.0 * (float64(wins) / float64(gamesPlayed))
+	}
+	fields[2] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.userStatsEmbed.Winrate",
+			Other: "Winrate",
+		}),
+		Value:  fmt.Sprintf("%d/%d Games | %.0f%%", wins, gamesPlayed, winrate),
 		Inline: true,
-	})
+	}
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.userStatsEmbed.NoPremium",
@@ -58,7 +65,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**,\nand will be likely be inaccurate while we work to improve them).",
+			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
 		})
 		colorRankings := bot.PostgresInterface.ColorRankingForPlayer(userID)
 		if len(colorRankings) > 0 {
@@ -99,11 +106,38 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   "\u200b",
-			Value:  "\u200b",
-			Inline: true,
-		})
+
+		guildsPlayedIn := bot.PostgresInterface.NumGuildsPlayedInByUser(userID)
+		if guildsPlayedIn > 0 {
+			val := sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.userStatsEmbed.ServersPlayedInValue",
+				Other: "{{.Servers}} Servers",
+			}, map[string]interface{}{
+				"Servers": guildsPlayedIn,
+			})
+			if guildsPlayedIn == 1 {
+				val = sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ServerPlayedInValue",
+					Other: "{{.Server}} Server",
+				}, map[string]interface{}{
+					"Server": guildsPlayedIn,
+				})
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ServersPlayedIn",
+					Other: "Played In",
+				}),
+				Value:  val,
+				Inline: true,
+			})
+		} else {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: true,
+			})
+		}
 
 		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRole(userID, int16(game.CrewmateRole))
 		if totalCrewmateGames > 0 {
@@ -113,7 +147,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.CrewmateWins",
 					Other: "Crewmate Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d games | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
+				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
 				Inline: true,
 			})
 		}
@@ -125,7 +159,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.ImposterWins",
 					Other: "Imposter Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d games | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
+				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
 				Inline: true,
 			})
 		}
@@ -204,7 +238,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	if premium != storage.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.guildStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**,\nand will be likely be inaccurate while we work to improve them).",
+			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
 		})
 		gid, err := strconv.ParseUint(guildID, 10, 64)
 		if err == nil {

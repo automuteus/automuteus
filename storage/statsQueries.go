@@ -35,6 +35,15 @@ func (psqlInterface *PsqlInterface) NumGamesPlayedByUser(userID string) int64 {
 	return r[0]
 }
 
+func (psqlInterface *PsqlInterface) NumGuildsPlayedInByUser(userID string) int64 {
+	r := []int64{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &r, "SELECT COUNT(DISTINCT guild_id) FROM users_games WHERE user_id=$1;", userID)
+	if err != nil || len(r) < 1 {
+		return -1
+	}
+	return r[0]
+}
+
 func (psqlInterface *PsqlInterface) NumGamesPlayedByUserOnServer(userID, guildID string) int64 {
 	r := []int64{}
 	gid, _ := strconv.ParseInt(guildID, 10, 64)

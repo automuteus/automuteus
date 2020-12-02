@@ -413,7 +413,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		return
 	}
 	//if we started a new game
-	if oldPhase == game.LOBBY && phase == game.TASKS {
+	if (oldPhase == game.LOBBY || oldPhase == game.GAMEOVER) && phase == game.TASKS {
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
 		gameID := startGameInPostgres(*dgs, bot.PostgresInterface)
@@ -512,6 +512,7 @@ func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) uint
 
 func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameOver game.Gameover) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		log.Println("dgs match id or start time is <0; not dumping game to Postgres")
 		return
 	}
 	end := time.Now().Unix()
