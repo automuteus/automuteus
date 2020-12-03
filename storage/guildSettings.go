@@ -118,7 +118,11 @@ func (gs *GuildSettings) SetAutoRefresh(n bool) {
 }
 
 func (gs *GuildSettings) GetMapVersion() string {
-	return gs.MapVersion
+	if gs.MapVersion == "" {
+		return "simple"
+	} else {
+		return gs.MapVersion
+	}
 }
 
 func (gs *GuildSettings) SetMapVersion(n string) {
