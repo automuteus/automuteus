@@ -342,7 +342,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	deleteTime := sett.GetDeleteGameSummaryMinutes()
 	//only print a fancy formatted message if the game actually got to the lobby or another phase. Otherwise, delete
 	if oldPhase != game.MENU && deleteTime != 0 {
-		dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+		//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
 			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)

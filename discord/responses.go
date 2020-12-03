@@ -226,11 +226,10 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
-		game.MENU:     menuMessage,
-		game.LOBBY:    lobbyMessage,
-		game.TASKS:    gamePlayMessage,
-		game.DISCUSS:  gamePlayMessage,
-		game.GAMEOVER: gamePlayMessage, //uses the phase to print the info differently
+		game.MENU:    menuMessage,
+		game.LOBBY:   lobbyMessage,
+		game.TASKS:   gamePlayMessage,
+		game.DISCUSS: gamePlayMessage,
 	}
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
@@ -329,16 +328,14 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 
 	color := 15158332 //red
 	desc := ""
-	if dgs.AmongUsData.GetPhase() != game.GAMEOVER {
-		if dgs.Linked {
-			desc = dgs.makeDescription(sett)
-			color = 3066993
-		} else {
-			desc = sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.lobbyMessage.notLinked.Description",
-				Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
-			})
-		}
+	if dgs.Linked {
+		desc = dgs.makeDescription(sett)
+		color = 3066993
+	} else {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMessage.notLinked.Description",
+			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+		})
 	}
 
 	emojiLeave := "❌"
@@ -380,12 +377,9 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
-	//if game is over, dont append the player count or the other description fields
-	if phase != game.GAMEOVER {
-		desc = dgs.makeDescription(sett)
-		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
-		listResp = append(gameInfoFields, listResp...)
-	}
+	desc = dgs.makeDescription(sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	listResp = append(gameInfoFields, listResp...)
 
 	var color int
 	switch phase {
@@ -393,18 +387,18 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		color = 3447003 //BLUE
 	case game.DISCUSS:
 		color = 10181046 //PURPLE
-	case game.GAMEOVER:
-		color = 12745742 //DARK GOLD
+	//case game.GAMEOVER:
+	//	color = 12745742 //DARK GOLD
 	default:
 		color = 15158332 //RED
 	}
 	title := sett.LocalizeMessage(phase.ToLocale())
-	if phase == game.GAMEOVER {
-		title = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.title.GameOver",
-			Other: "**Game Over**",
-		})
-	}
+	//if phase == game.GAMEOVER {
+	//	title = sett.LocalizeMessage(&i18n.Message{
+	//		ID:    "responses.title.GameOver",
+	//		Other: "**Game Over**",
+	//	})
+	//}
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",

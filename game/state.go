@@ -17,7 +17,6 @@ const (
 	DISCUSS Phase = iota
 	MENU    Phase = iota
 	//VOTING        Phase = iota
-	GAMEOVER      Phase = iota
 	UNINITIALIZED Phase = iota
 )
 

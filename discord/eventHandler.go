@@ -156,7 +156,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
-						dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+						//TODO form embed directly, don't update the state
+						//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 						if delTime != 0 {
 							embed := bot.gameStateResponse(dgs, sett)
 
@@ -413,7 +414,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		return
 	}
 	//if we started a new game
-	if (oldPhase == game.LOBBY || oldPhase == game.GAMEOVER) && phase == game.TASKS {
+	if oldPhase == game.LOBBY && phase == game.TASKS {
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
 		gameID := startGameInPostgres(*dgs, bot.PostgresInterface)
