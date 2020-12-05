@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bsm/redislock"
-	rediscommon "github.com/denverquane/amongusdiscord/common"
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -84,15 +84,44 @@ func voiceChangesForGameCodeLockKey(connectCode string) string {
 	return "automuteus:voice:game:" + connectCode + ":lock"
 }
 
+func totalGuildsKey() string {
+	return "automuteus:count:guilds"
+}
+
+func invalidRequestKey() string {
+	return "automuteus:invalidrequests:generic"
+}
+
+func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
+	log.Println(rl.Message)
+	t := time.Now().UnixNano()
+	bot.RedisInterface.client.ZAdd(context.Background(), invalidRequestKey(), &redis.Z{
+		Score:  float64(t),
+		Member: t,
+	})
+}
+
+func (redisInterface *RedisInterface) invalidRequestCountDuration(dur time.Duration) int64 {
+	before := time.Now().Add(-dur).UnixNano()
+
+	invalid, err := redisInterface.client.ZCount(ctx, invalidRequestKey(), fmt.Sprintf("%d", before), fmt.Sprintf("%d", time.Now().UnixNano())).Result()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return invalid
+}
+
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SAdd(ctx, rediscommon.TotalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SRem(ctx, rediscommon.TotalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}

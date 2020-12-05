@@ -19,6 +19,7 @@ type GuildSettings struct {
 	UnmuteDeadDuringTasks    bool            `json:"unmuteDeadDuringTasks"`
 	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
 	AutoRefresh              bool            `json:"autoRefresh"`
+	MapVersion               string          `json:"mapVersion"`
 
 	lock sync.RWMutex
 }
@@ -34,6 +35,7 @@ func MakeGuildSettings() *GuildSettings {
 		UnmuteDeadDuringTasks:    false,
 		DeleteGameSummaryMinutes: 0, //-1 for never delete the match summary
 		AutoRefresh:              false,
+		MapVersion:               "simple",
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -113,6 +115,18 @@ func (gs *GuildSettings) GetAutoRefresh() bool {
 
 func (gs *GuildSettings) SetAutoRefresh(n bool) {
 	gs.AutoRefresh = n
+}
+
+func (gs *GuildSettings) GetMapVersion() string {
+	if gs.MapVersion == "" {
+		return "simple"
+	} else {
+		return gs.MapVersion
+	}
+}
+
+func (gs *GuildSettings) SetMapVersion(n string) {
+	gs.MapVersion = n
 }
 
 func (gs *GuildSettings) SetUnmuteDeadDuringTasks(v bool) {

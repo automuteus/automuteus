@@ -25,6 +25,7 @@ const (
 	UnmuteDead
 	Delays
 	VoiceRules
+	MapVersion
 	MatchSummary
 	AutoRefresh
 	Show
@@ -175,6 +176,25 @@ var AllSettings = []Setting{
 			Other: "<mute/deaf> <game phase> <dead/alive> <true/false>",
 		},
 		aliases: []string{"voice", "vr"},
+		premium: false,
+	},
+	{
+		settingType: MapVersion,
+		name:        "mapVersion",
+		example:     "mapVersion detailed",
+		shortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.MapVersion.shortDesc",
+			Other: "Map version",
+		},
+		desc: &i18n.Message{
+			ID:    "settings.AllSettings.MapVersion.desc",
+			Other: "Specify the default map version (simple, detailed) used by 'map' command",
+		},
+		args: &i18n.Message{
+			ID:    "settings.AllSettings.MapVersion.args",
+			Other: "<version>",
+		},
+		aliases: []string{"map"},
 		premium: false,
 	},
 	{
@@ -354,6 +374,9 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 		break
 	case VoiceRules:
 		isValid = SettingVoiceRules(s, m, sett, args)
+		break
+	case MapVersion:
+		isValid = SettingMapVersion(s, m, sett, args)
 		break
 	case MatchSummary:
 		if !prem {
@@ -1058,6 +1081,39 @@ func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *
 			Other: "From now on, I will not AutoRefresh the game status message",
 		}))
 	}
+
+	return true
+}
+
+func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), AllSettings[MapVersion], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	val := strings.ToLower(args[2])
+	valid := map[string]bool{"simple": true, "detailed": true}
+	if !valid[val] {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMapVersion.Unrecognized",
+			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage",
+		},
+			map[string]interface{}{
+				"Arg":           val,
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+
+	sett.SetMapVersion(val)
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingMapVersion.Success",
+		Other: "From now on, I will display map images as {{.Arg}}",
+	},
+		map[string]interface{}{
+			"Arg": val,
+		}))
 
 	return true
 }

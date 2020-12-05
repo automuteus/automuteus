@@ -156,7 +156,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
-						dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+						//TODO form embed directly, don't update the state
+						//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 						if delTime != 0 {
 							embed := bot.gameStateResponse(dgs, sett)
 
@@ -512,6 +513,7 @@ func startGameInPostgres(dgs DiscordGameState, psql *storage.PsqlInterface) uint
 
 func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameOver game.Gameover) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
+		log.Println("dgs match id or start time is <0; not dumping game to Postgres")
 		return
 	}
 	end := time.Now().Unix()
