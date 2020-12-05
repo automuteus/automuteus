@@ -207,6 +207,41 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			bot.HandleSettingsCommand(s, m, sett, args, premStatus != 0)
 			break
 
+		case command.Map:
+			if len(args[1:]) == 0 {
+				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+			} else {
+				mapVersion := args[len(args)-1]
+
+				var mapName string
+				switch mapVersion {
+				case "simple", "detailed":
+					mapName = strings.Join(args[1:len(args)-1], " ")
+				default:
+					mapName = strings.Join(args[1:], " ")
+					mapVersion = sett.GetMapVersion()
+				}
+				mapItem, err := NewMapItem(mapName)
+				if err != nil {
+					log.Println(err)
+					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.HandleCommand.Map.notFound",
+						Other: "I don't have a map by that name!",
+					}))
+					break
+				}
+				switch mapVersion {
+				case "simple":
+					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
+				case "detailed":
+					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
+				default:
+					log.Println("mapVersion has unexpected value for 'map' command")
+				}
+			}
+			break
+
 		case command.Cache:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
