@@ -304,7 +304,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case command.Info:
-			embed := bot.infoResponse(sett)
+			embed := bot.infoResponse(m.GuildID, sett)
 			_, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			if err != nil {
 				log.Println(err)
@@ -380,7 +380,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Premium:
 			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(premStatus, sett))
+				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, sett))
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {

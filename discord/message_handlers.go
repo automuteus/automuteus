@@ -457,10 +457,11 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID: "message_handlers.handleNewGameMessage.lockout",
 					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\n" +
-						"Please try again in a few minutes, or consider [AutoMuteUs Premium](https://patreon.com/automuteus)\n" +
+						"Please try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\n" +
 						"Current Games: {{.Games}}",
 				}, map[string]interface{}{
-					"Games": fmt.Sprintf("%d/%d", activeGames, num),
+					"CommandPrefix": sett.CommandPrefix,
+					"Games":         fmt.Sprintf("%d/%d", activeGames, num),
 				}))
 				lock.Release(context.Background())
 				return
