@@ -348,9 +348,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			if mdsc == nil {
 				log.Println("Nil response from modifyUsers, probably not good...")
 			} else {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+				go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 			}
 		}
 	}

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bsm/redislock"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -65,9 +67,17 @@ func (gc *GalactusClient) AddToken(token string) error {
 
 //a response indicating how the mutes/deafens were issued
 type MuteDeafenSuccessCounts struct {
-	Worker   int64 `json:"worker"`
-	Capture  int64 `json:"capture"`
-	Official int64 `json:"official"`
+	Worker    int64 `json:"worker"`
+	Capture   int64 `json:"capture"`
+	Official  int64 `json:"official"`
+	RateLimit int64 `json:"ratelimit"`
+}
+
+func RecordDiscordRequestsByCounts(client *redis.Client, counts *MuteDeafenSuccessCounts) {
+	metrics.RecordDiscordRequests(client, metrics.MuteDeafenOfficial, counts.Official)
+	metrics.RecordDiscordRequests(client, metrics.MuteDeafenWorker, counts.Worker)
+	metrics.RecordDiscordRequests(client, metrics.MuteDeafenCapture, counts.Capture)
+	metrics.RecordDiscordRequests(client, metrics.InvalidRequest, counts.RateLimit)
 }
 
 func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request UserModifyRequest, lock *redislock.Lock) *MuteDeafenSuccessCounts {

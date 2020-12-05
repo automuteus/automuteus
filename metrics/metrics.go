@@ -21,6 +21,7 @@ const (
 	ReactionAdd
 	MuteDeafenCapture
 	MuteDeafenWorker
+	InvalidRequest
 )
 
 var MetricTypeStrings = []string{
@@ -31,6 +32,7 @@ var MetricTypeStrings = []string{
 	"reaction_add_remove",
 	"mute_deafen_capture",
 	"mute_deafen_worker",
+	"invalid_request",
 }
 
 type MetricsCollector struct {
@@ -71,11 +73,10 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 			}
 		}
 	}
-
 }
 
 func RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
-	go incrementDiscordRequests(client, requestType, num)
+	incrementDiscordRequests(client, requestType, num)
 }
 
 func NewCollector(client *redis.Client, commit, nodeID string) *MetricsCollector {
