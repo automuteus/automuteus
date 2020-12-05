@@ -97,6 +97,7 @@ func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraToke
 	dg.AddHandler(bot.handleReactionGameStartAdd)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
+	dg.AddHandler(bot.rateLimitEventCallback)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -193,7 +194,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		go bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID, Version)
+		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID)
 
 		if emojiGuildID == "" {
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
@@ -251,7 +252,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 
 func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
-	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID, Version)
+	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
 
 	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
 	if err != nil {

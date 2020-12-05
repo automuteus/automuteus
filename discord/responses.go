@@ -150,7 +150,7 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 		},
 	}
 
-	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client, version)
+	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client)
 	totalGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 
 	fields := make([]*discordgo.MessageEmbedField, 8)
@@ -213,7 +213,7 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 	fields[7] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Donate",
-			Other: "Donate",
+			Other: "Premium",
 		}),
 		Value:  "[patreon/automuteus](https://www.patreon.com/automuteus)",
 		Inline: true,
@@ -484,7 +484,6 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 			ID:    "responses.premiumResponse.FreeDescription",
 			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
 		})
-		//TODO localize
 		fields = []*discordgo.MessageEmbedField{
 			{
 				Name: sett.LocalizeMessage(&i18n.Message{

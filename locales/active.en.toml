@@ -142,7 +142,7 @@
 "responses.settingResponse.Title" = "Settings"
 "responses.statsResponse.BotInfo" = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
 "responses.statsResponse.Creator" = "Creator"
-"responses.statsResponse.Donate" = "Donate"
+"responses.statsResponse.Donate" = "Premium"
 "responses.statsResponse.Games" = "Active Games"
 "responses.statsResponse.Guilds" = "Total Guilds"
 "responses.statsResponse.Invite" = "Invite"
