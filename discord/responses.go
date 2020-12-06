@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/denverquane/amongusdiscord/discord/command"
 	"log"
 	"strings"
 	"time"
@@ -20,7 +21,9 @@ var EmojiNums = []string{":one:", ":two:", ":three:"}
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+const BasePremiumUrl = "https://crewmate.xyz/donate/amu?guildid="
+
+func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -52,11 +55,11 @@ func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands [
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
-		if !v.secret && v.cmdType != Help && v.cmdType != Null {
-			if (!v.adminSetting || isAdmin) && (!v.permissionSetting || isPermissioned) {
+		if !v.IsSecret && v.CommandType != command.Help && v.CommandType != command.Null {
+			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
 				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   v.emoji + " " + v.command,
-					Value:  sett.LocalizeMessage(v.shortDesc),
+					Name:   v.Emoji + " " + v.Command,
+					Value:  sett.LocalizeMessage(v.ShortDesc),
 					Inline: true,
 				})
 			}
@@ -117,7 +120,7 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 	return &embed
 }
 
-func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
 	embed := discordgo.MessageEmbed{
 		URL:  "",
@@ -215,7 +218,7 @@ func (bot *Bot) infoResponse(sett *storage.GuildSettings) *discordgo.MessageEmbe
 			ID:    "responses.statsResponse.Donate",
 			Other: "Premium",
 		}),
-		Value:  "[patreon/automuteus](https://www.patreon.com/automuteus)",
+		Value:  "[PayPal](" + BasePremiumUrl + guildID + ")",
 		Inline: true,
 	}
 
@@ -444,7 +447,7 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	return buf.String()
 }
 
-func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumEmbedResponse(guildID string, tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
@@ -471,7 +474,7 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 			{
 				Name: "Premium Settings",
 				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Settings",
+					ID:    "responses.premiumResponse.SettingsDescExtra",
 					Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
 				}, map[string]interface{}{
 					"CommandPrefix": sett.GetCommandPrefix(),
@@ -481,8 +484,12 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 		}
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumResponse.FreeDescription",
-			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n[Get AutoMuteUs Premium](https://patreon.com/automuteus)",
+			ID: "responses.premiumResponse.FreeDescription",
+			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n" +
+				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
+		}, map[string]interface{}{
+			"BaseURL": BasePremiumUrl,
+			"GuildID": guildID,
 		})
 		fields = []*discordgo.MessageEmbedField{
 			{
@@ -544,7 +551,7 @@ func premiumEmbedResponse(tier storage.PremiumTier, sett *storage.GuildSettings)
 	}
 
 	msg := discordgo.MessageEmbed{
-		URL:  "https://patreon.com/automuteus",
+		URL:  BasePremiumUrl + guildID,
 		Type: "",
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.Title",

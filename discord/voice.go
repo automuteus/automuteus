@@ -6,7 +6,6 @@ import (
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strconv"
@@ -40,11 +39,8 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	} else {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+		go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 	}
-	//go guildMemberUpdate(bot.PrimarySession.GetSessionForRequest(dgs.GuildID), params)
 }
 
 func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
@@ -94,9 +90,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		if mdsc == nil {
 			log.Println("Nil response from modifyUsers, probably not good...")
 		} else {
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-			bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+			go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 		}
 	}
 }
@@ -215,8 +209,6 @@ func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req UserModifyR
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	} else {
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenOfficial, mdsc.Official)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenCapture, mdsc.Capture)
-		bot.MetricsCollector.RecordDiscordRequests(bot.RedisInterface.client, metrics.MuteDeafenWorker, mdsc.Worker)
+		go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 	}
 }

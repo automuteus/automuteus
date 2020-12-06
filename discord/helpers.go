@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -117,6 +118,42 @@ func generateConnectCode(guildID string) string {
 	//add some randomness
 	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
+}
+
+var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
+
+func formCaptureURL(url, connectCode string) (hyperlink, minimalUrl string) {
+	if match := urlregex.FindStringSubmatch(url); match != nil {
+		secure := match[urlregex.SubexpIndex("secure")] == "s"
+		host := match[urlregex.SubexpIndex("host")]
+		port := ":" + match[urlregex.SubexpIndex("port")]
+
+		if port == ":" {
+			if secure {
+				port = ":443"
+			} else {
+				port = ":80"
+			}
+		}
+
+		insecure := "?insecure"
+		protocol := "http://"
+		if secure {
+			insecure = ""
+			protocol = "https://"
+		}
+
+		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
+		minimalUrl = fmt.Sprintf("%s%s%s", protocol, host, port)
+	} else {
+		hyperlink = "Invalid HOST provided (should resemble something like `http://localhost:8123`)"
+		minimalUrl = "Invalid HOST provided"
+	}
+	return
+}
+
+func mentionByUserID(userID string) string {
+	return "<@!" + userID + ">"
 }
 
 // sendMessage provides a single interface to send a message to a channel via discord
