@@ -21,7 +21,7 @@ var EmojiNums = []string{":one:", ":two:", ":three:"}
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-const BasePremiumUrl = "https://automute.us/premium.html?guild="
+const BasePremiumUrl = "https://automute.us/premium?guild="
 
 func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
