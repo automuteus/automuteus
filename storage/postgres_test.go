@@ -18,22 +18,23 @@ func TestPsqlInterface_Init(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gid := uint64(141082723635691521)
-	uid := uint64(140581066283941888)
+	//gid := uint64(141082723635691521)
+
+	psql.GetGuildPremiumStatus("141082723635691521")
 	//userID := "140581066283941888"
 	//guildID := "140581066283941888"
 
-	_, err = psql.EnsureGuildExists(gid, "test")
-	if err != nil {
-		log.Println(err)
-		t.Fail()
-	}
-
-	_, err = psql.EnsureUserExists(uid)
-	if err != nil {
-		log.Println(err)
-		t.Fail()
-	}
+	//_, err = psql.EnsureGuildExists(gid, "test")
+	//if err != nil {
+	//	log.Println(err)
+	//	t.Fail()
+	//}
+	//
+	//_, err = psql.EnsureUserExists(uid)
+	//if err != nil {
+	//	log.Println(err)
+	//	t.Fail()
+	//}
 
 	//
 	//guildID := "1234146913"
@@ -58,23 +59,23 @@ func TestPsqlInterface_Init(t *testing.T) {
 	//rs := psql.NumGamesPlayedByUserOnServer(uid, "141082723635691521")
 	//log.Println(rs)
 	//
-	dd := psql.TotalGamesRankingForServer(gid)
-	for _, v := range dd {
-		log.Printf("Mode: %d, Count: %d\n", v.Mode, v.Count)
-	}
-
-	i, err := psql.AddInitialGame(&PostgresGame{
-		GameID:      425,
-		GuildID:     141082723635691521,
-		ConnectCode: "ABCDEFGH",
-		StartTime:   1234,
-		WinType:     -1,
-		EndTime:     -1,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println(i)
+	//dd := psql.TotalGamesRankingForServer(gid)
+	//for _, v := range dd {
+	//	log.Printf("Mode: %d, Count: %d\n", v.Mode, v.Count)
+	//}
+	//
+	//i, err := psql.AddInitialGame(&PostgresGame{
+	//	GameID:      425,
+	//	GuildID:     141082723635691521,
+	//	ConnectCode: "ABCDEFGH",
+	//	StartTime:   1234,
+	//	WinType:     -1,
+	//	EndTime:     -1,
+	//})
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//log.Println(i)
 
 	//err = psql.EnsureGuildUserExists(guildID, hashedID)
 	//if err != nil {

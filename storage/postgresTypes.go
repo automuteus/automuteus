@@ -1,9 +1,10 @@
 package storage
 
 type PostgresGuild struct {
-	GuildID   uint64 `db:"guild_id"`
-	GuildName string `db:"guild_name"`
-	Premium   int16  `db:"premium"`
+	GuildID    uint64 `db:"guild_id"`
+	GuildName  string `db:"guild_name"`
+	Premium    int16  `db:"premium"`
+	TxTimeUnix *int32 `db:"tx_time_unix"`
 }
 
 type PostgresGame struct {
