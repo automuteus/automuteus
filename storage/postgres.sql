@@ -1,7 +1,8 @@
 create table if not exists guilds(
-                                     guild_id   numeric PRIMARY KEY,
-                                     guild_name VARCHAR(100) NOT NULL,
-                                     premium    smallint     NOT NULL
+                                     guild_id     numeric PRIMARY KEY,
+                                     guild_name   VARCHAR(100) NOT NULL,
+                                     premium      smallint     NOT NULL,
+                                     tx_time_unix integer
 );
 
 create table if not exists games
