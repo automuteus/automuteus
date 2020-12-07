@@ -156,10 +156,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
-						//TODO form embed directly, don't update the state
-						//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 						if delTime != 0 {
+							oldPhase := dgs.AmongUsData.Phase
+							dgs.AmongUsData.Phase = game.GAMEOVER
 							embed := bot.gameStateResponse(dgs, sett)
+							dgs.AmongUsData.Phase = oldPhase
 
 							//TODO doesn't work
 							//winners := getWinners(*dgs, gameOverResult)

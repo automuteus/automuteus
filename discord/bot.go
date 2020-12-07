@@ -361,8 +361,8 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 
 func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		return
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)

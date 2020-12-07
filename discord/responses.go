@@ -229,10 +229,11 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
-		game.MENU:    menuMessage,
-		game.LOBBY:   lobbyMessage,
-		game.TASKS:   gamePlayMessage,
-		game.DISCUSS: gamePlayMessage,
+		game.MENU:     menuMessage,
+		game.LOBBY:    lobbyMessage,
+		game.TASKS:    gamePlayMessage,
+		game.DISCUSS:  gamePlayMessage,
+		game.GAMEOVER: gamePlayMessage,
 	}
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
@@ -467,9 +468,11 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
-	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
-	listResp = append(gameInfoFields, listResp...)
+	if phase != game.GAMEOVER {
+		desc = dgs.makeDescription(sett)
+		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+		listResp = append(gameInfoFields, listResp...)
+	}
 
 	var color int
 	switch phase {
@@ -477,8 +480,8 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		color = 3447003 //BLUE
 	case game.DISCUSS:
 		color = 10181046 //PURPLE
-	//case game.GAMEOVER:
-	//	color = 12745742 //DARK GOLD
+	case game.GAMEOVER:
+		color = 12745742 //DARK GOLD
 	default:
 		color = 15158332 //RED
 	}
