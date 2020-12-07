@@ -2,7 +2,6 @@ package discord
 
 import (
 	"context"
-	"fmt"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
@@ -153,11 +152,11 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			userData.SetShouldBeMuteDeaf(shouldMute, shouldDeaf)
 			dgs.UpdateUserData(userData.User.UserID, userData)
 		} else if linked {
-			if shouldMute {
-				log.Print(fmt.Sprintf("Not muting %s because they're already muted\n", userData.GetUserName()))
-			} else {
-				log.Print(fmt.Sprintf("Not unmuting %s because they're already unmuted\n", userData.GetUserName()))
-			}
+			//if shouldMute {
+			//	log.Print(fmt.Sprintf("Not muting %s because they're already muted\n", userData.GetUserName()))
+			//} else {
+			//	log.Print(fmt.Sprintf("Not unmuting %s because they're already unmuted\n", userData.GetUserName()))
+			//}
 		}
 	}
 

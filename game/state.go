@@ -17,19 +17,30 @@ const (
 	DISCUSS Phase = iota
 	MENU    Phase = iota
 	//VOTING        Phase = iota
+	GAMEOVER
 	UNINITIALIZED Phase = iota
+)
+
+type PlayMap int
+
+const (
+	SKELD PlayMap = iota
+	MIRA
+	POLUS
+
+	EMPTYMAP PlayMap = 10
 )
 
 type PlayerAction int
 
 const (
-	JOINED       PlayerAction = iota
-	LEFT         PlayerAction = iota
-	DIED         PlayerAction = iota
-	CHANGECOLOR  PlayerAction = iota
-	FORCEUPDATED PlayerAction = iota
-	DISCONNECTED PlayerAction = iota
-	EXILED       PlayerAction = iota
+	JOINED PlayerAction = iota
+	LEFT
+	DIED
+	CHANGECOLOR
+	FORCEUPDATED
+	DISCONNECTED
+	EXILED
 )
 
 type GameResult int16
@@ -69,6 +80,12 @@ var PhaseMessages = map[Phase]*i18n.Message{
 	MENU:    {ID: "state.phase.MENU", Other: "MENU"},
 }
 
+var MapNames = map[PlayMap]string{
+	SKELD: "Skeld",
+	MIRA:  "Mira",
+	POLUS: "Polus",
+}
+
 // ToString for a Phase
 func (phase *Phase) ToString() PhaseNameString {
 	return PhaseNames[*phase]
@@ -96,8 +113,9 @@ const (
 )
 
 type Lobby struct {
-	LobbyCode string `json:"LobbyCode"`
-	Region    Region `json:"Region"`
+	LobbyCode string  `json:"LobbyCode"`
+	Region    Region  `json:"Region"`
+	Map       PlayMap `json:"Map"`
 }
 
 func (l *Lobby) ReduceLobbyCode() {

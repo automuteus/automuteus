@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -88,29 +89,9 @@ func totalGuildsKey() string {
 	return "automuteus:count:guilds"
 }
 
-func invalidRequestKey() string {
-	return "automuteus:invalidrequests:generic"
-}
-
 func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
 	log.Println(rl.Message)
-	t := time.Now().UnixNano()
-	bot.RedisInterface.client.ZAdd(context.Background(), invalidRequestKey(), &redis.Z{
-		Score:  float64(t),
-		Member: t,
-	})
-}
-
-func (redisInterface *RedisInterface) invalidRequestCountDuration(dur time.Duration) int64 {
-	before := time.Now().Add(-dur).UnixNano()
-
-	invalid, err := redisInterface.client.ZCount(ctx, invalidRequestKey(), fmt.Sprintf("%d", before), fmt.Sprintf("%d", time.Now().UnixNano())).Result()
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	return invalid
+	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.InvalidRequest, 1)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
@@ -337,6 +318,7 @@ func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []strin
 		log.Println(err)
 		return []string{}
 	}
+	go redisInterface.client.ZRemRangeByScore(context.Background(), hash, "-inf", fmt.Sprintf("%d", before))
 
 	return games
 }
@@ -391,7 +373,9 @@ func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key s
 
 	value, err := redisInterface.client.HGet(ctx, cacheHash, key).Result()
 	if err != nil {
-		log.Println(err)
+		if err != redis.Nil {
+			log.Println(err)
+		}
 		return map[string]interface{}{}
 	}
 	var ret map[string]interface{}
@@ -452,7 +436,13 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 		return err
 	}
 
-	return redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
+	err = redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
+	//1 week TTL on username cache
+	if err == nil {
+		redisInterface.client.Expire(ctx, cacheHash, time.Hour*24*7)
+	}
+
+	return err
 }
 
 func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {

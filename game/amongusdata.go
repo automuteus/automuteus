@@ -9,9 +9,10 @@ type AmongUsData struct {
 	//indexed by amongusname
 	PlayerData map[string]PlayerData `json:"playerData"`
 
-	Phase  Phase  `json:"phase"`
-	Room   string `json:"room"`
-	Region string `json:"region"`
+	Phase  Phase   `json:"phase"`
+	Room   string  `json:"room"`
+	Region string  `json:"region"`
+	Map    PlayMap `json:"map"`
 }
 
 func NewAmongUsData() AmongUsData {
@@ -20,16 +21,18 @@ func NewAmongUsData() AmongUsData {
 		Phase:      MENU,
 		Room:       "",
 		Region:     "",
+		Map:        SKELD,
 	}
 }
 
-func (auData *AmongUsData) SetRoomRegion(room, region string) {
+func (auData *AmongUsData) SetRoomRegionMap(room, region string, playMap PlayMap) {
 	auData.Room = room
 	auData.Region = region
+	auData.Map = playMap
 }
 
-func (auData *AmongUsData) GetRoomRegion() (string, string) {
-	return auData.Room, auData.Region
+func (auData *AmongUsData) GetRoomRegionMap() (string, string, PlayMap) {
+	return auData.Room, auData.Region, auData.Map
 }
 
 func (auData *AmongUsData) SetAllAlive() {
@@ -47,7 +50,7 @@ func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
 		if phase == LOBBY || (phase == TASKS && old == LOBBY) {
 			auData.SetAllAlive()
 		} else if phase == MENU {
-			auData.SetRoomRegion("", "")
+			auData.SetRoomRegionMap("", "", EMPTYMAP)
 		}
 	}
 	return old
@@ -72,6 +75,10 @@ func (auData *AmongUsData) GetNumDetectedPlayers() int {
 
 func (auData *AmongUsData) GetPhase() Phase {
 	return auData.Phase
+}
+
+func (auData *AmongUsData) GetPlayMap() PlayMap {
+	return auData.Map
 }
 
 func (auData *AmongUsData) ClearPlayerData(name string) {

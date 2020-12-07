@@ -156,10 +156,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					if lock != nil && dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
-						//TODO form embed directly, don't update the state
-						//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
 						if delTime != 0 {
+							oldPhase := dgs.AmongUsData.Phase
+							dgs.AmongUsData.Phase = game.GAMEOVER
 							embed := bot.gameStateResponse(dgs, sett)
+							dgs.AmongUsData.Phase = oldPhase
 
 							//TODO doesn't work
 							//winners := getWinners(*dgs, gameOverResult)
@@ -313,6 +314,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 		for lock == nil {
 			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 		}
+		dgs.Linked = true
 
 		defer bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -371,7 +373,6 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				}
 				//log.Println("Player update received caused an update in cached state")
 				if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
-					log.Println(sett.GetUnmuteDeadDuringTasks())
 					if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 						edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 						if edited {
@@ -413,6 +414,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		lock.Release(ctx)
 		return
 	}
+	dgs.Linked = true
 	//if we started a new game
 	if oldPhase == game.LOBBY && phase == game.TASKS {
 		matchStart := time.Now().Unix()
@@ -478,7 +480,7 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 	if lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
-	dgs.AmongUsData.SetRoomRegion(lobby.LobbyCode, lobby.Region.ToString())
+	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.Map)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))

@@ -51,7 +51,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			ID:    "responses.userStatsEmbed.Winrate",
 			Other: "Winrate",
 		}),
-		Value:  fmt.Sprintf("%d/%d Games | %.0f%%", wins, gamesPlayed, winrate),
+		Value:  fmt.Sprintf("%d/%d | %.0f%%", wins, gamesPlayed, winrate),
 		Inline: true,
 	}
 
@@ -147,7 +147,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.CrewmateWins",
 					Other: "Crewmate Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
+				Value:  fmt.Sprintf("%d/%d | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
 				Inline: true,
 			})
 		}
@@ -159,7 +159,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.ImposterWins",
 					Other: "Imposter Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
+				Value:  fmt.Sprintf("%d/%d | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
 				Inline: true,
 			})
 		}
@@ -259,7 +259,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 						Other: "Games Played",
 					}),
 					Value:  buf.String(),
-					Inline: true,
+					Inline: false,
 				})
 			}
 
@@ -273,11 +273,6 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				}
 			}
 			if len(crewmateGameRankings) > 0 {
-				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   "\u200b",
-					Value:  "\u200b",
-					Inline: true,
-				})
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name: sett.LocalizeMessage(&i18n.Message{
 						ID:    "responses.guildStatsEmbed.CrewmateWins",
@@ -306,11 +301,11 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					Value:  buf.String(),
 					Inline: true,
 				})
-				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   "\u200b",
-					Value:  "\u200b",
-					Inline: true,
-				})
+				//fields = append(fields, &discordgo.MessageEmbedField{
+				//	Name:   "\u200b",
+				//	Value:  "\u200b",
+				//	Inline: true,
+				//})
 			}
 		}
 	}

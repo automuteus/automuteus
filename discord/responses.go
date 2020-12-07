@@ -229,16 +229,48 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
-		game.MENU:    menuMessage,
-		game.LOBBY:   lobbyMessage,
-		game.TASKS:   gamePlayMessage,
-		game.DISCUSS: gamePlayMessage,
+		game.MENU:     menuMessage,
+		game.LOBBY:    lobbyMessage,
+		game.TASKS:    gamePlayMessage,
+		game.DISCUSS:  gamePlayMessage,
+		game.GAMEOVER: gamePlayMessage,
 	}
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
-func lobbyMetaEmbedFields(room, region string, playerCount int, linkedPlayers int, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount int, linkedPlayers int, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 0)
+	if author != "" {
+		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Host",
+				Other: "Host",
+			}),
+			Value:  mentionByUserID(author),
+			Inline: true,
+		})
+	}
+	if vc != "" {
+		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
+				Other: "Voice Channel",
+			}),
+			Value:  vc,
+			Inline: true,
+		})
+	}
+	if linkedPlayers > playerCount {
+		linkedPlayers = playerCount
+	}
+	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
+			Other: "Players Linked",
+		}),
+		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
+		Inline: true,
+	})
 	if room != "" {
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
@@ -260,19 +292,23 @@ func lobbyMetaEmbedFields(room, region string, playerCount int, linkedPlayers in
 		})
 	}
 
-	//necessary with the latest checks for linked players
-	//probably still broken, though -_-
-	if linkedPlayers > playerCount {
-		linkedPlayers = playerCount
-	}
-	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.lobbyMetaEmbedFields.PlayersLinked",
-			Other: "Players Linked",
-		}),
-		Value:  fmt.Sprintf("%v/%v", linkedPlayers, playerCount),
-		Inline: false,
-	})
+	//if playMap != game.EMPTYMAP {
+	//	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
+	//		Name: sett.LocalizeMessage(&i18n.Message{
+	//			ID:    "responses.lobbyMetaEmbedFields.Map",
+	//			Other: "🗺 MAP",
+	//		}),
+	//		Value:  fmt.Sprintf("%s", game.MapNames[playMap]),
+	//		Inline: true,
+	//	})
+	//}
+	//if len(gameInfoFields) == 3 {
+	//	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
+	//		Name:   "\u200B",
+	//		Value:  "\u200B",
+	//		Inline: true,
+	//	})
+	//}
 
 	return gameInfoFields
 }
@@ -301,6 +337,36 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.Gu
 		footer = nil
 	}
 
+	fields := make([]*discordgo.MessageEmbedField, 0)
+	author := dgs.GameStateMsg.LeaderID
+	if author != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.Host",
+				Other: "Host",
+			}),
+			Value:  mentionByUserID(author),
+			Inline: true,
+		})
+	}
+	if dgs.Tracking.ChannelName != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
+				Other: "Voice Channel",
+			}),
+			Value:  dgs.Tracking.ChannelName,
+			Inline: true,
+		})
+	}
+	if len(fields) == 2 {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "\u200B",
+			Value:  "\u200B",
+			Inline: true,
+		})
+	}
+
 	msg := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -317,14 +383,14 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.Gu
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,
-		Fields:      nil,
+		Fields:      fields,
 	}
 	return &msg
 }
 
 func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	room, region := dgs.AmongUsData.GetRoomRegion()
-	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
+	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
@@ -364,7 +430,7 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 		},
 		Color:     color,
 		Image:     nil,
-		Thumbnail: nil,
+		Thumbnail: getThumbnailFromMap(playMap, sett),
 		Video:     nil,
 		Provider:  nil,
 		Author:    nil,
@@ -373,16 +439,40 @@ func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.G
 	return &msg
 }
 
+func getThumbnailFromMap(playMap game.PlayMap, sett *storage.GuildSettings) *discordgo.MessageEmbedThumbnail {
+	var thumbNail *discordgo.MessageEmbedThumbnail = nil
+	if playMap != game.EMPTYMAP {
+		mapItem, err := NewMapItem(game.MapNames[playMap])
+		if err != nil {
+			log.Println(err)
+		} else {
+			if sett.MapVersion == "detailed" {
+				thumbNail = &discordgo.MessageEmbedThumbnail{
+					URL: mapItem.MapImage.Detailed,
+				}
+			} else {
+				thumbNail = &discordgo.MessageEmbedThumbnail{
+					URL: mapItem.MapImage.Simple,
+				}
+			}
+		}
+	}
+	return thumbNail
+}
+
 func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 
 	phase := dgs.AmongUsData.GetPhase()
+	playMap := dgs.AmongUsData.GetPlayMap()
 	//send empty fields because we don't need to display those fields during the game...
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
-	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
-	listResp = append(gameInfoFields, listResp...)
+	if phase != game.GAMEOVER {
+		desc = dgs.makeDescription(sett)
+		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+		listResp = append(gameInfoFields, listResp...)
+	}
 
 	var color int
 	switch phase {
@@ -390,18 +480,12 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		color = 3447003 //BLUE
 	case game.DISCUSS:
 		color = 10181046 //PURPLE
-	//case game.GAMEOVER:
-	//	color = 12745742 //DARK GOLD
+	case game.GAMEOVER:
+		color = 12745742 //DARK GOLD
 	default:
 		color = 15158332 //RED
 	}
 	title := sett.LocalizeMessage(phase.ToLocale())
-	//if phase == game.GAMEOVER {
-	//	title = sett.LocalizeMessage(&i18n.Message{
-	//		ID:    "responses.title.GameOver",
-	//		Other: "**Game Over**",
-	//	})
-	//}
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",
@@ -412,7 +496,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 		Color:       color,
 		Footer:      nil,
 		Image:       nil,
-		Thumbnail:   nil,
+		Thumbnail:   getThumbnailFromMap(playMap, sett),
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,
@@ -429,20 +513,9 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 			ID:    "responses.makeDescription.GameNotRunning",
 			Other: "\n⚠ **Bot is Paused!** ⚠\n\n",
 		}))
+	} else {
+		buf.WriteRune('\n')
 	}
-
-	author := dgs.GameStateMsg.LeaderID
-	if author != "" {
-		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.makeDescription.author",
-			Other: "<@{{.author}}> is running an Among Us game!\nThe game is happening in ",
-		},
-			map[string]interface{}{
-				"author": author,
-			}))
-	}
-
-	buf.WriteString(dgs.Tracking.ToDescString(sett))
 
 	return buf.String()
 }

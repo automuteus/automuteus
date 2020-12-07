@@ -76,6 +76,12 @@ func (dgs DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbe
 	return newEdit
 }
 
+func RemovePendingDGSEdit(messageID string) {
+	DeferredEditsLock.Lock()
+	delete(DeferredEdits, messageID)
+	DeferredEditsLock.Unlock()
+}
+
 func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 

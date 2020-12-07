@@ -37,11 +37,11 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
-	//If we're approaching the ratelimit, completely stop handling messages
-	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	if reqs > RateLimitGlobalThreshold {
-		return
-	}
+	////If we're approaching the ratelimit, completely stop handling messages
+	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	//if reqs > RateLimitGlobalThreshold {
+	//	return
+	//}
 
 	lock := bot.RedisInterface.LockSnowflake(m.ID)
 	//couldn't obtain lock; bail bail bail!
@@ -154,10 +154,10 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	}
 
 	//If we're approaching the ratelimit, completely stop handling messages.
-	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	if reqs > RateLimitGlobalThreshold {
-		return
-	}
+	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	//if reqs > RateLimitGlobalThreshold {
+	//	return
+	//}
 
 	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
 	//couldn't obtain lock; bail bail bail!
@@ -273,10 +273,10 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
 
 	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up (if at all)
-	reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	if reqs > RateLimitGlobalThreshold {
-		return
-	}
+	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
+	//if reqs > RateLimitGlobalThreshold {
+	//	return
+	//}
 
 	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	//couldn't obtain lock; bail bail bail!
@@ -355,7 +355,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings, room, region string) {
+func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -534,10 +534,10 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	sendMessageDM(s, m.Author.ID, &embed)
 
-	bot.handleGameStartMessage(s, m, sett, room, region, tracking, g, connectCode)
+	bot.handleGameStartMessage(s, m, sett, tracking, g, connectCode)
 }
 
-func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, room string, region string, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -547,7 +547,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 		log.Println("Couldn't obtain lock for DGS on game start...")
 		return
 	}
-	dgs.AmongUsData.SetRoomRegion(room, region)
+	dgs.AmongUsData.SetRoomRegionMap("", "", game.EMPTYMAP)
 
 	dgs.clearGameTracking(s)
 
