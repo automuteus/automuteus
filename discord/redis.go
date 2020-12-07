@@ -318,6 +318,7 @@ func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []strin
 		log.Println(err)
 		return []string{}
 	}
+	go redisInterface.client.ZRemRangeByScore(context.Background(), hash, "-inf", fmt.Sprintf("%d", before))
 
 	return games
 }
@@ -435,7 +436,13 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 		return err
 	}
 
-	return redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
+	err = redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
+	//1 week TTL on username cache
+	if err == nil {
+		redisInterface.client.Expire(ctx, cacheHash, time.Hour*24*7)
+	}
+
+	return err
 }
 
 func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
