@@ -112,9 +112,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case command.New:
-			room, region := getRoomAndRegionFromArgs(args[1:], sett)
-
-			bot.handleNewGameMessage(s, m, g, sett, room, region)
+			bot.handleNewGameMessage(s, m, g, sett)
 			break
 
 		case command.End:

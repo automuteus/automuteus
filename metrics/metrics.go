@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -49,7 +48,7 @@ func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	for i, str := range MetricTypeStrings {
 		if i != 0 {
-			v, err := c.client.Get(context.Background(), discordRequestsKeyByCommitAndType(c.commit, str)).Result()
+			v, err := c.client.Get(context.Background(), discordRequestsKeyByCommitAndType(str)).Result()
 			if err != redis.Nil && err != nil {
 				log.Println(err)
 				continue
@@ -79,19 +78,16 @@ func RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, n
 	incrementDiscordRequests(client, requestType, num)
 }
 
-func NewCollector(client *redis.Client, commit, nodeID string) *MetricsCollector {
+func NewCollector(client *redis.Client, nodeID string) *MetricsCollector {
 	return &MetricsCollector{
 		counterDesc: prometheus.NewDesc("discord_requests_by_node_and_type", "Number of discord requests made, differentiated by node/type", []string{"nodeID", "type"}, nil),
 		client:      client,
-		commit:      commit,
 		nodeID:      nodeID,
 	}
 }
 
 func PrometheusMetricsServer(client *redis.Client, nodeID, port string) error {
-	_, comm := redis_common.GetVersionAndCommit(client)
-
-	prometheus.MustRegister(NewCollector(client, comm, nodeID))
+	prometheus.MustRegister(NewCollector(client, nodeID))
 
 	http.Handle("/metrics", promhttp.Handler())
 

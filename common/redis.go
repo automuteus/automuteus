@@ -59,12 +59,12 @@ func SetVersionAndCommit(client *redis.Client, version, commit string) {
 
 func GetVersionAndCommit(client *redis.Client) (string, string) {
 	v, err := client.Get(context.Background(), VersionKey()).Result()
-	if err != nil {
+	if err != redis.Nil && err != nil {
 		log.Println(err)
 	}
 
 	c, err := client.Get(context.Background(), CommitKey()).Result()
-	if err != nil {
+	if err != redis.Nil && err != nil {
 		log.Println(err)
 	}
 	return v, c

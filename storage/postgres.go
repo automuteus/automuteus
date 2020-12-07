@@ -48,8 +48,6 @@ type PsqlParameters struct {
 	Password string
 }
 
-var psqlctx = context.Background()
-
 func (psqlInterface *PsqlInterface) Init(addr string) error {
 	dbpool, err := pgxpool.Connect(context.Background(), addr)
 	if err != nil {

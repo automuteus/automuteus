@@ -365,6 +365,8 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 		return
 	}
 
+	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
+
 	del := dgs.DeleteGameStateMsg(bot.PrimarySession) //delete the old message
 	if del {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
