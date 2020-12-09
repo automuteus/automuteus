@@ -21,11 +21,6 @@ type PostgresUser struct {
 	Opt    bool   `db:"opt"`
 }
 
-type PostgresGuildUser struct {
-	GuildID      uint64 `db:"guild_id"`
-	HashedUserID int64  `db:"hashed_user_id"`
-}
-
 type PostgresUserGame struct {
 	UserID      uint64 `db:"user_id"`
 	GuildID     uint64 `db:"guild_id"`
@@ -37,10 +32,10 @@ type PostgresUserGame struct {
 }
 
 type PostgresGameEvent struct {
-	//Note, we don't include eventID here because it gets decided/incremented by postgres
-	UserID    uint64 `db:"hashed_user_id"`
-	GameID    int64  `db:"game_id"`
-	EventTime int32  `db:"event_time"`
-	EventType int16  `db:"event_type"`
-	Payload   string `db:"payload"`
+	EventID   uint64  `db:"event_id"`
+	UserID    *uint64 `db:"user_id"`
+	GameID    int64   `db:"game_id"`
+	EventTime int32   `db:"event_time"`
+	EventType int16   `db:"event_type"`
+	Payload   string  `db:"payload"`
 }

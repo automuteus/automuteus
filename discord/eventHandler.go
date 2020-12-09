@@ -66,7 +66,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 				gameEvent := storage.PostgresGameEvent{
 					GameID:    -1,
-					UserID:    0,
+					UserID:    nil,
 					EventTime: int32(time.Now().Unix()),
 					EventType: int16(job.JobType),
 					Payload:   job.Payload.(string),
@@ -226,8 +226,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 								num, err := strconv.ParseUint(userID, 10, 64)
 								if err != nil {
 									log.Println(err)
+									ge.UserID = nil
 								} else {
-									ge.UserID = num
+									ge.UserID = &num
 								}
 								log.Printf("Adding postgres event with user id %d\n", ge.UserID)
 							}

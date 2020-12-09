@@ -151,6 +151,27 @@ func (psqlInterface *PsqlInterface) GetUser(userID uint64) (*PostgresUser, error
 	return nil, nil
 }
 
+func (psqlInterface *PsqlInterface) GetGame(connectCode, matchID string) (*PostgresGame, error) {
+	games := []*PostgresGame{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &games, "SELECT * FROM games WHERE game_id = $1 AND connect_code = $2;", matchID, connectCode)
+	if err != nil {
+		return nil, err
+	}
+	if len(games) > 0 {
+		return games[0], nil
+	}
+	return nil, nil
+}
+
+func (psqlInterface *PsqlInterface) GetGameEvents(matchID string) ([]*PostgresGameEvent, error) {
+	events := []*PostgresGameEvent{}
+	err := pgxscan.Select(context.Background(), psqlInterface.pool, &events, "SELECT * FROM game_events WHERE game_id = $1 ORDER BY event_id ASC;", matchID)
+	if err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
 func (psqlInterface *PsqlInterface) insertGame(game *PostgresGame) (uint64, error) {
 	t, err := psqlInterface.pool.Query(context.Background(), "INSERT INTO games VALUES (DEFAULT, $1, $2, $3, $4, $5) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
 	if t != nil {
@@ -230,7 +251,7 @@ func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) (uint64, 
 }
 
 func (psqlInterface *PsqlInterface) AddEvent(event *PostgresGameEvent) error {
-	if event.UserID == 0 {
+	if event.UserID == nil {
 		_, err := psqlInterface.pool.Exec(context.Background(), "INSERT INTO game_events VALUES (DEFAULT, NULL, $1, $2, $3, $4);", event.GameID, event.EventTime, event.EventType, event.Payload)
 		return err
 	}
