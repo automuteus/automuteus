@@ -176,7 +176,9 @@ func discordMainWrapper() error {
 		return err
 	}
 
-	go psql.LoadAndExecFromFile("./storage/postgres.sql")
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
+		go psql.LoadAndExecFromFile("./storage/postgres.sql")
+	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
