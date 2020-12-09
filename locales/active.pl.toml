@@ -1,14 +1,17 @@
 ["ascii.AsciiStarfield.isWas"]
 hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
-other = "はImpostorでした。"
+other = "był Impostorem."
 
 ["ascii.AsciiStarfield.isWasNot"]
 hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
-other = "はImpostorではありませんでした。"
+other = "nie był Impostorem."
 
 ["ascii.AsciiStarfield.remains"]
+few = "Impostorzy pozostali"
 hash = "sha1-d5aa7e4ca57db6752bd427d0978adbe9fa346fab"
-other = "Impostors remain"
+many = "Impostorzy pozostali"
+one = "Impostor pozostał"
+other = "Impostorzy pozostali"
 
 ["commands.AllCommands.Ascii.args"]
 hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
@@ -16,11 +19,11 @@ other = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)
 
 ["commands.AllCommands.Ascii.desc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "アスキーアートのCrewmateを送信"
+other = "Pokaż crewmate w ASCII"
 
 ["commands.AllCommands.Ascii.shortDesc"]
 hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "AAのCrewmateを送信"
+other = "Pokaż crewmate w ASCII"
 
 ["commands.AllCommands.Cache.args"]
 hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
@@ -28,111 +31,131 @@ other = "<player> (optionally, \"clear\")"
 
 ["commands.AllCommands.Cache.desc"]
 hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
-other = "キャッシュ化されたIGNを表示、それを/または削除"
+other = "Pokaż zapisane nazwy gracza oraz/lub usuń je"
 
 ["commands.AllCommands.Cache.shortDesc"]
 hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "蓄積されたユーザー名を表示"
+other = "Pokaż nazwę gracza"
 
 ["commands.AllCommands.DebugState.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.DebugState.desc"]
 hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "このサーバーの情報を表示"
+other = "Pokaż pełne dane serwera"
 
 ["commands.AllCommands.DebugState.shortDesc"]
 hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "このサーバーの情報を表示"
+other = "Pokaż pełne dane serwera"
 
 ["commands.AllCommands.End.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.End.desc"]
 hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
-other = "現在のゲームを終了する"
+other = "Zakończ aktualną grę"
 
 ["commands.AllCommands.End.shortDesc"]
 hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
-other = "ゲームを終了"
+other = "Zakończ grę"
 
 ["commands.AllCommands.Force.args"]
 hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<フェーズ名> (task, discuss, lobby / t,d, l)"
+other = "<phase name> (task, discuss, or lobby / t,d, or l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Botが正常に動作しない場合、強制的に選択されたフェーズに移行させる"
+other = "Nakaż botu zmianę fazy gry, w momencie gdy bot nie zmienił fazy gry"
 
 ["commands.AllCommands.Force.shortDesc"]
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
-other = "フェーズの強制変更"
+other = "Nakaż botu zmianę fazy gry"
+
+["commands.AllCommands.Help.args"]
+hash = "sha1-98e9e7ae5c47c4681acc3258e2f28c67bbcbf221"
+other = "None, or optional Command to see info for"
+
+["commands.AllCommands.Help.desc"]
+hash = "sha1-771a9d1f94d5c8279f643ef23407a8129db88016"
+other = "Wyświetl pomoc bota lub informacje o poleceniach"
 
 ["commands.AllCommands.Help.shortDesc"]
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
-other = "ヘルプを表示"
+other = "Wyświetl pomoc"
 
 ["commands.AllCommands.Info.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.Info.desc"]
 hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
-other = "BOTの参加サーバー数、アクティブなゲーム数等を表示"
+other = "Pokaż dane bota, takie jak ilość członków serwera, aktywne gry, etc"
 
 ["commands.AllCommands.Info.shortDesc"]
 hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
-other = "BOTの詳細表示"
+other = "Pokaż dane bota"
 
 ["commands.AllCommands.Link.args"]
 hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
-other = "<Discord ユーザー名> <ゲーム内の色か名前>"
+other = "<discord User> <in-game color or name>"
 
 ["commands.AllCommands.Link.desc"]
 hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
-other = "Discordのユーザー名とゲーム内の色か名前を連携させる"
+other = "Ręcznie połącz Używkownika Discorda z jego nazwą lub kolorem"
 
 ["commands.AllCommands.Link.shortDesc"]
 hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
-other = "Discord ユーザーとの連携"
+other = "Ręcznie połącz Używkownika Discorda"
+
+["commands.AllCommands.Map.args"]
+hash = "sha1-030b30e34ea561f86dd60a456431cc385a2beafb"
+other = "<map_name> (skeld, mira_hq, polus) <version> (optional, simple or detailed)"
+
+["commands.AllCommands.Map.desc"]
+hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"
+other = "Pokaż mapę gry w kanale tekstowym. Dostępne wersje: uproszczona lub ze szczegółami"
+
+["commands.AllCommands.Map.shortDesc"]
+hash = "sha1-81772e8a5083b687b68d3c4a3d1cac45cf7171aa"
+other = "Pokaż mapę gry"
 
 ["commands.AllCommands.New.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.New.desc"]
 hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "新しいゲームを開始"
+other = "Rozpocznij nową grę"
 
 ["commands.AllCommands.New.shortDesc"]
 hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "新しいゲームを開始"
+other = "Rozpocznij nową grę"
 
 ["commands.AllCommands.Pause.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.Pause.desc"]
 hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
-other = "Botを一時停止し、全ユーザーのミュートを解除"
+other = "Spauzuj bota, aby nie wyciszał/odciszał graczy. Spauzowanie odciszy i przywróci głos graczom!"
 
 ["commands.AllCommands.Pause.shortDesc"]
 hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
-other = "Botを一時停止"
+other = "Spauzuj bota"
 
 ["commands.AllCommands.Premium.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.Premium.desc"]
 hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
-other = "AuteMuteUs プレミアムメンバーシップの特典等を表示"
+other = "Pokaż benefity i funkcje członkostwa Premium AutoMuteUs"
 
 ["commands.AllCommands.Premium.shortDesc"]
 hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
-other = "プレミアムBOTの詳細表示"
+other = "Pokaż funkcje Premium Bota"
 
 ["commands.AllCommands.Privacy.args"]
 hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
@@ -140,23 +163,23 @@ other = "showme, optin, or optout"
 
 ["commands.AllCommands.Privacy.desc"]
 hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
-other = "AuteMuteUsのプライバシーとデータ収集の詳細情報\\n詳細は [こちら](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
+other = "Informacje o zbieraniu danych poprzez AutoMuteUs.\\nWięcej szczegółów [here](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
 
 ["commands.AllCommands.Privacy.shortDesc"]
 hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
-other = "AuteMuteUsのプライバシー情報を表示"
+other = "Pokaż informacje o danych prywatnych AutoMuteUs"
 
 ["commands.AllCommands.Refresh.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.Refresh.desc"]
 hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
-other = "チャットで流れてしまったステータスメッセージを再作成"
+other = "Pokaż ponownie okienko statusu gry w nowej wiadomości, jeśli poprzednie okienko zostało zgubione w wiadomościach"
 
 ["commands.AllCommands.Refresh.shortDesc"]
 hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
-other = "ステータスを再作成"
+other = "Pokaż ponownie okno statusu gry"
 
 ["commands.AllCommands.Settings.args"]
 hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
@@ -164,11 +187,11 @@ other = "<setting> <value>"
 
 ["commands.AllCommands.Settings.desc"]
 hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
-other = "Botの設定を変更。引数無しで`{{.CommandPrefix}} settings`と打つことで、全設定を確認。"
+other = "Dostosuj ustawienia bota. Wpisz `{{.CommandPrefix}} settings` bez dodatkowych argumentów, aby poznać więcej opcji."
 
 ["commands.AllCommands.Settings.shortDesc"]
 hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Botの設定を変更"
+other = "Dostosuj ustawienia bota"
 
 ["commands.AllCommands.Stats.args"]
 hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
@@ -176,11 +199,11 @@ other = "<@discord user> or \"guild\""
 
 ["commands.AllCommands.Stats.desc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "プレイヤーとサーバーの情報表示"
+other = "Pokaż statystyki gracza i serwera"
 
 ["commands.AllCommands.Stats.shortDesc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "情報表示"
+other = "Pokaż statystyki gracza i serwera"
 
 ["commands.AllCommands.Unlink.args"]
 hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
@@ -188,151 +211,159 @@ other = "<discord User>"
 
 ["commands.AllCommands.Unlink.desc"]
 hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
-other = "Discordのユーザー名との連携を解除する"
+other = "Ręcznie odłącz Użytkownika Discorda od jego postaci w grze"
 
 ["commands.AllCommands.Unlink.shortDesc"]
 hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
-other = "Discord ユーザーとの連携解除"
+other = "Ręcznie odłącz Użytkownika Discorda"
 
 ["commands.AllCommands.UnmuteAll.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["commands.AllCommands.UnmuteAll.desc"]
 hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
-other = "強制的に全員のミュートを解除"
+other = "Zmuś bota aby odciszył wszystkich połączonych graczy"
 
 ["commands.AllCommands.UnmuteAll.shortDesc"]
 hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "強制ミュート解除"
+other = "Zmuś bota do odciszenia wszystkich graczy"
 
 ["commands.ConstructEmbedForCommand.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "エイリアス"
+other = "Aliasy"
 
 ["commands.ConstructEmbedForCommand.Fields.Arguments"]
 hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "引数"
+other = "Argumenty"
 
 ["commands.ConstructEmbedForCommand.Fields.Example"]
 hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "例"
+other = "Przykłady"
 
 ["commands.HandleCommand.Cache.Success"]
 hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "キャッシュ化されたユーザー名の削除に成功しました！"
+other = "Usunięto wszystkie zapisane nazwy tego gracza!"
 
 ["commands.HandleCommand.Cache.cachedNames"]
 hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "キャッシュ化されたユーザー名:"
+other = "Zapisane nazwy z gry:"
 
 ["commands.HandleCommand.Cache.emptyCachedNames"]
 hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
-other = "誰のユーザー名もキャッシュ化されてません！"
+other = "Nie znaleziono zapisanych nazw dla tego gracza!"
 
 ["commands.HandleCommand.ForgetMe.Success"]
 hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
-other = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
+other = "✅ {{.User}} Usunięto Twoje zapisane nazwy gracza"
 
 ["commands.HandleCommand.Help.notFound"]
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
-other = "そのコマンドは存在しません！ `help` で使用可能なコマンドを表示できます！"
+other = "Nie rozpoznałem tego polecenia! sprawdź `help` aby zobaczyć wszystkie polecenia!"
+
+["commands.HandleCommand.Map.notFound"]
+hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
+other = "Nie mam mapy o takiej nazwie!"
 
 ["commands.HandleCommand.ShowMe.cachedNames"]
 hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
-other = "あなたのキャッシュ化されたユーザー名:"
+other = "❗ {{.User}} Oto Twoje zapisane nazwy z gry:"
 
 ["commands.HandleCommand.ShowMe.emptyCachedNames"]
 hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
-other = "あなたのユーザー名はキャッシュ化されてません！"
+other = "❌ {{.User}} Nie mam zapisanych Twoich danych z gry!"
 
 ["commands.HandleCommand.ShowMe.linkedID"]
 hash = "sha1-ca1be91310babf06d344413ec8c473a63f9382ca"
-other = "❗ {{.User}} 、あなたのDiscord IDと統計用の匿名化されたIDを保存しています。"
+other = "❗ {{.User}} Jesteś **zapisany** do zbierania danych w celach tworzenia  statystyk"
 
 ["commands.HandleCommand.ShowMe.unlinkedID"]
 hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
-other = "❌ {{.User}} 、あなたのDiscordIDは保存されていません。"
+other = "❌ {{.User}} Jesteś **wypisany/wypisana** ze zbierania danych w celach tworzenia statystyk, lub jeszcze nie grałeś!"
 
 ["commands.HandleCommand.default"]
 hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
-other = "申し訳ございませんが、そのコマンドは存在しません！ `{{.CommandPrefix}} help` でコマンドを表示できます！"
+other = "Wybacz, nie zrozumiałem tego polecenia! Proszę wpisz `{{.CommandPrefix}} help` aby zobaczyć polecenia"
 
 ["commands.HandleCommand.optin.FailDB"]
 hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
-other = "❌ {{.User}}、あなたは既にデータ収集にoptinしています。"
+other = "❌ {{.User}} Zgodziłeś/łaś się już na zbieranie danych"
 
 ["commands.HandleCommand.optin.SuccessDB"]
 hash = "sha1-d6b06c52ea81ebd4706188a5fa458fae87d2cfc0"
-other = "✅ {{.User}}、データ収集にoptinしました。"
+other = "✅ {{.User}} Zapisałem Cię do zbierania danych"
 
 ["commands.HandleCommand.optout.FailDB"]
 hash = "sha1-44bc33283d79d608b5f55000562cd08a951da08b"
-other = "❌ {{.User}}、あなたは既にデータ集からoptoutしています。"
+other = "❌ {{.User}} Wypisałeś/łaś się już ze zbierania danych z gry"
 
 ["commands.HandleCommand.optout.SuccessDB"]
 hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
-other = "✅ {{.User}}、データ収集からoptoutされました。"
+other = "✅ {{.User}} Wypisałem Cię ze zbierania danych z gry"
 
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
-other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
+other = "**Brak kanału głosowego! Użyj `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.ToDescString.voiceChannelName"]
 hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "VCは **{{.channelName}}** です！"
+other = " **{{.channelName}}** kanał głosowy!"
 
 ["discordGameState.ToEmojiEmbedFields.Unlinked"]
 hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "未連携"
+other = "Niepołączony"
 
 ["discordGameState.ToStatusString.anyVoiceChannel"]
 hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
-other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
+other = "**Brak kanału głosowego! Użyj `{{.CommandPrefix}} track`!**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
 hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "{{.channelName}} という名前のVCは見つかりませんでした。\\n"
+other = "Nie znaleziono kanału o nazwie {{.channelName}}!\\n"
 
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
-other = "現在 \"{{.channelName}}\" というVCをトラッキングし、自動ミュートしています！"
+other = "Teraz obserwuję \"{{.channelName}}\" jako kanał głosowy dla Automute!"
 
 ["eventHandler.gameOver.deleteMessageFooter"]
 hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
-other = "{{.Mins}} 分後にメッセージを削除します。"
+other = "Usuwanie wiadomości za {{.Mins}} :"
 
 ["eventHandler.gameOver.matchID"]
 hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
-other = "ゲーム終了！ マッチIDを使用してマッチの統計情報を表示します: `{{.MatchID}}`\\n{{.Winners}}"
+other = "Koniec gry! Pokaż statystyki gry używając Match ID: `{{.MatchID}}`\\n{{.Winners}}"
 
 ["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "未提供"
+other = "Nie dostarczone"
 
 ["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
 hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "未提供"
+other = "Nie dostarczone"
 
 ["locale.language.name"]
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
-other = "日本語"
+other = "Polish"
+
+["message_handlers.generalRatelimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}, wpisujesz polecenia za szybko! Proszę zwolnij!"
 
 ["message_handlers.handleMessageCreate.noPerms"]
 hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
-other = "あなたにはこのコマンドを実行可能な権限がありません！"
+other = "Używtkownik nie ma wymaganych uprawnień, aby użyć danego polecenia!"
 
 ["message_handlers.handleMessageCreate.respondPrefix"]
 hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
-other = "{{.CommandPrefix}} で返事をします"
+other = "Odpowiadam na prefiks {{.CommandPrefix}}"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
 hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "このリンクをクリックしてキャプチャ: \\n <{{.hyperlink}}>\\n\\nキャプチャソフトを入れてない? 最新版は [ここ！]({{.downloadURL}})\\n\\n手動でキャプチャするなら:"
+other = "Kliknij w ten link aby połaczyć z Twoim capture: \\n <{{.hyperlink}}>\\n\\nNie masz zainstalowanego programu capture? Najnowsza wersja [here]({{.downloadURL}})\\n\\nAby połączyć ręcznie:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
-other = "コード"
+other = "Kod"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.URL"]
 hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
@@ -340,183 +371,199 @@ other = "URL"
 
 ["message_handlers.handleNewGameMessage.embed.Title"]
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "ゲームを開始しました！"
+other = "Rozpoczęliście grę!"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
+other = "Jeśli rozpocznę więcej gier, Discord uniemożliwi mi działanie, lub spowolni gry, które obserwuję! 😦\\nProszę spróbuj ponownie za parę minut lub rozważ AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\\nCurrent Games: {{.Games}}"
 
 ["message_handlers.handleNewGameMessage.noChannel"]
 hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
-other = "{{.User}}、VCに参加してからゲームを開始してください！"
+other = "{{.User}}, proszę dołącz do kanału głosowego przed rozpoczęciem gry!"
 
 ["message_handlers.handleNewGameMessage.specificRatelimit"]
 hash = "sha1-33e13e7ab0034ae74fd2d89df60959d797f0b5b2"
-other = "ゲームを作るのが早すぎます！もう少し遅くしてください！"
+other = "{{.User}} Tworzysz gry zbyt szybko! Proszę zwolnij!"
 
 ["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
 hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
-other = "{{.User}} 、リアクションを付けるのが早すぎます！もう少し遅くしてください！"
+other = "{{.User}}, reagujesz zbyt szybko! Proszę zwolnij!"
 
 ["message_handlers.softban"]
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
-other = "現在、 {{.User}} を5分間無視しています。スパムを辞めてください。"
+other = "{{.User}} Ignoruję Twoje wiadomości przez następne 5 minut, przestań spamować!"
 
 ["responses.guildStatsEmbed.CrewmateWins"]
 hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmateでの勝利"
+other = "Wygrane jako Crewmate"
 
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
-other = "{{.GuildName}} の詳細情報"
+other = "Statystyki serwera dla {{.GuildName}}"
 
 ["responses.guildStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "ゲームのプレイ回数"
+other = "Rozegrane gry"
 
 ["responses.guildStatsEmbed.ImposterWins"]
 hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Imposterでの勝利数"
+other = "Wygrane jako Impostor"
 
 ["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "ゲームのプレイ回数"
+other = "Rozegrane gry"
 
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "AuteMuteUs プレミアムしか詳細情報は見れません！; `{{.CommandPrefix}} premium` でプレミアムについて知ろう"
+other = "Dane szczegółowe są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
+
+["responses.guildStatsEmbed.Premium"]
+hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
+other = "Pokazuje dodatkowe dane Premium!\\n(Informacja: statystyki premium są nadal w wersji **BETA**, i mogą być niedokładne, pracujemy nad poprawianiem tej funkcjonalności)."
 
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
-other = "Guild Stats"
+other = "Statystyki serwera"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[GitHubプロジェクトを見る](https://github.com/denverquane/automuteus) か [私たちのDiscordに参加！](https://discord.gg/ZkqZSWF)\\n\\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
+other = "[Pokaż stronę github projektu](https://github.com/denverquane/automuteus) lub [Dołącz nasz discord](https://discord.gg/ZkqZSWF)\\n\\nWpisz `{{.CommandPrefix}} help <command>` aby zobaczyć więcej poleceń!"
 
 ["responses.helpResponse.Title"]
 hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
-other = "AutoMuteUs Bot コマンド一覧:\\n"
+other = "AutoMuteUs Bot Commands:\\n"
 
 ["responses.lobbyMessage.Footer.Text"]
 hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "ゲーム内の色に合ったリアクションを押してね！ (それか {{.emojiLeave}} で退出)"
+other = "Zareaguj na tę wiadomość, klikając na postać z Twoim kolorem w grze! (lub {{.emojiLeave}} aby opuścić grę)"
 
 ["responses.lobbyMessage.Title"]
 hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
-other = "ロビー"
+other = "Lobby"
 
 ["responses.lobbyMessage.notLinked.Description"]
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
+other = "❌**Capture nie jest połączony z grą! Kliknij w link otrzymany w PW, aby połączyć!**❌"
 
 ["responses.lobbyMetaEmbedFields.PlayersLinked"]
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "連携されたプレイヤー"
+other = "Połączeni gracze"
 
 ["responses.lobbyMetaEmbedFields.Region"]
 hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
-other = "🌎 リージョン"
+other = "🌎 REGION"
 
 ["responses.lobbyMetaEmbedFields.RoomCode"]
 hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
-other = "🔒 部屋コード"
+other = "🔒 Kod pokoju"
 
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
-other = "\\n⚠**中断されました！**⚠\\n\\n"
+other = "\\n⚠ **Bot spauzowany!** ⚠\\n\\n"
 
 ["responses.makeDescription.author"]
 hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> が Among Us を開始しました！\\nここでゲームが行われています: "
+other = "<@{{.author}}> rozpoczął grę w Among US!\\nGra działa w tej chwili "
 
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
-other = "(ゲームを開始するには、ロビーに参加してください)"
+other = "Dołącz do lobby w Among Us aby rozpocząć grę)"
 
 ["responses.menuMessage.Title"]
 hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
-other = "メインメニュー"
+other = "Menu główne"
 
 ["responses.menuMessage.notLinked.Description"]
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
+other = "❌**Capture nie jest połączony z grą! Kliknij w link otrzymany w PW, aby połączyć!**❌"
 
 ["responses.nonPremiumSetting.Desc"]
 hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
-other = "申し訳ありませんが、この設定は AuteMuteUsプレミアム 専用です！ `{{.CommandPrefix}} premium` で詳細を確認しましょう！"
+other = "Przepraszam, ale te ustawienia są dostępne tylko dla użytkowników AutoMuteUs Premium! Wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej na temat premium"
 
 ["responses.premiumInviteResponse.Title"]
 hash = "sha1-e537f34134926749225e31f93c2cc121cc4e23e0"
-other = "プレミアムBOTの招待"
+other = "Zaproszenia Premium dla bota"
 
 ["responses.premiumInviteResponse.desc"]
 hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
-other = "{{.Tier}} ユーザーから {{.Count}}回 優先的なミュートBOTへのアクセスを受けられます！ : 下記にご招待状を用意しました！"
+other = "{{.Tier}} Użytkownicy mają dostęp do {{.Count}} priorytetowych botów wyciszających: zaproszenia poniżej!"
 
 ["responses.premiumInviteResponseNoAccess.desc"]
 hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
-other = "{{.Tier}} ユーザーは優先的なミュートを受けられません！\\n`{{.CommandPrefix}} premium` でAuteMuteUsのことをもっと知ろう"
+other = "{{.Tier}} użytkownicy nie mają dostępu do priorytetowych botów wyciszających!\\nWpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej na temat AutoMuteUs Premium"
 
 ["responses.premiumResponse.FastMute"]
 hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
-other = "🙊 Fast Mute/Deafen"
+other = "🙊 Szybkie wyciszenie mikrofonu/dźwięku"
 
 ["responses.premiumResponse.FastMuteDesc"]
 hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
-other = "Premium users get access to \"helper\" bots that make sure muting is fast!"
+other = "Użytkownicy premium zyskują dostęp do \"helper\" bots które sprawiają, że wyciszanie jest szybsze!"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
+other = "Sprawdź, jakie świetne rzeczy oferuje Premium AutoMuteUs!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
-other = "`{{.CommandPrefix}} premium invites` で招待できるプレミアムBOTの一覧を見よう！"
+other = "Zobacz listę botów, które możesz zaprosić poleceniem `{{.CommandPrefix}} premium invites`!"
 
 ["responses.premiumResponse.PremiumDescription"]
 hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "あなたのAuteMuteUsプレミアムランクTierは **{{.Tier}}** です！ サポートありがとうございます！\\n\\nプレミアムステータスでカスタマイズできる設定をご紹介します！"
+other = "Wygląda na to, że masz AutoMuetUs **{{.Tier}}**! Dzięki za wsparcie!\\n\\nPoniżej znajduje się lista benefitów, które możesz spersonalizować, otrzymanych wraz ze statusem Premium!"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
-other = "👑 優先的なゲームアクセス"
+other = "👑 Priorytetowy dostęp do gier"
 
 ["responses.premiumResponse.PriorityGameAccessDesc"]
 hash = "sha1-9b42956892e65576edb6cc2aa3bf6eef8eb6efa3"
-other = "BOTが高負荷になっても、プレミアムユーザーはいつでも新しいゲームを開始できます！"
+other = "Jeżeli bot jest przeciążony ilością globalnie obsługiwanych gier, użytkownicy Premium zawsze będą mogli tworzyć nowe gry!"
 
 ["responses.premiumResponse.Settings"]
 hash = "sha1-8f2e3dbc7ea805faa7b03ed533abfcd504a1ab1a"
-other = "🛠 特別な設定"
+other = "🛠 Ustawienia specjalne"
 
 ["responses.premiumResponse.SettingsDesc"]
 hash = "sha1-50f761e465fbcafc6caaa815ecd94c6fc7ee5bd5"
-other = "プレミアムユーザーはゲーム終了時のステータスメッセージの表示やステータスメッセージの自動更新などの追加設定が可能になります！"
+other = "Użytkownicy premium zyskują dostęp do ustawień specjalnych, takich jak, wyświetlanie podsumowania końca gry, lub auto-odświeżanie okna ze statusem gry!"
+
+["responses.premiumResponse.SettingsDescExtra"]
+hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
+other = "Szukaj ustawień oznaczonych 💎 w `{{.CommandPrefix}} settings!`"
 
 ["responses.premiumResponse.Stats"]
 hash = "sha1-790006f1ec07733eda3338ac22e046ef2b809421"
-other = "📊 ゲーム情報とリーダーボード"
+other = "📊 Statystyki gry oraz ranking "
 
 ["responses.premiumResponse.StatsDesc"]
 hash = "sha1-ae7d71d8ca051a31d94d8f48b7e448c8e773eea4"
-other = "プレミアムユーザーはプレイヤーやサーバーの全情報を見ることができます！"
+other = "Użytkownicy Premium mają pełen dostęp do statystyk graczy oraz rankingów!"
 
 ["responses.premiumResponse.Support"]
 hash = "sha1-af23e1d668669b533eb01655c121c807587e7fa2"
-other = "👂 Premium サポート"
+other = "👂 Wsparcie Premium"
 
 ["responses.premiumResponse.SupportDesc"]
 hash = "sha1-66af605f1485951ab3d3e7a7762f2182f2c7f21b"
-other = "プレミアムユーザーは公式Discordサーバーにて、プライベートチャンネルを見ることが可能になります！"
+other = "Użytkownicy Premium otrzymują dostęp do specjalnych kanałów na oficjalnym Discordzie AutoMuteUs!"
 
 ["responses.premiumResponse.Title"]
 hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
-other = "💎 AutoMuteUs プレミアム 💎"
+other = "💎 AutoMuteUs Premium 💎"
 
 ["responses.privacyResponse.Title"]
 hash = "sha1-c7ffd5c92085976d3ec361c3797b5650af65c8d1"
-other = "AutoMuteUs プライバシー"
+other = "Ustawienia prywatności AutoMuteUs"
 
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設定を変更することができます"
+other = "Wpisz `{{.CommandPrefix}} settings <setting>` aby zmienić ustawienia wymienione niżej"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
-other = "設定"
+other = "Ustawienia"
 
 ["responses.statsResponse.BotInfo"]
 hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
@@ -524,67 +571,95 @@ other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
 
 ["responses.statsResponse.Creator"]
 hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
-other = "制作者"
+other = "Twórca"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
+other = "Premium"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "アクティブなゲーム数"
+other = "Aktywne gry"
 
 ["responses.statsResponse.Guilds"]
 hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "総参加サーバー数"
+other = "Ilość serwerów z botem"
 
 ["responses.statsResponse.Invite"]
 hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
-other = "招待"
+other = "Zaproszenie"
 
 ["responses.statsResponse.Library"]
 hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
-other = "ライブラリ"
+other = "Biblioteka"
 
 ["responses.statsResponse.Title"]
 hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
-other = "Botの詳細"
+other = "Informacje o bocie"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
-other = "バージョン"
+other = "Wersja"
 
 ["responses.statsResponse.Website"]
 hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
-other = "ウェブサイト"
+other = "Strona internetowa"
 
 ["responses.userStatsEmbed.CrewmateWins"]
 hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmateでの勝利数"
+other = "Wygrane jako Crewmate"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "Statystyki dla {{.User}}"
 
 ["responses.userStatsEmbed.FavoriteColors"]
 hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
-other = "好きな色"
+other = "Ulubiony kolor"
 
 ["responses.userStatsEmbed.FavoriteNames"]
 hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
-other = "好きな名前"
+other = "Ulubiona nazwa"
 
 ["responses.userStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "プレイ回数"
+other = "Rozegrane gry"
 
 ["responses.userStatsEmbed.ImposterWins"]
 hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Impostorでの勝利数"
+other = "Wygrane jako Impostor"
 
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "AuteMuteUsプレミアム しか詳細情報は見れません！ ; `{{.CommandPrefix}} premium` でプレミアムについて知ろう"
+other = "Szczegółowe statystyki są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
+
+["responses.userStatsEmbed.Premium"]
+hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
+other = "Pokazuję statystyki Premium!\\n(Informacja: statystyki premium są nadal w wersji **BETA**, i mogą być niedokładne, pracujemy nad poprawianiem tej funkcjonalności)."
+
+["responses.userStatsEmbed.ServerPlayedInValue"]
+hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
+other = "{{.Server}} Serwer"
+
+["responses.userStatsEmbed.ServersPlayedIn"]
+hash = "sha1-2b659e61e9d2c6a41b6d12e0df79733ccc12299a"
+other = "Grane na"
+
+["responses.userStatsEmbed.ServersPlayedInValue"]
+hash = "sha1-590e7f7cec75b3fbb8343f80b4fdfb961aee13e4"
+other = "{{.Servers}} Serwerach"
 
 ["responses.userStatsEmbed.Title"]
 hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
-other = "ユーザーの詳細情報"
+other = "Statystyki użytkownika"
 
 ["responses.userStatsEmbed.TotalWins"]
 hash = "sha1-f4c419e3e3f3df631d62827a5320ec2631d299d7"
-other = "勝利回数"
+other = "Ilość wygranych"
+
+["responses.userStatsEmbed.Winrate"]
+hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
+other = "Współczynnik zwycięstw"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -592,11 +667,11 @@ other = "<User @ mentions>..."
 
 ["settings.AllSettings.AdminUserIDs.desc"]
 hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Botを管理できるユーザーを指定"
+other = "Sprecyzuj, którzy użytkownicy mają dostęp do administracyjnych funkcji bota"
 
 ["settings.AllSettings.AdminUserIDs.shortDesc"]
 hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
-other = "Botの管理者"
+other = "Admini zarządzający botem"
 
 ["settings.AllSettings.AutoRefresh.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -604,11 +679,11 @@ other = "<true/false>"
 
 ["settings.AllSettings.AutoRefresh.desc"]
 hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
-other = "マッチ終了後、ステータスメッセージを自動更新するかどうかを指定します。"
+other = "Określ, czy bot powinien automatycznie odświeżać okienko ze statusem gry po zakończeniu meczu"
 
 ["settings.AllSettings.AutoRefresh.shortDesc"]
 hash = "sha1-688986b39f678f57ce90907ef39ab68a3a5db902"
-other = "自動更新されるステータスメッセージ"
+other = "Automatyczne odświeżanie okna statusu"
 
 ["settings.AllSettings.Delays.args"]
 hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
@@ -616,23 +691,35 @@ other = "<start phase> <end phase> <delay>"
 
 ["settings.AllSettings.Delays.desc"]
 hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "ロビー → タスク のような、ゲームのフェーズ間の自動ミュートの遅延を指定"
+other = "Określ opóźnienia wyciszenia mikrofonu/dźwięku pomiędzy fazami gry, np. lobby ->zadania"
 
 ["settings.AllSettings.Delays.shortDesc"]
 hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
-other = "ステージ間の遅延調整"
+other = "Opóźnienia między fazami"
 
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
-other = "<language> または reload"
+other = "<language> or reload"
 
 ["settings.AllSettings.Language.desc"]
 hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
-other = "Botの言語を変更"
+other = "Zmień język bota"
 
 ["settings.AllSettings.Language.shortDesc"]
 hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
-other = "Botの言語設定"
+other = "Język bota"
+
+["settings.AllSettings.MapVersion.args"]
+hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
+other = "<version>"
+
+["settings.AllSettings.MapVersion.desc"]
+hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
+other = "Określ wersję mapy (simple, detailed) używanej przez polecenie 'map'"
+
+["settings.AllSettings.MapVersion.shortDesc"]
+hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
+other = "Wersja mapy"
 
 ["settings.AllSettings.MatchSummary.args"]
 hash = "sha1-e43bd32e20d628f793b8b15314ed938d74d56565"
@@ -640,11 +727,11 @@ other = "<minutes>"
 
 ["settings.AllSettings.MatchSummary.desc"]
 hash = "sha1-bd285de3a118841b872c4b58baf24388c5384fb0"
-other = "マッチ終了後のメッセージが削除されるまでの時間を指定します。0で即削除され、-1で消えなくなります。"
+other = "Określ ilość minut po której wiadomość o końcu meczu jest usunięta. 0 aby natychmiastowo usunąć, -1 aby nie usuwać"
 
 ["settings.AllSettings.MatchSummary.shortDesc"]
 hash = "sha1-5099f472410435fb996091311c84ee8425d8bfe4"
-other = "マッチ終了後のメッセージ"
+other = "Wiadomość podsumowująca mecz"
 
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
@@ -652,23 +739,23 @@ other = "<prefix>"
 
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "Botが使用するプレフィクスを変更"
+other = "Zmień prefiks, który używa bot, aby wykrywać polecenia"
 
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
-other = "Botのプレフィクス"
+other = "Prefiks bota"
 
 ["settings.AllSettings.Reset.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["settings.AllSettings.Reset.desc"]
 hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
-other = "BOTのすべての設定を初期値に戻します。"
+other = "Zresetuj wszystkie ustawienia bota do domyślnych wartości"
 
 ["settings.AllSettings.Reset.shortDesc"]
 hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
-other = "BOTの設定をリセット"
+other = "Zresetuj ustawienia bota"
 
 ["settings.AllSettings.RoleIDs.args"]
 hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
@@ -676,23 +763,23 @@ other = "<role @ mentions>..."
 
 ["settings.AllSettings.RoleIDs.desc"]
 hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Botを呼び出す権限を持つ役職を設定"
+other = "Wymień, które role mogą wywoływać bota"
 
 ["settings.AllSettings.RoleIDs.shortDesc"]
 hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
-other = "Botの「司令官」"
+other = "Operatorzy bota"
 
 ["settings.AllSettings.Show.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
+other = "None"
 
 ["settings.AllSettings.Show.desc"]
 hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
-other = "このサーバーの全部のBot設定を表示"
+other = "Pokaż wszystkie ustawienia bota dla tego serwera"
 
 ["settings.AllSettings.Show.shortDesc"]
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
-other = "全設定を表示"
+other = "Pokaż wszystkie ustawienia"
 
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -700,11 +787,11 @@ other = "<true/false>"
 
 ["settings.AllSettings.UnmuteDead.desc"]
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
-other = "死亡したユーザーをミュートするかどうかを設定。**警告！ 死者から情報が漏れる可能性があります！**"
+other = "Określ, czy bot powinien natychmiast odciszyć martwych graczy. **UWAGA. Może wskazać, kto nie żyje szybciej niż emergency!**"
 
 ["settings.AllSettings.UnmuteDead.shortDesc"]
 hash = "sha1-bb68a42e779c9eeabc57a5986fa31fd99414c4ae"
-other = "死者のミュート設定"
+other = "Odciszanie zmarłych graczy"
 
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
@@ -712,167 +799,175 @@ other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
 
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
-other = "ゲーム内フェーズに応じて、自動ミュートするかどうかを設定。例えば、タスクフェーズでは死者はミュートされる。"
+other = "Określ zasady wyciszania i odciszania graczy w grze, zależnie od etapu oraz życia/śmierci graczy. Przykładem może być wyciszenie martwych graczy w fazie zadań "
 
 ["settings.AllSettings.VoiceRules.shortDesc"]
 hash = "sha1-446a8c075113693fdef53eae652e2421a379234d"
-other = "自動ミュートのルール"
+other = "Zasady wyciszania/odciszania"
 
 ["settings.CommandPrefixSetting.changes"]
 hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
-other = "Botのプレフィクスが `{{.From}}` から `{{.To}}` に変更されました。今後はそっちを使ってね！"
+other = "Prefix serwera zmieniony z `{{.From}}` na `{{.To}}`. Używaj go od teraz!"
 
 ["settings.CommandPrefixSetting.tooLong"]
 hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
-other = "申し訳ありませんが、`{{.CommandPrefix}}` は ({{.Length}} 文字です。(最高は 10 文字です) 短くしてください。"
+other = "Przepraszam, prefiks `{{.CommandPrefix}}` jest zbyt długi ({{.Length}} znaki, maks 10). Spróbuj czegoś krótszego."
 
 ["settings.ConstructEmbedForSetting.Fields.Aliases"]
 hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "エイリアス"
+other = "Aliasy"
 
 ["settings.ConstructEmbedForSetting.Fields.Arguments"]
 hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "引数"
+other = "Argumenty"
 
 ["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
 hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
-other = "現在の値"
+other = "Obecna wartość"
 
 ["settings.ConstructEmbedForSetting.Fields.Example"]
 hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "例"
+other = "Przykład"
 
 ["settings.HandleSettingsCommand.default"]
 hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
-other = "申し訳ありませんが、`{{.Arg}}` は有効な設定ではありません！\\n"
+other = "Przepraszam, `{{.Arg}}` nie jest właściwym ustawieniem!\\n"
 
 ["settings.SettingAdminUserIDs.clearAdmins"]
 hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
-other = "全ての AdminUserID を削除しました！"
+other = "Czyszczę wszystkie AdminUserIDs!"
 
 ["settings.SettingAdminUserIDs.newBotAdmin"]
 hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
-other = "<@{{.UserID}}> がBotの管理者になりました！"
+other = "<@{{.UserID}}> jest teraz adminem bota!"
 
 ["settings.SettingAdminUserIDs.noBotAdmins"]
 hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
-other = "Botの管理者はいません。"
+other = "Brak adminów bota"
 
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "申し訳ありませんが、`{{.UserName}}`が誰だかわかりません...。\\n ID、ユーザー名、`ユーザー名#XXXX`、ニックネーム、@メンション が使用可能です。"
+other = "Przepraszam, nie wiem kim jest `{{.UserName}}`. Możesz podać ID, nazwę, nazwę#XXXX, nickname lub @mention"
 
 ["settings.SettingAutoRefresh.False"]
 hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
-other = "今後、ゲームのステータスメッセージを自動更新しないようにします。"
+other = "Od teraz, nie będę automatycznie odświeżać okienko gry ze statusem"
 
 ["settings.SettingAutoRefresh.True"]
 hash = "sha1-b3e5138940abfd14605d7565f2807c5957c89c18"
-other = "今後、ゲームのステータスメッセージを自動更新するようにします。"
+other = "Od teraz, będę automatycznie odświeżać okienko gry ze statusem"
 
 ["settings.SettingAutoRefresh.Unrecognized"]
 hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
-other = "{{.Arg}} は true/false ではありません。 `{{.CommandPrefix}} settings autorefresh` で使い方を見よう"
+other = "{{.Arg}} nie jest wartością true/false. Zobacz `{{.CommandPrefix}} settings autorefresh` aby dowiedzieć się więcej"
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
-other = "申し訳ありませんが、 `{{.PhaseName}}` がわかりません。フェーズ名は `Lobby`、`Tasks`、`Discussion`である必要があります。"
+other = "Nie wiem, czym jest `{{.PhaseName}}`. Lista faz gry to `Lobby`, `Tasks` and `Discussion`."
 
 ["settings.SettingDelays.delayBetweenPhases"]
 hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
-other = "現在の `{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延は {{.OldDelay}} です。"
+other = "Obecnie, opóźnienie pomiędzy przejściem z `{{.PhaseA}}` do `{{.PhaseB}}` to {{.OldDelay}}."
 
 ["settings.SettingDelays.missingPhases"]
 hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "フェーズ一覧は `Lobby`、`Tasks`、`Discussion` です。\\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
+other = "Lista faz gry to `Lobby`, `Tasks` and `Discussion`.\\nMusisz wpisać obie fazy gry, pomiędzy którymi następuje przejście, aby określić jego długość"
 
 ["settings.SettingDelays.setDelayBetweenPhases"]
 hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
-other = "`{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延が {{.OldDelay}} から {{.NewDelay}} に変更されました。"
+other = "Opóźnienie, pomiędzy przechodzeniem z `{{.PhaseA}}` do `{{.PhaseB}}` zmieniono z {{.OldDelay}} na {{.NewDelay}}."
 
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
-other = "`{{.Number}}` は有効な数字ではありません！"
+other = "`{{.Number}}` Nie jest właściwym numerem! Proszę spróbuj ponownie"
 
 ["settings.SettingLanguage.list"]
 hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
-other = "使用可能な言語: {{.Langs}}"
+other = "Dostępne języki: {{.Langs}}"
 
 ["settings.SettingLanguage.notFound"]
 hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
-other = "その言語は存在しません！ 有効な言語コードは: {{.Langs}}"
+other = "Nie znaleziono języka! Dostępne kody językowe: {{.Langs}}"
 
 ["settings.SettingLanguage.notLoaded"]
 hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "言語ファイルが読み込まれていません！ {{.Langs}}"
+other = "Pliki językowe nie załadowane! {{.Langs}}"
 
 ["settings.SettingLanguage.reloaded"]
 hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
-other = "言語ファイルが再読み込みされました ({{.Count}})。 有効な言語コードは: {{.Langs}}"
+other = "Pliki językowe są odświeżane ({{.Count}}). Dostępne kody językowe: {{.Langs}}"
 
 ["settings.SettingLanguage.set"]
 hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "言語が {{.LangName}} に設定されました。"
+other = "Język ustawiony na {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "申し訳ありませんが、その言語コードは短すぎます。 有効な言語コードは: {{.Langs}}."
+other = "Przepraszam, kod językowy jest za krótki. Dostępne kody językowe: {{.Langs}}."
+
+["settings.SettingMapVersion.Success"]
+hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
+other = "Od teraz, będę wyświetlać plik mapy jako {{.Arg}}"
+
+["settings.SettingMapVersion.Unrecognized"]
+hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
+other = "{{.Arg}} nie jest przewidywaną wartością. Zobacz `{{.CommandPrefix}} settings mapversion` aby dowiedzieć się więcej"
 
 ["settings.SettingMatchSummary.OutOfRange"]
 hash = "sha1-b6996f804f1fc4e59784621e2adaea8b88ceafb9"
-other = "指定された数値は高すぎるか、低すぎます。[0-60]の間の数値を指定するか、-1で削除されないようにしてください。"
+other = "Wprowadzono za wysoką lub za niską wartość. Proszę, wprowadź wartość pomiędzy [0-60], lub -1 aby nie usuwać podsumowań meczu"
 
 ["settings.SettingMatchSummary.Success"]
 hash = "sha1-32a0eda9ca856cee12ede89ad46f35803cd0fb68"
-other = "今後は、{{.Minutes}} 分後にマッチ終了後のメッセージを削除するようにします。"
+other = "Od teraz, będę usuwać podsumowanie meczu po {{.Minutes}} minutach."
 
 ["settings.SettingMatchSummary.Success-1"]
 hash = "sha1-6d710f38a479364512a9a0787674d4e05c1a33b4"
-other = "今後は、マッチ終了後のメッセージは絶対に削除しません。"
+other = "Od teraz, nigdy nie będę usuwać podsumowania meczu."
 
 ["settings.SettingMatchSummary.Success0"]
 hash = "sha1-cca0192d2890122597dc6923fcdd84e03a91c057"
-other = "今後は、マッチ終了後のメッセージはすぐに削除するようにします。"
+other = "Od teraz, usunę podsumowanie meczu od razu."
 
 ["settings.SettingMatchSummary.Unrecognized"]
 hash = "sha1-15dbbdff49c219e8e202ee09c8d7ceaaa4987b87"
-other = "{{.Minutes}} は不正な数値です。`{{.CommandPrefix}} settings matchSummary`で使い方を見よう"
+other = "{{.Minutes}} nie jest prawidłową wartością. Zobacz `{{.CommandPrefix}} settings matchSummary` aby dowiedzieć się więcej"
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
-other = "全ての PermissionRoleIDs を削除しました！"
+other = "Wyczyszczenie zezwoleń dla ról!"
 
 ["settings.SettingPermissionRoleIDs.newBotAdmins"]
 hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
-other = "<@&{{.UserID}}> 等がBotの管理者になりました！"
+other = "<@&{{.UserID}}> są teraz administratorami bota!"
 
 ["settings.SettingPermissionRoleIDs.noRoleAdmins"]
 hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "Botの管理役職はありません。"
+other = "Brak adminów-ról"
 
 ["settings.SettingPermissionRoleIDs.notFound"]
 hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
-other = "申し訳ありませんが、`{{.RoleName}}` が何の役職なのか分かりません...。 役職ID、役職名、@役職メンション が使用可能です。"
+other = "Wybacz, Nie rozpoznaję roli `{{.RoleName}}` .Proszę użyj @role"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "既に false です！"
+other = "Jest już false!"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "死者のミュートをすぐには解除しないようにします。**いいセンスだ！**"
+other = "Nie będę natychmiastowo odciszać martwych graczy. Dobry wybór"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
 hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "では...これから死者のミュートをすぐに解除するようにします。**誰が死んで、誰がImpostorかすぐに明らかになってしまうでしょう...。**"
+other = "Będę teraz natychmiastowo odciszać martwych graczy. Uważaj, pokaże to, kto zginął w trakcie fazy gry!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "既に true です！"
+other = "Jest już true!"
 
 ["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
 hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "申し訳ありませんが、 `{{.Arg}}` は `true` でも `false` でもありません。"
+other = "Przepraszam, `{{.Arg}}` nie jest ani `true` lub `false`."
 
 ["settings.SettingVoiceRules.NA"]
 hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
@@ -880,47 +975,47 @@ other = "N/A"
 
 ["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
 hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
-other = "{{.PhaseName}} がわかりません。 フェーズ名は `Lobby`、`Tasks`、`Discussion`です。"
+other = "Nie wiem, czym jest {{.PhaseName}} . Lista faz gry to `Lobby`, `Tasks` and `Discussion`."
 
 ["settings.SettingVoiceRules.enoughArgs"]
 hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "十分な引数を渡していません！正しい引数はこちらです: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
+other = "Nie podałeś wystarczającej liczby argumentów! Prawidłowo, syntaksy to: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
 
 ["settings.SettingVoiceRules.neitherAliveDead"]
 hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
-other = "`{{.Arg}}` は `alive` か `dead` のどちらかである必要があります！"
+other = "`{{.Arg}}` nie jest ani `alive` lub `dead`!"
 
 ["settings.SettingVoiceRules.neitherMuteDeaf"]
 hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
-other = "`{{.Arg}}` は `mute` でも `deaf` のどちらでもありません！"
+other = "`{{.Arg}}` nie jest ani `mute` lub `deaf`!"
 
 ["settings.SettingVoiceRules.neitherTrueFalse"]
 hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
-other = "`{{.Arg}}` is neither `true` or `false`!"
+other = "`{{.Arg}}` nie jest ani `true` lub `false`!"
 
 ["settings.SettingVoiceRules.queryingAlreadyUnValues"]
 hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは既に {{.PlayerDiscordState}} を解除しています！"
+other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są od{{.PlayerDiscordState}}!"
 
 ["settings.SettingVoiceRules.queryingAlreadyValues"]
 hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは既に {{.PlayerDiscordState}} になっています！"
+other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są już {{.PlayerDiscordState}}!"
 
 ["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
 hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは現在 {{.PlayerDiscordState}} になっています。"
+other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są aktualnie {{.PlayerDiscordState}}."
 
 ["settings.SettingVoiceRules.queryingCurrentlyValues"]
 hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} ではありません。"
+other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są aktualnie NIE {{.PlayerDiscordState}}."
 
 ["settings.SettingVoiceRules.setUnValues"]
 hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
-other = "今後、`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} ではならなくなります。"
+other = "Od teraz, Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze będą be od{{.PlayerDiscordState}}."
 
 ["settings.SettingVoiceRules.setValues"]
 hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
-other = "今後、`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} になります。"
+other = "Od teraz, Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze będą {{.PlayerDiscordState}}."
 
 ["state.phase.DISCUSSION"]
 hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"

@@ -71,14 +71,6 @@ other = "Zwingt den Bot zum Wechsel in eine andere Spielphase, falls er nicht ko
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
 other = "Zwingt den Bot zum Wechsel"
 
-["commands.AllCommands.Help.args"]
-hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
-other = "Keine, oder ein optionaler Befehl zum Anzeigen der passenden Hilfe"
-
-["commands.AllCommands.Help.desc"]
-hash = "sha1-86ef9a3df917eb9728b9966b5beb999a1e970db5"
-other = "Zeigt die Hilfe für den Bot oder für einen Befehl an"
-
 ["commands.AllCommands.Help.shortDesc"]
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
 other = "Zeigt die Hilfe an"
@@ -106,18 +98,6 @@ other = "Verbindet einen Discord Benutzer manuell mit seiner Ingamefarbe oder se
 ["commands.AllCommands.Link.shortDesc"]
 hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
 other = "Verbinde einen Discord Benutzer"
-
-["commands.AllCommands.Log.args"]
-hash = "sha1-21352b2be58fee3b7776cc67679330b08d1d9f38"
-other = "<Nachricht>"
-
-["commands.AllCommands.Log.desc"]
-hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
-other = "Log-Eintrag wenn etwas komisches passiert, damit du dieses Ereignis später im Protokoll findest"
-
-["commands.AllCommands.Log.shortDesc"]
-hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
-other = "Protokolliert ein merkwürdiges Ereignis"
 
 ["commands.AllCommands.New.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -367,10 +347,6 @@ other = "URL"
 hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "Du hast gerade ein neues Spiel begonnen!"
 
-["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-735414ddf0a22c9373080833ffcaca9f57b3db6e"
-other = "Wenn ich mehr Spiele starte wird Discord mich sperren oder die laufenden Spiele limitieren! 😦\\nBitte versuche es in ein paar Minuten noch einmal oder schaue dir AutoMuteUs Premium an"
-
 ["message_handlers.handleNewGameMessage.noChannel"]
 hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
 other = "{{.User}}, bitte betrete einen Voice Channel bevor du ein Match startest!"
@@ -410,10 +386,6 @@ other = "Runden Gespielt"
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Detaillierte Statistiken sind nur für AutoMuteUs Premium Nutzer verfügbar; Sieh dir `{{.CommandPrefix}} premium` um mehr zu erfahren"
-
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-582842d67a6c0bb9ea84fd8679d27c9dd23a1c5f"
-other = "Zeige zusätzliche Premium Statistiken!\\n(Hinweis: Statistiken sind noch in der **BETA**,\\nund sind aktuell noch ungenau während wir diese verbessern)."
 
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
@@ -495,10 +467,6 @@ other = "🙊 Schnell Mute/Deafen"
 hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
 other = "Premium Nutzer bekommen Zugang zu \"helper\" Bots die sicherstellen das das Muting schnell durchgeführt wird!"
 
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-3dd67596c94c32f45765549f24e3bcf347aea172"
-other = "Sieh dir die coolen Features von Premium AutoMuteUs an!\n\n[Hole dir AutoMuteUs Premium](https://patreon.com/automuteus)"
-
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "Zeige eine Liste von Premium Bots die du mit `{{.CommandPrefix}} einladen kannst`!"
@@ -563,10 +531,6 @@ other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
 hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
 other = "Ersteller"
 
-["responses.statsResponse.Donate"]
-hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
-other = "Spenden"
-
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "Aktive Spiele"
@@ -595,17 +559,9 @@ other = "Version"
 hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
 other = "Webseite"
 
-["responses.title.GameOver"]
-hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
-other = "**Game Over**"
-
 ["responses.userStatsEmbed.CrewmateWins"]
 hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
 other = "Crewmate Wins"
-
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-08c07af59136c14ed926ffc9548679782d1a5e9c"
-other = "Benutzerstatistiken für {{.User}} auf diesem Server"
 
 ["responses.userStatsEmbed.FavoriteColors"]
 hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
@@ -626,10 +582,6 @@ other = "Imposter Siege"
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Detaillierte Statistiken sind nur für AutoMuteUs Premium Nutzer verfügbar; Sieh dir `{{.CommandPrefix}} premium` um mehr zu erfahren"
-
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-6da7691eb71e70ed60c719517096d93643420052"
-other = "Zeige zusätzliche Premium Statistiken!"
 
 ["responses.userStatsEmbed.Title"]
 hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
