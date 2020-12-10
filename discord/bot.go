@@ -200,7 +200,8 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
 				bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 
-				if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+				//if we specified the guild ID, then any subsequent guilds should just use the existing emojis
+				if os.Getenv("EMOJI_GUILD_ID") != "" {
 					AllEmojisStartup = allEmojis
 					log.Println("Skipping subsequent guilds; emojis added successfully")
 				}

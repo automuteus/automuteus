@@ -118,7 +118,15 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			isAdmin = true
 			isPermissioned = true
 		} else {
-			isAdmin = len(sett.AdminUserIDs) == 0 || sett.HasAdminPerms(m.Author)
+			//if we have no admins, then we MUST have mods as per the check above.
+			if len(sett.AdminUserIDs) == 0 {
+				//we have no admins, but we have mods, so make sure users fulfill that check
+				isAdmin = sett.HasRolePerms(m.Member)
+			} else {
+				//we have admins; make sure user is one
+				isAdmin = sett.HasAdminPerms(m.Author)
+			}
+			//even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
 			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
 		}
 
