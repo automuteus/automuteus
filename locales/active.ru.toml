@@ -73,14 +73,6 @@ other = "Принудительная смена стадии игры, если
 hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
 other = "Принудительная смена стадии игры"
 
-["commands.AllCommands.Help.args"]
-hash = "sha1-4a239f127b4cfb6665df8a63044845801a162034"
-other = "Нет или любая из существующих комманд (для просмотра информации о ней)"
-
-["commands.AllCommands.Help.desc"]
-hash = "sha1-86ef9a3df917eb9728b9966b5beb999a1e970db5"
-other = "Отображение справочного сообщения бота или просмотр информации о команде"
-
 ["commands.AllCommands.Help.shortDesc"]
 hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
 other = "Показать справку"
@@ -108,18 +100,6 @@ other = "Ручная привязка пользователя Discord к ег�
 ["commands.AllCommands.Link.shortDesc"]
 hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
 other = "Привязка игрков из Discord"
-
-["commands.AllCommands.Log.args"]
-hash = "sha1-21352b2be58fee3b7776cc67679330b08d1d9f38"
-other = "<текст>"
-
-["commands.AllCommands.Log.desc"]
-hash = "sha1-e3db1133c639afe4f4cb470e0f9c487034a5009c"
-other = "Логируйте, если что-то пошло не так с ботом, чтобы потом можно было найти это событие в логах."
-
-["commands.AllCommands.Log.shortDesc"]
-hash = "sha1-187a9fd416b2b8cb5202cf05f27d3d4f96e550ac"
-other = "Залогировать странное поведение бота"
 
 ["commands.AllCommands.New.args"]
 hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
@@ -369,10 +349,6 @@ other = "Главное меню"
 hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
 other = "❌**Сканер не связан с ботом! Нажми ссылку в ЛС, чтобы подключиться!**❌"
 
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-3dd67596c94c32f45765549f24e3bcf347aea172"
-other = "Смотри, какие классные штуки есть в AutoMuteUs Premium!\n\n[Получить AutoMuteUs Premium](https://patreon.com/automuteus)"
-
 ["responses.premiumResponse.Title"]
 hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
 other = "💎 AutoMuteUs Premium 💎"
@@ -392,10 +368,6 @@ other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
 ["responses.statsResponse.Creator"]
 hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
 other = "Создатель"
-
-["responses.statsResponse.Donate"]
-hash = "sha1-95345e276ffbb748fffc3a9b8c9322bd0b489d39"
-other = "Поддержать"
 
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
@@ -424,10 +396,6 @@ other = "Версия"
 ["responses.statsResponse.Website"]
 hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
 other = "Сайт"
-
-["responses.title.GameOver"]
-hash = "sha1-7b9ac6a63af108b0386eb80f97101ae49c3f8f79"
-other = "**Игра окончена**"
 
 ["responses.userStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"

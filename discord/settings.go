@@ -61,7 +61,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.Prefix.args",
 			Other: "<prefix>",
 		},
-		aliases: []string{"prefix", "cp"},
+		aliases: []string{"prefix", "pref", "cp"},
 		premium: false,
 	},
 	{
@@ -80,7 +80,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.Language.args",
 			Other: "<language> or reload",
 		},
-		aliases: []string{"lang", "l"},
+		aliases: []string{"local", "lang", "l"},
 		premium: false,
 	},
 	{
@@ -118,7 +118,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.RoleIDs.args",
 			Other: "<role @ mentions>...",
 		},
-		aliases: []string{"operators", "op", "oproles", "roles", "role"},
+		aliases: []string{"operators", "operator", "oproles", "roles", "role", "ops", "op"},
 		premium: false,
 	},
 	{
@@ -137,7 +137,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.UnmuteDead.args",
 			Other: "<true/false>",
 		},
-		aliases: []string{"unmute", "uddt"},
+		aliases: []string{"unmutedead", "unmute", "uddt", "ud"},
 		premium: false,
 	},
 	{
@@ -213,7 +213,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.MatchSummary.args",
 			Other: "<minutes>",
 		},
-		aliases: []string{"matchsum", "summary", "match"},
+		aliases: []string{"matchsumm", "matchsum", "summary", "match", "summ", "sum"},
 		premium: true,
 	},
 	{
@@ -232,7 +232,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.AutoRefresh.args",
 			Other: "<true/false>",
 		},
-		aliases: []string{"refresh", "auto"},
+		aliases: []string{"refresh", "auto", "ar"},
 		premium: true,
 	},
 	{

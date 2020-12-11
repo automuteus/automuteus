@@ -46,7 +46,7 @@ func (gs *GuildSettings) LocalizeMessage(args ...interface{}) string {
 }
 
 func (gs *GuildSettings) HasAdminPerms(user *discordgo.User) bool {
-	if len(gs.AdminUserIDs) == 0 || user == nil {
+	if user == nil {
 		return false
 	}
 
@@ -59,10 +59,6 @@ func (gs *GuildSettings) HasAdminPerms(user *discordgo.User) bool {
 }
 
 func (gs *GuildSettings) HasRolePerms(mem *discordgo.Member) bool {
-	if len(gs.PermissionRoleIDs) == 0 {
-		return false
-	}
-
 	for _, role := range mem.Roles {
 		for _, testRole := range gs.PermissionRoleIDs {
 			if testRole == role {
