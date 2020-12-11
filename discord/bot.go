@@ -136,6 +136,9 @@ func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraToke
 		log.Println(err)
 	}
 
+	//indicate to Kubernetes that we're ready to start receiving traffic
+	GlobalReady = true
+
 	return &bot
 }
 
