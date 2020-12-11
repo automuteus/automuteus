@@ -293,7 +293,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	}
 	defer snowFlakeLock.Release(ctx)
 
-	prem := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
@@ -450,7 +450,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 		dgs.Reset()
 	} else {
-		premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		//Premium users should always be allowed to start new games; only check the free guilds
 		if premStatus == storage.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)

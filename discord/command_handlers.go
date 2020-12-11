@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,8 @@ import (
 )
 
 const MaxDebugMessageSize = 1980
+
+var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 //TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
 func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
@@ -201,8 +204,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			break
 
 		case command.Settings:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			bot.HandleSettingsCommand(s, m, sett, args, premStatus != 0)
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			isPrem := (premStatus != 0) && (days == storage.NoExpiryCode || days > 0)
+			bot.HandleSettingsCommand(s, m, sett, args, isPrem)
 			break
 
 		case command.Map:
@@ -354,21 +358,32 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 		case command.Stats:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
-					arg := strings.ReplaceAll(strings.ToLower(args[1]), "\"", "")
-					if arg == "guild" || arg == "server" {
+					arg := strings.ReplaceAll(args[1], "\"", "")
+					if arg == "g" || arg == "guild" || arg == "server" {
 						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
 						if err != nil {
 							log.Println(err)
 						}
 					} else {
-						s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, or you mistyped 'guild'...")
+						arg = strings.ToUpper(arg)
+						log.Println(arg)
+						if MatchIDRegex.MatchString(arg) {
+							strs := strings.Split(arg, ":")
+							if len(strs) < 2 {
+								log.Println("Something very wrong with the regex for match/conn codes...")
+							} else {
+								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
+							}
+						} else {
+							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
+						}
 					}
 				} else {
 					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
@@ -376,9 +391,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 			break
 		case command.Premium:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, sett))
+				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {

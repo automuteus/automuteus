@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/game"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"time"
 )
@@ -19,7 +21,7 @@ const (
 	Tasks SimpleEventType = iota
 	Discuss
 	PlayerDeath
-	//PlayerDisconnect
+	PlayerDisconnect
 )
 
 type SimpleEvent struct {
@@ -32,11 +34,15 @@ type GameStatistics struct {
 	GameDuration time.Duration
 	WinType      game.GameResult
 
-	NumMeetings int
-	NumDeaths   int
-	NumVotedOff int
-	Events      []SimpleEvent
+	NumMeetings    int
+	NumDeaths      int
+	NumVotedOff    int
+	NumDisconnects int
+	Events         []SimpleEvent
 }
+
+//
+//const UnlinkedPlayerInfo = "an Unlinked Player"
 
 func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) GameStatistics {
 	stats := GameStatistics{
@@ -75,17 +81,19 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 			} else {
 				if player.Action == game.DIED {
 					stats.NumDeaths++
-					uid := fmt.Sprintf("%d", v.UserID)
-					if v.UserID == nil {
-						uid = "<Unlinked Player>"
-					}
+					//uid := UnlinkedPlayerInfo
+					//if v.UserID != nil {
+					//	uid = fmt.Sprintf("%d", *v.UserID)
+					//}
 					stats.Events = append(stats.Events, SimpleEvent{
 						EventType:       PlayerDeath,
 						EventTimeOffset: time.Second * time.Duration(v.EventTime-pgame.StartTime),
-						Data:            uid,
+						Data:            v.Payload,
 					})
 				} else if player.Action == game.EXILED {
 					stats.NumVotedOff++
+				} else if player.Action == game.DISCONNECTED {
+					stats.NumDisconnects++
 				}
 			}
 		}
@@ -94,16 +102,87 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 	return stats
 }
 
-func (stats *GameStatistics) ToString() string {
+func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettings) *discordgo.MessageEmbed {
+
+	title := sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.matchStatsEmbed.Title",
+		Other: "Game `{{.MatchID}}`",
+	}, map[string]interface{}{
+		"MatchID": combinedID,
+	})
+
+	fields := make([]*discordgo.MessageEmbedField, 0)
+
+	fieldsOnLine := 0
+	//TODO collapse by meeting/tasks "blocks" of data
+	//TODO localize
+	for _, v := range stats.Events {
+		if v.EventType == Tasks {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   v.EventTimeOffset.String(),
+				Value:  "🔨 Task Phase Begins",
+				Inline: true,
+			})
+			fieldsOnLine++
+		} else if v.EventType == Discuss {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   v.EventTimeOffset.String(),
+				Value:  "💬 Discussion Begins",
+				Inline: true,
+			})
+			fieldsOnLine++
+		} else if v.EventType == PlayerDeath {
+			player := game.Player{}
+			err := json.Unmarshal([]byte(v.Data), &player)
+			if err != nil {
+				log.Println(err)
+			} else {
+
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:   v.EventTimeOffset.String(),
+					Value:  fmt.Sprintf("☠️ \"%s\" Died", player.Name),
+					Inline: false,
+				})
+			}
+			fieldsOnLine = 0
+		}
+		if fieldsOnLine == 2 {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200B",
+				Value:  "\u200B",
+				Inline: true,
+			})
+		}
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       title,
+		Description: stats.FormatDurationAndWin(),
+		Timestamp:   "",
+		Color:       10181046, //PURPLE
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      fields,
+	}
+	return &msg
+}
+
+func (stats *GameStatistics) FormatDurationAndWin() string {
 	buf := bytes.NewBuffer([]byte{})
 	winner := ""
 	switch stats.WinType {
 	case game.HumansByTask:
-		winner = "Humans won by completing tasks"
+		winner = "Crewmates won by completing tasks"
 	case game.HumansByVote:
-		winner = "Humans won by voting off the last Imposter"
+		winner = "Crewmates won by voting off the last Imposter"
 	case game.HumansDisconnect:
-		winner = "Humans won because the last Imposter disconnected"
+		winner = "Crewmates won because the last Imposter disconnected"
 	case game.ImpostorDisconnect:
 		winner = "Imposters won because the last Human disconnected"
 	case game.ImpostorBySabotage:
@@ -118,6 +197,12 @@ func (stats *GameStatistics) ToString() string {
 	buf.WriteString(fmt.Sprintf("There were %d meetings, %d deaths, and of those deaths, %d were from being voted off\n",
 		stats.NumMeetings, stats.NumDeaths, stats.NumVotedOff))
 	buf.WriteString("Game Events:\n")
+	return buf.String()
+}
+
+func (stats *GameStatistics) ToString() string {
+	buf := bytes.NewBuffer([]byte{})
+	buf.WriteString(stats.FormatDurationAndWin())
 
 	for _, v := range stats.Events {
 		if v.EventType == Tasks {
@@ -125,7 +210,13 @@ func (stats *GameStatistics) ToString() string {
 		} else if v.EventType == Discuss {
 			buf.WriteString(fmt.Sprintf("%s into the game, Discussion was called", v.EventTimeOffset.String()))
 		} else if v.EventType == PlayerDeath {
-			buf.WriteString(fmt.Sprintf("%s into the game, %s died", v.EventTimeOffset.String(), v.Data))
+			player := game.Player{}
+			err := json.Unmarshal([]byte(v.Data), &player)
+			if err != nil {
+				log.Println(err)
+			} else {
+				buf.WriteString(fmt.Sprintf("%s into the game, %s died", v.EventTimeOffset.String(), player.Name))
+			}
 		}
 		buf.WriteRune('\n')
 	}

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type PsqlInterface struct {
@@ -201,23 +202,36 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 	return err
 }
 
-func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) PremiumTier {
+const SecsInADay = 86400
+const SubDays = 30
+const NoExpiryCode = -9999 //dumb, but no one would ever have expired premium for 9999 days
+
+func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (PremiumTier, int) {
 	//self-hosting; only return the true guild status if this variable is set
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		return SelfHostTier
+		return SelfHostTier, NoExpiryCode
 	}
 
 	gid, err := strconv.ParseUint(guildID, 10, 64)
 	if err != nil {
 		log.Println(err)
-		return FreeTier
+		return FreeTier, 0
 	}
 
 	guild, err := psqlInterface.GetGuild(gid)
 	if err != nil {
-		return FreeTier
+		return FreeTier, 0
 	}
-	return PremiumTier(guild.Premium)
+
+	daysRem := -1
+
+	if guild.TxTimeUnix != nil {
+		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
+		//30 - days elapsed
+		daysRem = int(SubDays - (diff / SecsInADay))
+	}
+
+	return PremiumTier(guild.Premium), daysRem
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {

@@ -21,7 +21,7 @@ const (
 
 func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf bool) {
 	log.Println("Forcibly applying mute/deaf to " + userID)
-	prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := UserModifyRequest{
 		Premium: prem,
@@ -79,7 +79,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		}
 	}
 	if len(users) > 0 {
-		prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 		req := UserModifyRequest{
 			Premium: prem,
 			Users:   users,
@@ -171,7 +171,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 	}
 
 	if dgs.Running && len(users) > 0 {
-		prem := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 
 		if priorityRequests > 0 {
 			req := UserModifyRequest{

@@ -520,41 +520,66 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	return buf.String()
 }
 
-func premiumEmbedResponse(guildID string, tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumEmbedResponse(guildID string, tier storage.PremiumTier, daysRem int, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
 	if tier != storage.FreeTier {
-		desc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumResponse.PremiumDescription",
-			Other: "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
-		},
-			map[string]interface{}{
-				"Tier": storage.PremiumTierStrings[tier],
-			})
+		if daysRem > 0 || daysRem == storage.NoExpiryCode {
+			daysRemStr := ""
+			if daysRem > 0 {
+				daysRemStr = sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumResponse.PremiumDescriptionDaysRemaining",
+					Other: " for another {{.Days}} days",
+				},
+					map[string]interface{}{
+						"Days": daysRem,
+					})
+			}
+			desc = sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.premiumResponse.PremiumDescription",
+				Other: "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
+			},
+				map[string]interface{}{
+					"Tier":       storage.PremiumTierStrings[tier],
+					"DaysString": daysRemStr,
+				})
 
-		fields = []*discordgo.MessageEmbedField{
-			{
-				Name: "Bot Invites",
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Invites",
-					Other: "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!",
-				}, map[string]interface{}{
-					"CommandPrefix": sett.GetCommandPrefix(),
-				}),
-				Inline: false,
+			fields = []*discordgo.MessageEmbedField{
+				{
+					Name: "Bot Invites",
+					Value: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.premiumResponse.Invites",
+						Other: "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!",
+					}, map[string]interface{}{
+						"CommandPrefix": sett.GetCommandPrefix(),
+					}),
+					Inline: false,
+				},
+				{
+					Name: "Premium Settings",
+					Value: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.premiumResponse.SettingsDescExtra",
+						Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
+					}, map[string]interface{}{
+						"CommandPrefix": sett.GetCommandPrefix(),
+					}),
+					Inline: false,
+				},
+			}
+		} else {
+			desc = sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.premiumResponse.PremiumDescriptionExpired",
+				Other: "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\n\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
 			},
-			{
-				Name: "Premium Settings",
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.SettingsDescExtra",
-					Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
-				}, map[string]interface{}{
-					"CommandPrefix": sett.GetCommandPrefix(),
-				}),
-				Inline: false,
-			},
+				map[string]interface{}{
+					"Tier":    storage.PremiumTierStrings[tier],
+					"Days":    0 - daysRem,
+					"BaseURL": BasePremiumUrl,
+					"GuildID": guildID,
+				})
 		}
+
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID: "responses.premiumResponse.FreeDescription",

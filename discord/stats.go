@@ -339,3 +339,18 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	}
 	return &embed
 }
+
+func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildSettings, premium storage.PremiumTier) *discordgo.MessageEmbed {
+	gameData, err := bot.PostgresInterface.GetGame(connectCode, matchID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	events, err := bot.PostgresInterface.GetGameEvents(matchID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stats := storage.StatsFromGameAndEvents(gameData, events)
+	return stats.ToDiscordEmbed(connectCode+":"+matchID, sett)
+}
