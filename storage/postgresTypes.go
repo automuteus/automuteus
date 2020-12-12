@@ -39,3 +39,16 @@ type PostgresGameEvent struct {
 	EventType int16   `db:"event_type"`
 	Payload   string  `db:"payload"`
 }
+
+type PostgresOtherPlayerRanking struct {
+	UserID  uint64  `db:"user_id"`
+	Count   int64   `db:"count"`
+	Percent float64 `db:"percent"`
+}
+
+type PostgresPlayerRanking struct {
+	UserID   uint64  `db:"user_id"`
+	WinCount int64   `db:"win"`
+	Count    int64   `db:"total"`
+	WinRate  float64 `db:"win_rate"`
+}

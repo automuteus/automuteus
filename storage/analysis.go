@@ -173,6 +173,7 @@ func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettin
 	return &msg
 }
 
+//TODO localize
 func (stats *GameStatistics) FormatDurationAndWin() string {
 	buf := bytes.NewBuffer([]byte{})
 	winner := ""
@@ -192,6 +193,7 @@ func (stats *GameStatistics) FormatDurationAndWin() string {
 	case game.ImpostorByKill:
 		winner = "Imposters won by killing the last Human"
 	}
+	buf.WriteString("This display is VERY UNFINISHED and will be refined as time goes on!\n\n")
 
 	buf.WriteString(fmt.Sprintf("Game lasted %s and %s\n", stats.GameDuration.String(), winner))
 	buf.WriteString(fmt.Sprintf("There were %d meetings, %d deaths, and of those deaths, %d were from being voted off\n",
