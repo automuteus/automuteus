@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="automute.us" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
+    <a href="https://automute.us/#/" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
