@@ -1,6 +1,7 @@
-package game
+package amongus
 
 import (
+	"github.com/automuteus/utils/pkg/game"
 	"log"
 	"strings"
 )
@@ -9,29 +10,29 @@ type AmongUsData struct {
 	//indexed by amongusname
 	PlayerData map[string]PlayerData `json:"playerData"`
 
-	Phase  Phase   `json:"phase"`
-	Room   string  `json:"room"`
-	Region string  `json:"region"`
-	Map    PlayMap `json:"map"`
+	Phase  game.Phase   `json:"phase"`
+	Room   string       `json:"room"`
+	Region string       `json:"region"`
+	Map    game.PlayMap `json:"map"`
 }
 
 func NewAmongUsData() AmongUsData {
 	return AmongUsData{
 		PlayerData: map[string]PlayerData{},
-		Phase:      MENU,
+		Phase:      game.MENU,
 		Room:       "",
 		Region:     "",
-		Map:        SKELD,
+		Map:        game.SKELD,
 	}
 }
 
-func (auData *AmongUsData) SetRoomRegionMap(room, region string, playMap PlayMap) {
+func (auData *AmongUsData) SetRoomRegionMap(room, region string, playMap game.PlayMap) {
 	auData.Room = room
 	auData.Region = region
 	auData.Map = playMap
 }
 
-func (auData *AmongUsData) GetRoomRegionMap() (string, string, PlayMap) {
+func (auData *AmongUsData) GetRoomRegionMap() (string, string, game.PlayMap) {
 	return auData.Room, auData.Region, auData.Map
 }
 
@@ -42,27 +43,27 @@ func (auData *AmongUsData) SetAllAlive() {
 	}
 }
 
-func (auData *AmongUsData) UpdatePhase(phase Phase) (old Phase) {
+func (auData *AmongUsData) UpdatePhase(phase game.Phase) (old game.Phase) {
 	old = auData.Phase
 	auData.Phase = phase
 
 	if old != phase {
-		if phase == LOBBY || (phase == TASKS && old == LOBBY) {
+		if phase == game.LOBBY || (phase == game.TASKS && old == game.LOBBY) {
 			auData.SetAllAlive()
-		} else if phase == MENU {
-			auData.SetRoomRegionMap("", "", EMPTYMAP)
+		} else if phase == game.MENU {
+			auData.SetRoomRegionMap("", "", game.EMPTYMAP)
 		}
 	}
 	return old
 }
 
-func (auData *AmongUsData) UpdatePlayer(player Player) (updated, isAliveUpdated bool, data PlayerData) {
+func (auData *AmongUsData) UpdatePlayer(player game.Player) (updated, isAliveUpdated bool, data PlayerData) {
 	phase := auData.Phase
 
-	if phase == LOBBY && player.IsDead {
+	if phase == game.LOBBY && player.IsDead {
 		player.IsDead = false
 	}
-	if player.Action == EXILED {
+	if player.Action == game.EXILED {
 		player.IsDead = true
 	}
 
@@ -73,11 +74,11 @@ func (auData *AmongUsData) GetNumDetectedPlayers() int {
 	return len(auData.PlayerData)
 }
 
-func (auData *AmongUsData) GetPhase() Phase {
+func (auData *AmongUsData) GetPhase() game.Phase {
 	return auData.Phase
 }
 
-func (auData *AmongUsData) GetPlayMap() PlayMap {
+func (auData *AmongUsData) GetPlayMap() game.PlayMap {
 	return auData.Map
 }
 
@@ -89,7 +90,7 @@ func (auData *AmongUsData) ClearAllPlayerData() {
 	auData.PlayerData = map[string]PlayerData{}
 }
 
-func (auData *AmongUsData) applyPlayerUpdate(update Player) (bool, bool, PlayerData) {
+func (auData *AmongUsData) applyPlayerUpdate(update game.Player) (bool, bool, PlayerData) {
 
 	if _, ok := auData.PlayerData[update.Name]; !ok {
 		auData.PlayerData[update.Name] = PlayerData{
@@ -119,7 +120,7 @@ func (auData *AmongUsData) GetByColor(text string) (PlayerData, bool) {
 	text = strings.ToLower(text)
 
 	for _, playerData := range auData.PlayerData {
-		if GetColorStringForInt(playerData.Color) == text {
+		if game.GetColorStringForInt(playerData.Color) == text {
 			return playerData, true
 		}
 	}

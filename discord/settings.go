@@ -3,9 +3,9 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/game"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"

@@ -3,9 +3,10 @@ package discord
 import (
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/galactus/discord"
+	"github.com/automuteus/utils/pkg/game"
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/amongus"
 	rediscommon "github.com/denverquane/amongusdiscord/common"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
@@ -272,7 +273,7 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *DiscordGameState, args []s
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
-	var auData game.PlayerData
+	var auData amongus.PlayerData
 	found := false
 	if game.IsColorString(combinedArgs) {
 		auData, found = dgs.AmongUsData.GetByColor(combinedArgs)
@@ -337,7 +338,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	deleteTime := sett.GetDeleteGameSummaryMinutes()
 	//only print a fancy formatted message if the game actually got to the lobby or another phase. Otherwise, delete
 	if oldPhase != game.MENU && deleteTime != 0 {
-		//dgs.AmongUsData.UpdatePhase(game.GAMEOVER)
+		//dgs.AmongUsData.UpdatePhase(amongus.GAMEOVER)
 		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 		if edited {
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/automuteus/galactus/broker"
+	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/discord/command"
@@ -14,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
@@ -332,7 +334,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
 	//only actually tracked if we're in a tracked channel AND linked to a player
-	tracked = tracked && (found || userData.GetPlayerName() == game.SpectatorPlayerName)
+	tracked = tracked && (found || userData.GetPlayerName() == amongus.SpectatorPlayerName)
 	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 	//check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
@@ -342,9 +344,9 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 		if dgs.Running {
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
-			req := UserModifyRequest{
+			req := task.UserModifyRequest{
 				Premium: prem,
-				Users: []UserModify{
+				Users: []task.UserModify{
 					{
 						UserID: uid,
 						Mute:   mute,
@@ -452,7 +454,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	} else {
 		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		//Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == storage.FreeTier {
+		if premStatus == task.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)

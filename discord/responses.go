@@ -2,15 +2,18 @@ package discord
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/galactus/broker"
+	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
@@ -121,7 +124,7 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 }
 
 func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-	version, commit := broker.GetVersionAndCommit(bot.RedisInterface.client)
+	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -153,8 +156,8 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 		},
 	}
 
-	totalGuilds := broker.GetGuildCounter(bot.RedisInterface.client)
-	totalGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
+	totalGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 
 	fields := make([]*discordgo.MessageEmbedField, 8)
 	fields[0] = &discordgo.MessageEmbedField{
@@ -291,24 +294,6 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 			Inline: false,
 		})
 	}
-
-	//if playMap != game.EMPTYMAP {
-	//	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
-	//		Name: sett.LocalizeMessage(&i18n.Message{
-	//			ID:    "responses.lobbyMetaEmbedFields.Map",
-	//			Other: "🗺 MAP",
-	//		}),
-	//		Value:  fmt.Sprintf("%s", game.MapNames[playMap]),
-	//		Inline: true,
-	//	})
-	//}
-	//if len(gameInfoFields) == 3 {
-	//	gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
-	//		Name:   "\u200B",
-	//		Value:  "\u200B",
-	//		Inline: true,
-	//	})
-	//}
 
 	return gameInfoFields
 }
@@ -485,7 +470,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	default:
 		color = 15158332 //RED
 	}
-	title := sett.LocalizeMessage(phase.ToLocale())
+	title := sett.LocalizeMessage(amongus.ToLocale(phase))
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",
@@ -520,11 +505,11 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	return buf.String()
 }
 
-func premiumEmbedResponse(guildID string, tier storage.PremiumTier, daysRem int, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumEmbedResponse(guildID string, tier task.PremiumTier, daysRem int, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier != storage.FreeTier {
+	if tier != task.FreeTier {
 		if daysRem > 0 || daysRem == storage.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
@@ -541,7 +526,7 @@ func premiumEmbedResponse(guildID string, tier storage.PremiumTier, daysRem int,
 				Other: "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
 			},
 				map[string]interface{}{
-					"Tier":       storage.PremiumTierStrings[tier],
+					"Tier":       task.PremiumTierStrings[tier],
 					"DaysString": daysRemStr,
 				})
 
@@ -573,7 +558,7 @@ func premiumEmbedResponse(guildID string, tier storage.PremiumTier, daysRem int,
 				Other: "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\n\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
 			},
 				map[string]interface{}{
-					"Tier":    storage.PremiumTierStrings[tier],
+					"Tier":    task.PremiumTierStrings[tier],
 					"Days":    0 - daysRem,
 					"BaseURL": BasePremiumUrl,
 					"GuildID": guildID,
@@ -685,23 +670,23 @@ var BotInvites = []string{
 	"https://discord.com/api/oauth2/authorize?client_id=769022114229125181&permissions=12582912&scope=bot",
 	"https://discord.com/api/oauth2/authorize?client_id=780323801173983262&permissions=25165824&scope=bot"}
 
-func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumInvitesEmbed(tier task.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier == storage.FreeTier || tier == storage.BronzeTier {
+	if tier == task.FreeTier || tier == task.BronzeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
 		}, map[string]interface{}{
-			"Tier":          storage.PremiumTierStrings[tier],
+			"Tier":          task.PremiumTierStrings[tier],
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})
 	} else {
 		count := 0
-		if tier == storage.SilverTier {
+		if tier == task.SilverTier {
 			count = 1
-		} else if tier == storage.GoldTier || tier == storage.PlatTier {
+		} else if tier == task.GoldTier || tier == task.PlatTier {
 			count = 3
 		}
 		//TODO account for Platinum
@@ -709,7 +694,7 @@ func premiumInvitesEmbed(tier storage.PremiumTier, sett *storage.GuildSettings) 
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
 		}, map[string]interface{}{
-			"Tier":          storage.PremiumTierStrings[tier],
+			"Tier":          task.PremiumTierStrings[tier],
 			"Count":         count,
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})

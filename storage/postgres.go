@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/automuteus/utils/pkg/task"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
@@ -17,26 +18,6 @@ type PsqlInterface struct {
 
 	//TODO does this require a lock? How should stuff be written/read from psql in an async way? Is this even a concern?
 	//https://brandur.org/postgres-connections
-}
-
-type PremiumTier int16
-
-const (
-	FreeTier PremiumTier = iota
-	BronzeTier
-	SilverTier
-	GoldTier
-	PlatTier
-	SelfHostTier
-)
-
-var PremiumTierStrings = []string{
-	"Free",
-	"Bronze",
-	"Silver",
-	"Gold",
-	"Platinum",
-	"SelfHost",
 }
 
 func ConstructPsqlConnectURL(addr, username, password string) string {
@@ -206,21 +187,21 @@ const SecsInADay = 86400
 const SubDays = 30
 const NoExpiryCode = -9999 //dumb, but no one would ever have expired premium for 9999 days
 
-func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (PremiumTier, int) {
+func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (task.PremiumTier, int) {
 	//self-hosting; only return the true guild status if this variable is set
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		return SelfHostTier, NoExpiryCode
+		return task.SelfHostTier, NoExpiryCode
 	}
 
 	gid, err := strconv.ParseUint(guildID, 10, 64)
 	if err != nil {
 		log.Println(err)
-		return FreeTier, 0
+		return task.FreeTier, 0
 	}
 
 	guild, err := psqlInterface.GetGuild(gid)
 	if err != nil {
-		return FreeTier, 0
+		return task.FreeTier, 0
 	}
 
 	daysRem := -1
@@ -231,7 +212,7 @@ func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (Premi
 		daysRem = int(SubDays - (diff / SecsInADay))
 	}
 
-	return PremiumTier(guild.Premium), daysRem
+	return task.PremiumTier(guild.Premium), daysRem
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {

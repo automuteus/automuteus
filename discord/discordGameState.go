@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -67,7 +67,7 @@ type DiscordGameState struct {
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
-	AmongUsData game.AmongUsData `json:"amongUsData"`
+	AmongUsData amongus.AmongUsData `json:"amongUsData"`
 }
 
 func NewDiscordGameState(guildID string) *DiscordGameState {
@@ -87,7 +87,7 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.UserData = map[string]UserData{}
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
-	dgs.AmongUsData = game.NewAmongUsData()
+	dgs.AmongUsData = amongus.NewAmongUsData()
 }
 
 func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {

@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"github.com/automuteus/utils/pkg/game"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/locale"
 )
 
@@ -12,14 +13,14 @@ type GuildSettings struct {
 	CommandPrefix string `json:"commandPrefix"`
 	Language      string `json:"language"`
 
-	AdminUserIDs             []string        `json:"adminIDs"`
-	PermissionRoleIDs        []string        `json:"permissionRoleIDs"`
-	Delays                   game.GameDelays `json:"delays"`
-	VoiceRules               game.VoiceRules `json:"voiceRules"`
-	UnmuteDeadDuringTasks    bool            `json:"unmuteDeadDuringTasks"`
-	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
-	AutoRefresh              bool            `json:"autoRefresh"`
-	MapVersion               string          `json:"mapVersion"`
+	AdminUserIDs             []string           `json:"adminIDs"`
+	PermissionRoleIDs        []string           `json:"permissionRoleIDs"`
+	Delays                   amongus.GameDelays `json:"delays"`
+	VoiceRules               amongus.VoiceRules `json:"voiceRules"`
+	UnmuteDeadDuringTasks    bool               `json:"unmuteDeadDuringTasks"`
+	DeleteGameSummaryMinutes int                `json:"deleteGameSummary"`
+	AutoRefresh              bool               `json:"autoRefresh"`
+	MapVersion               string             `json:"mapVersion"`
 
 	lock sync.RWMutex
 }
@@ -30,8 +31,8 @@ func MakeGuildSettings() *GuildSettings {
 		Language:                 locale.DefaultLang,
 		AdminUserIDs:             []string{},
 		PermissionRoleIDs:        []string{},
-		Delays:                   game.MakeDefaultDelays(),
-		VoiceRules:               game.MakeMuteAndDeafenRules(),
+		Delays:                   amongus.MakeDefaultDelays(),
+		VoiceRules:               amongus.MakeMuteAndDeafenRules(),
 		UnmuteDeadDuringTasks:    false,
 		DeleteGameSummaryMinutes: 0, //-1 for never delete the match summary
 		AutoRefresh:              false,

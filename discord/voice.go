@@ -2,9 +2,10 @@ package discord
 
 import (
 	"context"
+	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strconv"
@@ -23,9 +24,9 @@ func (bot *Bot) applyToSingle(dgs *DiscordGameState, userID string, mute, deaf b
 	log.Println("Forcibly applying mute/deaf to " + userID)
 	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 	uid, _ := strconv.ParseUint(userID, 10, 64)
-	req := UserModifyRequest{
+	req := task.UserModifyRequest{
 		Premium: prem,
-		Users: []UserModify{
+		Users: []task.UserModify{
 			{
 				UserID: uid,
 				Mute:   mute,
@@ -49,7 +50,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 		return
 	}
 
-	users := []UserModify{}
+	users := []task.UserModify{}
 
 	for _, voiceState := range g.VoiceStates {
 		userData, err := dgs.GetUser(voiceState.UserID)
@@ -70,7 +71,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 
 		if tracked {
 			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
-			users = append(users, UserModify{
+			users = append(users, task.UserModify{
 				UserID: uid,
 				Mute:   mute,
 				Deaf:   deaf,
@@ -80,7 +81,7 @@ func (bot *Bot) applyToAll(dgs *DiscordGameState, mute, deaf bool) {
 	}
 	if len(users) > 0 {
 		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
-		req := UserModifyRequest{
+		req := task.UserModifyRequest{
 			Premium: prem,
 			Users:   users,
 		}
@@ -109,7 +110,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		return
 	}
 
-	users := []UserModify{}
+	users := []task.UserModify{}
 
 	priorityRequests := 0
 	for _, voiceState := range g.VoiceStates {
@@ -127,7 +128,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 
 		auData, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		//only actually tracked if we're in a tracked channel AND linked to a player
-		tracked = tracked && (linked || userData.GetPlayerName() == game.SpectatorPlayerName)
+		tracked = tracked && (linked || userData.GetPlayerName() == amongus.SpectatorPlayerName)
 		shouldMute, shouldDeaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
 
 		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
@@ -137,14 +138,14 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		//check the userdata is linked here to not accidentally undeafen music bots, for example
 		if linked && incorrectMuteDeafenState {
 			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
-			userModify := UserModify{
+			userModify := task.UserModify{
 				UserID: uid,
 				Mute:   shouldMute,
 				Deaf:   shouldDeaf,
 			}
 
 			if handlePriority != NoPriority && ((handlePriority == AlivePriority && auData.IsAlive) || (handlePriority == DeadPriority && !auData.IsAlive)) {
-				users = append([]UserModify{userModify}, users...)
+				users = append([]task.UserModify{userModify}, users...)
 				priorityRequests++ //counter of how many elements on the front of the arr should be sent first
 			} else {
 				users = append(users, userModify)
@@ -174,7 +175,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
 
 		if priorityRequests > 0 {
-			req := UserModifyRequest{
+			req := task.UserModifyRequest{
 				Premium: prem,
 				Users:   users[:priorityRequests],
 			}
@@ -183,7 +184,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			log.Println("Finished issuing high priority mutes")
 			rem := users[priorityRequests:]
 			if len(rem) > 0 {
-				req = UserModifyRequest{
+				req = task.UserModifyRequest{
 					Premium: prem,
 					Users:   rem,
 				}
@@ -194,7 +195,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		} else {
 			//no priority; issue all at once
 			log.Println("Issuing mutes/deafens with no particular priority")
-			req := UserModifyRequest{
+			req := task.UserModifyRequest{
 				Premium: prem,
 				Users:   users,
 			}
@@ -203,7 +204,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 	}
 }
 
-func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req UserModifyRequest, lock *redislock.Lock) {
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserModifyRequest, lock *redislock.Lock) {
 	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req, lock)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")

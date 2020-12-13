@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -48,7 +49,7 @@ func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	for i, str := range MetricTypeStrings {
 		if i != 0 {
-			v, err := c.client.Get(context.Background(), discordRequestsKeyByCommitAndType(str)).Result()
+			v, err := c.client.Get(context.Background(), rediskey.RequestsByType(str)).Result()
 			if err != redis.Nil && err != nil {
 				log.Println(err)
 				continue
@@ -75,7 +76,11 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
-	incrementDiscordRequests(client, requestType, num)
+	for i := int64(0); i < num; i++ {
+		typeStr := MetricTypeStrings[requestType]
+		client.Incr(context.Background(), rediskey.RequestsByType(typeStr))
+	}
+
 }
 
 func NewCollector(client *redis.Client, nodeID string) *MetricsCollector {

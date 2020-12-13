@@ -2,8 +2,10 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/automuteus/utils/pkg/game"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -12,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/automuteus/galactus/broker"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/storage"
 )
 
@@ -31,7 +31,7 @@ type EndGameMessage struct {
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
 	log.Println("Started Redis Subscription worker for " + connectCode)
 
-	notify := broker.Subscribe(ctx, bot.RedisInterface.client, connectCode)
+	notify := game.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 
@@ -41,7 +41,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	}
 
 	//indicate to the broker that we're online and ready to start processing messages
-	broker.Ack(ctx, bot.RedisInterface.client, connectCode)
+	game.Ack(ctx, bot.RedisInterface.client, connectCode)
 
 	for {
 		select {
@@ -53,7 +53,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 			//anytime we get a notification message, continue pulling messages off the list until there are no more
 			for {
-				job, err := broker.PopJob(ctx, bot.RedisInterface.client, connectCode)
+				job, err := game.PopJob(ctx, bot.RedisInterface.client, connectCode)
 				if err == redis.Nil {
 					break
 				} else if err != nil {
@@ -74,7 +74,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				correlatedUserID := ""
 
 				switch job.JobType {
-				case broker.Connection:
+				case game.ConnectionJob:
 					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 					for lock == nil {
 						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
@@ -95,7 +95,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 					break
-				case broker.Lobby:
+				case game.LobbyJob:
 					var lobby game.Lobby
 					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
 					if err != nil {
@@ -106,7 +106,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.processLobby(sett, lobby, dgsRequest)
 					break
-				case broker.State:
+				case game.StateJob:
 					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
 					if err != nil {
 						log.Println(err)
@@ -115,7 +115,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					bot.processTransition(game.Phase(num), dgsRequest)
 					break
-				case broker.Player:
+				case game.PlayerJob:
 					var player game.Player
 					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
 					if err != nil {
@@ -131,7 +131,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					correlatedUserID = userID
 
 					break
-				case 4: //TODO use from Galactus2.0
+				case game.GameOverJob:
 					var gameOverResult game.Gameover
 					log.Println("Successfully identified game over event:")
 					log.Println(job.Payload)
@@ -167,7 +167,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							//buf := bytes.NewBuffer([]byte{})
 							//for i, v := range winners {
 							//	roleStr := "Crewmate"
-							//	if v.role == game.ImposterRole {
+							//	if v.role == amongus.ImposterRole {
 							//		roleStr = "Imposter"
 							//	}
 							//	buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
@@ -217,7 +217,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						}
 					}
 				}
-				if job.JobType != broker.Connection {
+				if job.JobType != game.ConnectionJob {
 					go func(userID string, ge storage.PostgresGameEvent) {
 						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
 						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
@@ -288,7 +288,7 @@ func getWinners(dgs DiscordGameState, gameOver game.Gameover) []winnerRecord {
 		gameOver.GameOverReason == game.ImpostorDisconnect
 
 	for _, player := range dgs.UserData {
-		if player.GetPlayerName() != game.UnlinkedPlayerName {
+		if player.GetPlayerName() != amongus.UnlinkedPlayerName {
 			for _, v := range gameOver.PlayerInfos {
 				//only override for the imposters
 				if player.GetPlayerName() == v.Name {
@@ -481,7 +481,7 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 	if lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
-	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.Map)
+	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
@@ -529,7 +529,7 @@ func dumpGameToPostgres(dgs DiscordGameState, psql *storage.PsqlInterface, gameO
 		gameOver.GameOverReason == game.ImpostorDisconnect
 
 	for _, v := range dgs.UserData {
-		if v.GetPlayerName() != game.UnlinkedPlayerName && v.GetPlayerName() != game.SpectatorPlayerName {
+		if v.GetPlayerName() != amongus.UnlinkedPlayerName && v.GetPlayerName() != amongus.SpectatorPlayerName {
 			inGameData, found := dgs.AmongUsData.GetByName(v.GetPlayerName())
 			if !found {
 				log.Println("No game data found for that player")
