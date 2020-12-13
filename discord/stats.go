@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/task"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -14,7 +14,7 @@ import (
 
 const UserLeaderboardCount = 3
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, premium task.PremiumTier) *discordgo.MessageEmbed {
+func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
 	wins := bot.PostgresInterface.NumWins(userID)
 
@@ -63,7 +63,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if premium != task.FreeTier {
+	if prem != premium.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.userStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
@@ -233,7 +233,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 
 const LeaderboardSize = 5
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, premium task.PremiumTier) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarUrl := ""
 	g, err := bot.PrimarySession.Guild(guildID)
@@ -265,7 +265,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if premium != task.FreeTier {
+	if prem != premium.FreeTier {
 		extraDesc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.guildStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
@@ -395,7 +395,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildSettings, premium task.PremiumTier) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gameData, err := bot.PostgresInterface.GetGame(connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)

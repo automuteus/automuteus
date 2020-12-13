@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
-	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"log"
 	"strings"
@@ -505,11 +505,11 @@ func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string
 	return buf.String()
 }
 
-func premiumEmbedResponse(guildID string, tier task.PremiumTier, daysRem int, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier != task.FreeTier {
+	if tier != premium.FreeTier {
 		if daysRem > 0 || daysRem == storage.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
@@ -526,7 +526,7 @@ func premiumEmbedResponse(guildID string, tier task.PremiumTier, daysRem int, se
 				Other: "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
 			},
 				map[string]interface{}{
-					"Tier":       task.PremiumTierStrings[tier],
+					"Tier":       premium.TierStrings[tier],
 					"DaysString": daysRemStr,
 				})
 
@@ -558,7 +558,7 @@ func premiumEmbedResponse(guildID string, tier task.PremiumTier, daysRem int, se
 				Other: "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\n\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
 			},
 				map[string]interface{}{
-					"Tier":    task.PremiumTierStrings[tier],
+					"Tier":    premium.TierStrings[tier],
 					"Days":    0 - daysRem,
 					"BaseURL": BasePremiumUrl,
 					"GuildID": guildID,
@@ -670,23 +670,23 @@ var BotInvites = []string{
 	"https://discord.com/api/oauth2/authorize?client_id=769022114229125181&permissions=12582912&scope=bot",
 	"https://discord.com/api/oauth2/authorize?client_id=780323801173983262&permissions=25165824&scope=bot"}
 
-func premiumInvitesEmbed(tier task.PremiumTier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func premiumInvitesEmbed(tier premium.Tier, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	fields := []*discordgo.MessageEmbedField{}
 
-	if tier == task.FreeTier || tier == task.BronzeTier {
+	if tier == premium.FreeTier || tier == premium.BronzeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
 		}, map[string]interface{}{
-			"Tier":          task.PremiumTierStrings[tier],
+			"Tier":          premium.TierStrings[tier],
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})
 	} else {
 		count := 0
-		if tier == task.SilverTier {
+		if tier == premium.SilverTier {
 			count = 1
-		} else if tier == task.GoldTier || tier == task.PlatTier {
+		} else if tier == premium.GoldTier || tier == premium.PlatTier {
 			count = 3
 		}
 		//TODO account for Platinum
@@ -694,7 +694,7 @@ func premiumInvitesEmbed(tier task.PremiumTier, sett *storage.GuildSettings) *di
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
 		}, map[string]interface{}{
-			"Tier":          task.PremiumTierStrings[tier],
+			"Tier":          premium.TierStrings[tier],
 			"Count":         count,
 			"CommandPrefix": sett.GetCommandPrefix(),
 		})

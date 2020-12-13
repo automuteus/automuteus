@@ -1,9 +1,8 @@
 package discord
 
 import (
-	"github.com/automuteus/galactus/broker"
-	"github.com/automuteus/galactus/discord"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
 	rediscommon "github.com/denverquane/amongusdiscord/common"
@@ -49,11 +48,11 @@ var Commit string
 
 // MakeAndStartBot does what it sounds like
 //TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	Version = version
 	Commit = commit
 
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
 		return nil
@@ -99,8 +98,8 @@ func MakeAndStartBot(version, commit, token, url, emojiGuildID string, extraToke
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
-	discord.WaitForToken(bot.RedisInterface.client, token)
-	discord.MarkIdentifyAndLockForToken(bot.RedisInterface.client, token)
+	token.WaitForToken(bot.RedisInterface.client, botToken)
+	token.LockForToken(bot.RedisInterface.client, botToken)
 	//Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
@@ -331,7 +330,7 @@ func (bot *Bot) gracefulEndGame(gsr GameStateRequest) {
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 
-	broker.RemoveActiveGame(bot.RedisInterface.client, dgs.ConnectCode)
+	//rediskey.RemoveActiveGame(bot.RedisInterface.client, dgs.ConnectCode)
 
 	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
 	oldPhase := dgs.AmongUsData.GetPhase()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
@@ -454,7 +455,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	} else {
 		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		//Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == task.FreeTier {
+		if premStatus == premium.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)

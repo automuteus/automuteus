@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
@@ -31,7 +32,7 @@ type EndGameMessage struct {
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
 	log.Println("Started Redis Subscription worker for " + connectCode)
 
-	notify := game.Subscribe(ctx, bot.RedisInterface.client, connectCode)
+	notify := task.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 
@@ -41,7 +42,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	}
 
 	//indicate to the broker that we're online and ready to start processing messages
-	game.Ack(ctx, bot.RedisInterface.client, connectCode)
+	task.Ack(ctx, bot.RedisInterface.client, connectCode)
 
 	for {
 		select {
@@ -53,7 +54,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 			//anytime we get a notification message, continue pulling messages off the list until there are no more
 			for {
-				job, err := game.PopJob(ctx, bot.RedisInterface.client, connectCode)
+				job, err := task.PopJob(ctx, bot.RedisInterface.client, connectCode)
 				if err == redis.Nil {
 					break
 				} else if err != nil {
@@ -74,7 +75,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				correlatedUserID := ""
 
 				switch job.JobType {
-				case game.ConnectionJob:
+				case task.ConnectionJob:
 					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 					for lock == nil {
 						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
@@ -95,7 +96,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 					break
-				case game.LobbyJob:
+				case task.LobbyJob:
 					var lobby game.Lobby
 					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
 					if err != nil {
@@ -106,7 +107,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.processLobby(sett, lobby, dgsRequest)
 					break
-				case game.StateJob:
+				case task.StateJob:
 					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
 					if err != nil {
 						log.Println(err)
@@ -115,7 +116,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					bot.processTransition(game.Phase(num), dgsRequest)
 					break
-				case game.PlayerJob:
+				case task.PlayerJob:
 					var player game.Player
 					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
 					if err != nil {
@@ -131,7 +132,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					correlatedUserID = userID
 
 					break
-				case game.GameOverJob:
+				case task.GameOverJob:
 					var gameOverResult game.Gameover
 					log.Println("Successfully identified game over event:")
 					log.Println(job.Payload)
@@ -217,7 +218,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						}
 					}
 				}
-				if job.JobType != game.ConnectionJob {
+				if job.JobType != task.ConnectionJob {
 					go func(userID string, ge storage.PostgresGameEvent) {
 						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
 						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
