@@ -8,26 +8,20 @@ import (
 	"time"
 )
 
-const GlobalUserRateLimitSecs = 1
+const GlobalUserRateLimitDuration = 1 * time.Second
 
-const NewGameRateLimitms = 3000
+const NewGameRateLimitDuration = 3000 * time.Millisecond
 
-//when a user exceeds the threshold, they're ignored for this long
-const SoftbanMinutes = 5
+const ReactionRateLimitDuration = 3000 * time.Millisecond
 
-//how many violations before a softban
+// when a user exceeds the threshold, they're ignored for this long
+const SoftbanDuration = 5 * time.Minute
+
+// how many violations before a softban
 const SoftbanThreshold = 3
 
-//how far back the bot should look for violations. Softban is invoked by violations>threshold in this amt of time
-const SoftbanExpMinutes = 10
-
-func VersionKey() string {
-	return "automuteus:version"
-}
-
-func CommitKey() string {
-	return "automuteus:commit"
-}
+// how far back the bot should look for violations. Softban is invoked by violations>threshold in this amt of time
+const SoftbanExpiration = 10 * time.Minute
 
 func UserRateLimitGeneralKey(userID string) string {
 	return "automuteus:ratelimit:user:" + userID
@@ -45,43 +39,14 @@ func UserSoftbanCountKey(userID string) string {
 	return "automuteus:ratelimit:softban:count:user:" + userID
 }
 
-func SetVersionAndCommit(client *redis.Client, version, commit string) {
-	err := client.Set(context.Background(), VersionKey(), version, 0).Err()
+func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttl time.Duration) {
+	err := client.Set(context.Background(), UserRateLimitGeneralKey(userID), "", GlobalUserRateLimitDuration).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = client.Set(context.Background(), CommitKey(), commit, 0).Err()
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func GetVersionAndCommit(client *redis.Client) (string, string) {
-	v, err := client.Get(context.Background(), VersionKey()).Result()
-	if err != redis.Nil && err != nil {
-		log.Println(err)
-	}
-
-	c, err := client.Get(context.Background(), CommitKey()).Result()
-	if err != redis.Nil && err != nil {
-		log.Println(err)
-	}
-	return v, c
-}
-
-func TotalGuildsKey() string {
-	return "automuteus:count:guilds"
-}
-
-func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttlMS int64) {
-	err := client.Set(context.Background(), UserRateLimitGeneralKey(userID), "", time.Second*GlobalUserRateLimitSecs).Err()
-	if err != nil {
-		log.Println(err)
-	}
-
-	if cmdType != "" && ttlMS > 0 {
-		err = client.Set(context.Background(), UserRateLimitSpecificKey(userID, cmdType), "", time.Millisecond*time.Duration(ttlMS)).Err()
+	if cmdType != "" && ttl > 0 {
+		err = client.Set(context.Background(), UserRateLimitSpecificKey(userID, cmdType), "", ttl).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -98,12 +63,15 @@ func IncrementRateLimitExceed(client *redis.Client, userID string) bool {
 		log.Println(err)
 	}
 
-	beforeStr := fmt.Sprintf("%d", time.Now().Add(-time.Minute*SoftbanExpMinutes).Unix())
+	beforeStr := fmt.Sprintf("%d", time.Now().Add(-SoftbanExpiration).Unix())
 
 	count, err := client.ZCount(context.Background(), UserSoftbanCountKey(userID),
 		beforeStr,
 		fmt.Sprintf("%d", t),
 	).Result()
+	if err != nil {
+		log.Println(err)
+	}
 	if count > SoftbanThreshold {
 		softbanUser(client, userID)
 		return true
@@ -115,7 +83,7 @@ func IncrementRateLimitExceed(client *redis.Client, userID string) bool {
 }
 
 func softbanUser(client *redis.Client, userID string) {
-	err := client.Set(context.Background(), UserSoftbanKey(userID), "", time.Minute*SoftbanMinutes).Err()
+	err := client.Set(context.Background(), UserSoftbanKey(userID), "", SoftbanDuration).Err()
 	if err != nil {
 		log.Println(err)
 	}
@@ -127,7 +95,7 @@ func IsUserBanned(client *redis.Client, userID string) bool {
 		log.Println(err)
 		return false
 	}
-	return v == 1 //=1 means the user is present, and thus rate-limited
+	return v == 1 // =1 means the user is present, and thus rate-limited
 }
 
 func IsUserRateLimitedGeneral(client *redis.Client, userID string) bool {
@@ -136,7 +104,7 @@ func IsUserRateLimitedGeneral(client *redis.Client, userID string) bool {
 		log.Println(err)
 		return false
 	}
-	return v == 1 //=1 means the user is present, and thus rate-limited
+	return v == 1 // =1 means the user is present, and thus rate-limited
 }
 
 func IsUserRateLimitedSpecific(client *redis.Client, userID string, cmdType string) bool {
@@ -145,5 +113,5 @@ func IsUserRateLimitedSpecific(client *redis.Client, userID string, cmdType stri
 		log.Println(err)
 		return false
 	}
-	return v == 1 //=1 means the user is present, and thus rate-limited
+	return v == 1 // =1 means the user is present, and thus rate-limited
 }

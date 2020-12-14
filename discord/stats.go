@@ -18,12 +18,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUser(userID)
 	wins := bot.PostgresInterface.NumWins(userID)
 
-	avatarUrl := ""
+	avatarURL := ""
 	mem, err := bot.PrimarySession.GuildMember(guildID, userID)
 	if err != nil {
 		log.Println(err)
 	} else if mem.User != nil {
-		avatarUrl = mem.User.AvatarURL("")
+		avatarURL = mem.User.AvatarURL("")
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, 3)
@@ -215,10 +215,10 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			"User": "<@!" + userID + ">",
 		}) + "\n\n" + extraDesc,
 		Timestamp: "",
-		Color:     3066993, //GREEN
+		Color:     3066993, // GREEN
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      avatarUrl,
+			URL:      avatarURL,
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,
@@ -235,7 +235,7 @@ const LeaderboardSize = 5
 
 func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gname := ""
-	avatarUrl := ""
+	avatarURL := ""
 	g, err := bot.PrimarySession.Guild(guildID)
 
 	if err != nil {
@@ -243,7 +243,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		gname = guildID
 	} else {
 		gname = g.Name
-		avatarUrl = g.IconURL()
+		avatarURL = g.IconURL()
 	}
 
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedOnGuild(guildID)
@@ -356,11 +356,6 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 					Value:  buf.String(),
 					Inline: true,
 				})
-				//fields = append(fields, &discordgo.MessageEmbedField{
-				//	Name:   "\u200b",
-				//	Value:  "\u200b",
-				//	Inline: true,
-				//})
 			}
 		}
 	}
@@ -379,10 +374,10 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 			"GuildName": gname,
 		}) + "\n\n" + extraDesc,
 		Timestamp: "",
-		Color:     3066993, //GREEN
+		Color:     3066993, // GREEN
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      avatarUrl,
+			URL:      avatarURL,
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,

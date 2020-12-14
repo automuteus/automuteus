@@ -24,9 +24,9 @@ var EmojiNums = []string{":one:", ":two:", ":three:"}
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-const BasePremiumUrl = "https://automute.us/premium?guild="
+const BasePremiumURL = "https://automute.us/premium?guild="
 
-func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -39,10 +39,10 @@ func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands [
 			Other: "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
 		},
 			map[string]interface{}{
-				"CommandPrefix": CommandPrefix,
+				"CommandPrefix": commandPrefix,
 			}),
 		Timestamp: "",
-		Color:     15844367, //GOLD
+		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
 			URL:      "https://github.com/denverquane/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
@@ -80,7 +80,7 @@ func helpResponse(isAdmin, isPermissioned bool, CommandPrefix string, commands [
 	return embed
 }
 
-func settingResponse(CommandPrefix string, settings []Setting, sett *storage.GuildSettings, prem bool) *discordgo.MessageEmbed {
+func settingResponse(commandPrefix string, settings []Setting, sett *storage.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -93,10 +93,10 @@ func settingResponse(CommandPrefix string, settings []Setting, sett *storage.Gui
 			Other: "Type `{{.CommandPrefix}} settings <setting>` to change a setting from those listed below",
 		},
 			map[string]interface{}{
-				"CommandPrefix": CommandPrefix,
+				"CommandPrefix": commandPrefix,
 			}),
 		Timestamp: "",
-		Color:     15844367, //GOLD
+		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: nil,
 		Video:     nil,
@@ -134,7 +134,7 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 		}),
 		Description: "",
 		Timestamp:   time.Now().Format(ISO8601),
-		Color:       2067276, //DARK GREEN
+		Color:       2067276, // DARK GREEN
 		Image:       nil,
 		Thumbnail:   nil,
 		Video:       nil,
@@ -157,9 +157,19 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 	}
 
 	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
-	totalGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
+	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 
-	fields := make([]*discordgo.MessageEmbedField, 8)
+	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
+	if totalUsers == rediskey.NotFound {
+		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	}
+
+	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
+	if totalGames == rediskey.NotFound {
+		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	}
+
+	fields := make([]*discordgo.MessageEmbedField, 12)
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Version",
@@ -170,29 +180,13 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 	}
 	fields[1] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Guilds",
-			Other: "Total Guilds",
-		}),
-		Value:  fmt.Sprintf("%d", totalGuilds),
-		Inline: true,
-	}
-	fields[2] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Games",
-			Other: "Active Games",
-		}),
-		Value:  fmt.Sprintf("%d", totalGames),
-		Inline: true,
-	}
-	fields[3] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Library",
 			Other: "Library",
 		}),
 		Value:  "discordgo",
 		Inline: true,
 	}
-	fields[4] = &discordgo.MessageEmbedField{
+	fields[2] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Creator",
 			Other: "Creator",
@@ -200,7 +194,49 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 		Value:  "Soup#4222",
 		Inline: true,
 	}
+	fields[3] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Guilds",
+			Other: "Guilds",
+		}),
+		Value:  fmt.Sprintf("%d", totalGuilds),
+		Inline: true,
+	}
+	fields[4] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Games",
+			Other: "Active Games",
+		}),
+		Value:  fmt.Sprintf("%d", activeGames),
+		Inline: true,
+	}
 	fields[5] = &discordgo.MessageEmbedField{
+		Name:   "\u200B",
+		Value:  "\u200B",
+		Inline: true,
+	}
+	fields[6] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.TotalGames",
+			Other: "Total Games",
+		}),
+		Value:  fmt.Sprintf("%d", totalGames),
+		Inline: true,
+	}
+	fields[7] = &discordgo.MessageEmbedField{
+		Name: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.statsResponse.Users",
+			Other: "Total Users",
+		}),
+		Value:  fmt.Sprintf("%d", totalUsers),
+		Inline: true,
+	}
+	fields[8] = &discordgo.MessageEmbedField{
+		Name:   "\u200B",
+		Value:  "\u200B",
+		Inline: true,
+	}
+	fields[9] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Website",
 			Other: "Website",
@@ -208,7 +244,7 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 		Value:  "[automute.us](https://automute.us)",
 		Inline: true,
 	}
-	fields[6] = &discordgo.MessageEmbedField{
+	fields[10] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Invite",
 			Other: "Invite",
@@ -216,12 +252,12 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 		Value:  "[add.automute.us](https://add.automute.us)",
 		Inline: true,
 	}
-	fields[7] = &discordgo.MessageEmbedField{
+	fields[11] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.statsResponse.Donate",
 			Other: "Premium",
 		}),
-		Value:  "[PayPal](" + BasePremiumUrl + guildID + ")",
+		Value:  "[PayPal](" + BasePremiumURL + guildID + ")",
 		Inline: true,
 	}
 
@@ -229,9 +265,9 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 	return &embed
 }
 
-func (bot *Bot) gameStateResponse(dgs *DiscordGameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func (bot *Bot) gameStateResponse(dgs *GameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
+	messages := map[game.Phase]func(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
 		game.MENU:     menuMessage,
 		game.LOBBY:    lobbyMessage,
 		game.TASKS:    gamePlayMessage,
@@ -280,7 +316,7 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
 				Other: "🔒 ROOM CODE",
 			}),
-			Value:  fmt.Sprintf("%s", room),
+			Value:  room,
 			Inline: false,
 		})
 	}
@@ -290,7 +326,7 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 				ID:    "responses.lobbyMetaEmbedFields.Region",
 				Other: "🌎 REGION",
 			}),
-			Value:  fmt.Sprintf("%s", region),
+			Value:  region,
 			Inline: false,
 		})
 	}
@@ -298,9 +334,8 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 	return gameInfoFields
 }
 
-func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-
-	color := 15158332 //red
+func menuMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	color := 15158332 // red
 	desc := ""
 	var footer *discordgo.MessageEmbedFooter
 	if dgs.Linked {
@@ -373,14 +408,14 @@ func menuMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.Gu
 	return &msg
 }
 
-func lobbyMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
 	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
 
-	color := 15158332 //red
+	color := 15158332 // red
 	desc := ""
 	if dgs.Linked {
 		desc = dgs.makeDescription(sett)
@@ -445,11 +480,10 @@ func getThumbnailFromMap(playMap game.PlayMap, sett *storage.GuildSettings) *dis
 	return thumbNail
 }
 
-func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
-
+func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	phase := dgs.AmongUsData.GetPhase()
 	playMap := dgs.AmongUsData.GetPlayMap()
-	//send empty fields because we don't need to display those fields during the game...
+	// send empty fields because we don't need to display those fields during the game...
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
@@ -462,13 +496,13 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	var color int
 	switch phase {
 	case game.TASKS:
-		color = 3447003 //BLUE
+		color = 3447003 // BLUE
 	case game.DISCUSS:
-		color = 10181046 //PURPLE
+		color = 10181046 // PURPLE
 	case game.GAMEOVER:
-		color = 12745742 //DARK GOLD
+		color = 12745742 // DARK GOLD
 	default:
-		color = 15158332 //RED
+		color = 15158332 // RED
 	}
 	title := sett.LocalizeMessage(amongus.ToLocale(phase))
 
@@ -491,7 +525,7 @@ func gamePlayMessage(dgs *DiscordGameState, emojis AlivenessEmojis, sett *storag
 	return &msg
 }
 
-func (dgs *DiscordGameState) makeDescription(sett *storage.GuildSettings) string {
+func (dgs *GameState) makeDescription(sett *storage.GuildSettings) string {
 	buf := bytes.NewBuffer([]byte{})
 	if !dgs.Running {
 		buf.WriteString(sett.LocalizeMessage(&i18n.Message{
@@ -560,18 +594,17 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 				map[string]interface{}{
 					"Tier":    premium.TierStrings[tier],
 					"Days":    0 - daysRem,
-					"BaseURL": BasePremiumUrl,
+					"BaseURL": BasePremiumURL,
 					"GuildID": guildID,
 				})
 		}
-
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID: "responses.premiumResponse.FreeDescription",
 			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n" +
 				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
 		}, map[string]interface{}{
-			"BaseURL": BasePremiumUrl,
+			"BaseURL": BasePremiumURL,
 			"GuildID": guildID,
 		})
 		fields = []*discordgo.MessageEmbedField{
@@ -634,7 +667,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 	}
 
 	msg := discordgo.MessageEmbed{
-		URL:  BasePremiumUrl + guildID,
+		URL:  BasePremiumURL + guildID,
 		Type: "",
 		Title: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumResponse.Title",
@@ -642,7 +675,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 		}),
 		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, //PURPLE
+		Color:       10181046, // PURPLE
 		Footer:      nil,
 		Image:       nil,
 		Thumbnail:   nil,
@@ -663,8 +696,8 @@ func nonPremiumSettingResponse(sett *storage.GuildSettings) string {
 	})
 }
 
-//if you're reading this, adding these bots won't help you.
-//Galactus+AutoMuteUs verify the premium status internally before using these bots ;)
+// if you're reading this, adding these bots won't help you.
+// Galactus+AutoMuteUs verify the premium status internally before using these bots ;)
 var BotInvites = []string{
 	"https://discord.com/api/oauth2/authorize?client_id=780323275624546304&permissions=12582912&scope=bot",
 	"https://discord.com/api/oauth2/authorize?client_id=769022114229125181&permissions=12582912&scope=bot",
@@ -689,7 +722,7 @@ func premiumInvitesEmbed(tier premium.Tier, sett *storage.GuildSettings) *discor
 		} else if tier == premium.GoldTier || tier == premium.PlatTier {
 			count = 3
 		}
-		//TODO account for Platinum
+		// TODO account for Platinum
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
@@ -717,7 +750,7 @@ func premiumInvitesEmbed(tier premium.Tier, sett *storage.GuildSettings) *discor
 		}),
 		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, //PURPLE
+		Color:       10181046, // PURPLE
 		Footer:      nil,
 		Image:       nil,
 		Thumbnail:   nil,
@@ -808,7 +841,6 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *storage.Gui
 							"User": "<@!" + authorID + ">",
 						})
 				}
-
 			}
 		}
 	case "optin":
@@ -833,7 +865,6 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *storage.Gui
 						"User": "<@!" + authorID + ">",
 					})
 			}
-
 		}
 	}
 
@@ -846,7 +877,7 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *storage.Gui
 		}),
 		Description: desc,
 		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, //PURPLE
+		Color:       10181046, // PURPLE
 		Footer:      nil,
 		Image:       nil,
 		Thumbnail:   nil,
@@ -859,22 +890,21 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *storage.Gui
 }
 
 func extractUserIDFromMention(mention string) (string, error) {
-	//nickname format
-	if strings.HasPrefix(mention, "<@!") && strings.HasSuffix(mention, ">") {
+	// nickname format
+	switch {
+	case strings.HasPrefix(mention, "<@!") && strings.HasSuffix(mention, ">"):
 		return mention[3 : len(mention)-1], nil
-		//non-nickname format
-	} else if strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">") {
+	case strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">"):
 		return mention[2 : len(mention)-1], nil
-	} else {
+	default:
 		return "", errors.New("mention does not conform to the correct format")
 	}
 }
 
 func extractRoleIDFromMention(mention string) (string, error) {
-	//role is formatted <&123456>
+	// role is formatted <&123456>
 	if strings.HasPrefix(mention, "<@&") && strings.HasSuffix(mention, ">") {
 		return mention[3 : len(mention)-1], nil
-	} else {
-		return "", errors.New("mention does not conform to the correct format")
 	}
+	return "", errors.New("mention does not conform to the correct format")
 }

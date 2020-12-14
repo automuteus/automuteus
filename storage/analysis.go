@@ -41,9 +41,6 @@ type GameStatistics struct {
 	Events         []SimpleEvent
 }
 
-//
-//const UnlinkedPlayerInfo = "an Unlinked Player"
-
 func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) GameStatistics {
 	stats := GameStatistics{
 		GameDuration: time.Second * time.Duration(pgame.EndTime-pgame.StartTime),
@@ -79,20 +76,17 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 			if err != nil {
 				log.Println(err)
 			} else {
-				if player.Action == game.DIED {
+				switch {
+				case player.Action == game.DIED:
 					stats.NumDeaths++
-					//uid := UnlinkedPlayerInfo
-					//if v.UserID != nil {
-					//	uid = fmt.Sprintf("%d", *v.UserID)
-					//}
 					stats.Events = append(stats.Events, SimpleEvent{
 						EventType:       PlayerDeath,
 						EventTimeOffset: time.Second * time.Duration(v.EventTime-pgame.StartTime),
 						Data:            v.Payload,
 					})
-				} else if player.Action == game.EXILED {
+				case player.Action == game.EXILED:
 					stats.NumVotedOff++
-				} else if player.Action == game.DISCONNECTED {
+				case player.Action == game.DISCONNECTED:
 					stats.NumDisconnects++
 				}
 			}
@@ -114,30 +108,30 @@ func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettin
 	fields := make([]*discordgo.MessageEmbedField, 0)
 
 	fieldsOnLine := 0
-	//TODO collapse by meeting/tasks "blocks" of data
-	//TODO localize
+	// TODO collapse by meeting/tasks "blocks" of data
+	// TODO localize
 	for _, v := range stats.Events {
-		if v.EventType == Tasks {
+		switch {
+		case v.EventType == Tasks:
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   v.EventTimeOffset.String(),
 				Value:  "🔨 Task Phase Begins",
 				Inline: true,
 			})
 			fieldsOnLine++
-		} else if v.EventType == Discuss {
+		case v.EventType == Discuss:
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   v.EventTimeOffset.String(),
 				Value:  "💬 Discussion Begins",
 				Inline: true,
 			})
 			fieldsOnLine++
-		} else if v.EventType == PlayerDeath {
+		case v.EventType == PlayerDeath:
 			player := game.Player{}
 			err := json.Unmarshal([]byte(v.Data), &player)
 			if err != nil {
 				log.Println(err)
 			} else {
-
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:   v.EventTimeOffset.String(),
 					Value:  fmt.Sprintf("☠️ \"%s\" Died", player.Name),
@@ -161,7 +155,7 @@ func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettin
 		Title:       title,
 		Description: stats.FormatDurationAndWin(),
 		Timestamp:   "",
-		Color:       10181046, //PURPLE
+		Color:       10181046, // PURPLE
 		Footer:      nil,
 		Image:       nil,
 		Thumbnail:   nil,
@@ -173,7 +167,7 @@ func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettin
 	return &msg
 }
 
-//TODO localize
+// TODO localize
 func (stats *GameStatistics) FormatDurationAndWin() string {
 	buf := bytes.NewBuffer([]byte{})
 	winner := ""
@@ -207,11 +201,12 @@ func (stats *GameStatistics) ToString() string {
 	buf.WriteString(stats.FormatDurationAndWin())
 
 	for _, v := range stats.Events {
-		if v.EventType == Tasks {
+		switch {
+		case v.EventType == Tasks:
 			buf.WriteString(fmt.Sprintf("%s into the game, Tasks phase resumed", v.EventTimeOffset.String()))
-		} else if v.EventType == Discuss {
+		case v.EventType == Discuss:
 			buf.WriteString(fmt.Sprintf("%s into the game, Discussion was called", v.EventTimeOffset.String()))
-		} else if v.EventType == PlayerDeath {
+		case v.EventType == PlayerDeath:
 			player := game.Player{}
 			err := json.Unmarshal([]byte(v.Data), &player)
 			if err != nil {

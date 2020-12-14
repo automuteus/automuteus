@@ -9,19 +9,17 @@ import (
 )
 
 type GuildSettings struct {
-	CommandPrefix string `json:"commandPrefix"`
-	Language      string `json:"language"`
-
 	AdminUserIDs             []string        `json:"adminIDs"`
 	PermissionRoleIDs        []string        `json:"permissionRoleIDs"`
-	Delays                   game.GameDelays `json:"delays"`
+	CommandPrefix            string          `json:"commandPrefix"`
+	Language                 string          `json:"language"`
 	VoiceRules               game.VoiceRules `json:"voiceRules"`
-	UnmuteDeadDuringTasks    bool            `json:"unmuteDeadDuringTasks"`
-	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
-	AutoRefresh              bool            `json:"autoRefresh"`
 	MapVersion               string          `json:"mapVersion"`
-
-	lock sync.RWMutex
+	Delays                   game.GameDelays `json:"delays"`
+	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
+	lock                     sync.RWMutex
+	UnmuteDeadDuringTasks    bool `json:"unmuteDeadDuringTasks"`
+	AutoRefresh              bool `json:"autoRefresh"`
 }
 
 func MakeGuildSettings() *GuildSettings {
@@ -116,9 +114,8 @@ func (gs *GuildSettings) SetAutoRefresh(n bool) {
 func (gs *GuildSettings) GetMapVersion() string {
 	if gs.MapVersion == "" {
 		return "simple"
-	} else {
-		return gs.MapVersion
 	}
+	return gs.MapVersion
 }
 
 func (gs *GuildSettings) SetMapVersion(n string) {
@@ -148,17 +145,15 @@ func (gs *GuildSettings) SetDelay(oldPhase, newPhase game.Phase, v int) {
 func (gs *GuildSettings) GetVoiceRule(isMute bool, phase game.Phase, alive string) bool {
 	if isMute {
 		return gs.VoiceRules.MuteRules[phase.ToString()][alive]
-	} else {
-		return gs.VoiceRules.DeafRules[phase.ToString()][alive]
 	}
+	return gs.VoiceRules.DeafRules[phase.ToString()][alive]
 }
 
 func (gs *GuildSettings) SetVoiceRule(isMute bool, phase game.Phase, alive string, val bool) {
 	if isMute {
 		gs.VoiceRules.MuteRules[phase.ToString()][alive] = val
-	} else {
-		gs.VoiceRules.DeafRules[phase.ToString()][alive] = val
 	}
+	gs.VoiceRules.DeafRules[phase.ToString()][alive] = val
 }
 
 func (gs *GuildSettings) GetVoiceState(alive bool, tracked bool, phase game.Phase) (bool, bool) {

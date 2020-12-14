@@ -22,6 +22,9 @@
     <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Stars">
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
     </a>
+    <a href="https://goreportcard.com/badge/github.com/denverquane/automuteus" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/denverquane/automuteus" />
+    </a>
 </p>
 
 <p align="center">

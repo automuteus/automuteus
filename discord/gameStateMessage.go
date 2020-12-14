@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-//bumped for public rollout. Don't need to update the status message more than once every 2 secs prob
+// bumped for public rollout. Don't need to update the status message more than once every 2 secs prob
 const DeferredEditSeconds = 2
 
 type GameStateMessage struct {
@@ -25,30 +25,30 @@ func MakeGameStateMessage() GameStateMessage {
 	}
 }
 
-func (dgs *DiscordGameState) Exists() bool {
+func (dgs *GameState) Exists() bool {
 	return dgs.GameStateMsg.MessageID != ""
 }
 
-func (dgs *DiscordGameState) AddReaction(s *discordgo.Session, emoji string) {
+func (dgs *GameState) AddReaction(s *discordgo.Session, emoji string) {
 	if dgs.GameStateMsg.MessageID != "" {
 		addReaction(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
 	}
 }
 
-func (dgs *DiscordGameState) RemoveAllReactions(s *discordgo.Session) {
+func (dgs *GameState) RemoveAllReactions(s *discordgo.Session) {
 	if dgs.GameStateMsg.MessageID != "" {
 		removeAllReactions(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 	}
 }
 
-func (dgs *DiscordGameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
+func (dgs *GameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
 	for _, e := range emojis {
 		dgs.AddReaction(s, e.FormatForReaction())
 	}
 	dgs.AddReaction(s, "❌")
 }
 
-func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) bool {
+func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session) bool {
 	if dgs.GameStateMsg.MessageID != "" {
 		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		dgs.GameStateMsg.MessageID = ""
@@ -60,17 +60,17 @@ func (dgs *DiscordGameState) DeleteGameStateMsg(s *discordgo.Session) bool {
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
-//Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs DiscordGameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
+// Note this is not a pointer; we never expect the underlying DGS to change on an edit
+func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
 	newEdit := false
 	DeferredEditsLock.Lock()
 
-	//if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
+	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
 		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		newEdit = true
 	}
-	//whether or not it's found, replace the contents with the new message
+	// whether or not it's found, replace the contents with the new message
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
 	return newEdit
@@ -95,7 +95,7 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	}
 }
 
-func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
+func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
 	dgs.GameStateMsg.LeaderID = authorID
 	msg := sendMessageEmbed(s, channelID, me)
 	if msg != nil {
@@ -105,14 +105,14 @@ func (dgs *DiscordGameState) CreateMessage(s *discordgo.Session, me *discordgo.M
 	}
 }
 
-func (dgs *DiscordGameState) SameChannel(channelID string) bool {
+func (dgs *GameState) SameChannel(channelID string) bool {
 	if dgs.GameStateMsg.MessageID != "" {
 		return dgs.GameStateMsg.MessageChannelID == channelID
 	}
 	return false
 }
 
-func (dgs *DiscordGameState) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
+func (dgs *GameState) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
 	if !dgs.Exists() {
 		return false
 	}

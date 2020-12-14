@@ -26,8 +26,6 @@ import (
 
 const DefaultMaxActiveGames = 150
 
-var RateLimitGlobalThreshold = 9500
-
 const downloadURL = "https://capture.automute.us"
 
 func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -40,14 +38,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
-	////If we're approaching the ratelimit, completely stop handling messages
-	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	//if reqs > RateLimitGlobalThreshold {
-	//	return
-	//}
-
 	lock := bot.RedisInterface.LockSnowflake(m.ID)
-	//couldn't obtain lock; bail bail bail!
+	// couldn't obtain lock; bail bail bail!
 	if lock == nil {
 		return
 	}
@@ -76,7 +68,6 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 	if strings.HasPrefix(contents, prefix) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-
 			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
 			if banned {
 				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -86,7 +77,6 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					map[string]interface{}{
 						"User": mentionByUserID(m.Author.ID),
 					}))
-
 			} else {
 				msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "message_handlers.generalRatelimit",
@@ -109,27 +99,27 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 		oldLen := len(contents)
 		contents = strings.Replace(contents, prefix+" ", "", 1)
-		if len(contents) == oldLen { //didn't have a space
+		if len(contents) == oldLen { // didn't have a space
 			contents = strings.Replace(contents, prefix, "", 1)
 		}
 
 		isAdmin, isPermissioned := false, false
 
 		if g.OwnerID == m.Author.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
-			//the guild owner should always have both permissions
-			//or if both permissions are still empty everyone get both
+			// the guild owner should always have both permissions
+			// or if both permissions are still empty everyone get both
 			isAdmin = true
 			isPermissioned = true
 		} else {
-			//if we have no admins, then we MUST have mods as per the check above.
+			// if we have no admins, then we MUST have mods as per the check above.
 			if len(sett.AdminUserIDs) == 0 {
-				//we have no admins, but we have mods, so make sure users fulfill that check
+				// we have no admins, but we have mods, so make sure users fulfill that check
 				isAdmin = sett.HasRolePerms(m.Member)
 			} else {
-				//we have admins; make sure user is one
+				// we have admins; make sure user is one
 				isAdmin = sett.HasAdminPerms(m.Author)
 			}
-			//even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
+			// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
 			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
 		}
 
@@ -138,10 +128,11 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prevent bot from spamming help message whenever the single character
 				// prefix is sent by mistake
 				return
-			} else {
-				embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			}
+			embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
+			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			// delete the user's message
+			deleteMessage(s, m.ChannelID, m.ID)
 		} else {
 			args := strings.Split(contents, " ")
 
@@ -164,14 +155,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	//If we're approaching the ratelimit, completely stop handling messages.
-	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	//if reqs > RateLimitGlobalThreshold {
-	//	return
-	//}
-
 	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
-	//couldn't obtain lock; bail bail bail!
+	// couldn't obtain lock; bail bail bail!
 	if lock == nil {
 		return
 	}
@@ -183,7 +168,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	//TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
+	// TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 
@@ -193,7 +178,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	}
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock != nil && dgs != nil && dgs.Exists() {
-		//verify that the User is reacting to the state/status message
+		// verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(m) {
 			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
 				banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.UserID)
@@ -221,7 +206,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				}
 				return
 			}
-			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", 3000)
+			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", redis_common.ReactionRateLimitDuration)
 			idMatched := false
 			if m.Emoji.Name == "▶️" {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
@@ -233,7 +218,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					if e.ID == m.Emoji.ID {
 						idMatched = true
 						log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
-						//the User doesn't exist in our userdata cache; add them
+						// the User doesn't exist in our userdata cache; add them
 						user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
 						if !added {
 							log.Println("No users found in Discord for UserID " + m.UserID)
@@ -250,13 +235,13 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 							}
 						}
 
-						//then remove the player's reaction if we matched, or if we didn't
+						// then remove the player's reaction if we matched, or if we didn't
 						go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
 						break
 					}
 				}
 				if !idMatched {
-					//log.Println(m.Emoji.Name)
+					// log.Println(m.Emoji.Name)
 					if m.Emoji.Name == "❌" {
 						log.Println("Removing player " + m.UserID)
 						dgs.ClearPlayerData(m.UserID)
@@ -264,7 +249,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 						idMatched = true
 					}
 				}
-				//make sure to update any voice changes if they occurred
+				// make sure to update any voice changes if they occurred
 				if idMatched {
 					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
 					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
@@ -278,19 +263,12 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	}
 }
 
-//voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
-//relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
-//the same mute/unmute, erroneously
+// voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
+// relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
+// the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-
-	//If we're approaching the ratelimit, completely stop handling messages; let another node pick it up (if at all)
-	//reqs := metrics.GetDiscordRequestsInLastMinutes(bot.RedisInterface.client, 10)
-	//if reqs > RateLimitGlobalThreshold {
-	//	return
-	//}
-
 	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
-	//couldn't obtain lock; bail bail bail!
+	// couldn't obtain lock; bail bail bail!
 	if snowFlakeLock == nil {
 		return
 	}
@@ -324,20 +302,20 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		return
 	}
 
-	//fetch the userData from our userData data cache
+	// fetch the userData from our userData data cache
 	userData, err := dgs.GetUser(m.UserID)
 	if err != nil {
-		//the User doesn't exist in our userdata cache; add them
+		// the User doesn't exist in our userdata cache; add them
 		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
 	}
 
 	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
-	//only actually tracked if we're in a tracked channel AND linked to a player
+	// only actually tracked if we're in a tracked channel AND linked to a player
 	tracked = tracked && (found || userData.GetPlayerName() == amongus.SpectatorPlayerName)
 	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
-	//check the userdata is linked here to not accidentally undeafen music bots, for example
+	// check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
 		userData.SetShouldBeMuteDeaf(mute, deaf)
 
@@ -406,7 +384,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		return
 	}
 
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitms)
+	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
 
 	channels, err := s.GuildChannels(m.GuildID)
 	if err != nil {
@@ -415,13 +393,13 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	tracking := TrackingChannel{}
 
-	//loop over all the channels in the discord and cross-reference with the one that the .au new author is in
+	// loop over all the channels in the discord and cross-reference with the one that the .au new author is in
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
 			for _, v := range g.VoiceStates {
-				//if the User who typed au new is in a voice channel
+				// if the User who typed au new is in a voice channel
 				if v.UserID == m.Author.ID {
-					//once we find the voice channel
+					// once we find the voice channel
 					if channel.ID == v.ChannelID {
 						tracking = TrackingChannel{
 							ChannelID:   channel.ID,
@@ -444,17 +422,17 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		return
 	}
 
-	//allow people with a previous game going to be able to make new games
+	// allow people with a previous game going to be able to make new games
 	if dgs.GameStateMsg.MessageID != "" {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- EndGameMessage{EndGameType: EndAndWipe}
+			v <- true
 		}
 		delete(bot.EndGameChannels, dgs.ConnectCode)
 
 		dgs.Reset()
 	} else {
 		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-		//Premium users should always be allowed to start new games; only check the free guilds
+		// Premium users should always be allowed to start new games; only check the free guilds
 		if premStatus == premium.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
@@ -496,7 +474,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	bot.EndGameChannels[connectCode] = killChan
 	bot.ChannelsMapLock.Unlock()
 
-	hyperlink, minimalUrl := formCaptureURL(bot.url, connectCode)
+	hyperlink, minimalURL := formCaptureURL(bot.url, connectCode)
 
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
@@ -515,7 +493,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 				"downloadURL": downloadURL,
 			}),
 		Timestamp: "",
-		Color:     3066993, //GREEN
+		Color:     3066993, // GREEN
 		Image:     nil,
 		Thumbnail: nil,
 		Video:     nil,
@@ -527,7 +505,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 					ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
 					Other: "URL",
 				}),
-				Value:  minimalUrl,
+				Value:  minimalURL,
 				Inline: true,
 			},
 			{
@@ -581,8 +559,8 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	log.Println("Added self game state message")
-	//TODO well this is a little ugly
-	//+12 emojis, 1 for X
+	// TODO well this is a little ugly
+	// +12 emojis, 1 for X
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 
 	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])

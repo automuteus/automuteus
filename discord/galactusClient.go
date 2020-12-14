@@ -32,12 +32,12 @@ func NewGalactusClient(address string) (*GalactusClient, error) {
 	if err != nil {
 		return &gc, err
 	}
+	defer r.Body.Close()
 
 	if r.StatusCode != http.StatusOK {
 		return &gc, errors.New("galactus returned a non-200 status code; ensure it is reachable")
 	}
 	return &gc, nil
-
 }
 
 func (gc *GalactusClient) AddToken(token string) error {
@@ -45,6 +45,7 @@ func (gc *GalactusClient) AddToken(token string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusAlreadyReported {
 		return errors.New("this token has already been added and recorded in Galactus")
 	}
@@ -66,7 +67,7 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 		defer lock.Release(context.Background())
 	}
 
-	fullUrl := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
+	fullURL := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil
@@ -74,10 +75,11 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 
 	log.Println(request)
 
-	resp, err := gc.client.Post(fullUrl, "application/json", bytes.NewBuffer(jBytes))
+	resp, err := gc.client.Post(fullURL, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
 		return nil
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil
