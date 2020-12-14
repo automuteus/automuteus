@@ -25,6 +25,7 @@ func StartHealthCheckServer(port string) {
 				w.Write([]byte(err.Error()))
 				return
 			}
+			defer resp.Body.Close()
 			w.WriteHeader(resp.StatusCode)
 			if resp.StatusCode == http.StatusOK {
 				w.Write([]byte("ready"))

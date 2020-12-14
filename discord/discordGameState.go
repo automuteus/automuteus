@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -25,9 +25,8 @@ func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
 			map[string]interface{}{
 				"CommandPrefix": sett.CommandPrefix,
 			})
-	} else {
-		return tc.ChannelName
 	}
+	return tc.ChannelName
 }
 
 func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
@@ -39,18 +38,17 @@ func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
 			map[string]interface{}{
 				"CommandPrefix": sett.CommandPrefix,
 			})
-	} else {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "discordGameState.ToDescString.voiceChannelName",
-			Other: "the **{{.channelName}}** voice channel!",
-		},
-			map[string]interface{}{
-				"channelName": tc.ChannelName,
-			})
 	}
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    "discordGameState.ToDescString.voiceChannelName",
+		Other: "the **{{.channelName}}** voice channel!",
+	},
+		map[string]interface{}{
+			"channelName": tc.ChannelName,
+		})
 }
 
-type DiscordGameState struct {
+type GameState struct {
 	GuildID string `json:"guildID"`
 
 	ConnectCode string `json:"connectCode"`
@@ -67,17 +65,17 @@ type DiscordGameState struct {
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
-	AmongUsData game.AmongUsData `json:"amongUsData"`
+	AmongUsData amongus.AmongUsData `json:"amongUsData"`
 }
 
-func NewDiscordGameState(guildID string) *DiscordGameState {
-	dgs := DiscordGameState{GuildID: guildID}
+func NewDiscordGameState(guildID string) *GameState {
+	dgs := GameState{GuildID: guildID}
 	dgs.Reset()
 	return &dgs
 }
 
-func (dgs *DiscordGameState) Reset() {
-	//Explicitly does not reset the GuildID!
+func (dgs *GameState) Reset() {
+	// Explicitly does not reset the GuildID!
 	dgs.ConnectCode = ""
 	dgs.Linked = false
 	dgs.Running = false
@@ -87,14 +85,14 @@ func (dgs *DiscordGameState) Reset() {
 	dgs.UserData = map[string]UserData{}
 	dgs.Tracking = TrackingChannel{}
 	dgs.GameStateMsg = MakeGameStateMessage()
-	dgs.AmongUsData = game.NewAmongUsData()
+	dgs.AmongUsData = amongus.NewAmongUsData()
 }
 
-func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
+func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
 	if g == nil {
 		return UserData{}, false
 	}
-	//check and see if they're cached first
+	// check and see if they're cached first
 	for _, v := range g.Members {
 		if v.User != nil && v.User.ID == userID {
 			user := MakeUserDataFromDiscordUser(v.User, v.Nick)
@@ -112,20 +110,19 @@ func (dgs *DiscordGameState) checkCacheAndAddUser(g *discordgo.Guild, s *discord
 	return user, true
 }
 
-func (dgs *DiscordGameState) clearGameTracking(s *discordgo.Session) {
-	//clear the discord User links to underlying player data
+func (dgs *GameState) clearGameTracking(s *discordgo.Session) {
+	// clear the discord User links to underlying player data
 	dgs.ClearAllPlayerData()
 
-	//reset all the Tracking channels
+	// reset all the Tracking channels
 	dgs.Tracking = TrackingChannel{}
 
 	dgs.DeleteGameStateMsg(s)
 }
 
-func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *storage.GuildSettings) string {
+func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *storage.GuildSettings) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
-
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
 
 			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
@@ -147,7 +144,7 @@ func (dgs *DiscordGameState) trackChannel(channelName string, allChannels []*dis
 		})
 }
 
-func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
+func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 12)
 	num := 0
 
@@ -156,18 +153,18 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *st
 			if userData.InGameName == player.Name {
 				emoji := emojis[player.IsAlive][player.Color]
 				unsorted[player.Color] = &discordgo.MessageEmbedField{
-					Name:   fmt.Sprintf("%s", player.Name),
+					Name:   player.Name,
 					Value:  fmt.Sprintf("%s <@!%s>", emoji.FormatForInline(), userData.GetID()),
 					Inline: true,
 				}
 				break
 			}
 		}
-		//no player matched; unlinked player
+		// no player matched; unlinked player
 		if unsorted[player.Color] == nil {
 			emoji := emojis[player.IsAlive][player.Color]
 			unsorted[player.Color] = &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s", player.Name),
+				Name: player.Name,
 				Value: fmt.Sprintf("%s **%s**", emoji.FormatForInline(), sett.LocalizeMessage(&i18n.Message{
 					ID:    "discordGameState.ToEmojiEmbedFields.Unlinked",
 					Other: "Unlinked",
@@ -186,7 +183,7 @@ func (dgs *DiscordGameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *st
 			num++
 		}
 	}
-	//balance out the last row of embeds with an extra inline field
+	// balance out the last row of embeds with an extra inline field
 	if num%3 == 2 {
 		sorted = append(sorted, &discordgo.MessageEmbedField{
 			Name:   "\u200b",

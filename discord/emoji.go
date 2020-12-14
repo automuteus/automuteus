@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/automuteus/utils/pkg/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -50,7 +50,7 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
-	topMap[true] = make([]Emoji, 12) //12 colors for alive/dead
+	topMap[true] = make([]Emoji, 12) // 12 colors for alive/dead
 	topMap[false] = make([]Emoji, 12)
 	return topMap
 }

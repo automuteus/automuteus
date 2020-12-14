@@ -7,7 +7,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-const AsciiCrewmate = "" +
+const ASCIICrewmate = "" +
 	"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⣠⣤⣤⣤⣤⣤⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠀ ⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠀ ⣼⣿⠋⠀⠀⠀⠀      ⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀\n" +
@@ -28,7 +28,7 @@ const AsciiCrewmate = "" +
 	"⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿  ⠀⠈⠻⣿⣿⣿⡿⠏⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 
-func AsciiStarfield(sett *storage.GuildSettings, name string, isImpostor bool, count int) string {
+func ASCIIStarfield(sett *storage.GuildSettings, name string, isImpostor bool, count int) string {
 	isImpostorStr := sett.LocalizeMessage(&i18n.Message{
 		ID:    "ascii.AsciiStarfield.isWasNot",
 		Other: "was not An Impostor.",

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"log"
 )
@@ -31,12 +32,8 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 	return nil
 }
 
-func guildSettingsKey(id HashedID) string {
-	return "automuteus:settings:guild:" + string(id)
-}
-
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *GuildSettings {
-	key := guildSettingsKey(HashGuildID(guildID))
+	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	if err == redis.Nil {
@@ -66,7 +63,7 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 }
 
 func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *GuildSettings) error {
-	key := guildSettingsKey(HashGuildID(guildID))
+	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	jbytes, err := json.MarshalIndent(guildSettings, "", "  ")
 	if err != nil {
@@ -77,7 +74,7 @@ func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guild
 }
 
 func (storageInterface *StorageInterface) DeleteGuildSettings(guildID string) error {
-	key := guildSettingsKey(HashGuildID(guildID))
+	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	err := storageInterface.client.Del(ctx, key).Err()
 	return err

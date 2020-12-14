@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="automute.us" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
+    <a href="https://automute.us/#/" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
@@ -21,6 +21,9 @@
     </a>
     <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Stars">
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
+    </a>
+    <a href="https://goreportcard.com/badge/github.com/denverquane/automuteus" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/denverquane/automuteus" />
     </a>
 </p>
 

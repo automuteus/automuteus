@@ -1,6 +1,9 @@
-package game
+package amongus
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/automuteus/utils/pkg/game"
+)
 
 type PlayerData struct {
 	Color   int    `json:"color"`
@@ -9,7 +12,7 @@ type PlayerData struct {
 }
 
 const UnlinkedPlayerName = "UnlinkedPlayer"
-const SpectatorPlayerName = "SpectatorSpectator" //this is silly, but is >10 chars, so can never happen in-game...
+const SpectatorPlayerName = "SpectatorSpectator" //this is silly, but is >10 chars, so can never happen in-amongus...
 
 var UnlinkedPlayer = PlayerData{
 	Color:   -1,
@@ -19,9 +22,9 @@ var UnlinkedPlayer = PlayerData{
 
 // ToString a user
 func (auData *PlayerData) ToString() string {
-	return fmt.Sprintf("{ Name: %s, Color: %s, Alive: %v }\n", auData.Name, GetColorStringForInt(auData.Color), auData.IsAlive)
+	return fmt.Sprintf("{ Name: %s, Color: %s, Alive: %v }\n", auData.Name, game.GetColorStringForInt(auData.Color), auData.IsAlive)
 }
 
-func (auData *PlayerData) isDifferent(player Player) bool {
+func (auData *PlayerData) isDifferent(player game.Player) bool {
 	return auData.IsAlive != !player.IsDead || auData.Color != player.Color || auData.Name != player.Name
 }

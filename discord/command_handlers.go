@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,9 +16,16 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-const MaxDebugMessageSize = 1980
+const (
+	MaxDebugMessageSize = 1980
+	detailedMapString   = "detailed"
+	clearArgumentString = "clear"
+	trueString          = "true"
+)
 
-//TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
+var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
+
+// TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
 func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:   "",
@@ -28,7 +36,7 @@ func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.
 				"CommandPrefix": sett.CommandPrefix,
 			}),
 		Timestamp: "",
-		Color:     15844367, //GOLD
+		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: nil,
 		Video:     nil,
@@ -76,22 +84,19 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.Command, m.Author.ID))
 	}
 
-	//only allow admins to execute admin commands
-	if cmd.IsAdmin && !isAdmin {
+	switch {
+	case cmd.IsAdmin && !isAdmin:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
-	} else if cmd.IsOperator && (!isPermissioned && !isAdmin) {
+	case cmd.IsOperator && (!isPermissioned && !isAdmin):
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
-	} else {
-		//broadly speaking, most commands issue at minimum 1 discord request, and delete a user's message.
-		//Very approximately, at least
+	default:
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-
 		switch cmd.CommandType {
 		case command.Help:
 			if len(args[1:]) == 0 {
@@ -109,24 +114,20 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}))
 				}
 			}
-			break
 
 		case command.New:
 			bot.handleNewGameMessage(s, m, g, sett)
-			break
 
 		case command.End:
 			log.Println("User typed end to end the current game")
 
 			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-				v <- EndGameMessage{EndGameType: EndAndWipe}
+				v <- true
 			}
 			delete(bot.EndGameChannels, dgs.ConnectCode)
 
 			bot.applyToAll(dgs, false, false)
-
-			break
 
 		case command.Pause:
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -144,11 +145,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
-			break
 
 		case command.Refresh:
 			bot.RefreshGameStateMessage(gsr, sett)
-			break
 		case command.Link:
 			if len(args[1:]) < 2 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
@@ -166,14 +165,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
 			}
-			break
 
 		case command.Unlink:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
-
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
 					log.Println(err)
@@ -187,23 +184,21 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-					//update the state message to reflect the player leaving
+					// update the state message to reflect the player leaving
 					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
 				}
 			}
-			break
 		case command.UnmuteAll:
 			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			bot.applyToAll(dgs, false, false)
-			break
 
 		case command.Settings:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			bot.HandleSettingsCommand(s, m, sett, args, premStatus != 0)
-			break
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			isPrem := (premStatus != 0) && (days == storage.NoExpiryCode || days > 0)
+			bot.HandleSettingsCommand(s, m, sett, args, isPrem)
 
 		case command.Map:
 			if len(args[1:]) == 0 {
@@ -214,7 +209,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 				var mapName string
 				switch mapVersion {
-				case "simple", "detailed":
+				case "simple", detailedMapString:
 					mapName = strings.Join(args[1:len(args)-1], " ")
 				default:
 					mapName = strings.Join(args[1:], " ")
@@ -232,13 +227,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				switch mapVersion {
 				case "simple":
 					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
-				case "detailed":
+				case detailedMapString:
 					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
 				default:
 					log.Println("mapVersion has unexpected value for 'map' command")
 				}
 			}
-			break
 
 		case command.Cache:
 			if len(args[1:]) == 0 {
@@ -271,7 +265,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 						s.ChannelMessageSend(m.ChannelID, buf.String())
 					}
-				} else if strings.ToLower(args[2]) == "clear" || strings.ToLower(args[2]) == "c" {
+				} else if strings.ToLower(args[2]) == clearArgumentString || strings.ToLower(args[2]) == "c" {
 					err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, userID)
 					if err != nil {
 						log.Println(err)
@@ -283,7 +277,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 				}
 			}
-			break
 
 		case command.Privacy:
 			if m.Author != nil {
@@ -299,7 +292,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				}
 			}
-			break
 
 		case command.Info:
 			embed := bot.infoResponse(m.GuildID, sett)
@@ -307,7 +299,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			if err != nil {
 				log.Println(err)
 			}
-			break
 
 		case command.DebugState:
 			if m.Author != nil {
@@ -327,11 +318,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					}
 				}
 			}
-			break
 
-		case command.Ascii:
+		case command.ASCII:
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSend(m.ChannelID, AsciiCrewmate)
+				s.ChannelMessageSend(m.ChannelID, ASCIICrewmate)
 			} else {
 				id, err := extractUserIDFromMention(args[1])
 				if id == "" || err != nil {
@@ -340,7 +330,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					imposter := false
 					count := 1
 					if len(args[2:]) > 0 {
-						if args[2] == "true" || args[2] == "t" {
+						if args[2] == trueString || args[2] == "t" {
 							imposter = true
 						}
 						if len(args[3:]) > 0 {
@@ -349,36 +339,47 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					}
-					s.ChannelMessageSend(m.ChannelID, AsciiStarfield(sett, args[1], imposter, count))
+					s.ChannelMessageSend(m.ChannelID, ASCIIStarfield(sett, args[1], imposter, count))
 				}
 			}
-			break
+
 		case command.Stats:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
-					arg := strings.ReplaceAll(strings.ToLower(args[1]), "\"", "")
-					if arg == "guild" || arg == "server" {
+					arg := strings.ReplaceAll(args[1], "\"", "")
+					if arg == "g" || arg == "guild" || arg == "server" {
 						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
 						if err != nil {
 							log.Println(err)
 						}
 					} else {
-						s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, or you mistyped 'guild'...")
+						arg = strings.ToUpper(arg)
+						log.Println(arg)
+						if MatchIDRegex.MatchString(arg) {
+							strs := strings.Split(arg, ":")
+							if len(strs) < 2 {
+								log.Println("Something very wrong with the regex for match/conn codes...")
+							} else {
+								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
+							}
+						} else {
+							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
+						}
 					}
 				} else {
 					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
 				}
 			}
-			break
+
 		case command.Premium:
-			premStatus := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, sett))
+				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {
@@ -394,7 +395,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					s.ChannelMessageSend(m.ChannelID, "Viewing the premium invites is an Admin-only command")
 				}
 			}
-			break
+
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.default",
@@ -403,7 +404,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				map[string]interface{}{
 					"CommandPrefix": prefix,
 				}))
-			break
 		}
 	}
 

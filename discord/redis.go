@@ -3,7 +3,9 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -20,7 +22,7 @@ const LinearBackoffMs = 100
 const MaxRetries = 10
 const SnowflakeLockMs = 3000
 
-//15 minute timeout
+// 15 minute timeout
 const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
@@ -39,54 +41,14 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func activeGamesCode() string {
-	return "automuteus:games"
-}
-
 func (bot *Bot) refreshGameLiveness(code string) {
 	t := time.Now()
-	bot.RedisInterface.client.ZAdd(ctx, activeGamesCode(), &redis.Z{
+	bot.RedisInterface.client.ZAdd(ctx, rediskey.ActiveGamesZSet, &redis.Z{
 		Score:  float64(t.Unix()),
 		Member: code,
 	})
 	before := t.Add(-time.Second * GameTimeoutSeconds)
-	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
-}
-
-func activeGamesKey(guildID string) string {
-	return "automuteus:discord:" + guildID + ":games:set"
-}
-
-func discordKeyTextChannelPtr(guildID, channelID string) string {
-	return "automuteus:discord:" + guildID + ":pointer:text:" + channelID
-}
-
-func discordKeyVoiceChannelPtr(guildID, channelID string) string {
-	return "automuteus:discord:" + guildID + ":pointer:voice:" + channelID
-}
-
-func discordKeyConnectCodePtr(guildID, code string) string {
-	return "automuteus:discord:" + guildID + ":pointer:code:" + code
-}
-
-func discordKey(guildID, id string) string {
-	return "automuteus:discord:" + guildID + ":" + id
-}
-
-func cacheHash(guildID string) string {
-	return "automuteus:discord:" + guildID + ":cache"
-}
-
-func snowflakeLockID(snowflake string) string {
-	return "automuteus:snowflake:" + snowflake + ":lock"
-}
-
-func voiceChangesForGameCodeLockKey(connectCode string) string {
-	return "automuteus:voice:game:" + connectCode + ":lock"
-}
-
-func totalGuildsKey() string {
-	return "automuteus:count:guilds"
+	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
@@ -95,26 +57,26 @@ func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.Ra
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SAdd(ctx, totalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SAdd(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SRem(ctx, totalGuildsKey(), string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SRem(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-//todo this can technically be a race condition? what happens if one of these is updated while we're fetching...
+// TODO this can technically be a race condition? what happens if one of these is updated while we're fetching...
 func (redisInterface *RedisInterface) getDiscordGameStateKey(gsr GameStateRequest) string {
-	key := redisInterface.CheckPointer(discordKeyConnectCodePtr(gsr.GuildID, gsr.ConnectCode))
+	key := redisInterface.CheckPointer(rediskey.ConnectCodePtr(gsr.GuildID, gsr.ConnectCode))
 	if key == "" {
-		key = redisInterface.CheckPointer(discordKeyTextChannelPtr(gsr.GuildID, gsr.TextChannel))
+		key = redisInterface.CheckPointer(rediskey.TextChannelPtr(gsr.GuildID, gsr.TextChannel))
 		if key == "" {
-			key = redisInterface.CheckPointer(discordKeyVoiceChannelPtr(gsr.GuildID, gsr.VoiceChannel))
+			key = redisInterface.CheckPointer(rediskey.VoiceChannelPtr(gsr.GuildID, gsr.VoiceChannel))
 		}
 	}
 	return key
@@ -129,11 +91,11 @@ type GameStateRequest struct {
 
 func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, voiceChangesForGameCodeLockKey(connectCode), dur, &redislock.Options{
+	lock, err := locker.Obtain(ctx, rediskey.VoiceChangesForGameCodeLock(connectCode), dur, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
-	if err == redislock.ErrNotObtained {
+	if errors.Is(err, redislock.ErrNotObtained) {
 		return nil
 	} else if err != nil {
 		log.Println(err)
@@ -143,19 +105,19 @@ func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur t
 	return lock
 }
 
-//need at least one of these fields to fetch
-func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateRequest) *DiscordGameState {
+// need at least one of these fields to fetch
+func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateRequest) *GameState {
 	return redisInterface.getDiscordGameState(gsr)
 }
 
-func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *DiscordGameState) {
+func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
-	if err == redislock.ErrNotObtained {
+	if errors.Is(err, redislock.ErrNotObtained) {
 		return nil, nil
 	} else if err != nil {
 		log.Println(err)
@@ -165,30 +127,29 @@ func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRe
 	return lock, redisInterface.getDiscordGameState(gsr)
 }
 
-func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest) *DiscordGameState {
+func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest) *GameState {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 
 	jsonStr, err := redisInterface.client.Get(ctx, key).Result()
-	if err == redis.Nil {
+	switch {
+	case errors.Is(err, redis.Nil):
 		dgs := NewDiscordGameState(gsr.GuildID)
-		//this is a little silly, but it works...
 		dgs.ConnectCode = gsr.ConnectCode
 		dgs.GameStateMsg.MessageChannelID = gsr.TextChannel
 		dgs.Tracking.ChannelID = gsr.VoiceChannel
 		redisInterface.SetDiscordGameState(dgs, nil)
 		return dgs
-	} else if err != nil {
+	case err != nil:
 		log.Println(err)
 		return nil
-	} else {
-		dgs := DiscordGameState{}
+	default:
+		dgs := GameState{}
 		err := json.Unmarshal([]byte(jsonStr), &dgs)
 		if err != nil {
 			log.Println(err)
 			return nil
-		} else {
-			return &dgs
 		}
+		return &dgs
 	}
 }
 
@@ -196,15 +157,13 @@ func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
 	key, err := redisInterface.client.Get(ctx, pointer).Result()
 	if err != nil {
 		return ""
-	} else {
-		return key
 	}
+	return key
 }
 
-func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState, lock *redislock.Lock) {
+func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock *redislock.Lock) {
 	if data == nil {
 		if lock != nil {
-			//log.Println("UNLOCKING")
 			lock.Release(ctx)
 		}
 		return
@@ -216,61 +175,51 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 		VoiceChannel: data.Tracking.ChannelID,
 		ConnectCode:  data.ConnectCode,
 	})
-	//log.Println("unlock " + key)
 
-	//connectCode is the 1 sole key we should ever rely on for tracking games. Because we generate it ourselves
-	//randomly, it's unique to every single game, and the capture and bot BOTH agree on the linkage
+	// connectCode is the 1 sole key we should ever rely on for tracking games. Because we generate it ourselves
+	// randomly, it's unique to every single amongus, and the capture and bot BOTH agree on the linkage
 	if key == "" && data.ConnectCode == "" {
-		//log.Println("SET: No key found in Redis for any of the text, voice, or connect codes!")
 		if lock != nil {
-			//log.Println("UNLOCKING")
 			lock.Release(ctx)
 		}
 		return
-	} else {
-		key = discordKey(data.GuildID, data.ConnectCode)
 	}
+	key = rediskey.ConnectCodeData(data.GuildID, data.ConnectCode)
 
 	jBytes, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
 		if lock != nil {
-			//log.Println("UNLOCKING")
 			lock.Release(ctx)
 		}
 		return
 	}
 
-	//log.Printf("Setting %s to JSON", key)
 	err = redisInterface.client.Set(ctx, key, jBytes, GameTimeoutSeconds*time.Second).Err()
 	if err != nil {
 		log.Println(err)
 	}
 
 	if lock != nil {
-		//log.Println("UNLOCKING")
 		lock.Release(ctx)
 	}
 
 	if data.ConnectCode != "" {
-		//log.Printf("Setting %s to %s", discordKeyConnectCodePtr(guildID, data.ConnectCode), key)
-		err = redisInterface.client.Set(ctx, discordKeyConnectCodePtr(data.GuildID, data.ConnectCode), key, GameTimeoutSeconds*time.Second).Err()
+		err = redisInterface.client.Set(ctx, rediskey.ConnectCodePtr(data.GuildID, data.ConnectCode), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
 	}
 
 	if data.Tracking.ChannelID != "" {
-		//log.Printf("Setting %s to %s", discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyVoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, GameTimeoutSeconds*time.Second).Err()
+		err = redisInterface.client.Set(ctx, rediskey.VoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
 	}
 
 	if data.GameStateMsg.MessageChannelID != "" {
-		//log.Printf("Setting %s to %s", discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID), key)
-		err = redisInterface.client.Set(ctx, discordKeyTextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, GameTimeoutSeconds*time.Second).Err()
+		err = redisInterface.client.Set(ctx, rediskey.TextChannelPtr(data.GuildID, data.GameStateMsg.MessageChannelID), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -278,7 +227,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *DiscordGameState
 }
 
 func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode string) {
-	key := activeGamesKey(guildID)
+	key := rediskey.ActiveGamesForGuild(guildID)
 	t := time.Now()
 	_, err := redisInterface.client.ZAdd(ctx, key, &redis.Z{
 		Score:  float64(t.Unix()),
@@ -289,11 +238,11 @@ func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode str
 		log.Println(err)
 	}
 	before := t.Add(-time.Second * GameTimeoutSeconds)
-	go redisInterface.client.ZRemRangeByScore(context.Background(), activeGamesCode(), "-inf", fmt.Sprintf("%d", before.Unix()))
+	go redisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {
-	key := activeGamesKey(guildID)
+	key := rediskey.ActiveGamesForGuild(guildID)
 
 	err := redisInterface.client.ZRem(ctx, key, connectCode).Err()
 	if err != nil {
@@ -301,9 +250,9 @@ func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string)
 	}
 }
 
-//only deletes from the guild's responsibility, NOT the entire guild counter!
+// only deletes from the guild's responsibility, NOT the entire guild counter!
 func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []string {
-	hash := activeGamesKey(guildID)
+	hash := rediskey.ActiveGamesForGuild(guildID)
 
 	before := time.Now().Add(-time.Second * GameTimeoutSeconds).Unix()
 
@@ -323,7 +272,7 @@ func (redisInterface *RedisInterface) LoadAllActiveGames(guildID string) []strin
 	return games
 }
 
-func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameState) {
+func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 	guildID := dgs.GuildID
 	connCode := dgs.ConnectCode
 	if guildID == "" || connCode == "" {
@@ -333,31 +282,32 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 		GuildID:     guildID,
 		ConnectCode: connCode,
 	})
-	key := discordKey(guildID, connCode)
+	key := rediskey.ConnectCodeData(guildID, connCode)
 
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
-	if err == redislock.ErrNotObtained {
+	switch {
+	case errors.Is(err, redislock.ErrNotObtained):
 		fmt.Println("Could not obtain lock!")
-	} else if err != nil {
+	case err != nil:
 		log.Fatalln(err)
-	} else {
+	default:
 		defer lock.Release(ctx)
 	}
 
-	//delete all the pointers to the underlying -actual- discord data
-	err = redisInterface.client.Del(ctx, discordKeyTextChannelPtr(guildID, data.GameStateMsg.MessageChannelID)).Err()
+	// delete all the pointers to the underlying -actual- discord data
+	err = redisInterface.client.Del(ctx, rediskey.TextChannelPtr(guildID, data.GameStateMsg.MessageChannelID)).Err()
 	if err != nil {
 		log.Println(err)
 	}
-	err = redisInterface.client.Del(ctx, discordKeyVoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
+	err = redisInterface.client.Del(ctx, rediskey.VoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
 	if err != nil {
 		log.Println(err)
 	}
-	err = redisInterface.client.Del(ctx, discordKeyConnectCodePtr(guildID, data.ConnectCode)).Err()
+	err = redisInterface.client.Del(ctx, rediskey.ConnectCodePtr(guildID, data.ConnectCode)).Err()
 	if err != nil {
 		log.Println(err)
 	}
@@ -369,11 +319,11 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *DiscordGameSta
 }
 
 func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key string) map[string]interface{} {
-	cacheHash := cacheHash(guildID)
+	cacheHash := rediskey.GuildCacheHash(guildID)
 
 	value, err := redisInterface.client.HGet(ctx, cacheHash, key).Result()
 	if err != nil {
-		if err != redis.Nil {
+		if !errors.Is(err, redis.Nil) {
 			log.Println(err)
 		}
 		return map[string]interface{}{}
@@ -385,7 +335,7 @@ func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key s
 		return map[string]interface{}{}
 	}
 
-	//log.Println(ret)
+	// log.Println(ret)
 	return ret
 }
 
@@ -398,8 +348,7 @@ func (redisInterface *RedisInterface) AddUsernameLink(guildID, userID, userName 
 }
 
 func (redisInterface *RedisInterface) DeleteLinksByUserID(guildID, userID string) error {
-
-	//over all the usernames associated with just this userID, delete the underlying mapping of username->userID
+	// over all the usernames associated with just this userID, delete the underlying mapping of username->userID
 	usernames := redisInterface.GetUsernameOrUserIDMappings(guildID, userID)
 	for username := range usernames {
 		err := redisInterface.deleteHashSubEntry(guildID, username, userID)
@@ -408,8 +357,8 @@ func (redisInterface *RedisInterface) DeleteLinksByUserID(guildID, userID string
 		}
 	}
 
-	//now delete the userID->username list entirely
-	cacheHash := cacheHash(guildID)
+	// now delete the userID->username list entirely
+	cacheHash := rediskey.GuildCacheHash(guildID)
 	return redisInterface.client.HDel(ctx, cacheHash, userID).Err()
 }
 
@@ -429,7 +378,7 @@ func (redisInterface *RedisInterface) deleteHashSubEntry(guildID, key, entry str
 }
 
 func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key string, values map[string]interface{}) error {
-	cacheHash := cacheHash(guildID)
+	cacheHash := rediskey.GuildCacheHash(guildID)
 
 	jBytes, err := json.Marshal(values)
 	if err != nil {
@@ -437,7 +386,7 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 	}
 
 	err = redisInterface.client.HSet(ctx, cacheHash, key, jBytes).Err()
-	//1 week TTL on username cache
+	// 1 week TTL on username cache
 	if err == nil {
 		redisInterface.client.Expire(ctx, cacheHash, time.Hour*24*7)
 	}
@@ -447,8 +396,8 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 
 func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
 	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, snowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
-	if err == redislock.ErrNotObtained {
+	lock, err := locker.Obtain(ctx, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
+	if errors.Is(err, redislock.ErrNotObtained) {
 		return nil
 	} else if err != nil {
 		log.Println(err)

@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"errors"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -10,11 +12,10 @@ import (
 	"strconv"
 )
 
-type MetricsEventType int
+type EventType int
 
 const (
-	Generic MetricsEventType = iota
-	MuteDeafenOfficial
+	MuteDeafenOfficial EventType = iota
 	MessageCreateDelete
 	MessageEdit
 	ReactionAdd
@@ -24,7 +25,6 @@ const (
 )
 
 var MetricTypeStrings = []string{
-	"Generic",
 	"mute_deafen_official",
 	"message_create_delete",
 	"message_edit",
@@ -34,22 +34,22 @@ var MetricTypeStrings = []string{
 	"invalid_request",
 }
 
-type MetricsCollector struct {
+type Collector struct {
 	counterDesc *prometheus.Desc
 	client      *redis.Client
 	commit      string
 	nodeID      string
 }
 
-func (c *MetricsCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.counterDesc
 }
 
-func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	for i, str := range MetricTypeStrings {
 		if i != 0 {
-			v, err := c.client.Get(context.Background(), discordRequestsKeyByCommitAndType(str)).Result()
-			if err != redis.Nil && err != nil {
+			v, err := c.client.Get(context.Background(), rediskey.RequestsByType(str)).Result()
+			if !errors.Is(err, redis.Nil) && err != nil {
 				log.Println(err)
 				continue
 			} else {
@@ -74,12 +74,15 @@ func (c *MetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func RecordDiscordRequests(client *redis.Client, requestType MetricsEventType, num int64) {
-	incrementDiscordRequests(client, requestType, num)
+func RecordDiscordRequests(client *redis.Client, requestType EventType, num int64) {
+	for i := int64(0); i < num; i++ {
+		typeStr := MetricTypeStrings[requestType]
+		client.Incr(context.Background(), rediskey.RequestsByType(typeStr))
+	}
 }
 
-func NewCollector(client *redis.Client, nodeID string) *MetricsCollector {
-	return &MetricsCollector{
+func NewCollector(client *redis.Client, nodeID string) *Collector {
+	return &Collector{
 		counterDesc: prometheus.NewDesc("discord_requests_by_node_and_type", "Number of discord requests made, differentiated by node/type", []string{"nodeID", "type"}, nil),
 		client:      client,
 		nodeID:      nodeID,

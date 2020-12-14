@@ -2,7 +2,7 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
+	"github.com/denverquane/amongusdiscord/amongus"
 )
 
 // User struct
@@ -31,7 +31,7 @@ func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 		},
 		ShouldBeDeaf: false,
 		ShouldBeMute: false,
-		InGameName:   game.UnlinkedPlayerName,
+		InGameName:   amongus.UnlinkedPlayerName,
 	}
 }
 
@@ -56,6 +56,6 @@ func (user *UserData) GetPlayerName() string {
 	return user.InGameName
 }
 
-func (user *UserData) Link(player game.PlayerData) {
+func (user *UserData) Link(player amongus.PlayerData) {
 	user.InGameName = player.Name
 }

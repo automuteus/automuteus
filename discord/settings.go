@@ -3,9 +3,9 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/game"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/game"
 	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -286,7 +286,7 @@ func ConstructEmbedForSetting(value string, setting Setting, sett *storage.Guild
 		Title:       setting.name,
 		Description: sett.LocalizeMessage(setting.desc),
 		Timestamp:   "",
-		Color:       15844367, //GOLD
+		Color:       15844367, // GOLD
 		Image:       nil,
 		Thumbnail:   nil,
 		Video:       nil,
@@ -356,42 +356,32 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	switch settType {
 	case Prefix:
 		isValid = CommandPrefixSetting(s, m, sett, args)
-		break
 	case Language:
 		isValid = SettingLanguage(s, m, sett, args)
-		break
 	case AdminUserIDs:
 		isValid = SettingAdminUserIDs(s, m, sett, args)
-		break
 	case RoleIDs:
 		isValid = SettingPermissionRoleIDs(s, m, sett, args)
-		break
 	case UnmuteDead:
 		isValid = SettingUnmuteDeadDuringTasks(s, m, sett, args)
-		break
 	case Delays:
 		isValid = SettingDelays(s, m, sett, args)
-		break
 	case VoiceRules:
 		isValid = SettingVoiceRules(s, m, sett, args)
-		break
 	case MapVersion:
 		isValid = SettingMapVersion(s, m, sett, args)
-		break
 	case MatchSummary:
 		if !prem {
 			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
 		isValid = SettingMatchSummary(s, m, sett, args)
-		break
 	case AutoRefresh:
 		if !prem {
 			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
 		isValid = SettingAutoRefresh(s, m, sett, args)
-		break
 	case Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -399,12 +389,10 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 			return
 		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
-		return
 	case Reset:
 		sett = storage.MakeGuildSettings()
 		s.ChannelMessageSend(m.ChannelID, "Resetting guild settings to default values")
 		isValid = true
-		break
 	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
@@ -560,11 +548,12 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 		} else {
 			listOfAdmins := ""
 			for index, ID := range adminIDs {
-				if index == 0 {
+				switch {
+				case index == 0:
 					listOfAdmins += "<@" + ID + ">"
-				} else if index == adminCount-1 {
+				case index == adminCount-1:
 					listOfAdmins += " and <@" + ID + ">"
-				} else {
+				default:
 					listOfAdmins += ", <@" + ID + ">"
 				}
 			}
@@ -578,7 +567,6 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	var userIDs []string
 
 	if args[2] != "clear" && args[2] != "c" {
-
 		for _, userName := range args[2:] {
 			if userName == "" || userName == " " {
 				// User added a double space by accident, ignore it
@@ -639,11 +627,12 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 		} else {
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
-				if index == 0 {
+				switch {
+				case index == 0:
 					listOfRoles += "<@&" + ID + ">"
-				} else if index == adminRoleCount-1 {
+				case index == adminRoleCount-1:
 					listOfRoles += " and <@&" + ID + ">"
-				} else {
+				default:
 					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
@@ -737,12 +726,12 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			}))
 			sett.SetUnmuteDeadDuringTasks(false)
 			return true
-		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
-				Other: "It's already false!",
-			}))
 		}
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
+			Other: "It's already false!",
+		}))
+
 	} else {
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
@@ -855,11 +844,12 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 		return false
 	}
 
-	if args[2] == "deaf" {
-		args[2] = "deafened" // for formatting later on
-	} else if args[2] == "mute" {
-		args[2] = "muted" // same here
-	} else {
+	switch {
+	case args[2] == "deaf":
+		args[2] = "deafened"
+	case args[2] == "mute":
+		args[2] = "muted"
+	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherMuteDeaf",
 			Other: "`{{.Arg}}` is neither `mute` nor `deaf`!",
@@ -927,11 +917,12 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	var newValue bool
-	if args[5] == "true" {
+	switch {
+	case args[5] == "true":
 		newValue = true
-	} else if args[5] == "false" {
+	case args[5] == "false":
 		newValue = false
-	} else {
+	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherTrueFalse",
 			Other: "`{{.Arg}}` is neither `true` or `false`!",
@@ -1025,17 +1016,18 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	}
 
 	sett.SetDeleteGameSummaryMinutes(int(num))
-	if num == -1 {
+	switch {
+	case num == -1:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success-1",
 			Other: "From now on, I'll never delete match summary messages.",
 		}))
-	} else if num == 0 {
+	case num == 0:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success0",
 			Other: "From now on, I'll delete match summary messages immediately.",
 		}))
-	} else {
+	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success",
 			Other: "From now on, I'll delete match summary messages after {{.Minutes}} minutes.",

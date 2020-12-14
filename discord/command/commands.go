@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-type CommandType int
+type Type int
 
 const (
-	Help CommandType = iota
+	Help Type = iota
 	New
 	End
 	Pause
@@ -23,22 +23,22 @@ const (
 	Privacy
 	Info
 	DebugState
-	Ascii
+	ASCII
 	Stats
 	Premium
 	Null
 )
 
 type Command struct {
-	CommandType CommandType
+	Aliases     []string
 	Command     string
 	Example     string
+	Emoji       string
+	CommandType Type
 	ShortDesc   *i18n.Message
 	Description *i18n.Message
 	Arguments   *i18n.Message
-	Aliases     []string
 	IsSecret    bool
-	Emoji       string
 	IsAdmin     bool
 	IsOperator  bool
 }
@@ -48,18 +48,17 @@ func GetCommand(arg string) Command {
 	for _, cmd := range AllCommands {
 		if arg == cmd.Command {
 			return cmd
-		} else {
-			for _, al := range cmd.Aliases {
-				if arg == al {
-					return cmd
-				}
+		}
+		for _, al := range cmd.Aliases {
+			if arg == al {
+				return cmd
 			}
 		}
 	}
 	return AllCommands[Null]
 }
 
-//note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
+// note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
 var AllCommands = []Command{
 	{
 		CommandType: Help,
@@ -254,7 +253,7 @@ var AllCommands = []Command{
 			Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
 		},
 		Aliases:    []string{"f"},
-		IsSecret:   true, //force is broken rn, so hide it
+		IsSecret:   true, // force is broken rn, so hide it
 		Emoji:      "📢",
 		IsAdmin:    false,
 		IsOperator: true,
@@ -414,7 +413,7 @@ var AllCommands = []Command{
 		IsOperator: false,
 	},
 	{
-		CommandType: Ascii,
+		CommandType: ASCII,
 		Command:     "ascii",
 		Example:     "ascii @Soup t 10",
 		ShortDesc: &i18n.Message{
