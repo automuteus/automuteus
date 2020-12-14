@@ -270,10 +270,6 @@ other = "❌**Geen Capture programma verbonden! Klik op de link in je DMs om te 
 hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
 other = "Verbonden spelers"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> speelt een Among Us spel!\\nHet spel vind plaats in "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(Betreed een spellobby in Among Us om het spel te starten)"

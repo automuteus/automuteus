@@ -95,8 +95,8 @@ hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming"
 
 ["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmate Wins"
+hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
+other = "Crewmate Winrate"
 
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
@@ -107,12 +107,12 @@ hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Games Played"
 
 ["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Imposter Wins"
+hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
+other = "Imposter Winrate"
 
 ["responses.guildStatsEmbed.MostGames"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Games Played"
+hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
+other = "Most Games"
 
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
@@ -125,6 +125,22 @@ other = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**,
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
 other = "Guild Stats"
+
+["responses.guildStatsEmbed.TotalWinrate"]
+hash = "sha1-11b22a604bf2becc3506f216f0139f7e307ac113"
+other = "Total Winrate"
+
+["responses.lobbyMetaEmbedFields.Host"]
+hash = "sha1-3960ec4ca5fb5e5d8cdb2cc1c5121c003e426517"
+other = "Host"
+
+["responses.lobbyMetaEmbedFields.VoiceChannel"]
+hash = "sha1-f32f308546b6f6c3b1d900a56f0ea32909f5d7b3"
+other = "Voice Channel"
+
+["responses.matchStatsEmbed.Title"]
+hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
+other = "Game `{{.MatchID}}`"
 
 ["responses.nonPremiumSetting.Desc"]
 hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
@@ -159,8 +175,16 @@ hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!"
 
 ["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "Looks like you have AutoMuteUs **{{.Tier}}**! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
+hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
+other = "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
+
+["responses.premiumResponse.PremiumDescriptionDaysRemaining"]
+hash = "sha1-f65aa5c43a7ebe1901c85300559ec6af58e36f12"
+other = " for another {{.Days}} days"
+
+["responses.premiumResponse.PremiumDescriptionExpired"]
+hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
+other = "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\\n\\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"

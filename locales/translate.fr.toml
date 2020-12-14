@@ -26,13 +26,53 @@ other = "I don't have a map by that name!"
 hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
 other = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\\nCurrent Games: {{.Games}}"
 
+["responses.guildStatsEmbed.CrewmateWins"]
+hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
+other = "Crewmate Winrate"
+
+["responses.guildStatsEmbed.ImposterWins"]
+hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
+other = "Imposter Winrate"
+
+["responses.guildStatsEmbed.MostGames"]
+hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
+other = "Most Games"
+
 ["responses.guildStatsEmbed.Premium"]
 hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
 other = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them)."
 
+["responses.guildStatsEmbed.TotalWinrate"]
+hash = "sha1-11b22a604bf2becc3506f216f0139f7e307ac113"
+other = "Total Winrate"
+
+["responses.lobbyMetaEmbedFields.Host"]
+hash = "sha1-3960ec4ca5fb5e5d8cdb2cc1c5121c003e426517"
+other = "Host"
+
+["responses.lobbyMetaEmbedFields.VoiceChannel"]
+hash = "sha1-f32f308546b6f6c3b1d900a56f0ea32909f5d7b3"
+other = "Voice Channel"
+
+["responses.matchStatsEmbed.Title"]
+hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
+other = "Game `{{.MatchID}}`"
+
 ["responses.premiumResponse.FreeDescription"]
 hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
 other = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
+other = "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
+
+["responses.premiumResponse.PremiumDescriptionDaysRemaining"]
+hash = "sha1-f65aa5c43a7ebe1901c85300559ec6af58e36f12"
+other = " for another {{.Days}} days"
+
+["responses.premiumResponse.PremiumDescriptionExpired"]
+hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
+other = "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\\n\\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 
 ["responses.premiumResponse.SettingsDescExtra"]
 hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"

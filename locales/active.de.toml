@@ -363,23 +363,11 @@ other = "{{.User}}, du reagierst zu schnell! Mach bitte langsamer!"
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Ich ignoriere deine Nachrichten die nächsten 5 Minuten, hör auf zu Spammen"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmate Siege"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Gilden Statistik für {{.GuildName}}"
 
 ["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Runden Gespielt"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Imposter Siege"
-
-["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Runden Gespielt"
 
@@ -427,10 +415,6 @@ other = "🔒 ROOM CODE"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Bot ist pausiert!** ⚠\\n\\n"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> spielt ein Among Us Spiel!\\nDas Spiel findet statt in "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(Tritt einer Spiellobby in Among Us bei, um das Spiel zu starten)"
@@ -470,10 +454,6 @@ other = "Premium Nutzer bekommen Zugang zu \"helper\" Bots die sicherstellen das
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "Zeige eine Liste von Premium Bots die du mit `{{.CommandPrefix}} einladen kannst`!"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "Sieht so aus als hast du AutoMuteUs **{{.Tier}}**! Danke für die Unterstützung!\\n\\nHier sind ein paar Vorteile die du mit Premium nutzen kannst!"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"

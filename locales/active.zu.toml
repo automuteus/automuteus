@@ -391,10 +391,6 @@ other = "{{.User}}, you'we weacting too fast! Pwease swow down! ◔w◔"
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} I'm ignyowing youw messages fow de nyext 5 minyutes, stop spamming ✧w✧"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Cwewmate Wins"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Guiwd stats fow {{.GuildName}} ᅌwᅌ"
@@ -402,14 +398,6 @@ other = "Guiwd stats fow {{.GuildName}} ᅌwᅌ"
 ["responses.guildStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Games Pwayed"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Impostew Wins"
-
-["responses.guildStatsEmbed.MostGames"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Games Pwayed owO"
 
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
@@ -459,10 +447,6 @@ other = "🔒 WOOM CODE ◔w◔"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Bot is Paused!** ⚠\\n\\n ØwØ"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> is wunnying an Among Us game!\\nThe game is happenying in "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(Entew a game wobby in Among Us to stawt de match) ♥w♥"
@@ -506,10 +490,6 @@ other = "Check out de coow dings dat Pwemium AutoMuteUs has to offew!\\n\\n[Get 
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "View a wist of Pwemium bots you can invite wid `{{.CommandPrefix}} pwemium invites`!"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "Wooks wike you have AutoMuteUs **{{.Tier}}**! Thanks fow de suppowt!\\n\\nBewow awe some of de benyefits you can customize wid youw Pwemium status! ♥w♥"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"

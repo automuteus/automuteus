@@ -22,6 +22,7 @@ const (
 	MuteDeafenCapture
 	MuteDeafenWorker
 	InvalidRequest
+	OfficialRequest //must be the last metric
 )
 
 var MetricTypeStrings = []string{
@@ -32,6 +33,7 @@ var MetricTypeStrings = []string{
 	"mute_deafen_capture",
 	"mute_deafen_worker",
 	"invalid_request",
+	"official_request", //must be the last request
 }
 
 type Collector struct {
@@ -46,8 +48,9 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
+	official := int64(0)
 	for i, str := range MetricTypeStrings {
-		if i != 0 {
+		if i != int(OfficialRequest) {
 			v, err := c.client.Get(context.Background(), rediskey.RequestsByType(str)).Result()
 			if !errors.Is(err, redis.Nil) && err != nil {
 				log.Println(err)
@@ -69,7 +72,18 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 					c.nodeID,
 					str,
 				)
+				if i != int(MuteDeafenCapture) && i != int(MuteDeafenWorker) {
+					official += num
+				}
 			}
+		} else {
+			ch <- prometheus.MustNewConstMetric(
+				c.counterDesc,
+				prometheus.CounterValue,
+				float64(official),
+				c.nodeID,
+				str,
+			)
 		}
 	}
 }

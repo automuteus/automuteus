@@ -331,10 +331,6 @@ other = "🔒 CODICE STANZA"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Bot in Pausa!** ⚠\\n\\n"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> sta eseguendo una partita ad Among Us!\\nLa partita inizerà nel "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(Entra in una lobby di gioco in Among Us per iniziare la partita))"

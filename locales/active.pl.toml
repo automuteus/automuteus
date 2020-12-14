@@ -393,23 +393,11 @@ other = "{{.User}}, reagujesz zbyt szybko! Proszę zwolnij!"
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Ignoruję Twoje wiadomości przez następne 5 minut, przestań spamować!"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Wygrane jako Crewmate"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Statystyki serwera dla {{.GuildName}}"
 
 ["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Rozegrane gry"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Wygrane jako Impostor"
-
-["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Rozegrane gry"
 
@@ -461,10 +449,6 @@ other = "🔒 Kod pokoju"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Bot spauzowany!** ⚠\\n\\n"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> rozpoczął grę w Among US!\\nGra działa w tej chwili "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "Dołącz do lobby w Among Us aby rozpocząć grę)"
@@ -508,10 +492,6 @@ other = "Sprawdź, jakie świetne rzeczy oferuje Premium AutoMuteUs!\\n\\n[Get A
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "Zobacz listę botów, które możesz zaprosić poleceniem `{{.CommandPrefix}} premium invites`!"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "Wygląda na to, że masz AutoMuetUs **{{.Tier}}**! Dzięki za wsparcie!\\n\\nPoniżej znajduje się lista benefitów, które możesz spersonalizować, otrzymanych wraz ze statusem Premium!"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"

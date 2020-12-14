@@ -363,23 +363,11 @@ other = "{{.User}}, vous réagissez trop vite ! Ralentissez !"
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Je vous ignore pendant les 5 prochaines minutes, arrêtez de spam"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Les Crewmates ont gagné"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Statistiques du serveur {{.GuildName}}"
 
 ["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Parties jouées"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Victoires en Imposteur"
-
-["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Parties jouées"
 
@@ -427,10 +415,6 @@ other = "🔒 CODE DE LA SALLE"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠ **Le bot est en pause !** ⚠\\n\\n"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> lance une partie d'Among Us !\\nLa partie se déroule dans le salon "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(Rejoignez une partie Among Us pour démarrer le jeu)"
@@ -470,10 +454,6 @@ other = "Les utilisateurs premiums ont accès à des bots \"assistants\" pour re
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "Voir une liste des bots Premium que vous pouvez inviter avec `{{.CommandPrefix}} premium invites` !"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "Il semble que vous ayez AutoMuteUs **{{.Tier}}**! Merci pour votre soutien !\\n\\nVous trouverez ci-dessous quelques fonctionnalités dont vous bénéficiez avec votre Premium!"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"

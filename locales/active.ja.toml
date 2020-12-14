@@ -358,23 +358,11 @@ other = "{{.User}} 、リアクションを付けるのが早すぎます！も�
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "現在、 {{.User}} を5分間無視しています。スパムを辞めてください。"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmateでの勝利"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "{{.GuildName}} の詳細情報"
 
 ["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "ゲームのプレイ回数"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Imposterでの勝利数"
-
-["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "ゲームのプレイ回数"
 
@@ -422,10 +410,6 @@ other = "🔒 部屋コード"
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\\n⚠**中断されました！**⚠\\n\\n"
 
-["responses.makeDescription.author"]
-hash = "sha1-64ca24173ef916d68d9384947713d46814d24530"
-other = "<@{{.author}}> が Among Us を開始しました！\\nここでゲームが行われています: "
-
 ["responses.menuMessage.Linked.FooterText"]
 hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
 other = "(ゲームを開始するには、ロビーに参加してください)"
@@ -465,10 +449,6 @@ other = "Premium users get access to \"helper\" bots that make sure muting is fa
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "`{{.CommandPrefix}} premium invites` で招待できるプレミアムBOTの一覧を見よう！"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-8622843e3005cb084b34a36ef03c1b327ca8cc45"
-other = "あなたのAuteMuteUsプレミアムランクTierは **{{.Tier}}** です！ サポートありがとうございます！\\n\\nプレミアムステータスでカスタマイズできる設定をご紹介します！"
 
 ["responses.premiumResponse.PriorityGameAccess"]
 hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
