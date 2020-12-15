@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/task"
-	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -130,25 +129,15 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					var lock *redislock.Lock
-					var dgs *GameState
-					i := 0
-					for lock == nil && i < 10 {
-						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-						i++
-					}
-					if i > 9 && lock == nil {
-						log.Println("Couldn't obtain DGS for gameover recording after 10 tries!")
-						break
-					}
 
-					if lock != nil && dgs != nil {
+					// we only need a read-only state for making the game summary message
+					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
+					if dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
 						if delTime != 0 {
-							oldPhase := dgs.AmongUsData.Phase
+							// we mark the phase on this READ-ONLY state, just for the embed creation
 							dgs.AmongUsData.Phase = game.GAMEOVER
 							embed := bot.gameStateResponse(dgs, sett)
-							dgs.AmongUsData.Phase = oldPhase
 
 							// TODO doesn't work
 							//winners := getWinners(*dgs, gameOverResult)
@@ -189,19 +178,27 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(dgs.GameStateMsg.MessageChannelID, embed)
 							if delTime > 0 && err == nil {
 								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-								go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, msg.ID, time.Minute*time.Duration(delTime))
+								go MessageDeleteWorker(bot.PrimarySession, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
 							} else if err == nil {
 								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 							}
 						}
 						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
-						dgs.MatchID = -1
-						dgs.MatchStartUnix = -1
-						bot.RedisInterface.SetDiscordGameState(dgs, lock)
-						// in this context, only refresh the game message automatically
+
+						// refresh the game message if the setting is marked (it is not locked, the previous dgs is
+						// read-only). This means the original msg is refreshed, not the gameover message
 						if sett.AutoRefresh {
 							bot.RefreshGameStateMessage(dgsRequest, sett)
 						}
+
+						// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
+						lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+						for lock == nil {
+							lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+						}
+						dgs.MatchID = -1
+						dgs.MatchStartUnix = -1
+						bot.RedisInterface.SetDiscordGameState(dgs, lock)
 					}
 				}
 				if job.JobType != task.ConnectionJob {

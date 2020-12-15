@@ -99,8 +99,8 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		return
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
 	g, err := sess.State.Guild(dgs.GuildID)

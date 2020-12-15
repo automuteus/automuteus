@@ -142,14 +142,15 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 
 func (bot *Bot) statsRefreshWorker(dur time.Duration) {
 	for {
-		log.Println("Refreshing stats with worker")
 		users := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
 		if users == rediskey.NotFound {
+			log.Println("Refreshing user stats with worker")
 			rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
 		}
 
 		games := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
 		if games == rediskey.NotFound {
+			log.Println("Refreshing game stats with worker")
 			rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
 		}
 
@@ -323,21 +324,18 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
+	//don't try to edit this message, because we're about to delete it
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
-	del := dgs.DeleteGameStateMsg(bot.PrimarySession) // delete the old message
-	if del {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
-	}
-
-	if dgs.GameStateMsg.MessageChannelID != "" && del {
+	if dgs.GameStateMsg.MessageChannelID != "" {
+		dgs.DeleteGameStateMsg(bot.PrimarySession) // delete the old message
 		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-	// add the emojis to the refreshed message
 
+	// add the emojis to the refreshed message
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.PrimarySession, "▶️")
