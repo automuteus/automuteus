@@ -204,7 +204,7 @@ func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (premi
 		return premium.FreeTier, 0
 	}
 
-	daysRem := -1
+	daysRem := NoExpiryCode
 
 	if guild.TxTimeUnix != nil {
 		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
