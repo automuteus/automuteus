@@ -68,7 +68,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			ID:    "responses.userStatsEmbed.Premium",
 			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
 		})
-		colorRankings := bot.PostgresInterface.ColorRankingForPlayer(userID)
+		colorRankings := bot.PostgresInterface.ColorRankingForPlayerOnServer(userID, guildID)
 		if len(colorRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i := 0; i < len(colorRankings) && i < UserLeaderboardCount; i++ {
@@ -88,7 +88,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		nameRankings := bot.PostgresInterface.NamesRankingForPlayer(userID)
+		nameRankings := bot.PostgresInterface.NamesRankingForPlayerOnServer(userID, guildID)
 		if len(nameRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i := 0; i < len(nameRankings) && i < UserLeaderboardCount; i++ {
