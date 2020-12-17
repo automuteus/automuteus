@@ -18,8 +18,9 @@ type GuildSettings struct {
 	Delays                   game.GameDelays `json:"delays"`
 	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
 	lock                     sync.RWMutex
-	UnmuteDeadDuringTasks    bool `json:"unmuteDeadDuringTasks"`
-	AutoRefresh              bool `json:"autoRefresh"`
+	UnmuteDeadDuringTasks    bool   `json:"unmuteDeadDuringTasks"`
+	AutoRefresh              bool   `json:"autoRefresh"`
+	MatchSummaryChannelID    string `json:"matchSummaryChannelID"`
 }
 
 func MakeGuildSettings() *GuildSettings {
@@ -34,6 +35,7 @@ func MakeGuildSettings() *GuildSettings {
 		DeleteGameSummaryMinutes: 0, //-1 for never delete the match summary
 		AutoRefresh:              false,
 		MapVersion:               "simple",
+		MatchSummaryChannelID:    "",
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -101,6 +103,14 @@ func (gs *GuildSettings) GetDeleteGameSummaryMinutes() int {
 
 func (gs *GuildSettings) SetDeleteGameSummaryMinutes(num int) {
 	gs.DeleteGameSummaryMinutes = num
+}
+
+func (gs *GuildSettings) SetMatchSummaryChannelID(id string) {
+	gs.MatchSummaryChannelID = id
+}
+
+func (gs *GuildSettings) GetMatchSummaryChannelID() string {
+	return gs.MatchSummaryChannelID
 }
 
 func (gs *GuildSettings) GetAutoRefresh() bool {
