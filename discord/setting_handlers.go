@@ -24,11 +24,19 @@ func ConstructEmbedForSetting(value string, setting setting.Setting, sett *stora
 	if value == "" {
 		value = "null"
 	}
+
+	desc := sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.ConstructEmbedForSetting.StarterDesc",
+		Other: "Type `{{.CommandPrefix}} settings {{.Command}}` to change this setting.\n\n",
+	}, map[string]interface{}{
+		"CommandPrefix": sett.GetCommandPrefix(),
+		"Command":       setting.Name,
+	})
 	return discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
 		Title:       setting.Name,
-		Description: sett.LocalizeMessage(setting.Description),
+		Description: desc + sett.LocalizeMessage(setting.Description),
 		Timestamp:   "",
 		Color:       15844367, // GOLD
 		Image:       nil,
