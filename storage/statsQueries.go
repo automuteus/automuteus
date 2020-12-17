@@ -113,15 +113,15 @@ type StringModeCount struct {
 	Mode  string `db:"mode"`
 }
 
-func (psqlInterface *PsqlInterface) ColorRankingForPlayer(userID string) []*Int16ModeCount {
-	r := []*Int16ModeCount{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_color ORDER BY count desc;", userID)
-
-	if err != nil {
-		log.Println(err)
-	}
-	return r
-}
+//func (psqlInterface *PsqlInterface) ColorRankingForPlayer(userID string) []*Int16ModeCount {
+//	r := []*Int16ModeCount{}
+//	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_color ORDER BY count desc;", userID)
+//
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	return r
+//}
 func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildID string) []*Int16ModeCount {
 	r := []*Int16ModeCount{}
 	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_color ORDER BY count desc;", userID, guildID)
@@ -132,15 +132,15 @@ func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildI
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NamesRankingForPlayer(userID string) []*StringModeCount {
-	r := []*StringModeCount{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_name) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_name ORDER BY count desc;", userID)
-
-	if err != nil {
-		log.Println(err)
-	}
-	return r
-}
+//func (psqlInterface *PsqlInterface) NamesRankingForPlayer(userID string) []*StringModeCount {
+//	r := []*StringModeCount{}
+//	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_name) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_name ORDER BY count desc;", userID)
+//
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	return r
+//}
 
 func (psqlInterface *PsqlInterface) NamesRankingForPlayerOnServer(userID, guildID string) []*StringModeCount {
 	r := []*StringModeCount{}
@@ -162,7 +162,7 @@ func (psqlInterface *PsqlInterface) TotalGamesRankingForServer(guildID uint64) [
 	return r
 }
 
-func (psqlInterface *PsqlInterface) PlayersRankingForPlayer(userID, guildID string) []*PostgresOtherPlayerRanking {
+func (psqlInterface *PsqlInterface) OtherPlayersRankingForPlayerOnServer(userID, guildID string) []*PostgresOtherPlayerRanking {
 	r := []*PostgresOtherPlayerRanking{}
 	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT distinct B.user_id,"+
 		"count(*) over (partition by B.user_id),"+
