@@ -173,7 +173,7 @@ other = "Ajuster les réglages"
 
 ["commands.AllCommands.Stats.args"]
 hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
-other = "<@discord utilisateur> ou \"serveur\""
+other = "<@discord utilisateur> ou \"server\""
 
 ["commands.AllCommands.Stats.desc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
