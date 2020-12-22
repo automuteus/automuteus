@@ -558,8 +558,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	log.Println("Added self game state message")
-	// TODO well this is a little ugly
+	// log.Println("Added self game state message")
 	// +12 emojis, 1 for X
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 

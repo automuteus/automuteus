@@ -269,10 +269,11 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 func (bot *Bot) gameStateResponse(dgs *GameState, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
 	messages := map[game.Phase]func(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings) *discordgo.MessageEmbed{
-		game.MENU:    menuMessage,
-		game.LOBBY:   lobbyMessage,
-		game.TASKS:   gamePlayMessage,
-		game.DISCUSS: gamePlayMessage,
+		game.MENU:     menuMessage,
+		game.LOBBY:    lobbyMessage,
+		game.TASKS:    gamePlayMessage,
+		game.DISCUSS:  gamePlayMessage,
+		game.GAMEOVER: gamePlayMessage,
 	}
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }

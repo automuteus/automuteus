@@ -312,8 +312,9 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
+	// log.Println("Refreshing game state message")
 
-	//don't try to edit this message, because we're about to delete it
+	// don't try to edit this message, because we're about to delete it
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
 	if dgs.GameStateMsg.MessageChannelID != "" {

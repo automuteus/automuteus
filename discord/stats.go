@@ -258,23 +258,23 @@ func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, stri
 			return mem.User.Username, mem.Nick, mem.User.Discriminator
 		}
 		return "", mem.Nick, ""
-	} else {
-		split := strings.Split(info, ":")
-		if len(split) < 3 {
-			return "", "", ""
-		}
-		return split[0], split[1], split[2]
 	}
+	split := strings.Split(info, ":")
+	if len(split) < 3 {
+		return "", "", ""
+	}
+	return split[0], split[1], split[2]
 }
 
 // TODO add setting for caching/uncaching userdata
+// TODO re-enable this feature after adding that setting
 func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.GuildSettings) string {
-	userName, nickname, _ := bot.CheckOrFetchCachedUserData(userID, guildID)
-	if nickname != "" {
-		return nickname
-	} else if userName != "" {
-		return userName
-	}
+	//userName, nickname, _ := bot.CheckOrFetchCachedUserData(userID, guildID)
+	//if nickname != "" {
+	//	return nickname
+	//} else if userName != "" {
+	//	return userName
+	//}
 
 	return "<@" + userID + ">"
 }

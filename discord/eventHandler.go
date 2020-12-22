@@ -135,7 +135,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					if dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
 						if delTime != 0 {
-							// TODO doesn't work
 							winners := getWinners(*dgs, gameOverResult)
 							buf := bytes.NewBuffer([]byte{})
 							for i, v := range winners {
@@ -382,7 +381,6 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		bot.applyToAll(dgs, false, false)
-		// go dgs.RemoveAllReactions(bot.PrimarySession.GetPrimarySession())
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
