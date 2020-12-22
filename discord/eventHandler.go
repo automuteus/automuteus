@@ -1,15 +1,15 @@
 package discord
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/task"
-	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"strconv"
 	"strings"
@@ -135,47 +135,26 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					if dgs != nil {
 						delTime := sett.GetDeleteGameSummaryMinutes()
 						if delTime != 0 {
-							// we mark the phase on this READ-ONLY state, just for the embed creation
-							dgs.AmongUsData.Phase = game.GAMEOVER
-							embed := bot.gameStateResponse(dgs, sett)
-
-							// TODO doesn't work
-							//winners := getWinners(*dgs, gameOverResult)
-							//buf := bytes.NewBuffer([]byte{})
-							//for i, v := range winners {
-							//	roleStr := "Crewmate"
-							//	if v.role == amongus.ImposterRole {
-							//		roleStr = "Imposter"
-							//	}
-							//	buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
-							//	if i < len(winners)-1 {
-							//		buf.WriteRune(',')
-							//	} else {
-							//		buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
-							//	}
-							//}
-							embed.Description = sett.LocalizeMessage(&i18n.Message{
-								ID:    "eventHandler.gameOver.matchID",
-								Other: "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\n{{.Winners}}",
-							},
-								map[string]interface{}{
-									"MatchID": matchIDCode(dgs.ConnectCode, dgs.MatchID),
-									"Winners": "", // buf.String(),
-								})
-							if delTime > 0 {
-								embed.Footer = &discordgo.MessageEmbedFooter{
-									Text: sett.LocalizeMessage(&i18n.Message{
-										ID:    "eventHandler.gameOver.deleteMessageFooter",
-										Other: "Deleting message {{.Mins}} mins from:",
-									},
-										map[string]interface{}{
-											"Mins": delTime,
-										}),
-									IconURL:      "",
-									ProxyIconURL: "",
+							winners := getWinners(*dgs, gameOverResult)
+							buf := bytes.NewBuffer([]byte{})
+							for i, v := range winners {
+								roleStr := "Crewmate"
+								if v.role == game.ImposterRole {
+									roleStr = "Imposter"
+								}
+								buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
+								if i < len(winners)-1 {
+									buf.WriteRune(',')
+								} else {
+									buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
 								}
 							}
-							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(dgs.GameStateMsg.MessageChannelID, embed)
+							embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+							channelID := dgs.GameStateMsg.MessageChannelID
+							if sett.GetMatchSummaryChannelID() != "" {
+								channelID = sett.GetMatchSummaryChannelID()
+							}
+							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(channelID, embed)
 							if delTime > 0 && err == nil {
 								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 								go MessageDeleteWorker(bot.PrimarySession, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
@@ -402,7 +381,6 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		bot.applyToAll(dgs, false, false)
-		// go dgs.RemoveAllReactions(bot.PrimarySession.GetPrimarySession())
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)

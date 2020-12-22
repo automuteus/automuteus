@@ -283,32 +283,21 @@ func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *GameState, args []string) 
 }
 
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
-	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+	// lock because we don't want anyone else modifying while we delete
+	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 
-	// rediskey.RemoveActiveGame(bot.RedisInterface.client, dgs.ConnectCode)
-
-	sett := bot.StorageInterface.GetGuildSettings(dgs.GuildID)
-	oldPhase := dgs.AmongUsData.GetPhase()
-	deleteTime := sett.GetDeleteGameSummaryMinutes()
-	// only print a fancy formatted message if the game actually got to the lobby or another phase. Otherwise, delete
-	if oldPhase != game.MENU && deleteTime != 0 {
-		// dgs.AmongUsData.UpdatePhase(amongus.GAMEOVER)
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
-		dgs.RemoveAllReactions(bot.PrimarySession)
-		if deleteTime != -1 {
-			go MessageDeleteWorker(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, time.Minute*time.Duration(deleteTime))
-		}
-	} else {
-		deleteMessage(bot.PrimarySession, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+	for lock == nil {
+		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
+
+	dgs.DeleteGameStateMsg(bot.PrimarySession)
+	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+
+	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
-	// TODO this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
+	// Note, this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
 
@@ -323,8 +312,9 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
+	// log.Println("Refreshing game state message")
 
-	//don't try to edit this message, because we're about to delete it
+	// don't try to edit this message, because we're about to delete it
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
 	if dgs.GameStateMsg.MessageChannelID != "" {

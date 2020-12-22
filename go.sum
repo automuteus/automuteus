@@ -30,6 +30,8 @@ github.com/automuteus/utils v0.0.3 h1:yc/Dxdiw4RFlXI05txhzwXaueTvvxumlZmdTLxbrBt
 github.com/automuteus/utils v0.0.3/go.mod h1:hh3qQZ1bw0RkkWDqGdFr8w4oGJPgC6vLeQ22bC9/bFI=
 github.com/automuteus/utils v0.0.4 h1:weSw/mAMHjZvqEz6XR+jYVgrpawQhGGFb4PfWgt4JHg=
 github.com/automuteus/utils v0.0.4/go.mod h1:3/DMXEOYYnBADTtb0rbBsDBD+d+QDdIpBRbvhy8cPoI=
+github.com/automuteus/utils v0.0.5 h1:oKuCSLnEBk6zZMISRXqSGC3wK6hkpX4mSrVYHH+TmwM=
+github.com/automuteus/utils v0.0.5/go.mod h1:3/DMXEOYYnBADTtb0rbBsDBD+d+QDdIpBRbvhy8cPoI=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=

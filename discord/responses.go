@@ -9,6 +9,7 @@ import (
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/denverquane/amongusdiscord/discord/command"
+	"github.com/denverquane/amongusdiscord/discord/setting"
 	"log"
 	"strings"
 	"time"
@@ -80,7 +81,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 	return embed
 }
 
-func settingResponse(commandPrefix string, settings []Setting, sett *storage.GuildSettings, prem bool) *discordgo.MessageEmbed {
+func settingResponse(commandPrefix string, settings []setting.Setting, sett *storage.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -106,14 +107,14 @@ func settingResponse(commandPrefix string, settings []Setting, sett *storage.Gui
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range settings {
-		if !v.premium || v.premium == prem {
-			name := v.name
-			if v.premium {
+		if !v.Premium || v.Premium == prem {
+			name := v.Name
+			if v.Premium {
 				name = "💎 " + name
 			}
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   name,
-				Value:  sett.LocalizeMessage(v.shortDesc),
+				Value:  sett.LocalizeMessage(v.ShortDesc),
 				Inline: true,
 			})
 		}
@@ -459,6 +460,54 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSet
 	return &msg
 }
 
+func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.GuildSettings, winners string) *discordgo.MessageEmbed {
+	_, _, playMap := dgs.AmongUsData.GetRoomRegionMap()
+
+	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
+
+	desc := sett.LocalizeMessage(&i18n.Message{
+		ID:    "eventHandler.gameOver.matchID",
+		Other: "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\n{{.Winners}}",
+	},
+		map[string]interface{}{
+			"MatchID": matchIDCode(dgs.ConnectCode, dgs.MatchID),
+			"Winners": winners,
+		})
+
+	var footer *discordgo.MessageEmbedFooter
+
+	if sett.DeleteGameSummaryMinutes > 0 {
+		footer = &discordgo.MessageEmbedFooter{
+			Text: sett.LocalizeMessage(&i18n.Message{
+				ID:    "eventHandler.gameOver.deleteMessageFooter",
+				Other: "Deleting message {{.Mins}} mins from:",
+			},
+				map[string]interface{}{
+					"Mins": sett.DeleteGameSummaryMinutes,
+				}),
+			IconURL:      "",
+			ProxyIconURL: "",
+		}
+	}
+
+	msg := discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       sett.LocalizeMessage(amongus.ToLocale(game.GAMEOVER)),
+		Description: desc,
+		Timestamp:   time.Now().Format(ISO8601),
+		Footer:      footer,
+		Color:       12745742, // DARK GOLD
+		Image:       nil,
+		Thumbnail:   getThumbnailFromMap(playMap, sett),
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      listResp,
+	}
+	return &msg
+}
+
 func getThumbnailFromMap(playMap game.PlayMap, sett *storage.GuildSettings) *discordgo.MessageEmbedThumbnail {
 	var thumbNail *discordgo.MessageEmbedThumbnail = nil
 	if playMap != game.EMPTYMAP {
@@ -487,11 +536,9 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.Guild
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
-	if phase != game.GAMEOVER {
-		desc = dgs.makeDescription(sett)
-		gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
-		listResp = append(gameInfoFields, listResp...)
-	}
+	desc = dgs.makeDescription(sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	listResp = append(gameInfoFields, listResp...)
 
 	var color int
 	switch phase {
@@ -499,8 +546,6 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *storage.Guild
 		color = 3447003 // BLUE
 	case game.DISCUSS:
 		color = 10181046 // PURPLE
-	case game.GAMEOVER:
-		color = 12745742 // DARK GOLD
 	default:
 		color = 15158332 // RED
 	}

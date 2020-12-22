@@ -6,10 +6,11 @@ import (
 )
 
 var PhaseMessages = map[game.Phase]*i18n.Message{
-	game.LOBBY:   {ID: "state.phase.LOBBY", Other: "LOBBY"},
-	game.TASKS:   {ID: "state.phase.TASKS", Other: "TASKS"},
-	game.DISCUSS: {ID: "state.phase.DISCUSSION", Other: "DISCUSSION"},
-	game.MENU:    {ID: "state.phase.MENU", Other: "MENU"},
+	game.LOBBY:    {ID: "state.phase.LOBBY", Other: "LOBBY"},
+	game.TASKS:    {ID: "state.phase.TASKS", Other: "TASKS"},
+	game.DISCUSS:  {ID: "state.phase.DISCUSSION", Other: "DISCUSSION"},
+	game.MENU:     {ID: "state.phase.MENU", Other: "MENU"},
+	game.GAMEOVER: {ID: "state.phase.GAMEOVER", Other: "GAME OVER"},
 }
 
 func ToLocale(phase game.Phase) *i18n.Message {

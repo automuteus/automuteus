@@ -399,10 +399,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		default:
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.default",
-				Other: "Sorry, I didn't understand that command! Please see `{{.CommandPrefix}} help` for commands",
+				Other: "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands",
 			},
 				map[string]interface{}{
-					"CommandPrefix": prefix,
+					"CommandPrefix":  prefix,
+					"InvalidCommand": args[0],
 				}))
 		}
 	}
