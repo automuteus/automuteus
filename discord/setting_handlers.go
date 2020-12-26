@@ -1001,7 +1001,7 @@ func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, se
 
 	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLeaderboardSize.Success",
-		Other: "From now on, I'll display {{.players}} players on the leaderboard",
+		Other: "From now on, I'll display {{.Players}} players on the leaderboard",
 	},
 		map[string]interface{}{
 			"Players": num,
@@ -1037,7 +1037,7 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 		return false
 	}
 
-	sett.SetLeaderboardSize(int(num))
+	sett.SetLeaderboardMin(int(num))
 
 	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLeaderboardMin.Success",
