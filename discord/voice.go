@@ -184,7 +184,9 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 				}
 				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 			} else {
-				voiceLock.Release(context.Background())
+				if voiceLock != nil {
+					voiceLock.Release(context.Background())
+				}
 			}
 		} else {
 			// no priority; issue all at once
