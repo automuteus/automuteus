@@ -281,7 +281,7 @@ other = "❌ {{.User}} Hai **attivato** la raccolta dei dati per le statistiche 
 
 ["commands.HandleCommand.default"]
 hash = "sha1-b4f45bce2b6d42b61760ca87da4f6e3f81bf3ef4"
-other = "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands"
+other = "Mi dispiace, non capisco questo comando `{{.InvalidCommand}}`! Per favore scrivi `{{.CommandPrefix}} help` per i comandi"
 
 ["commands.HandleCommand.optin.FailDB"]
 hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
@@ -593,7 +593,7 @@ other = "Partite attive"
 
 ["responses.statsResponse.Guilds"]
 hash = "sha1-bb386fdbe7c3a0e4de18babd50180bd84808e5aa"
-other = "Guilds"
+other = "Gilde"
 
 ["responses.statsResponse.Invite"]
 hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
