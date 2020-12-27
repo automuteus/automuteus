@@ -66,6 +66,12 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
+	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
+	if globalPrefix != "" && strings.HasPrefix(contents, globalPrefix) {
+		// if the global matches, then use that for future processing/control flow using the prefix
+		prefix = globalPrefix
+	}
+
 	if strings.HasPrefix(contents, prefix) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
 			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)

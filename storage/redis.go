@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -36,7 +37,8 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
-	if err == redis.Nil {
+	switch {
+	case errors.Is(err, redis.Nil):
 		s := MakeGuildSettings()
 		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
@@ -48,10 +50,10 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 			log.Println(err)
 		}
 		return s
-	} else if err != nil {
+	case err != nil:
 		log.Println(err)
 		return MakeGuildSettings()
-	} else {
+	default:
 		s := GuildSettings{}
 		err := json.Unmarshal([]byte(j), &s)
 		if err != nil {
