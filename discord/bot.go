@@ -113,7 +113,12 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
-		listeningTo = ".au help"
+		prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
+		if prefix == "" {
+			prefix = ".au"
+		}
+
+		listeningTo = prefix + " help"
 	}
 
 	status := &discordgo.UpdateStatusData{
