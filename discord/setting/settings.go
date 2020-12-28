@@ -16,6 +16,9 @@ const (
 	MatchSummary
 	MatchSummaryChannel
 	AutoRefresh
+	LeaderboardMention
+	LeaderboardSize
+	LeaderboardMin
 	Show
 	Reset
 	NullSetting
@@ -240,6 +243,63 @@ var AllSettings = []Setting{
 			Other: "<true/false>",
 		},
 		Aliases: []string{"refresh", "auto", "ar"},
+		Premium: true,
+	},
+	{
+		SettingType: LeaderboardMention,
+		Name:        "leaderboardMention",
+		Example:     "leaderboardMention true",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMention.shortDesc",
+			Other: "Player Leaderboard Mention Format",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMention.desc",
+			Other: "If players should be mentioned with @ on the leaderboard.\n**Disable this for large servers!**",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMention.args",
+			Other: "<true/false>",
+		},
+		Aliases: []string{"lboardmention", "leadermention", "mention", "ment"},
+		Premium: true,
+	},
+	{
+		SettingType: LeaderboardSize,
+		Name:        "leaderboardSize",
+		Example:     "leaderboardSize 5",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardSize.shortDesc",
+			Other: "Player Leaderboard Size",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardSize.desc",
+			Other: "Specify the size of the player leaderboard",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardSize.args",
+			Other: "<number>",
+		},
+		Aliases: []string{"lboardsize", "boardsize", "leadersize", "size"},
+		Premium: true,
+	},
+	{
+		SettingType: LeaderboardMin,
+		Name:        "leaderboardMin",
+		Example:     "leaderboardMin 3",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMin.shortDesc",
+			Other: "Minimum Games for Leaderboard",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMin.desc",
+			Other: "Minimum amount of games before a player is displayed on the leaderboard",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.LeaderboardMin.args",
+			Other: "<number>",
+		},
+		Aliases: []string{"lboardmin", "boardmin", "leadermin", "min"},
 		Premium: true,
 	},
 	{

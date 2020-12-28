@@ -140,6 +140,24 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 			break
 		}
 		isValid = SettingAutoRefresh(s, m, sett, args)
+	case setting.LeaderboardMention:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingLeaderboardNameMention(s, m, sett, args)
+	case setting.LeaderboardSize:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingLeaderboardSize(s, m, sett, args)
+	case setting.LeaderboardMin:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingLeaderboardMin(s, m, sett, args)
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -462,7 +480,8 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		return false
 	}
-	if args[2] == "true" {
+	switch {
+	case args[2] == "true":
 		if unmuteDead {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_unmuteDead",
@@ -476,7 +495,7 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			sett.SetUnmuteDeadDuringTasks(true)
 			return true
 		}
-	} else if args[2] == "false" {
+	case args[2] == "false":
 		if unmuteDead {
 			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.false_unmuteDead",
@@ -489,8 +508,7 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
 			Other: "It's already false!",
 		}))
-
-	} else {
+	default:
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
@@ -910,6 +928,123 @@ func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	},
 		map[string]interface{}{
 			"Arg": val,
+		}))
+
+	return true
+}
+
+func SettingLeaderboardNameMention(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), setting.AllSettings[setting.LeaderboardMention], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	val := args[2]
+	if val != "t" && val != "true" && val != "f" && val != "false" {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardMention.Unrecognized",
+			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings leaderboardMention` for usage",
+		},
+			map[string]interface{}{
+				"Arg":           val,
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+
+	newSet := val == "t" || val == "true"
+	sett.SetLeaderboardMention(newSet)
+	if newSet {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardMention.True",
+			Other: "From now on, I'll mention players directly in the leaderboard",
+		}))
+	} else {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardMention.False",
+			Other: "From now on, I'll use player nicknames/usernames in the leaderboard",
+		}))
+	}
+
+	return true
+}
+
+func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), setting.AllSettings[setting.LeaderboardSize], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	num, err := strconv.ParseInt(args[2], 10, 64)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardSize.Unrecognized",
+			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardSize` for usage",
+		},
+			map[string]interface{}{
+				"Number":        args[2],
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+	if num > 10 || num < 1 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardSize.OutOfRange",
+			Other: "You provided a number too high or too low. Please specify a number between [1-10]",
+		}))
+		return false
+	}
+
+	sett.SetLeaderboardSize(int(num))
+
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingLeaderboardSize.Success",
+		Other: "From now on, I'll display {{.Players}} players on the leaderboard",
+	},
+		map[string]interface{}{
+			"Players": num,
+		}))
+
+	return true
+}
+
+func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), setting.AllSettings[setting.LeaderboardMin], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	num, err := strconv.ParseInt(args[2], 10, 64)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardMin.Unrecognized",
+			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardMin` for usage",
+		},
+			map[string]interface{}{
+				"Number":        args[2],
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+	if num > 100 || num < 1 {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingLeaderboardMin.OutOfRange",
+			Other: "You provided a number too high or too low. Please specify a number between [1-100]",
+		}))
+		return false
+	}
+
+	sett.SetLeaderboardMin(int(num))
+
+	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingLeaderboardMin.Success",
+		Other: "From now on, I'll display only players with {{.Games}}+ qualifying games on the leaderboard",
+	},
+		map[string]interface{}{
+			"Games": num,
 		}))
 
 	return true

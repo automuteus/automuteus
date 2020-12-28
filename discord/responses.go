@@ -107,11 +107,43 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *sto
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range settings {
-		if !v.Premium || v.Premium == prem {
+		if !v.Premium {
 			name := v.Name
-			if v.Premium {
-				name = "💎 " + name
-			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   name,
+				Value:  sett.LocalizeMessage(v.ShortDesc),
+				Inline: true,
+			})
+		}
+	}
+	var desc string
+	if prem {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.PremiumThanks",
+			Other: "Thanks for being an AutoMuteUs Premium user!",
+		})
+	} else {
+		desc = sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.settingResponse.PremiumNoThanks",
+			Other: "The following settings are only for AutoMuteUs premium users.\nType `{{.CommandPrefix}} premium` to learn more!",
+		},
+			map[string]interface{}{
+				"CommandPrefix": commandPrefix,
+			})
+	}
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "\u200B",
+		Value:  "\u200B",
+		Inline: false,
+	})
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "💎 Premium Settings 💎",
+		Value:  desc,
+		Inline: false,
+	})
+	for _, v := range settings {
+		if v.Premium {
+			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   name,
 				Value:  sett.LocalizeMessage(v.ShortDesc),
