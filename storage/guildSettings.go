@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/automuteus/utils/pkg/game"
+	"os"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -24,8 +25,12 @@ type GuildSettings struct {
 }
 
 func MakeGuildSettings() *GuildSettings {
+	prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
+	if prefix == "" {
+		prefix = ".au"
+	}
 	return &GuildSettings{
-		CommandPrefix:            ".au",
+		CommandPrefix:            prefix,
 		Language:                 locale.DefaultLang,
 		AdminUserIDs:             []string{},
 		PermissionRoleIDs:        []string{},
