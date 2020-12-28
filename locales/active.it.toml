@@ -383,10 +383,6 @@ other = "{{.User}}, stai premendo sulle reazioni troppo velocemente, per piacere
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Ignorerò i tuoi messaggi per i prossimi 5 minuti, smettila di spammare"
 
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-afeb845dae5ee156734d611326e54868d6c41377"
-other = "Crewmate Winrate (3+ Games)"
-
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Statistiche della Gilda per {{.GuildName}}"
@@ -394,10 +390,6 @@ other = "Statistiche della Gilda per {{.GuildName}}"
 ["responses.guildStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Partite Giocate"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-784725551ded79c4d7a92b067437e55067d181a4"
-other = "Imposter Winrate (3+ Games)"
 
 ["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
@@ -414,10 +406,6 @@ other = "Visualizzazione di statistiche premium aggiuntive!\\n(Nota: le statisti
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
 other = "Statistiche della Gilda"
-
-["responses.guildStatsEmbed.TotalWinrate"]
-hash = "sha1-74d038e9e6b8dc077b0a30ae37d018a25343d321"
-other = "Total Winrate (3+ Games)"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -697,7 +685,7 @@ other = "Amministratori del Bot"
 
 ["settings.AllSettings.AutoRefresh.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<vero/falso>"
+other = "<true/false>"
 
 ["settings.AllSettings.AutoRefresh.desc"]
 hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
@@ -817,7 +805,7 @@ other = "Mostra Tutte le Impostazioni"
 
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<vero/falso>"
+other = "<true/false>"
 
 ["settings.AllSettings.UnmuteDead.desc"]
 hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
@@ -829,7 +817,7 @@ other = "Il Bot Smuta i Morti"
 
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
-other = "<muta/smuta> <fase di gioco> <morto/vivo> <vero/falso>"
+other = "<muta/smuta> <fase di gioco> <morto/vivo> <true/false>"
 
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
@@ -897,7 +885,7 @@ other = "D'ora in poi, Aggiornerò Automaticamente il messaggio di stato del gio
 
 ["settings.SettingAutoRefresh.Unrecognized"]
 hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
-other = "{{.Arg}} non è un valore vero/falso. Guarda `{{.CommandPrefix}} settings autorefresh` per l'utilizzo"
+other = "{{.Arg}} non è un valore true/false. Guarda `{{.CommandPrefix}} settings autorefresh` per l'utilizzo"
 
 ["settings.SettingDelays.Phase.UNINITIALIZED"]
 hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
@@ -1025,7 +1013,7 @@ other = "Non so cosa sia {{.PhaseName}} . L'elenco delle fasi di gioco sono `Lob
 
 ["settings.SettingVoiceRules.enoughArgs"]
 hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Non hai inserito i giusti argomenti! La semantica corretta è: `voiceRules [muta/smuta] [fase di gioco] [vivo/morto] [vero/falso]`"
+other = "Non hai inserito i giusti argomenti! La semantica corretta è: `voiceRules [muta/smuta] [fase di gioco] [vivo/morto] [true/false]`"
 
 ["settings.SettingVoiceRules.neitherAliveDead"]
 hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
