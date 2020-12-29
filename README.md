@@ -78,11 +78,6 @@ The bot will send you a private message (make sure your Discord settings allow D
 
 If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
 
-## Galactus
-
-Galactus is a program used to speed up muting and deafening (which is typically constrained by Discord rate-limits). It allows for an arbitrary number of tokens to be provided for faster muting/deafening, but also supports capture-side bots.
-A guide to setup your own capture-side bot can be found [here,](https://youtu.be/jKcEW5qpk8E) and the repo for Galactus is [here.](https://github.com/automuteus/galactus)
-
 ## Commands
 
 The Discord Bot uses the `.au` prefix for any commands by default; if you change your prefix remember to replace `.au` with your custom prefix. If you forget your prefix, you can @mention the bot and it will respond with whatever it's prefix currently is.
@@ -183,6 +178,11 @@ If, for whatever reason, you _really_ want to self host, but also don't want to 
 
 - `NUM_SHARDS`: Num shards provided to the Discord API.
 - `SHARD_ID`: Shard ID used to identify with the Discord API. Needs to be strictly less than `NUM_SHARDS`
+
+## Galactus
+
+Galactus is a program used to speed up muting and deafening (which is typically constrained by Discord rate-limits). It allows for an arbitrary number of tokens to be provided for faster muting/deafening, but also supports capture-side bots.
+A guide to setup your own capture-side bot can be found [here,](https://youtu.be/jKcEW5qpk8E) and the repo for Galactus is [here.](https://github.com/automuteus/galactus)
 
 # Similar Projects
 
