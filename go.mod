@@ -7,7 +7,7 @@ go 1.15
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/automuteus/galactus v1.2.2
-	github.com/automuteus/utils v0.0.5
+	github.com/automuteus/utils v0.0.6
 	github.com/bsm/redislock v0.7.0
 	github.com/bwmarrin/discordgo v0.22.0
 	github.com/georgysavva/scany v0.2.7
@@ -24,3 +24,5 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )
+
+replace github.com/bwmarrin/discordgo v0.22.0 => github.com/automuteus/discordgo v0.22.1

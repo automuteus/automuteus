@@ -20,10 +20,14 @@ github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hC
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
+github.com/automuteus/discordgo v0.22.1 h1:IU58OXAtpTosrYq/MCMVbpoVuOuUeandgyju5MpuLQo=
+github.com/automuteus/discordgo v0.22.1/go.mod h1:c1WtWUGN6nREDmzIpyTp/iD3VYt4Fpx+bVyfBG7JE+M=
 github.com/automuteus/galactus v1.2.2 h1:8OMVzXutsHO+R1D1lW6qxzmZrAwNyTADw503B1ARGgg=
 github.com/automuteus/galactus v1.2.2/go.mod h1:fWFnpCRyOs9wSVHvksupPlMPiAEO6CGhbI+uPtrmJcs=
 github.com/automuteus/utils v0.0.5 h1:oKuCSLnEBk6zZMISRXqSGC3wK6hkpX4mSrVYHH+TmwM=
 github.com/automuteus/utils v0.0.5/go.mod h1:3/DMXEOYYnBADTtb0rbBsDBD+d+QDdIpBRbvhy8cPoI=
+github.com/automuteus/utils v0.0.6 h1:u14BvwfFzHN8A0aJ4qbeG7vkkyK2brnBYSOjMakWars=
+github.com/automuteus/utils v0.0.6/go.mod h1:3/DMXEOYYnBADTtb0rbBsDBD+d+QDdIpBRbvhy8cPoI=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=

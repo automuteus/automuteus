@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
@@ -29,7 +28,7 @@ const DefaultMaxActiveGames = 150
 const downloadURL = "https://capture.automute.us"
 
 func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ignore all messages created by the bot itself
+	// IgnoreSpectator all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -152,7 +151,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 }
 
 func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	// Ignore all reactions created by the bot itself
+	// IgnoreSpectator all reactions created by the bot itself
 	if m.UserID == s.State.User.ID {
 		return
 	}
@@ -318,9 +317,22 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
+
+	var isAlive bool
+
 	// only actually tracked if we're in a tracked channel AND linked to a player
-	tracked = tracked && (found || userData.GetPlayerName() == amongus.SpectatorPlayerName)
-	mute, deaf := sett.GetVoiceState(auData.IsAlive, tracked, dgs.AmongUsData.GetPhase())
+	if sett.GetSpectator() == storage.IgnoreSpectator {
+		tracked = tracked && found
+		isAlive = auData.IsAlive
+	} else {
+		if !found {
+			// we just assume the spectator is dead
+			isAlive = false
+		} else {
+			isAlive = auData.IsAlive
+		}
+	}
+	mute, deaf := sett.GetVoiceState(isAlive, tracked, dgs.AmongUsData.GetPhase())
 	// check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
 		userData.SetShouldBeMuteDeaf(mute, deaf)

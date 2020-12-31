@@ -473,7 +473,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 		gameOver.GameOverReason == game.ImpostorDisconnect
 
 	for _, v := range dgs.UserData {
-		if v.GetPlayerName() != amongus.UnlinkedPlayerName && v.GetPlayerName() != amongus.SpectatorPlayerName {
+		if v.GetPlayerName() != amongus.UnlinkedPlayerName {
 			inGameData, found := dgs.AmongUsData.GetByName(v.GetPlayerName())
 			if !found {
 				log.Println("No game data found for that player")

@@ -61,6 +61,11 @@ var DeferredEditsLock = sync.Mutex{}
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
 func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
 	newEdit := false
+
+	if !ValidFields(me) {
+		return false
+	}
+
 	DeferredEditsLock.Lock()
 
 	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
@@ -72,6 +77,18 @@ func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
 	return newEdit
+}
+
+func ValidFields(me *discordgo.MessageEmbed) bool {
+	for _, v := range me.Fields {
+		if v == nil {
+			return false
+		}
+		if v.Name == "" || v.Value == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func RemovePendingDGSEdit(messageID string) {
