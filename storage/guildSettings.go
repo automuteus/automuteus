@@ -12,14 +12,6 @@ import (
 const DefaultLeaderboardSize = 3
 const DefaultLeaderboardMin = 3
 
-type SpectatorBehavior int
-
-const (
-	IgnoreSpectator SpectatorBehavior = iota
-	MuteSpectator                     // Might take a bit more work to get rolling, ironically...
-	DynamicSpectator
-)
-
 type GuildSettings struct {
 	AdminUserIDs             []string        `json:"adminIDs"`
 	PermissionRoleIDs        []string        `json:"permissionRoleIDs"`
@@ -30,13 +22,13 @@ type GuildSettings struct {
 	Delays                   game.GameDelays `json:"delays"`
 	DeleteGameSummaryMinutes int             `json:"deleteGameSummary"`
 	lock                     sync.RWMutex
-	UnmuteDeadDuringTasks    bool              `json:"unmuteDeadDuringTasks"`
-	AutoRefresh              bool              `json:"autoRefresh"`
-	MatchSummaryChannelID    string            `json:"matchSummaryChannelID"`
-	LeaderboardMention       bool              `json:"leaderboardMention"`
-	LeaderboardSize          int               `json:"leaderboardSize"`
-	LeaderboardMin           int               `json:"leaderboardMin"`
-	Spectator                SpectatorBehavior `json:"spectator"`
+	UnmuteDeadDuringTasks    bool   `json:"unmuteDeadDuringTasks"`
+	AutoRefresh              bool   `json:"autoRefresh"`
+	MatchSummaryChannelID    string `json:"matchSummaryChannelID"`
+	LeaderboardMention       bool   `json:"leaderboardMention"`
+	LeaderboardSize          int    `json:"leaderboardSize"`
+	LeaderboardMin           int    `json:"leaderboardMin"`
+	MuteSpectator            bool   `json:"muteSpectator"`
 }
 
 func MakeGuildSettings() *GuildSettings {
@@ -59,7 +51,7 @@ func MakeGuildSettings() *GuildSettings {
 		LeaderboardMention:       true,
 		LeaderboardSize:          3,
 		LeaderboardMin:           3,
-		Spectator:                DynamicSpectator,
+		MuteSpectator:            false,
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -175,12 +167,12 @@ func (gs *GuildSettings) SetLeaderboardMin(v int) {
 	gs.LeaderboardMin = v
 }
 
-func (gs *GuildSettings) GetSpectator() SpectatorBehavior {
-	return gs.Spectator
+func (gs *GuildSettings) GetMuteSpectator() bool {
+	return gs.MuteSpectator
 }
 
-func (gs *GuildSettings) SetSpectator(behavior SpectatorBehavior) {
-	gs.Spectator = behavior
+func (gs *GuildSettings) SetMuteSpectator(behavior bool) {
+	gs.MuteSpectator = behavior
 }
 
 func (gs *GuildSettings) GetMapVersion() string {

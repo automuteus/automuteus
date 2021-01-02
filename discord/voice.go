@@ -130,7 +130,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		var isAlive bool
 
 		// only actually tracked if we're in a tracked channel AND linked to a player
-		if sett.GetSpectator() == storage.IgnoreSpectator {
+		if !sett.GetMuteSpectator() {
 			tracked = tracked && found
 			isAlive = auData.IsAlive
 		} else {
@@ -148,7 +148,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		// only issue a change if the User isn't in the right state already
 		// nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
 		// check the userdata is linked here to not accidentally undeafen music bots, for example
-		if incorrectMuteDeafenState && (found || sett.GetSpectator() != storage.IgnoreSpectator) {
+		if incorrectMuteDeafenState && (found || sett.GetMuteSpectator()) {
 			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
 			userModify := task.UserModify{
 				UserID: uid,

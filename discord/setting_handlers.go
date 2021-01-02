@@ -158,6 +158,12 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 			break
 		}
 		isValid = SettingLeaderboardMin(s, m, sett, args)
+	case setting.MuteSpectators:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingMuteSpectators(s, m, sett, args)
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -1048,4 +1054,55 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 		}))
 
 	return true
+}
+
+func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	muteSpec := sett.GetMuteSpectator()
+	if len(args) == 2 {
+		current := "false"
+		if muteSpec {
+			current = "true"
+		}
+		embed := ConstructEmbedForSetting(current, setting.AllSettings[setting.MuteSpectators], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+	switch {
+	case args[2] == "true":
+		if muteSpec {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
+				Other: "It's already true!",
+			}))
+		} else {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingMuteSpectators.true_noMuteSpectators",
+				Other: "I will now mute spectators just like dead players. \n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**",
+			}))
+			sett.SetUnmuteDeadDuringTasks(true)
+			return true
+		}
+	case args[2] == "false":
+		if muteSpec {
+			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingMuteSpectators.false_muteSpectators",
+				Other: "I will no longer mute spectators like dead players",
+			}))
+			sett.SetUnmuteDeadDuringTasks(false)
+			return true
+		}
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
+			Other: "It's already false!",
+		}))
+	default:
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
+			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
+		},
+			map[string]interface{}{
+				"Arg": args[2],
+			}))
+	}
+	return false
 }

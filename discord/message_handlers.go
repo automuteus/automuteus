@@ -321,7 +321,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	var isAlive bool
 
 	// only actually tracked if we're in a tracked channel AND linked to a player
-	if sett.GetSpectator() == storage.IgnoreSpectator {
+	if !sett.GetMuteSpectator() {
 		tracked = tracked && found
 		isAlive = auData.IsAlive
 	} else {
