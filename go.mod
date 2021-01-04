@@ -14,7 +14,7 @@ require (
 	github.com/go-redis/redis/v8 v8.4.4
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/jackc/pgx/v4 v4.10.0
+	github.com/jackc/pgx/v4 v4.10.1
 	github.com/joho/godotenv v1.3.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.1
 	github.com/prometheus/client_golang v1.9.0
