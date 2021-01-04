@@ -120,8 +120,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					correlatedUserID = userID
 				case task.GameOverJob:
 					var gameOverResult game.Gameover
-					log.Println("Successfully identified game over event:")
-					log.Println(job.Payload)
+					// log.Println("Successfully identified game over event:")
+					// log.Println(job.Payload)
 					err := json.Unmarshal([]byte(job.Payload.(string)), &gameOverResult)
 					if err != nil {
 						log.Println(err)

@@ -1079,7 +1079,7 @@ func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, set
 				ID:    "settings.SettingMuteSpectators.true_noMuteSpectators",
 				Other: "I will now mute spectators just like dead players. \n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**",
 			}))
-			sett.SetUnmuteDeadDuringTasks(true)
+			sett.SetMuteSpectator(true)
 			return true
 		}
 	case args[2] == "false":
@@ -1088,7 +1088,7 @@ func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, set
 				ID:    "settings.SettingMuteSpectators.false_muteSpectators",
 				Other: "I will no longer mute spectators like dead players",
 			}))
-			sett.SetUnmuteDeadDuringTasks(false)
+			sett.SetMuteSpectator(false)
 			return true
 		}
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
