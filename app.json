@@ -1,7 +1,7 @@
 {
     "name": "AmongUsAutoMute (BETA)",
     "description": "Discord Bot to harness Among Us game data, and automatically mute/unmute players during the course of the game!",
-    "repository": "https://github.com/denverquane/amongusdiscord",
+    "repository": "https://github.com/Unrealityisreal/amongusdiscord",
     "logo": "https://github.com/denverquane/amongusdiscord/raw/master/assets/botProfilePicture.jpg",
     "keywords": ["go", "among us", "discord"],
     "env": {

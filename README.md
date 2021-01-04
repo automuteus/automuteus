@@ -5,8 +5,8 @@
     <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
         <img src="https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg" />
     </a>
-    <a href="https://github.com/denverquane/automuteus/releases/latest">
-    <img alt="GitHub release" src="https://img.shields.io/github/v/release/denverquane/automuteus" >
+    <a href="https://github.com/Unrealityisreal/automuteus/releases/latest">
+    <img alt="GitHub release" src="https://img.shields.io/github/v/release/Unrealityisreal/automuteus" >
     </a>
     <a href="https://github.com/denverquane/amongusdiscord/graphs/contributors" alt="Contributors">
         <img src="https://img.shields.io/github/contributors/denverquane/amongusdiscord" />
@@ -22,8 +22,8 @@
     <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Stars">
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
     </a>
-    <a href="https://goreportcard.com/report/github.com/denverquane/automuteus" alt="Report Card">
-        <img src="https://goreportcard.com/badge/github.com/denverquane/automuteus" />
+    <a href="https://goreportcard.com/report/github.com/Unrealityisreal/automuteus" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/Unrealityisreal/automuteus" />
     </a>
 </p>
 
@@ -147,7 +147,7 @@ unRAID hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as such is not supported at this time.
 
 ## Old version
-If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and hate Docker because of it (I don't blame you) you can self host [2.4.3](https://github.com/denverquane/automuteus/releases/tag/2.4.3) instead. **If you are using this method, continue using the newest capture!**
+If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and hate Docker because of it (I don't blame you) you can self host [2.4.3](https://github.com/Unrealityisreal/automuteus/releases/tag/2.4.3) instead. **If you are using this method, continue using the newest capture!**
 
 ## Environment Variables
 

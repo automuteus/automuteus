@@ -4,11 +4,11 @@ services:
   automuteus:
     # Either:
     # - Use a prebuilt image
-    image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
+    #image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
     # - Build image from local source
-    #build: .
+    build: .
     # - Build image from github directly
-    #build: http://github.com/denverquane/automuteus.git
+    #build: http://github.com/Unrealityisreal/automuteus.git
 
     restart: always
     ports:

@@ -37,7 +37,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.helpResponse.SubTitle",
-			Other: "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
+			Other: "[View the Github Project](https://github.com/Unrealityisreal/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
 		},
 			map[string]interface{}{
 				"CommandPrefix": commandPrefix,
@@ -46,7 +46,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/denverquane/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
+			URL:      "https://github.com/Unrealityisreal/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,
