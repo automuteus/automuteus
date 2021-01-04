@@ -383,6 +383,10 @@ other = "{{.User}}, stai premendo sulle reazioni troppo velocemente, per piacere
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Ignorerò i tuoi messaggi per i prossimi 5 minuti, smettila di spammare"
 
+["responses.guildStatsEmbed.CrewmateWins"]
+hash = "sha1-4b341227bf20f5d8c48d85df89d049dc496b205f"
+other = "Winrate da Crewmate ({{.Min}}+ Partite)"
+
 ["responses.guildStatsEmbed.Desc"]
 hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
 other = "Statistiche della Gilda per {{.GuildName}}"
@@ -390,6 +394,10 @@ other = "Statistiche della Gilda per {{.GuildName}}"
 ["responses.guildStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Partite Giocate"
+
+["responses.guildStatsEmbed.ImposterWins"]
+hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
+other = "Winrate da Impostore({{.Min}}+ Partite)"
 
 ["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
@@ -406,6 +414,10 @@ other = "Visualizzazione di statistiche premium aggiuntive!\\n(Nota: le statisti
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
 other = "Statistiche della Gilda"
+
+["responses.guildStatsEmbed.TotalWinrate"]
+hash = "sha1-cf0d3b04ef5176072c4b4f48b58284a365914dbb"
+other = "Winrate Totale ({{.Min}}+ Partite)"
 
 ["responses.helpResponse.SubTitle"]
 hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
@@ -558,6 +570,14 @@ other = "AutoMuteUs Privacy"
 ["responses.settingResponse.Description"]
 hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "Scrivi `{{.CommandPrefix}} settings <impostazione>` per modificare un'impostazione da quelle elencate di seguito"
+
+["responses.settingResponse.PremiumNoThanks"]
+hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
+other = "Le seguenti impostazioni sono solo per gli utenti premium di AutoMuteUs.\nScrivi `{{.CommandPrefix}} premium` per saperne di più!"
+
+["responses.settingResponse.PremiumThanks"]
+hash = "sha1-1dc5cf059d7d98df84c11ea83e87deab8db76379"
+other = "Grazie per essere diventato un utente AutoMuteUs Premium!"
 
 ["responses.settingResponse.Title"]
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
@@ -718,6 +738,42 @@ other = "Cambia la lingua dei messaggi del bot"
 ["settings.AllSettings.Language.shortDesc"]
 hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
 other = "Lingua Bot"
+
+["settings.AllSettings.LeaderboardMention.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.LeaderboardMention.desc"]
+hash = "sha1-d2f89611905cb78ba8f0cb93e9fca7b98c98ad15"
+other = "Se i giocatori devono essere menzionati con @ nella classifica.\n**Disabilita questa opzione per server di grandi dimensioni!**"
+
+["settings.AllSettings.LeaderboardMention.shortDesc"]
+hash = "sha1-905ebd9d56ed799fb55945976c45427595b043bc"
+other = "Formato della Menzione nella Classifica del Giocatore"
+
+["settings.AllSettings.LeaderboardMin.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<numero>"
+
+["settings.AllSettings.LeaderboardMin.desc"]
+hash = "sha1-681c7ef0c003be2f66765eb77df38092dc55e3bd"
+other = "Numero minimo di partite prima che un giocatore venga visualizzato nella classifica"
+
+["settings.AllSettings.LeaderboardMin.shortDesc"]
+hash = "sha1-e01ca4a2251231aef2dd7ba30640c06626c4c81c"
+other = "Partite Minime per la Classifica"
+
+["settings.AllSettings.LeaderboardSize.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<numero>"
+
+["settings.AllSettings.LeaderboardSize.desc"]
+hash = "sha1-311b5aed467bd4b697651b4d91671ab0ec821f96"
+other = "Specifica la grandezza della classifica del giocatore"
+
+["settings.AllSettings.LeaderboardSize.shortDesc"]
+hash = "sha1-5fa9ea41087103c1cae7679b9e5fce71eb4035bb"
+other = "Grandezza Classifica Giocatore"
 
 ["settings.AllSettings.MapVersion.args"]
 hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
@@ -930,6 +986,42 @@ other = "La localizzazione è impostata su {{.LangName}}"
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
 other = "MI dispiace, il codice della lingua è breve. Codici lingua disponibili: {{.Langs}}."
+
+["settings.SettingLeaderboardMention.False"]
+hash = "sha1-cea40d5b3e257428c5dcaa8dcfd2f8b8f2edb51a"
+other = "D'ora in poi, userò il nicknames/usernames del giocatore nella classifica"
+
+["settings.SettingLeaderboardMention.True"]
+hash = "sha1-5d2c8e648214566acea958c0fc6d72d17a176663"
+other = "D'ora in poi menzionerò i giocatori direttamente nella classifica"
+
+["settings.SettingLeaderboardMention.Unrecognized"]
+hash = "sha1-a24ce52ad5c465baf7e49a5a3434a425244de74a"
+other = "{{.Arg}} non è un valore true/false. Guarda `{{.CommandPrefix}} settings leaderboardMention` per l'utilizzo"
+
+["settings.SettingLeaderboardMin.OutOfRange"]
+hash = "sha1-b0255e0834eddd8966547ca4b179e601b367be6c"
+other = "Hai fornito un numero troppo alto o troppo basso. Per piacere scrivi un numero compreso tra [1-100]"
+
+["settings.SettingLeaderboardMin.Success"]
+hash = "sha1-3045aeb741c8df08e58515a0c997b9724c2afc41"
+other = "D'ora in poi, mostrerò solo i giocatori con {{.Games}}+ partite di qualificazione nella classifica"
+
+["settings.SettingLeaderboardMin.Unrecognized"]
+hash = "sha1-10fea8556a261535f0eefb0a5496cad74913c06c"
+other = "{{.Number}} non è un numero valido. Guarda `{{.CommandPrefix}} settings leaderboardMin` per l'utilizzo"
+
+["settings.SettingLeaderboardSize.OutOfRange"]
+hash = "sha1-f3b99335a054c7b474fbfb906aeb3a104fefb646"
+other = "Hai fornito un numero troppo alto o troppo basso. Per piacere scrivi un numero compreso tra [1-10]"
+
+["settings.SettingLeaderboardSize.Success"]
+hash = "sha1-9459023cdfd1de8eed146eee42fd5cfe32a6d3d9"
+other = "D'ora in poi, mostrerò {{.Players}} giocatori della classifica"
+
+["settings.SettingLeaderboardSize.Unrecognized"]
+hash = "sha1-186699935b429b84b8988d52ccbf753070461181"
+other = "{{.Number}} non è un numero valido. Guarda `{{.CommandPrefix}} settings leaderboardSize` per l'utilizzo"
 
 ["settings.SettingMapVersion.Success"]
 hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
