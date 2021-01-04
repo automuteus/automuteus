@@ -381,6 +381,10 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		bot.applyToAll(dgs, false, false)
+		// on a gameover event from the capture, it's like going to the lobby; use that delay
+	case game.GAMEOVER:
+		phase = game.LOBBY
+		fallthrough
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
