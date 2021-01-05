@@ -28,6 +28,7 @@ type GuildSettings struct {
 	LeaderboardMention       bool   `json:"leaderboardMention"`
 	LeaderboardSize          int    `json:"leaderboardSize"`
 	LeaderboardMin           int    `json:"leaderboardMin"`
+	MuteSpectator            bool   `json:"muteSpectator"`
 }
 
 func MakeGuildSettings() *GuildSettings {
@@ -50,6 +51,7 @@ func MakeGuildSettings() *GuildSettings {
 		LeaderboardMention:       true,
 		LeaderboardSize:          3,
 		LeaderboardMin:           3,
+		MuteSpectator:            false,
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -163,6 +165,14 @@ func (gs *GuildSettings) GetLeaderboardMin() int {
 
 func (gs *GuildSettings) SetLeaderboardMin(v int) {
 	gs.LeaderboardMin = v
+}
+
+func (gs *GuildSettings) GetMuteSpectator() bool {
+	return gs.MuteSpectator
+}
+
+func (gs *GuildSettings) SetMuteSpectator(behavior bool) {
+	gs.MuteSpectator = behavior
 }
 
 func (gs *GuildSettings) GetMapVersion() string {

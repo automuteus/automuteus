@@ -19,6 +19,7 @@ const (
 	LeaderboardMention
 	LeaderboardSize
 	LeaderboardMin
+	MuteSpectators
 	Show
 	Reset
 	NullSetting
@@ -300,6 +301,25 @@ var AllSettings = []Setting{
 			Other: "<number>",
 		},
 		Aliases: []string{"lboardmin", "boardmin", "leadermin", "min"},
+		Premium: true,
+	},
+	{
+		SettingType: MuteSpectators,
+		Name:        "muteSpectators",
+		Example:     "muteSpectators true",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.MuteSpectators.shortDesc",
+			Other: "Mute Spectators like Dead Players",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.MuteSpectators.desc",
+			Other: "Whether or not the bot should treat spectators like dead players (respecting your voice rules).\n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.MuteSpectators.args",
+			Other: "<true/false>",
+		},
+		Aliases: []string{"mutespectator", "mutespec", "spectators", "spectator", "spec"},
 		Premium: true,
 	},
 	{
