@@ -811,6 +811,18 @@ other = "Specify the text channel name where Match Summaries should be posted"
 hash = "sha1-4eac650ab948a17e66a49b364aceb666a6d01da3"
 other = "Channel for Match Summaries"
 
+["settings.AllSettings.MuteSpectators.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.MuteSpectators.desc"]
+hash = "sha1-6b5c5f2f2ef1b8c1326aa751aaaf5f885012c0ee"
+other = "Indica se il bot deve trattare gli spettatori come giocatori morti (rispettando le regole vocali).\n**Nota, questo può causare ritardi o rallentamenti quando non si ospita autonomamente o si utilizza un bot aiutante Premium!**"
+
+["settings.AllSettings.MuteSpectators.shortDesc"]
+hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
+other = "Muta gli Spettatori come Giocatori Morti"
+
 ["settings.AllSettings.Prefix.args"]
 hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
 other = "<prefisso>"
@@ -1059,6 +1071,14 @@ other = "Match Summary text channel changed to `{{.channelName}}`!"
 hash = "sha1-e23db89c0645c4ec1ae21b5f59dbd193a68f0c6f"
 other = "Could not find the text channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it."
 
+["settings.SettingMuteSpectators.false_muteSpectators"]
+hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
+other = "Non muterò più gli spettatori come giocatori morti"
+
+["settings.SettingMuteSpectators.true_noMuteSpectators"]
+hash = "sha1-cb62081e4c9e37177e32ad916c63ef5ff4a812fe"
+other = "Ora muterò gli spettatori proprio come giocatori morti. \n**Nota, questo può causare ritardi o rallentamenti quando non si ospita autonomamente o si utilizza un bot aiutante Premium!**"
+
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
 other = "Cancellazione di tutti gli IDs dei Permessi in base al Ruolo!"
@@ -1084,8 +1104,8 @@ hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
 other = "Non smuterò più immediatamente i morti. Bella scelta!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
-hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "Ora smuterò le persone morte immediatamente dopo la loro morte. ATTENTO, questo rivela chi è morto durante la partita!"
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "E' già true!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
