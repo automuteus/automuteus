@@ -214,3 +214,13 @@ func (psqlInterface *PsqlInterface) TotalWinRankingForServer(guildID uint64) []*
 	}
 	return r
 }
+
+func (psqlInterface *PsqlInterface) DeleteAllGamesForServer(guildID string) error {
+	_, err := psqlInterface.Pool.Exec(context.Background(), "DELETE FROM games WHERE guild_id=$1", guildID)
+	return err
+}
+
+func (psqlInterface *PsqlInterface) DeleteAllGamesForUser(userID string) error {
+	_, err := psqlInterface.Pool.Exec(context.Background(), "DELETE FROM users_games WHERE user_id=$1", userID)
+	return err
+}

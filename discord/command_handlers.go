@@ -353,9 +353,41 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				if userID == "" || err != nil {
 					arg := strings.ReplaceAll(args[1], "\"", "")
 					if arg == "g" || arg == "guild" || arg == "server" {
-						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
-						if err != nil {
-							log.Println(err)
+						if len(args) > 2 && args[2] == "reset" {
+							if !isAdmin {
+								s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+									ID:    "message_handlers.handleResetGuild.noPerms",
+									Other: "Only Admins are capable of resetting server stats",
+								}))
+							} else {
+								if len(args) == 3 {
+									_, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+										ID:    "commands.StatsCommand.Reset.NoConfirm",
+										Other: "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!",
+									},
+										map[string]interface{}{
+											"CommandPrefix": prefix,
+										}))
+									if err != nil {
+										log.Println(err)
+									}
+								} else if args[3] == "confirm" {
+									err := bot.PostgresInterface.DeleteAllGamesForServer(m.GuildID)
+									if err != nil {
+										s.ChannelMessageSend(m.ChannelID, "Encountered the following error when deleting the server's stats: "+err.Error())
+									} else {
+										s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+											ID:    "commands.StatsCommand.Reset.Success",
+											Other: "Successfully reset your guild's stats!",
+										}))
+									}
+								}
+							}
+						} else {
+							_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+							if err != nil {
+								log.Println(err)
+							}
 						}
 					} else {
 						arg = strings.ToUpper(arg)
@@ -372,7 +404,43 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						}
 					}
 				} else {
-					s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+					if len(args) > 2 && args[2] == "reset" {
+						if !isAdmin {
+							s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+								ID:    "message_handlers.handleResetGuild.noPerms",
+								Other: "Only Admins are capable of resetting server stats",
+							}))
+						} else {
+							if len(args) == 3 {
+								_, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+									ID:    "commands.StatsCommand.ResetUser.NoConfirm",
+									Other: "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!",
+								},
+									map[string]interface{}{
+										"CommandPrefix": prefix,
+										"User":          args[1],
+									}))
+								if err != nil {
+									log.Println(err)
+								}
+							} else if args[3] == "confirm" {
+								err := bot.PostgresInterface.DeleteAllGamesForUser(userID)
+								if err != nil {
+									s.ChannelMessageSend(m.ChannelID, "Encountered the following error when deleting that user's stats: "+err.Error())
+								} else {
+									s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+										ID:    "commands.StatsCommand.ResetUser.Success",
+										Other: "Successfully reset {{.User}}'s stats!",
+									},
+										map[string]interface{}{
+											"User": args[1],
+										}))
+								}
+							}
+						}
+					} else {
+						s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+					}
 				}
 			}
 
