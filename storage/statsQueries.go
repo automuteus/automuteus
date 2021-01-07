@@ -10,105 +10,110 @@ import (
 
 func (psqlInterface *PsqlInterface) NumGamesPlayedOnGuild(guildID string) int64 {
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1;", gid)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1;", gid)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesWonAsRoleOnServer(guildID string, role game.GameRole) int64 {
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
 	var r int64
+	var err error
 	if role == game.CrewmateRole {
-		pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=0 OR win_type=1 OR win_type=6)", gid)
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=0 OR win_type=1 OR win_type=6)", gid)
 	} else {
-		pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid)
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid)
+	}
+	if err != nil {
+		log.Println(err)
+		return -1
 	}
 	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesPlayedByUser(userID string) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1;", userID)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1;", userID)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGuildsPlayedInByUser(userID string) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(DISTINCT guild_id) FROM users_games WHERE user_id=$1;", userID)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(DISTINCT guild_id) FROM users_games WHERE user_id=$1;", userID)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesPlayedByUserOnServer(userID, guildID string) int64 {
-	r := []int64{}
+	var r int64
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2", userID, gid)
-	if err != nil || len(r) < 1 {
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2", userID, gid)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumWinsAsRoleOnServer(userID, guildID string, role int16) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true;", userID, guildID, role)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true;", userID, guildID, role)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumWinsAsRole(userID string, role int16) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2 AND player_won=true;", userID, role)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2 AND player_won=true;", userID, role)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesAsRoleOnServer(userID, guildID string, role int16) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3;", userID, guildID, role)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3;", userID, guildID, role)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesAsRole(userID string, role int16) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2;", userID, role)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2;", userID, role)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumWinsOnServer(userID, guildID string) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_won=true;", userID, guildID)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_won=true;", userID, guildID)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumWins(userID string) int64 {
-	r := []int64{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_won=true;", userID)
-	if err != nil || len(r) < 1 {
+	var r int64
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_won=true;", userID)
+	if err != nil {
 		return -1
 	}
-	return r[0]
+	return r
 }
 
 type Int16ModeCount struct {
