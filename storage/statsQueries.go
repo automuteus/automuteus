@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/automuteus/utils/pkg/game"
 	"github.com/georgysavva/scany/pgxscan"
 	"log"
 	"strconv"
@@ -15,6 +16,17 @@ func (psqlInterface *PsqlInterface) NumGamesPlayedOnGuild(guildID string) int64 
 		return -1
 	}
 	return r[0]
+}
+
+func (psqlInterface *PsqlInterface) NumGamesWonAsRoleOnServer(guildID string, role game.GameRole) int64 {
+	gid, _ := strconv.ParseInt(guildID, 10, 64)
+	var r int64
+	if role == game.CrewmateRole {
+		pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=0 OR win_type=1 OR win_type=6)", gid)
+	} else {
+		pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid)
+	}
+	return r
 }
 
 func (psqlInterface *PsqlInterface) NumGamesPlayedByUser(userID string) int64 {

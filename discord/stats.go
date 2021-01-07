@@ -66,10 +66,11 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 
 	if prem != premium.FreeTier {
 		leaderBoardSize := sett.GetLeaderboardSize()
-		extraDesc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.userStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
-		})
+		extraDesc = ""
+		//extraDesc = sett.LocalizeMessage(&i18n.Message{
+		//	ID:    "responses.userStatsEmbed.Premium",
+		//	Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
+		//})
 		colorRankings := bot.PostgresInterface.ColorRankingForPlayerOnServer(userID, guildID)
 		if len(colorRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
@@ -206,6 +207,8 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		}
 	}
 
+	fields = TrimInvalidEmbedFields(fields)
+
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -296,7 +299,29 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 			Other: "Games Played",
 		}),
 		Value:  fmt.Sprintf("%d", gamesPlayed),
-		Inline: false,
+		Inline: gamesPlayed > 0, // if 0 games played, this would be on its own line
+	}
+
+	if gamesPlayed > 0 {
+		crewmateWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, game.CrewmateRole)
+		imposterWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, game.ImposterRole)
+
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.guildStatsEmbed.GamesWonCrewmate",
+				Other: "Crewmate Winrate",
+			}),
+			Value:  fmt.Sprintf("%.0f%%", 100.0*(float64(crewmateWins)/float64(gamesPlayed))),
+			Inline: true,
+		})
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.guildStatsEmbed.GamesWonImposter",
+				Other: "Imposter Winrate",
+			}),
+			Value:  fmt.Sprintf("%.0f%%", 100.0*(float64(imposterWins)/float64(gamesPlayed))),
+			Inline: true,
+		})
 	}
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
@@ -309,10 +334,11 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	if prem != premium.FreeTier {
 		leaderboardSize := sett.GetLeaderboardSize()
 		leaderboardMin := sett.GetLeaderboardMin()
-		extraDesc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.guildStatsEmbed.Premium",
-			Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
-		})
+		extraDesc = ""
+		//extraDesc = sett.LocalizeMessage(&i18n.Message{
+		//	ID:    "responses.guildStatsEmbed.Premium",
+		//	Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
+		//})
 		gid, err := strconv.ParseUint(guildID, 10, 64)
 		if err == nil {
 			totalGameRankings := bot.PostgresInterface.TotalGamesRankingForServer(gid)
@@ -425,6 +451,8 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		}
 	}
 
+	fields = TrimInvalidEmbedFields(fields)
+
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -468,4 +496,20 @@ func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildS
 
 	stats := storage.StatsFromGameAndEvents(gameData, events)
 	return stats.ToDiscordEmbed(connectCode+":"+matchID, sett)
+}
+
+func TrimInvalidEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.MessageEmbedField {
+	i := 0
+	for _, v := range fields {
+		if v.Value != "" {
+			fields[i] = v
+			i++
+		}
+	}
+	// prevent memory leak by erasing truncated values
+	for j := i; j < len(fields); j++ {
+		fields[j] = nil
+	}
+
+	return fields[:i]
 }
