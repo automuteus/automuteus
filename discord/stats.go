@@ -216,14 +216,6 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					break
 				}
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.userStatsEmbed.MostPlayedWith",
-					Other: "Most Played With",
-				}),
-				Value:  buf.String(),
-				Inline: false,
-			})
 		}
 
 		bestImpostorTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.ImposterRole), sett.GetLeaderboardMin())
@@ -253,7 +245,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		}
 
 		worstImpostorTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.ImposterRole), sett.GetLeaderboardMin())
-		if len(bestImpostorTeammateRankings) > 0 {
+		if len(worstImpostorTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstImpostorTeammateRankings {
 				if i < leaderBoardSize {
@@ -279,7 +271,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   "\u200b",
 				Value:  "\u200b",
-				Inline: true,
+				Inline: false,
 			})
 		}
 
@@ -305,11 +297,6 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					Other: "Best Crewmate Played With",
 				}),
 				Value:  buf.String(),
-				Inline: true,
-			})
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "\u200b",
-				Value:  "\u200b",
 				Inline: true,
 			})
 		}
@@ -636,7 +623,7 @@ func TrimEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.Message
 	i := 0
 	for _, v := range fields {
 		if v.Value != "" {
-			if strings.Contains(v.Value, "69") || strings.Contains(v.Value, "420") {
+			if strings.Contains(v.Value, " 69") || strings.Contains(v.Value, " 420") {
 				v.Value = "😎 " + v.Value + " 😎"
 			}
 			fields[i] = v
