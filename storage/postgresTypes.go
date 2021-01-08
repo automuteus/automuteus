@@ -52,3 +52,19 @@ type PostgresPlayerRanking struct {
 	Count    int64   `db:"total"`
 	WinRate  float64 `db:"win_rate"`
 }
+
+type PostgresBestTeammatePlayerRanking struct {
+	UserID     uint64  `db:"user_id"`
+	TeammateID uint64  `db:"teammate_id"`
+	WinCount   int64   `db:"win"`
+	Count      int64   `db:"total"`
+	WinRate    float64 `db:"win_rate"`
+}
+
+type PostgresWorstTeammatePlayerRanking struct {
+	UserID     uint64  `db:"user_id"`
+	TeammateID uint64  `db:"teammate_id"`
+	LooseCount int64   `db:"loose"`
+	Count      int64   `db:"total"`
+	LooseRate  float64 `db:"loose_rate"`
+}
