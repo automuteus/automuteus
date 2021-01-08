@@ -281,10 +281,6 @@ other = "❗ {{.User}} Jesteś **zapisany** do zbierania danych w celach tworzen
 hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
 other = "❌ {{.User}} Jesteś **wypisany/wypisana** ze zbierania danych w celach tworzenia statystyk, lub jeszcze nie grałeś!"
 
-["commands.HandleCommand.default"]
-hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
-other = "Wybacz, nie zrozumiałem tego polecenia! Proszę wpisz `{{.CommandPrefix}} help` aby zobaczyć polecenia"
-
 ["commands.HandleCommand.optin.FailDB"]
 hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
 other = "❌ {{.User}} Zgodziłeś/łaś się już na zbieranie danych"
@@ -332,14 +328,6 @@ other = "Usuwanie wiadomości za {{.Mins}} :"
 ["eventHandler.gameOver.matchID"]
 hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
 other = "Koniec gry! Pokaż statystyki gry używając Match ID: `{{.MatchID}}`\\n{{.Winners}}"
-
-["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Nie dostarczone"
-
-["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Nie dostarczone"
 
 ["locale.language.name"]
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
@@ -404,10 +392,6 @@ other = "Rozegrane gry"
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Dane szczegółowe są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
-
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Pokazuje dodatkowe dane Premium!\\n(Informacja: statystyki premium są nadal w wersji **BETA**, i mogą być niedokładne, pracujemy nad poprawianiem tej funkcjonalności)."
 
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
@@ -561,10 +545,6 @@ other = "Premium"
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "Aktywne gry"
 
-["responses.statsResponse.Guilds"]
-hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "Ilość serwerów z botem"
-
 ["responses.statsResponse.Invite"]
 hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
 other = "Zaproszenie"
@@ -612,10 +592,6 @@ other = "Wygrane jako Impostor"
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Szczegółowe statystyki są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
-
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Pokazuję statystyki Premium!\\n(Informacja: statystyki premium są nadal w wersji **BETA**, i mogą być niedokładne, pracujemy nad poprawianiem tej funkcjonalności)."
 
 ["responses.userStatsEmbed.ServerPlayedInValue"]
 hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
@@ -936,10 +912,6 @@ other = "Jest już false!"
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
 other = "Nie będę natychmiastowo odciszać martwych graczy. Dobry wybór"
-
-["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
-hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "Będę teraz natychmiastowo odciszać martwych graczy. Uważaj, pokaże to, kto zginął w trakcie fazy gry!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"

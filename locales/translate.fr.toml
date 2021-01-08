@@ -22,29 +22,57 @@ other = "Display an in-game map"
 hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
 other = "I don't have a map by that name!"
 
+["commands.HandleCommand.default"]
+hash = "sha1-b4f45bce2b6d42b61760ca87da4f6e3f81bf3ef4"
+other = "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands"
+
+["commands.StatsCommand.Reset.NoConfirm"]
+hash = "sha1-02f29c22d1485fc7d56721ccb23503baa527dc7c"
+other = "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!"
+
+["commands.StatsCommand.Reset.Success"]
+hash = "sha1-766274dbca3b0ccc8a31e542dd03396a8c1cd8a8"
+other = "Successfully reset your guild's stats!"
+
+["commands.StatsCommand.ResetUser.NoConfirm"]
+hash = "sha1-385cd382e629cdb8afb8b489e86da579f0a049c4"
+other = "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!"
+
+["commands.StatsCommand.ResetUser.Success"]
+hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
+other = "Successfully reset {{.User}}'s stats!"
+
 ["message_handlers.handleNewGameMessage.lockout"]
 hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
 other = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\\nCurrent Games: {{.Games}}"
 
+["message_handlers.handleResetGuild.noPerms"]
+hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
+other = "Only Admins are capable of resetting server stats"
+
 ["responses.guildStatsEmbed.CrewmateWins"]
+hash = "sha1-4b341227bf20f5d8c48d85df89d049dc496b205f"
+other = "Crewmate Winrate ({{.Min}}+ Games)"
+
+["responses.guildStatsEmbed.GamesWonCrewmate"]
 hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
 other = "Crewmate Winrate"
 
-["responses.guildStatsEmbed.ImposterWins"]
+["responses.guildStatsEmbed.GamesWonImposter"]
 hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
 other = "Imposter Winrate"
+
+["responses.guildStatsEmbed.ImposterWins"]
+hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
+other = "Imposter Winrate ({{.Min}}+ Games)"
 
 ["responses.guildStatsEmbed.MostGames"]
 hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
 other = "Most Games"
 
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them)."
-
 ["responses.guildStatsEmbed.TotalWinrate"]
-hash = "sha1-11b22a604bf2becc3506f216f0139f7e307ac113"
-other = "Total Winrate"
+hash = "sha1-cf0d3b04ef5176072c4b4f48b58284a365914dbb"
+other = "Total Winrate ({{.Min}}+ Games)"
 
 ["responses.lobbyMetaEmbedFields.Host"]
 hash = "sha1-3960ec4ca5fb5e5d8cdb2cc1c5121c003e426517"
@@ -78,17 +106,57 @@ other = "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it 
 hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
 other = "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`"
 
+["responses.settingResponse.PremiumNoThanks"]
+hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
+other = "The following settings are only for AutoMuteUs premium users.\\nType `{{.CommandPrefix}} premium` to learn more!"
+
+["responses.settingResponse.PremiumThanks"]
+hash = "sha1-1dc5cf059d7d98df84c11ea83e87deab8db76379"
+other = "Thanks for being an AutoMuteUs Premium user!"
+
+["responses.stats.Games"]
+hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
+other = "Games"
+
+["responses.stats.Lost"]
+hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
+other = "Lost"
+
+["responses.stats.Won"]
+hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
+other = "Won"
+
 ["responses.statsResponse.Donate"]
 hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
 other = "Premium"
+
+["responses.statsResponse.Guilds"]
+hash = "sha1-bb386fdbe7c3a0e4de18babd50180bd84808e5aa"
+other = "Guilds"
+
+["responses.statsResponse.TotalGames"]
+hash = "sha1-7eb3e451fcc05160c8f8284c283ff370392d85c2"
+other = "Total Games"
+
+["responses.statsResponse.Users"]
+hash = "sha1-a028fce203b4622b1e4f2483988cdf6acd41ee5b"
+other = "Total Users"
+
+["responses.userStatsEmbed.BestTeammateCrewmate"]
+hash = "sha1-a0f75956ca0b89889dd3ae1ffcd695c884799b9b"
+other = "Best Crewmate Played With"
+
+["responses.userStatsEmbed.BestTeammateImpostor"]
+hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
+other = "Best Impostor Played With"
 
 ["responses.userStatsEmbed.Desc"]
 hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
 other = "User stats for {{.User}}"
 
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Showing additional Premium Stats!\\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them)."
+["responses.userStatsEmbed.MostPlayedWith"]
+hash = "sha1-607a1dc0e0a916a0dd75ba6680fcc04d088b2dc5"
+other = "Most Played With"
 
 ["responses.userStatsEmbed.ServerPlayedInValue"]
 hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
@@ -106,6 +174,50 @@ other = "{{.Servers}} Servers"
 hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
 other = "Winrate"
 
+["responses.userStatsEmbed.WorstTeammateCrewmate"]
+hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
+other = "Worst Crewmate Played With"
+
+["responses.userStatsEmbed.WorstTeammateImpostor"]
+hash = "sha1-5eb3dfcbd2ca1bf7223b3eb13320d33267895210"
+other = "Worst Impostor Played With"
+
+["settings.AllSettings.LeaderboardMention.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.LeaderboardMention.desc"]
+hash = "sha1-d2f89611905cb78ba8f0cb93e9fca7b98c98ad15"
+other = "If players should be mentioned with @ on the leaderboard.\\n**Disable this for large servers!**"
+
+["settings.AllSettings.LeaderboardMention.shortDesc"]
+hash = "sha1-905ebd9d56ed799fb55945976c45427595b043bc"
+other = "Player Leaderboard Mention Format"
+
+["settings.AllSettings.LeaderboardMin.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<number>"
+
+["settings.AllSettings.LeaderboardMin.desc"]
+hash = "sha1-681c7ef0c003be2f66765eb77df38092dc55e3bd"
+other = "Minimum amount of games before a player is displayed on the leaderboard"
+
+["settings.AllSettings.LeaderboardMin.shortDesc"]
+hash = "sha1-e01ca4a2251231aef2dd7ba30640c06626c4c81c"
+other = "Minimum Games for Leaderboard"
+
+["settings.AllSettings.LeaderboardSize.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<number>"
+
+["settings.AllSettings.LeaderboardSize.desc"]
+hash = "sha1-311b5aed467bd4b697651b4d91671ab0ec821f96"
+other = "Specify the size of the player leaderboard"
+
+["settings.AllSettings.LeaderboardSize.shortDesc"]
+hash = "sha1-5fa9ea41087103c1cae7679b9e5fce71eb4035bb"
+other = "Player Leaderboard Size"
+
 ["settings.AllSettings.MapVersion.args"]
 hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
 other = "<version>"
@@ -118,6 +230,70 @@ other = "Specify the default map version (simple, detailed) used by 'map' comman
 hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
 other = "Map version"
 
+["settings.AllSettings.MatchSummaryChannel.args"]
+hash = "sha1-59a1fd23c1b54e9c1c90e3a2fe4dda15c1f848df"
+other = "<text channel name>"
+
+["settings.AllSettings.MatchSummaryChannel.desc"]
+hash = "sha1-3d54b2b30c8f33278a70c415fd52d83cdd3f25c3"
+other = "Specify the text channel name where Match Summaries should be posted"
+
+["settings.AllSettings.MatchSummaryChannel.shortDesc"]
+hash = "sha1-4eac650ab948a17e66a49b364aceb666a6d01da3"
+other = "Channel for Match Summaries"
+
+["settings.AllSettings.MuteSpectators.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<true/false>"
+
+["settings.AllSettings.MuteSpectators.desc"]
+hash = "sha1-6b5c5f2f2ef1b8c1326aa751aaaf5f885012c0ee"
+other = "Whether or not the bot should treat spectators like dead players (respecting your voice rules).\\n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**"
+
+["settings.AllSettings.MuteSpectators.shortDesc"]
+hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
+other = "Mute Spectators like Dead Players"
+
+["settings.ConstructEmbedForSetting.StarterDesc"]
+hash = "sha1-5585eb79654b961ffbe58ffb393bfe024f6376fc"
+other = "Type `{{.CommandPrefix}} settings {{.Command}}` to change this setting.\\n\\n"
+
+["settings.SettingLeaderboardMention.False"]
+hash = "sha1-cea40d5b3e257428c5dcaa8dcfd2f8b8f2edb51a"
+other = "From now on, I'll use player nicknames/usernames in the leaderboard"
+
+["settings.SettingLeaderboardMention.True"]
+hash = "sha1-5d2c8e648214566acea958c0fc6d72d17a176663"
+other = "From now on, I'll mention players directly in the leaderboard"
+
+["settings.SettingLeaderboardMention.Unrecognized"]
+hash = "sha1-a24ce52ad5c465baf7e49a5a3434a425244de74a"
+other = "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings leaderboardMention` for usage"
+
+["settings.SettingLeaderboardMin.OutOfRange"]
+hash = "sha1-b0255e0834eddd8966547ca4b179e601b367be6c"
+other = "You provided a number too high or too low. Please specify a number between [1-100]"
+
+["settings.SettingLeaderboardMin.Success"]
+hash = "sha1-3045aeb741c8df08e58515a0c997b9724c2afc41"
+other = "From now on, I'll display only players with {{.Games}}+ qualifying games on the leaderboard"
+
+["settings.SettingLeaderboardMin.Unrecognized"]
+hash = "sha1-10fea8556a261535f0eefb0a5496cad74913c06c"
+other = "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardMin` for usage"
+
+["settings.SettingLeaderboardSize.OutOfRange"]
+hash = "sha1-f3b99335a054c7b474fbfb906aeb3a104fefb646"
+other = "You provided a number too high or too low. Please specify a number between [1-10]"
+
+["settings.SettingLeaderboardSize.Success"]
+hash = "sha1-9459023cdfd1de8eed146eee42fd5cfe32a6d3d9"
+other = "From now on, I'll display {{.Players}} players on the leaderboard"
+
+["settings.SettingLeaderboardSize.Unrecognized"]
+hash = "sha1-186699935b429b84b8988d52ccbf753070461181"
+other = "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardSize` for usage"
+
 ["settings.SettingMapVersion.Success"]
 hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
 other = "From now on, I will display map images as {{.Arg}}"
@@ -125,3 +301,27 @@ other = "From now on, I will display map images as {{.Arg}}"
 ["settings.SettingMapVersion.Unrecognized"]
 hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
 other = "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage"
+
+["settings.SettingMatchSummaryChannel.withChannelName"]
+hash = "sha1-0d8730f30947020deca58dce63ef8a682bd1addf"
+other = "Match Summary text channel changed to `{{.channelName}}`!"
+
+["settings.SettingMatchSummaryChannel.withoutChannelID"]
+hash = "sha1-e23db89c0645c4ec1ae21b5f59dbd193a68f0c6f"
+other = "Could not find the text channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it."
+
+["settings.SettingMuteSpectators.false_muteSpectators"]
+hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
+other = "I will no longer mute spectators like dead players"
+
+["settings.SettingMuteSpectators.true_noMuteSpectators"]
+hash = "sha1-cb62081e4c9e37177e32ad916c63ef5ff4a812fe"
+other = "I will now mute spectators just like dead players. \\n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**"
+
+["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "It's already true!"
+
+["state.phase.GAMEOVER"]
+hash = "sha1-b1de5c6aaf19873a2e5efc28b9e72fc3e6311c88"
+other = "GAME OVER"

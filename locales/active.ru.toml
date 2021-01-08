@@ -225,10 +225,6 @@ other = "❗ {{.User}} Вот твои сохранённые игровые н�
 hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
 other = "❌ {{.User}} У меня не сохранено твоих игровых ников!"
 
-["commands.HandleCommand.default"]
-hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
-other = "Извините, я не понял эту команду! См. справку `{{.CommandPrefix}} help` для команд"
-
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
 other = "**Голосовой канал не указан! Используй `{{.CommandPrefix}} track`!**"
@@ -252,14 +248,6 @@ other = "Канал с названием {{.channelName}} не найден!\n"
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
 other = "Теперь для AutoMuteUs отслеживается голосовой канал \"{{.ChannelName}}\"!"
-
-["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Неизвестно"
-
-["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Неизвестно"
 
 ["locale.language.name"]
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
@@ -368,10 +356,6 @@ other = "Создатель"
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "Активных игр"
-
-["responses.statsResponse.Guilds"]
-hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "Всего серверов"
 
 ["responses.statsResponse.Invite"]
 hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
@@ -600,10 +584,6 @@ other = "Это уже false!"
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
 other = "Я больше не буду мгновенно включать микрофон и звук мёртвых игроков. Хороший выбор!"
-
-["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
-hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "Я включу микрофон и звук мертвых игроков сразу после их смерти. Осторожно, это показывает, кого убили во время матча, до того, как найдут труп!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"

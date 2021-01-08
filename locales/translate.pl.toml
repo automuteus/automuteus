@@ -1,27 +1,3 @@
-["commands.AllCommands.Help.args"]
-hash = "sha1-98e9e7ae5c47c4681acc3258e2f28c67bbcbf221"
-other = "None, or optional Command to see info for"
-
-["commands.AllCommands.Help.desc"]
-hash = "sha1-771a9d1f94d5c8279f643ef23407a8129db88016"
-other = "Display bot help message, or see info about a Command"
-
-["commands.AllCommands.Map.args"]
-hash = "sha1-030b30e34ea561f86dd60a456431cc385a2beafb"
-other = "<map_name> (skeld, mira_hq, polus) <version> (optional, simple or detailed)"
-
-["commands.AllCommands.Map.desc"]
-hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"
-other = "Display an image of an in-game map in the text channel. Two supported versions: simple or detailed"
-
-["commands.AllCommands.Map.shortDesc"]
-hash = "sha1-81772e8a5083b687b68d3c4a3d1cac45cf7171aa"
-other = "Display an in-game map"
-
-["commands.HandleCommand.Map.notFound"]
-hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
-other = "I don't have a map by that name!"
-
 ["commands.HandleCommand.default"]
 hash = "sha1-b4f45bce2b6d42b61760ca87da4f6e3f81bf3ef4"
 other = "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands"
@@ -41,10 +17,6 @@ other = "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you
 ["commands.StatsCommand.ResetUser.Success"]
 hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
 other = "Successfully reset {{.User}}'s stats!"
-
-["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
-other = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\\nCurrent Games: {{.Games}}"
 
 ["message_handlers.handleResetGuild.noPerms"]
 hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
@@ -86,10 +58,6 @@ other = "Voice Channel"
 hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
 other = "Game `{{.MatchID}}`"
 
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
-other = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
-
 ["responses.premiumResponse.PremiumDescription"]
 hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
 other = "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
@@ -101,10 +69,6 @@ other = " for another {{.Days}} days"
 ["responses.premiumResponse.PremiumDescriptionExpired"]
 hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
 other = "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\\n\\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
-
-["responses.premiumResponse.SettingsDescExtra"]
-hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
-other = "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`"
 
 ["responses.settingResponse.PremiumNoThanks"]
 hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
@@ -126,10 +90,6 @@ other = "Lost"
 hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
 other = "Won"
 
-["responses.statsResponse.Donate"]
-hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
-other = "Premium"
-
 ["responses.statsResponse.Guilds"]
 hash = "sha1-bb386fdbe7c3a0e4de18babd50180bd84808e5aa"
 other = "Guilds"
@@ -150,29 +110,9 @@ other = "Best Crewmate Played With"
 hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
 other = "Best Impostor Played With"
 
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
-other = "User stats for {{.User}}"
-
 ["responses.userStatsEmbed.MostPlayedWith"]
 hash = "sha1-607a1dc0e0a916a0dd75ba6680fcc04d088b2dc5"
 other = "Most Played With"
-
-["responses.userStatsEmbed.ServerPlayedInValue"]
-hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
-other = "{{.Server}} Server"
-
-["responses.userStatsEmbed.ServersPlayedIn"]
-hash = "sha1-2b659e61e9d2c6a41b6d12e0df79733ccc12299a"
-other = "Played In"
-
-["responses.userStatsEmbed.ServersPlayedInValue"]
-hash = "sha1-590e7f7cec75b3fbb8343f80b4fdfb961aee13e4"
-other = "{{.Servers}} Servers"
-
-["responses.userStatsEmbed.Winrate"]
-hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
-other = "Winrate"
 
 ["responses.userStatsEmbed.WorstTeammateCrewmate"]
 hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
@@ -217,18 +157,6 @@ other = "Specify the size of the player leaderboard"
 ["settings.AllSettings.LeaderboardSize.shortDesc"]
 hash = "sha1-5fa9ea41087103c1cae7679b9e5fce71eb4035bb"
 other = "Player Leaderboard Size"
-
-["settings.AllSettings.MapVersion.args"]
-hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
-other = "<version>"
-
-["settings.AllSettings.MapVersion.desc"]
-hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
-other = "Specify the default map version (simple, detailed) used by 'map' command"
-
-["settings.AllSettings.MapVersion.shortDesc"]
-hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
-other = "Map version"
 
 ["settings.AllSettings.MatchSummaryChannel.args"]
 hash = "sha1-59a1fd23c1b54e9c1c90e3a2fe4dda15c1f848df"
@@ -293,14 +221,6 @@ other = "From now on, I'll display {{.Players}} players on the leaderboard"
 ["settings.SettingLeaderboardSize.Unrecognized"]
 hash = "sha1-186699935b429b84b8988d52ccbf753070461181"
 other = "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardSize` for usage"
-
-["settings.SettingMapVersion.Success"]
-hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
-other = "From now on, I will display map images as {{.Arg}}"
-
-["settings.SettingMapVersion.Unrecognized"]
-hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
-other = "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage"
 
 ["settings.SettingMatchSummaryChannel.withChannelName"]
 hash = "sha1-0d8730f30947020deca58dce63ef8a682bd1addf"

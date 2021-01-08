@@ -182,10 +182,6 @@ other = "Ik heb geen gecachte spelernamen voor die gebruiker!"
 hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
 other = "Ik herkende dat commando niet! Typ `help` voor alle beschikbare commando's!"
 
-["commands.HandleCommand.default"]
-hash = "sha1-493cec14d20b3504ea87cc05ee71518f5f023e3c"
-other = "Sorry, ik begreep dat commando niet! Zie `{{.CommandPrefix}} help` voor alle commando's"
-
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
 other = "**Geen spraakkanaal! Gebruik `{{.CommandPrefix}} track`!**"
@@ -209,14 +205,6 @@ other = "Geen kanaal gevonden met de naam {{.channelName}} !\\n"
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
 other = "Nu het spraakkanaal \"{{.channelName}}\" aan het volgen voor Automute!"
-
-["helpers.getRoomAndRegionFromArgs.regionUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Niet verstrekt"
-
-["helpers.getRoomAndRegionFromArgs.roomUnprovided"]
-hash = "sha1-ddc801b83a3d08f9244aeda1910ec2d9e49232aa"
-other = "Niet verstrekt"
 
 ["locale.language.name"]
 hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
@@ -289,10 +277,6 @@ other = "Instellingen"
 ["responses.statsResponse.Games"]
 hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
 other = "Actieve spellen"
-
-["responses.statsResponse.Guilds"]
-hash = "sha1-dfe009745471996d7733e5c2a8b2499d8e6f2811"
-other = "Total Guilds"
 
 ["responses.statsResponse.Version"]
 hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
@@ -481,10 +465,6 @@ other = "Is al gedeactiveerd!"
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
 other = "Ik zal niet langer dode mensen gelijk ontdempen. Goede keuze!"
-
-["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
-hash = "sha1-67eeabb3cb2635e8f14da363f4c52a2f5b1402ce"
-other = "Ik zal vanaf nu mensen gelijk ontdempen als ze dood gaan. Let op, dit laat tijdens het spel al zien wie er dood gaat!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"

@@ -407,10 +407,6 @@ other = "La maggior parte delle Partite"
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Le statistiche dettagliate sono disponibili solo per gli utenti AutoMuteUs Premium; scrivi `{{.CommandPrefix}} premium` per saperne di più"
 
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Visualizzazione di statistiche premium aggiuntive!\\n(Nota: le statistiche sono ancora in ** BETA ** e saranno probabilmente imprecise mentre lavoriamo per migliorarle)."
-
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
 other = "Statistiche della Gilda"
@@ -662,10 +658,6 @@ other = "Most Played With"
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Le statistiche dettagliate sono disponibili solo per gli utenti AutoMuteUs Premium; scrivi `{{.CommandPrefix}} premium` per saperne di più"
-
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Visualizza le statistiche premium aggiuntive!\\n(Nota: le statistiche sono ancora in ** BETA ** e saranno probabilmente imprecise mentre lavoriamo per migliorarle)."
 
 ["responses.userStatsEmbed.ServerPlayedInValue"]
 hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"

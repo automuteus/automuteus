@@ -406,10 +406,6 @@ other = "最多ゲーム数"
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "AuteMuteUs Premium しか詳細情報は見れません！; `{{.CommandPrefix}} premium` で Premium について知ろう"
 
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "追加の Premium 戦績を表示しています！\n(注: 戦績はまだ**ベータ版**であり、改善に取り組んでいる間は不正確になる可能性があります。)"
-
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
 other = "ギルド戦績"
@@ -661,10 +657,6 @@ other = "最多同一ゲームプレイヤー"
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "AuteMuteUs Premium しか詳細情報は見れません！ `{{.CommandPrefix}} premium` で Premium について知ろう"
-
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "追加の Premium 戦績を表示しています！\n(注: 戦績はまだ**ベータ版**であり、改善に取り組んでいる間は不正確になる可能性があります。)"
 
 ["responses.userStatsEmbed.ServerPlayedInValue"]
 hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"

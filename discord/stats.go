@@ -151,7 +151,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.CrewmateWins",
 					Other: "Crewmate Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", crewmateWins, totalCrewmateGames, 100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
+				Value: fmt.Sprintf("%d/%d %s | %.0f%%", crewmateWins, totalCrewmateGames,
+					sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.stats.Games",
+						Other: "Games",
+					}),
+					100.0*float64(crewmateWins)/float64(totalCrewmateGames)),
 				Inline: true,
 			})
 		} else {
@@ -169,7 +174,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 					ID:    "responses.userStatsEmbed.ImposterWins",
 					Other: "Imposter Wins",
 				}),
-				Value:  fmt.Sprintf("%d/%d Games | %.0f%%", imposterWins, totalImposterGames, 100.0*float64(imposterWins)/float64(totalImposterGames)),
+				Value: fmt.Sprintf("%d/%d %s | %.0f%%", imposterWins, totalImposterGames,
+					sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.stats.Games",
+						Other: "Games",
+					}),
+					100.0*float64(imposterWins)/float64(totalImposterGames)),
 				Inline: true,
 			})
 		} else {
@@ -184,13 +194,23 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			Value:  "\u200b",
 			Inline: true,
 		})
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "\u200b",
+			Value:  "\u200b",
+			Inline: false,
+		})
 
 		playerRankings := bot.PostgresInterface.OtherPlayersRankingForPlayerOnServer(userID, guildID)
 		if len(playerRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range playerRankings {
 				if i < leaderBoardSize {
-					buf.WriteString(fmt.Sprintf("%d Games | %.0f%% | %s\n", v.Count, v.Percent,
+					buf.WriteString(fmt.Sprintf("%d %s | %.0f%% | %s\n", v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Games",
+							Other: "Games",
+						}),
+						v.Percent,
 						bot.MentionWithCacheData(strconv.FormatUint(v.UserID, 10), guildID, sett)))
 				} else {
 					break
@@ -211,7 +231,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range bestImpostorTeammateRankings {
 				if i < leaderBoardSize {
-					buf.WriteString(fmt.Sprintf("%d/%d Games | %.0f%% | %s\n", v.WinCount, v.Count, v.WinRate,
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% | %s\n", v.WinCount, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Won",
+							Other: "Won",
+						}),
+						v.WinRate,
 						bot.MentionWithCacheData(strconv.FormatUint(v.TeammateID, 10), guildID, sett)))
 				} else {
 					break
@@ -232,7 +257,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstImpostorTeammateRankings {
 				if i < leaderBoardSize {
-					buf.WriteString(fmt.Sprintf("%d/%d Games | %.0f%% | %s\n", v.LooseCount, v.Count, v.LooseRate,
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% | %s\n", v.LooseCount, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Lost",
+							Other: "Lost",
+						}),
+						v.LooseRate,
 						bot.MentionWithCacheData(strconv.FormatUint(v.TeammateID, 10), guildID, sett)))
 				} else {
 					break
@@ -249,7 +279,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   "\u200b",
 				Value:  "\u200b",
-				Inline: false,
+				Inline: true,
 			})
 		}
 
@@ -258,7 +288,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range bestCrewmateTeammateRankings {
 				if i < leaderBoardSize {
-					buf.WriteString(fmt.Sprintf("%d/%d Games | %.0f%% | %s\n", v.WinCount, v.Count, v.WinRate,
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% | %s\n", v.WinCount, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Won",
+							Other: "Won",
+						}),
+						v.WinRate,
 						bot.MentionWithCacheData(strconv.FormatUint(v.TeammateID, 10), guildID, sett)))
 				} else {
 					break
@@ -272,6 +307,11 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Value:  buf.String(),
 				Inline: true,
 			})
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: true,
+			})
 		}
 
 		worstCrewmateTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin())
@@ -279,7 +319,12 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstCrewmateTeammateRankings {
 				if i < leaderBoardSize {
-					buf.WriteString(fmt.Sprintf("%d/%d Games | %.0f%% | %s\n", v.LooseCount, v.Count, v.LooseRate,
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% | %s\n", v.LooseCount, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Lost",
+							Other: "Lost",
+						}),
+						v.LooseRate,
 						bot.MentionWithCacheData(strconv.FormatUint(v.TeammateID, 10), guildID, sett)))
 				} else {
 					break
@@ -296,7 +341,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		}
 	}
 
-	fields = TrimInvalidEmbedFields(fields)
+	fields = TrimEmbedFields(fields)
 
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
@@ -540,7 +585,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		}
 	}
 
-	fields = TrimInvalidEmbedFields(fields)
+	fields = TrimEmbedFields(fields)
 
 	var embed = discordgo.MessageEmbed{
 		URL:  "",
@@ -587,7 +632,7 @@ func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildS
 	return stats.ToDiscordEmbed(connectCode+":"+matchID, sett)
 }
 
-func TrimInvalidEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.MessageEmbedField {
+func TrimEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.MessageEmbedField {
 	i := 0
 	for _, v := range fields {
 		if v.Value != "" {
