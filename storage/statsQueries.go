@@ -241,3 +241,43 @@ func (psqlInterface *PsqlInterface) DeleteAllGamesForUser(userID string) error {
 	_, err := psqlInterface.Pool.Exec(context.Background(), "DELETE FROM users_games WHERE user_id=$1", userID)
 	return err
 }
+
+func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, role int16, leaderboardMin int) []*PostgresBestTeammatePlayerRanking {
+	r := []*PostgresBestTeammatePlayerRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+		"uG.user_id as teammate_id,"+
+		"COUNT(users_games.player_won) as total, "+
+		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+		"FROM users_games "+
+		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
+		"GROUP BY users_games.user_id, uG.user_id "+
+		"HAVING COUNT(users_games.player_won) > $4 "+
+		"ORDER BY win_rate DESC", guildID, role, userID, leaderboardMin)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, role int16, leaderboardMin int) []*PostgresWorstTeammatePlayerRanking {
+	r := []*PostgresWorstTeammatePlayerRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+		"uG.user_id as teammate_id,"+
+		"COUNT(users_games.player_won) as total, "+
+		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+		"FROM users_games "+
+		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
+		"GROUP BY users_games.user_id, uG.user_id "+
+		"HAVING COUNT(users_games.player_won) > $4 "+
+		"ORDER BY loose_rate DESC", guildID, role, userID, leaderboardMin)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
