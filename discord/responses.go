@@ -158,6 +158,9 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *sto
 
 func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
+	if strings.HasPrefix(version, "6.9") {
+		version = "😎 " + version + " 😎"
+	}
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",

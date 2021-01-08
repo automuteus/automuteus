@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	version = "6.0.0"
+	version = "6.9.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -30,7 +30,7 @@ var (
 const DefaultURL = "http://localhost:8123"
 
 func main() {
-	//seed the rand generator (used for making connection codes)
+	// seed the rand generator (used for making connection codes)
 	rand.Seed(time.Now().Unix())
 	err := discordMainWrapper()
 	if err != nil {

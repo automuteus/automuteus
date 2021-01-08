@@ -33,7 +33,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			ID:    "responses.userStatsEmbed.GamesPlayed",
 			Other: "Games Played",
 		}),
-		Value:  fmt.Sprintf("%d", gamesPlayed),
+		Value:  fmt.Sprintf("%d", 69),
 		Inline: true,
 	}
 	fields[1] = &discordgo.MessageEmbedField{
@@ -636,6 +636,9 @@ func TrimEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.Message
 	i := 0
 	for _, v := range fields {
 		if v.Value != "" {
+			if strings.Contains(v.Value, "69") || strings.Contains(v.Value, "420") {
+				v.Value = "😎 " + v.Value + " 😎"
+			}
 			fields[i] = v
 			i++
 		}
