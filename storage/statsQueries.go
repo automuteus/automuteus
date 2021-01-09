@@ -254,7 +254,7 @@ func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, r
 		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
 		"GROUP BY users_games.user_id, uG.user_id "+
 		"HAVING COUNT(users_games.player_won) > $4 "+
-		"ORDER BY win_rate DESC", guildID, role, userID, leaderboardMin)
+		"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, userID, leaderboardMin)
 
 	if err != nil {
 		log.Println(err)
@@ -274,7 +274,7 @@ func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, 
 		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
 		"GROUP BY users_games.user_id, uG.user_id "+
 		"HAVING COUNT(users_games.player_won) > $4 "+
-		"ORDER BY loose_rate DESC", guildID, role, userID, leaderboardMin)
+		"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, userID, leaderboardMin)
 
 	if err != nil {
 		log.Println(err)
