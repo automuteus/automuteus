@@ -12,6 +12,7 @@ require (
 	github.com/bwmarrin/discordgo v0.22.1
 	github.com/georgysavva/scany v0.2.7
 	github.com/go-redis/redis/v8 v8.4.8
+	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jackc/pgx/v4 v4.10.1
