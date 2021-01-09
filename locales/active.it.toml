@@ -61,7 +61,7 @@ other = "Termina la partita"
 
 ["commands.AllCommands.Force.args"]
 hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<nome fase di gioco> (task, discussione, o lobby / t,d, or l)"
+other = "<nome fase di gioco> (task, discussione, o lobby / t,d, o l)"
 
 ["commands.AllCommands.Force.desc"]
 hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
@@ -299,6 +299,22 @@ other = "❌ {{.User}} Hai già disattivato la raccolta dei dati"
 hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
 other = "✅ {{.User}} Ti ho escluso con successo dalla raccolta dei dati"
 
+["commands.StatsCommand.Reset.NoConfirm"]
+hash = "sha1-02f29c22d1485fc7d56721ccb23503baa527dc7c"
+other = "Per piacere scrivi `{{.CommandPrefix}} stats guild reset confirm` se sei sicuro al 100% di voler **resettare completamente** le statistiche della tua gilda!"
+
+["commands.StatsCommand.Reset.Success"]
+hash = "sha1-766274dbca3b0ccc8a31e542dd03396a8c1cd8a8"
+other = "Riprisitinate con successo le statistiche della tua gilda!"
+
+["commands.StatsCommand.ResetUser.NoConfirm"]
+hash = "sha1-385cd382e629cdb8afb8b489e86da579f0a049c4"
+other = "Per piacere scrivi `{{.CommandPrefix}} stats `{{.User}}` se sei sicuro al 100% di voler **resettare completamente** le statistiche di questo giocatore!"
+
+["commands.StatsCommand.ResetUser.Success"]
+hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
+other = "Riprisitinate con successo le statistiche di {{.User}}!"
+
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
 other = "**nessun Canale Vocale! Usa `{{.CommandPrefix}} track`!**"
@@ -379,6 +395,10 @@ other = "{{.User}} Stai creando partite troppo velocemente! Per favore rallenta!
 hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
 other = "{{.User}}, stai premendo sulle reazioni troppo velocemente, per piacere calmati!"
 
+["message_handlers.handleResetGuild.noPerms"]
+hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
+other = "Solo gli Amministratori sono in grado di reimpostare le statistiche del server"
+
 ["message_handlers.softban"]
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "{{.User}} Ignorerò i tuoi messaggi per i prossimi 5 minuti, smettila di spammare"
@@ -395,6 +415,14 @@ other = "Statistiche della Gilda per {{.GuildName}}"
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "Partite Giocate"
 
+["responses.guildStatsEmbed.GamesWonCrewmate"]
+hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
+other = "Winrate da Crewmate"
+
+["responses.guildStatsEmbed.GamesWonImposter"]
+hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
+other = "Winrate da Impostore"
+
 ["responses.guildStatsEmbed.ImposterWins"]
 hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
 other = "Winrate da Impostore({{.Min}}+ Partite)"
@@ -406,10 +434,6 @@ other = "La maggior parte delle Partite"
 ["responses.guildStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Le statistiche dettagliate sono disponibili solo per gli utenti AutoMuteUs Premium; scrivi `{{.CommandPrefix}} premium` per saperne di più"
-
-["responses.guildStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Visualizzazione di statistiche premium aggiuntive!\\n(Nota: le statistiche sono ancora in ** BETA ** e saranno probabilmente imprecise mentre lavoriamo per migliorarle)."
 
 ["responses.guildStatsEmbed.Title"]
 hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
@@ -583,6 +607,18 @@ other = "Grazie per essere diventato un utente AutoMuteUs Premium!"
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "Impostazioni"
 
+["responses.stats.Games"]
+hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
+other = "Partite"
+
+["responses.stats.Lost"]
+hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
+other = "Perse"
+
+["responses.stats.Won"]
+hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
+other = "Vinte"
+
 ["responses.statsResponse.BotInfo"]
 hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
 other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
@@ -631,6 +667,14 @@ other = "Versione"
 hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
 other = "Website"
 
+["responses.userStatsEmbed.BestTeammateCrewmate"]
+hash = "sha1-a0f75956ca0b89889dd3ae1ffcd695c884799b9b"
+other = "Miglior Crewmate con cui hai giocato"
+
+["responses.userStatsEmbed.BestTeammateImpostor"]
+hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
+other = "Miglior Impostore con cui hai giocato"
+
 ["responses.userStatsEmbed.CrewmateWins"]
 hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
 other = "Vittorie da Crewmate"
@@ -655,17 +699,9 @@ other = "Partite Giocate"
 hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
 other = "Vittorie da Impostore"
 
-["responses.userStatsEmbed.MostPlayedWith"]
-hash = "sha1-607a1dc0e0a916a0dd75ba6680fcc04d088b2dc5"
-other = "Most Played With"
-
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
 other = "Le statistiche dettagliate sono disponibili solo per gli utenti AutoMuteUs Premium; scrivi `{{.CommandPrefix}} premium` per saperne di più"
-
-["responses.userStatsEmbed.Premium"]
-hash = "sha1-77f9cf74054bffc32a79a0c9bd010e1382fc7a4e"
-other = "Visualizza le statistiche premium aggiuntive!\\n(Nota: le statistiche sono ancora in ** BETA ** e saranno probabilmente imprecise mentre lavoriamo per migliorarle)."
 
 ["responses.userStatsEmbed.ServerPlayedInValue"]
 hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
@@ -690,6 +726,14 @@ other = "Vittorie Totali"
 ["responses.userStatsEmbed.Winrate"]
 hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
 other = "Winrate"
+
+["responses.userStatsEmbed.WorstTeammateCrewmate"]
+hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
+other = "Peggior Crewmate con cui hai giocato"
+
+["responses.userStatsEmbed.WorstTeammateImpostor"]
+hash = "sha1-5eb3dfcbd2ca1bf7223b3eb13320d33267895210"
+other = "Peggior Impostore con cui hai giocato"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -801,15 +845,15 @@ other = "Messaggio di Riepilogo della Partita"
 
 ["settings.AllSettings.MatchSummaryChannel.args"]
 hash = "sha1-59a1fd23c1b54e9c1c90e3a2fe4dda15c1f848df"
-other = "<text channel name>"
+other = "<nome del canale di testo>"
 
 ["settings.AllSettings.MatchSummaryChannel.desc"]
 hash = "sha1-3d54b2b30c8f33278a70c415fd52d83cdd3f25c3"
-other = "Specify the text channel name where Match Summaries should be posted"
+other = "Specificare il nome del canale di testo in cui pubblicare il Riepilogo delle Partite"
 
 ["settings.AllSettings.MatchSummaryChannel.shortDesc"]
 hash = "sha1-4eac650ab948a17e66a49b364aceb666a6d01da3"
-other = "Channel for Match Summaries"
+other = "Canale per il Riepilogo delle Partite"
 
 ["settings.AllSettings.MuteSpectators.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
@@ -829,7 +873,7 @@ other = "<prefisso>"
 
 ["settings.AllSettings.Prefix.desc"]
 hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "CModificare il prefisso utilizzato dal bot per rilevare i comandi"
+other = "Modificare il prefisso utilizzato dal bot per rilevare i comandi"
 
 ["settings.AllSettings.Prefix.shortDesc"]
 hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
@@ -885,7 +929,7 @@ other = "Il Bot Smuta i Morti"
 
 ["settings.AllSettings.VoiceRules.args"]
 hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
-other = "<muta/smuta> <fase di gioco> <morto/vivo> <true/false>"
+other = "<mute/deaf> <fase di gioco> <dead/alive> <true/false>"
 
 ["settings.AllSettings.VoiceRules.desc"]
 hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
@@ -921,7 +965,7 @@ other = "Esempio"
 
 ["settings.ConstructEmbedForSetting.StarterDesc"]
 hash = "sha1-5585eb79654b961ffbe58ffb393bfe024f6376fc"
-other = "Type `{{.CommandPrefix}} settings {{.Command}}` to change this setting.\\n\\n"
+other = "Scrivi `{{.CommandPrefix}} settings {{.Command}}` per modificare qeusta impostazione.\\n\\n"
 
 ["settings.HandleSettingsCommand.default"]
 hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
@@ -929,7 +973,7 @@ other = "Mi dispiace, `{{.Arg}}` non è un'impostazione valida!\\n"
 
 ["settings.SettingAdminUserIDs.clearAdmins"]
 hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
-other = "CCancellazione di tutti gli IDs degli Utenti Amministratori!"
+other = "Cancellazione di tutti gli IDs degli Utenti Amministratori!"
 
 ["settings.SettingAdminUserIDs.newBotAdmin"]
 hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
@@ -985,7 +1029,7 @@ other = "Lingua non trovata! Codici lingua disponibili: {{.Langs}}"
 
 ["settings.SettingLanguage.notLoaded"]
 hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "LI file di localizzazione non sono stati caricati! {{.Langs}}"
+other = "I file di localizzazione non sono stati caricati! {{.Langs}}"
 
 ["settings.SettingLanguage.reloaded"]
 hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
@@ -997,7 +1041,7 @@ other = "La localizzazione è impostata su {{.LangName}}"
 
 ["settings.SettingLanguage.tooShort"]
 hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "MI dispiace, il codice della lingua è breve. Codici lingua disponibili: {{.Langs}}."
+other = "Mi dispiace, il codice della lingua è breve. Codici lingua disponibili: {{.Langs}}."
 
 ["settings.SettingLeaderboardMention.False"]
 hash = "sha1-cea40d5b3e257428c5dcaa8dcfd2f8b8f2edb51a"
@@ -1065,11 +1109,11 @@ other = "{{.Minutes}} non è un numero valido. Guarda `{{.CommandPrefix}} settin
 
 ["settings.SettingMatchSummaryChannel.withChannelName"]
 hash = "sha1-0d8730f30947020deca58dce63ef8a682bd1addf"
-other = "Match Summary text channel changed to `{{.channelName}}`!"
+other = "Canale di testo del Riepilogo Partita modificato in `{{.channelName}}`!"
 
 ["settings.SettingMatchSummaryChannel.withoutChannelID"]
 hash = "sha1-e23db89c0645c4ec1ae21b5f59dbd193a68f0c6f"
-other = "Could not find the text channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it."
+other = "Non riesco a trovare il canale di testo `{{.channelName}}`! Scrivi il nome o l'ID e assicurati che il bot possa vederlo."
 
 ["settings.SettingMuteSpectators.false_muteSpectators"]
 hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
@@ -1097,7 +1141,7 @@ other = "Mi dispiace, non so che ruolo sia `{{.RoleName}}` . Per piacere usa @ru
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "È già falso!"
+other = "È già false!"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
 hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
@@ -1109,11 +1153,11 @@ other = "E' già true!"
 
 ["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
 hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "È già vero!"
+other = "È già true!"
 
 ["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
 hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Mi dispiace, `{{.Arg}}` non è né `vero` né `falso`."
+other = "Mi dispiace, `{{.Arg}}` non è né `true` né `false`."
 
 ["settings.SettingVoiceRules.NA"]
 hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
@@ -1125,19 +1169,19 @@ other = "Non so cosa sia {{.PhaseName}} . L'elenco delle fasi di gioco sono `Lob
 
 ["settings.SettingVoiceRules.enoughArgs"]
 hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Non hai inserito i giusti argomenti! La semantica corretta è: `voiceRules [muta/smuta] [fase di gioco] [vivo/morto] [true/false]`"
+other = "Non hai inserito i giusti argomenti! La semantica corretta è: `voiceRules [mute/deaf] [fase di gioco] [dead/alive] [true/false]`"
 
 ["settings.SettingVoiceRules.neitherAliveDead"]
 hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
-other = "`{{.Arg}}` non è né `vivo` né `morto`!"
+other = "`{{.Arg}}` non è né `alive` né `dead`!"
 
 ["settings.SettingVoiceRules.neitherMuteDeaf"]
 hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
-other = "`{{.Arg}}` non è né `mutato` né `smutato`!"
+other = "`{{.Arg}}` non è né `mute` né `deaf`!"
 
 ["settings.SettingVoiceRules.neitherTrueFalse"]
 hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
-other = "`{{.Arg}}` non è né `vero` né `falso`!"
+other = "`{{.Arg}}` non è né `true` né `false`!"
 
 ["settings.SettingVoiceRules.queryingAlreadyUnValues"]
 hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
@@ -1157,11 +1201,11 @@ other = "Quando sei nella fase di `{{.PhaseName}}` , {{.PlayerGameState}} i gioc
 
 ["settings.SettingVoiceRules.setUnValues"]
 hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
-other = "From now on, Quando sei nella fase di `{{.PhaseName}}` , {{.PlayerGameState}} i giocatori saranno s{{.PlayerDiscordState}}."
+other = "Da questo momento in poi, quando sei nella fase di `{{.PhaseName}}` , {{.PlayerGameState}} i giocatori saranno s{{.PlayerDiscordState}}."
 
 ["settings.SettingVoiceRules.setValues"]
 hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
-other = "From now on, Quando sei nella fase di `{{.PhaseName}}` , {{.PlayerGameState}} i giocatori saranno {{.PlayerDiscordState}}."
+other = "Da questo momento in poi, quando sei nella fase di `{{.PhaseName}}` , {{.PlayerGameState}} i giocatori saranno {{.PlayerDiscordState}}."
 
 ["state.phase.DISCUSSION"]
 hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
