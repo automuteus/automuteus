@@ -251,9 +251,9 @@ func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, r
 		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
 		"FROM users_games "+
 		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
 		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) > $4 "+
+		"HAVING COUNT(users_games.player_won) >= $4 "+
 		"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, userID, leaderboardMin)
 
 	if err != nil {
@@ -271,9 +271,9 @@ func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, 
 		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
 		"FROM users_games "+
 		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND users_games.user_id = $3 "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
 		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) > $4 "+
+		"HAVING COUNT(users_games.player_won) >= $4 "+
 		"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, userID, leaderboardMin)
 
 	if err != nil {

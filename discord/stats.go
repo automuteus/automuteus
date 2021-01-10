@@ -218,7 +218,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			}
 		}
 
-		bestImpostorTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.ImposterRole), sett.GetLeaderboardMin())
+		bestImpostorTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.ImposterRole), 2)
 		if len(bestImpostorTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range bestImpostorTeammateRankings {
@@ -244,7 +244,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
-		worstImpostorTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.ImposterRole), sett.GetLeaderboardMin())
+		worstImpostorTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.ImposterRole), 2)
 		if len(worstImpostorTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstImpostorTeammateRankings {
