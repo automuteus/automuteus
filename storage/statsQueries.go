@@ -281,3 +281,45 @@ func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, 
 	}
 	return r
 }
+
+func (psqlInterface *PsqlInterface) BestTeammateForServerByRole(guildID string, role int16, leaderboardMin int) []*PostgresBestTeammatePlayerRanking {
+	r := []*PostgresBestTeammatePlayerRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+		"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+		"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id, "+
+		"COUNT(users_games.player_won) as total, "+
+		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+		"FROM users_games "+
+		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 and uG.player_role = $2"+
+		"GROUP BY users_games.user_id, uG.user_id "+
+		"HAVING COUNT(users_games.player_won) >= $3 "+
+		"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, leaderboardMin)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) WorstTeammateForServerByRole(guildID string, role int16, leaderboardMin int) []*PostgresWorstTeammatePlayerRanking {
+	r := []*PostgresWorstTeammatePlayerRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+		"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+		"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id,"+
+		"COUNT(users_games.player_won) as total, "+
+		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+		"FROM users_games "+
+		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2"+
+		"GROUP BY users_games.user_id, uG.user_id "+
+		"HAVING COUNT(users_games.player_won) >= $3 "+
+		"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, leaderboardMin)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
