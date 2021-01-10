@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -10,7 +9,6 @@ import (
 	"os/signal"
 	"path"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -18,7 +16,6 @@ import (
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -41,21 +38,6 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("final.txt")
-	if err != nil {
-		err = godotenv.Load("config.txt")
-		if err != nil && os.Getenv("DISCORD_BOT_TOKEN") == "" {
-			log.Println("Can't open config file and missing DISCORD_BOT_TOKEN; creating config.txt for you to use for your config")
-			f, err := os.Create("config.txt")
-			if err != nil {
-				log.Println("Issue creating sample config.txt")
-				return err
-			}
-			_, err = f.WriteString(fmt.Sprintf("DISCORD_BOT_TOKEN=\nBOT_LANG=%s\n", locale.DefaultLang))
-			f.Close()
-		}
-	}
-
 	logPath := os.Getenv("LOG_PATH")
 	if logPath == "" {
 		logPath = "./"
@@ -78,21 +60,6 @@ func discordMainWrapper() error {
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
-	}
-
-	extraTokens := []string{}
-	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
-	if extraTokenStr != "" {
-		extraTokens = strings.Split(extraTokenStr, ",")
-	}
-
-	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
-	if discordToken2 != "" {
-		log.Println("[INFO] DISCORD_BOT_TOKEN_2 is deprecated. Please use WORKER_BOT_TOKENS in the future!")
-		extraTokens = append(extraTokens, discordToken2)
-	}
-	if len(extraTokens) > 0 {
-		log.Printf("You provided %d worker tokens so I'll be sending them to Galactus\n", len(extraTokens))
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
@@ -119,27 +86,34 @@ func discordMainWrapper() error {
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
-	redisAddr := os.Getenv("REDIS_ADDR")
-	redisPassword := os.Getenv("REDIS_PASS")
-	if redisAddr != "" {
-		err := redisClient.Init(storage.RedisParameters{
-			Addr:     redisAddr,
-			Username: "",
-			Password: redisPassword,
-		})
-		if err != nil {
-			log.Println(err)
-		}
-		err = storageInterface.Init(storage.RedisParameters{
-			Addr:     redisAddr,
-			Username: "",
-			Password: redisPassword,
-		})
-		if err != nil {
-			log.Println(err)
-		}
+	if os.Getenv("AUTOMUTEUS_DEVELOPMENT") != "" {
+		log.Println("Bot is running in DEVELOPMENT mode")
+		redisClient.InitMock()
+		storageInterface.InitMock()
 	} else {
-		return errors.New("no REDIS_ADDR specified; exiting")
+		log.Println("Bot is running in PRODUCTION mode")
+		redisAddr := os.Getenv("REDIS_ADDR")
+		redisPassword := os.Getenv("REDIS_PASS")
+		if redisAddr != "" {
+			err := redisClient.Init(storage.RedisParameters{
+				Addr:     redisAddr,
+				Username: "",
+				Password: redisPassword,
+			})
+			if err != nil {
+				log.Println(err)
+			}
+			err = storageInterface.Init(storage.RedisParameters{
+				Addr:     redisAddr,
+				Username: "",
+				Password: redisPassword,
+			})
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			return errors.New("no REDIS_ADDR specified; exiting")
+		}
 	}
 
 	galactusAddr := os.Getenv("GALACTUS_ADDR")
@@ -184,10 +158,9 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	<-sc
-	//bot.GracefulClose()
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 

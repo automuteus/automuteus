@@ -16,6 +16,13 @@ import (
 	"time"
 )
 
+// TODO use endpoints from Galactus directly
+const SendMessagePartial = "/sendMessage/"
+const SendMessageFull = SendMessagePartial + "{channelID}"
+
+const SendMessageEmbedPartial = "/sendMessageEmbed/"
+const SendMessageEmbedFull = SendMessageEmbedPartial + "{channelID}"
+
 type GalactusClient struct {
 	Address string
 	client  *http.Client
@@ -40,17 +47,20 @@ func NewGalactusClient(address string) (*GalactusClient, error) {
 	return &gc, nil
 }
 
-func (gc *GalactusClient) AddToken(token string) error {
-	resp, err := gc.client.Post(gc.Address+"/addtoken", "application/json", bytes.NewBuffer([]byte(token)))
+func (galactus *GalactusClient) SendChannelMessage(channelID string, message string) error {
+	resp, err := galactus.client.Post(galactus.Address+SendMessagePartial+channelID, "application/json", bytes.NewBufferString(message))
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusAlreadyReported {
-		return errors.New("this token has already been added and recorded in Galactus")
-	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("%d response from adding token", resp.StatusCode))
+		log.Println("non-200 status code received for SendMessage:")
+		respBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("error reading all bytes from resp body for sendmessage")
+			log.Println(err)
+		}
+		log.Println(string(respBytes))
 	}
 	return nil
 }
@@ -62,12 +72,12 @@ func RecordDiscordRequestsByCounts(client *redis.Client, counts *task.MuteDeafen
 	metrics.RecordDiscordRequests(client, metrics.InvalidRequest, counts.RateLimit)
 }
 
-func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) *task.MuteDeafenSuccessCounts {
+func (galactus *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) *task.MuteDeafenSuccessCounts {
 	if lock != nil {
 		defer lock.Release(context.Background())
 	}
 
-	fullURL := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
+	fullURL := fmt.Sprintf("%s/modify/%s/%s", galactus.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil
@@ -75,7 +85,7 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 
 	log.Println(request)
 
-	resp, err := gc.client.Post(fullURL, "application/json", bytes.NewBuffer(jBytes))
+	resp, err := galactus.client.Post(fullURL, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
 		return nil
 	}

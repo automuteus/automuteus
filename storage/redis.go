@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -19,6 +20,17 @@ type RedisParameters struct {
 	Addr     string
 	Username string
 	Password string
+}
+
+func (storageInterface *StorageInterface) InitMock() {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	storageInterface.client = redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
 }
 
 func (storageInterface *StorageInterface) Init(params interface{}) error {

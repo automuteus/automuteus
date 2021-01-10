@@ -54,6 +54,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	prefix := sett.GetCommandPrefix()
 
+	bot.GalactusClient.SendChannelMessage(m.ChannelID, "This is a test")
+
 	if strings.Contains(m.Content, "<@!"+s.State.User.ID+">") {
 		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.respondPrefix",

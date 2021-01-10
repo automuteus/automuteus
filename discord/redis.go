@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
@@ -27,6 +28,17 @@ const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
 	client *redis.Client
+}
+
+func (redisInterface *RedisInterface) InitMock() {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	redisInterface.client = redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
 }
 
 func (redisInterface *RedisInterface) Init(params interface{}) error {
