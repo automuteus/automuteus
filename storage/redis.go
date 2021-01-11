@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/go-redis/redis/v8"
 	"log"
 )
@@ -45,17 +46,17 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 	return nil
 }
 
-func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *GuildSettings {
+func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
 	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	switch {
 	case errors.Is(err, redis.Nil):
-		s := MakeGuildSettings()
+		s := settings.MakeGuildSettings()
 		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
 			log.Println(err)
-			return MakeGuildSettings()
+			return settings.MakeGuildSettings()
 		}
 		err = storageInterface.client.Set(ctx, key, jBytes, 0).Err()
 		if err != nil {
@@ -64,19 +65,19 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *Guil
 		return s
 	case err != nil:
 		log.Println(err)
-		return MakeGuildSettings()
+		return settings.MakeGuildSettings()
 	default:
-		s := GuildSettings{}
+		s := settings.GuildSettings{}
 		err := json.Unmarshal([]byte(j), &s)
 		if err != nil {
 			log.Println(err)
-			return MakeGuildSettings()
+			return settings.MakeGuildSettings()
 		}
 		return &s
 	}
 }
 
-func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *GuildSettings) error {
+func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *settings.GuildSettings) error {
 	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	jbytes, err := json.MarshalIndent(guildSettings, "", "  ")

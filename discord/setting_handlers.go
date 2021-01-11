@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/setting"
 	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/locale"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"log"
@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-func ConstructEmbedForSetting(value string, setting setting.Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func ConstructEmbedForSetting(value string, setting setting.Setting, sett *settings.GuildSettings) discordgo.MessageEmbed {
 	title := setting.Name
 	if setting.Premium {
 		title = "💎 " + title
@@ -97,7 +97,7 @@ func getSetting(arg string) setting.SettingType {
 	return setting.NullSetting
 }
 
-func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) {
+func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string, prem bool) {
 	if len(args) == 1 {
 		galactus.SendChannelMessageEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, setting.AllSettings, sett, prem))
 		return
@@ -173,7 +173,7 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 		}
 		galactus.SendChannelMessage(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 	case setting.Reset:
-		sett = storage.MakeGuildSettings()
+		sett = settings.MakeGuildSettings()
 		galactus.SendChannelMessage(m.ChannelID, "Resetting guild settings to default values")
 		isValid = true
 	default:
@@ -194,7 +194,7 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 	}
 }
 
-func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), setting.AllSettings[setting.Prefix], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -226,7 +226,7 @@ func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo
 	return true
 }
 
-func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetLanguage(), setting.AllSettings[setting.Language], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -239,24 +239,26 @@ func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.Mess
 	}
 	println(strLangs) */
 
+	tags := settings.GlobalBundle.LanguageTags()
 	if args[2] == "reload" {
-		locale.LoadTranslations()
+		settings.LoadTranslations(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
+		tags = settings.GlobalBundle.LanguageTags()
 
 		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.reloaded",
 			Other: "Localization files are reloaded ({{.Count}}). Available language codes: {{.Langs}}",
 		},
 			map[string]interface{}{
-				"Langs": locale.GetBundle().LanguageTags(),
-				"Count": len(locale.GetBundle().LanguageTags()),
+				"Langs": tags,
+				"Count": len(tags),
 			}))
 		return false
 	} else if args[2] == "list" {
 		// locale.LoadTranslations()
 
 		strLangs := ""
-		for langCode, langName := range locale.GetLanguages() {
-			strLangs += fmt.Sprintf("\n[%s] - %s", langCode, langName)
+		for _, langCode := range tags {
+			strLangs += fmt.Sprintf("\n%s", langCode)
 		}
 
 		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -275,31 +277,38 @@ func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.Mess
 			Other: "Sorry, the language code is short. Available language codes: {{.Langs}}.",
 		},
 			map[string]interface{}{
-				"Langs": locale.GetBundle().LanguageTags(),
+				"Langs": tags,
 			}))
 		return false
 	}
 
-	if len(locale.GetBundle().LanguageTags()) < 2 {
+	if len(tags) < 2 {
 		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.notLoaded",
 			Other: "Localization files were not loaded! {{.Langs}}",
 		},
 			map[string]interface{}{
-				"Langs": locale.GetBundle().LanguageTags(),
+				"Langs": tags,
 			}))
 
 		return false
 	}
 
-	langName := locale.GetLanguages()[args[2]]
-	if langName == "" {
+	found := false
+	for _, v := range tags {
+		if v.String() == args[2] {
+			found = true
+			break
+		}
+	}
+
+	if !found {
 		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.notFound",
 			Other: "Language not found! Available language codes: {{.Langs}}",
 		},
 			map[string]interface{}{
-				"Langs": locale.GetBundle().LanguageTags(),
+				"Langs": settings.GlobalBundle.LanguageTags(),
 			}))
 
 		return false
@@ -312,12 +321,12 @@ func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.Mess
 		Other: "Localization is set to {{.LangName}}",
 	},
 		map[string]interface{}{
-			"LangName": langName,
+			"LangName": args[2],
 		}))
 	return true
 }
 
-func SettingAdminUserIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingAdminUserIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
@@ -397,7 +406,7 @@ func SettingAdminUserIDs(galactus *galactus_client.GalactusClient, m *discordgo.
 	return true
 }
 
-func SettingPermissionRoleIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingPermissionRoleIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
@@ -478,7 +487,7 @@ func SettingPermissionRoleIDs(galactus *galactus_client.GalactusClient, m *disco
 	return true
 }
 
-func SettingUnmuteDeadDuringTasks(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingUnmuteDeadDuringTasks(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		current := "false"
@@ -529,7 +538,7 @@ func SettingUnmuteDeadDuringTasks(galactus *galactus_client.GalactusClient, m *d
 	return false
 }
 
-func SettingDelays(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingDelays(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting("N/A", setting.AllSettings[setting.Delays], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -609,7 +618,7 @@ func SettingDelays(galactus *galactus_client.GalactusClient, m *discordgo.Messag
 	return true
 }
 
-func SettingVoiceRules(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingVoiceRules(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.NA",
@@ -773,7 +782,7 @@ func SettingVoiceRules(galactus *galactus_client.GalactusClient, m *discordgo.Me
 	return true
 }
 
-func SettingMatchSummary(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMatchSummary(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), setting.AllSettings[setting.MatchSummary], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -825,7 +834,7 @@ func SettingMatchSummary(galactus *galactus_client.GalactusClient, m *discordgo.
 	return true
 }
 
-func SettingMatchSummaryChannel(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMatchSummaryChannel(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), setting.AllSettings[setting.MatchSummaryChannel], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -872,7 +881,7 @@ func SettingMatchSummaryChannel(galactus *galactus_client.GalactusClient, m *dis
 	}
 }
 
-func SettingAutoRefresh(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingAutoRefresh(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), setting.AllSettings[setting.AutoRefresh], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -909,7 +918,7 @@ func SettingAutoRefresh(galactus *galactus_client.GalactusClient, m *discordgo.M
 	return true
 }
 
-func SettingMapVersion(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMapVersion(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), setting.AllSettings[setting.MapVersion], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -942,7 +951,7 @@ func SettingMapVersion(galactus *galactus_client.GalactusClient, m *discordgo.Me
 	return true
 }
 
-func SettingLeaderboardNameMention(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardNameMention(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), setting.AllSettings[setting.LeaderboardMention], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -979,7 +988,7 @@ func SettingLeaderboardNameMention(galactus *galactus_client.GalactusClient, m *
 	return true
 }
 
-func SettingLeaderboardSize(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardSize(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), setting.AllSettings[setting.LeaderboardSize], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -1019,7 +1028,7 @@ func SettingLeaderboardSize(galactus *galactus_client.GalactusClient, m *discord
 	return true
 }
 
-func SettingLeaderboardMin(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardMin(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), setting.AllSettings[setting.LeaderboardMin], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
@@ -1059,7 +1068,7 @@ func SettingLeaderboardMin(galactus *galactus_client.GalactusClient, m *discordg
 	return true
 }
 
-func SettingMuteSpectators(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMuteSpectators(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	muteSpec := sett.GetMuteSpectator()
 	if len(args) == 2 {
 		current := "false"

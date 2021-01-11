@@ -7,6 +7,7 @@ import (
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -15,7 +16,7 @@ import (
 	"strings"
 )
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
 	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
 
@@ -385,7 +386,7 @@ func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, stri
 	return split[0], split[1], split[2]
 }
 
-func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.GuildSettings) string {
+func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *settings.GuildSettings) string {
 	if !sett.LeaderboardMention {
 		userName, nickname, _ := bot.CheckOrFetchCachedUserData(userID, guildID)
 		if nickname != "" {
@@ -398,7 +399,7 @@ func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.Guild
 	return "<@" + userID + ">"
 }
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarURL := ""
 	g, err := bot.GalactusClient.GetGuild(guildID)
@@ -704,7 +705,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *settings.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gameData, err := bot.PostgresInterface.GetGame(connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)

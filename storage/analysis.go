@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -96,7 +97,7 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 	return stats
 }
 
-func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettings) *discordgo.MessageEmbed {
+func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 
 	title := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.matchStatsEmbed.Title",

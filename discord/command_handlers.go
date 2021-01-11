@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"regexp"
@@ -26,7 +27,7 @@ const (
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 // TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
@@ -71,7 +72,7 @@ func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.
 	}
 }
 
-func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildSettings, g *discordgo.Guild, m discordgo.MessageCreate, args []string) {
+func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.GuildSettings, g *discordgo.Guild, m discordgo.MessageCreate, args []string) {
 	prefix := sett.CommandPrefix
 	cmd := command.GetCommand(args[0])
 

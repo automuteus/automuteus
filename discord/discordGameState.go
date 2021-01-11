@@ -2,13 +2,13 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -17,7 +17,7 @@ type TrackingChannel struct {
 	ChannelName string `json:"channelName"`
 }
 
-func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
+func (tc TrackingChannel) ToStatusString(sett *settings.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
@@ -30,7 +30,7 @@ func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
 	return tc.ChannelName
 }
 
-func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
+func (tc TrackingChannel) ToDescString(sett *settings.GuildSettings) string {
 	if tc.ChannelID == "" || tc.ChannelName == "" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "discordGameState.ToDescString.anyVoiceChannel",
@@ -121,7 +121,7 @@ func (dgs *GameState) clearGameTracking(client *galactus_client.GalactusClient) 
 	dgs.DeleteGameStateMsg(client)
 }
 
-func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *storage.GuildSettings) string {
+func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *settings.GuildSettings) string {
 	for _, c := range allChannels {
 		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
 			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
@@ -145,7 +145,7 @@ func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.
 		})
 }
 
-func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
+func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 12)
 	num := 0
 

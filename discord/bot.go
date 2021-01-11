@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
@@ -300,7 +301,7 @@ func MessageDeleteWorker(galactus *galactus_client.GalactusClient, msgChannelID,
 	galactus.DeleteChannelMessage(msgChannelID, msgID)
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)

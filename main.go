@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"io"
 	"log"
@@ -13,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
@@ -87,34 +87,27 @@ func discordMainWrapper() error {
 	var redisClient discord.RedisInterface
 	var storageInterface storage.StorageInterface
 
-	if os.Getenv("AUTOMUTEUS_DEVELOPMENT") != "" {
-		log.Println("Bot is running in DEVELOPMENT mode")
-		redisClient.InitMock()
-		storageInterface.InitMock()
-	} else {
-		log.Println("Bot is running in PRODUCTION mode")
-		redisAddr := os.Getenv("REDIS_ADDR")
-		redisPassword := os.Getenv("REDIS_PASS")
-		if redisAddr != "" {
-			err := redisClient.Init(storage.RedisParameters{
-				Addr:     redisAddr,
-				Username: "",
-				Password: redisPassword,
-			})
-			if err != nil {
-				log.Println(err)
-			}
-			err = storageInterface.Init(storage.RedisParameters{
-				Addr:     redisAddr,
-				Username: "",
-				Password: redisPassword,
-			})
-			if err != nil {
-				log.Println(err)
-			}
-		} else {
-			return errors.New("no REDIS_ADDR specified; exiting")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASS")
+	if redisAddr != "" {
+		err := redisClient.Init(storage.RedisParameters{
+			Addr:     redisAddr,
+			Username: "",
+			Password: redisPassword,
+		})
+		if err != nil {
+			log.Println(err)
 		}
+		err = storageInterface.Init(storage.RedisParameters{
+			Addr:     redisAddr,
+			Username: "",
+			Password: redisPassword,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
 	galactusAddr := os.Getenv("GALACTUS_ADDR")
@@ -128,7 +121,7 @@ func discordMainWrapper() error {
 		return err
 	}
 
-	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
+	settings.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	psql := storage.PsqlInterface{}
 	pAddr := os.Getenv("POSTGRES_ADDR")

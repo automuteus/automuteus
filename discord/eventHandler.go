@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -266,7 +267,7 @@ func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
 	return winners
 }
 
-func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string) {
+func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string) {
 	if player.Name != "" {
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 		for lock == nil {
@@ -423,7 +424,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	}
 }
 
-func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsRequest GameStateRequest) {
+func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgsRequest GameStateRequest) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)

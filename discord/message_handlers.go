@@ -6,6 +6,7 @@ import (
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
@@ -17,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -353,7 +352,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings) {
+func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, g *discordgo.Guild, sett *settings.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -535,7 +534,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 	bot.handleGameStartMessage(galactus, m, sett, tracking, g, connectCode)
 }
 
-func (bot *Bot) handleGameStartMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, sett *storage.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
