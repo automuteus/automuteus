@@ -298,6 +298,22 @@ other = "❌ {{.User}}、あなたは既にデータ収集からオプトアウ�
 hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
 other = "✅ {{.User}}、データ収集からオプトアウトされました。"
 
+["commands.StatsCommand.Reset.NoConfirm"]
+hash = "sha1-02f29c22d1485fc7d56721ccb23503baa527dc7c"
+other = "本当にギルドの戦績を**完全にリセット**したい場合は、 `{{.CommandPrefix}} stats guild reset confirm` と入力してください！"
+
+["commands.StatsCommand.Reset.Success"]
+hash = "sha1-766274dbca3b0ccc8a31e542dd03396a8c1cd8a8"
+other = "ギルドの戦績をリセットしました！"
+
+["commands.StatsCommand.ResetUser.NoConfirm"]
+hash = "sha1-385cd382e629cdb8afb8b489e86da579f0a049c4"
+other = "本当にユーザーの戦績を**完全にリセット**したい場合は、 `{{.CommandPrefix}} stats `{{.User}}` reset confirm` と入力してください！"
+
+["commands.StatsCommand.ResetUser.Success"]
+hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
+other = "{{.User}}の戦績をリセットしました！"
+
 ["discordGameState.ToDescString.anyVoiceChannel"]
 hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
 other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
@@ -378,6 +394,10 @@ other = "ゲームを作るのが早すぎます！もう少し遅くしてく�
 hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
 other = "{{.User}}、リアクションを付けるのが早すぎます！もう少し遅くしてください！"
 
+["message_handlers.handleResetGuild.noPerms"]
+hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
+other = "管理者のみがサーバー戦績をリセットできます"
+
 ["message_handlers.softban"]
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "現在、{{.User}}を5分間無視しています。スパムを辞めてください。"
@@ -393,6 +413,14 @@ other = "{{.GuildName}}のギルド戦績"
 ["responses.guildStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "ゲームのプレイ回数"
+
+["responses.guildStatsEmbed.GamesWonCrewmate"]
+hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
+other = "Crewmateの勝率"
+
+["responses.guildStatsEmbed.GamesWonImposter"]
+hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
+other = "Imposterの勝率"
 
 ["responses.guildStatsEmbed.ImposterWins"]
 hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
@@ -578,6 +606,18 @@ other = "AutoMuteUs Premium に加入いただきありがとうございます�
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "設定"
 
+["responses.stats.Games"]
+hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
+other = "ゲーム"
+
+["responses.stats.Lost"]
+hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
+other = "敗北"
+
+["responses.stats.Won"]
+hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
+other = "勝利"
+
 ["responses.statsResponse.BotInfo"]
 hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
 other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
@@ -626,6 +666,22 @@ other = "バージョン"
 hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
 other = "ウェブサイト"
 
+["responses.userStatsEmbed.BestTeammateCrewmate"]
+hash = "sha1-a0f75956ca0b89889dd3ae1ffcd695c884799b9b"
+other = "一緒にCrewmateになると勝率が高いプレイヤー"
+
+["responses.userStatsEmbed.BestTeammateImpostor"]
+hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
+other = "一緒にImpostorになると勝率が高いプレイヤー"
+
+["responses.userStatsEmbed.BestTeammateServerCrewmate"]
+hash = "sha1-d6e2684497b992bea3c3c9c93fb40cdaabe5eaa8"
+other = "勝率が高いCrewmateのチーム"
+
+["responses.userStatsEmbed.BestTeammateServerImpostor"]
+hash = "sha1-9e67c5054fa1785229b90927c32e6e2979f2f611"
+other = "勝率が高いImpostorのチーム"
+
 ["responses.userStatsEmbed.CrewmateWins"]
 hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
 other = "Crewmateでの勝利数"
@@ -649,10 +705,6 @@ other = "プレイ回数"
 ["responses.userStatsEmbed.ImposterWins"]
 hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
 other = "Impostorでの勝利数"
-
-["responses.userStatsEmbed.MostPlayedWith"]
-hash = "sha1-607a1dc0e0a916a0dd75ba6680fcc04d088b2dc5"
-other = "最多同一ゲームプレイヤー"
 
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
@@ -681,6 +733,22 @@ other = "勝利回数"
 ["responses.userStatsEmbed.Winrate"]
 hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
 other = "勝率"
+
+["responses.userStatsEmbed.WorstTeammateCrewmate"]
+hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
+other = "一緒にCrewmateになると勝率が低いプレイヤー"
+
+["responses.userStatsEmbed.WorstTeammateImpostor"]
+hash = "sha1-5eb3dfcbd2ca1bf7223b3eb13320d33267895210"
+other = "一緒にImpostorになると勝率が低いプレイヤー"
+
+["responses.userStatsEmbed.WorstTeammateServerCrewmate"]
+hash = "sha1-593fc44b887e40ff4afd9d2dd5cf953793097d9c"
+other = "勝率が低いCrewmateのチーム"
+
+["responses.userStatsEmbed.WorstTeammateServerImpostor"]
+hash = "sha1-156302a8857d0a6bd2dd1c712ae646e3f5ad2354"
+other = "勝率が低いImpostorのチーム"
 
 ["settings.AllSettings.AdminUserIDs.args"]
 hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
@@ -768,7 +836,7 @@ other = "プレイヤー戦績表示サイズ"
 
 ["settings.AllSettings.MapVersion.args"]
 hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
-other = "<version>"
+other = "<マップバージョン>"
 
 ["settings.AllSettings.MapVersion.desc"]
 hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
@@ -932,7 +1000,7 @@ other = "Botの管理者はいません。"
 
 ["settings.SettingAdminUserIDs.notFound"]
 hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "申し訳ありませんが、`{{.UserName}}`が誰だかわかりません...。\n ID、ユーザー名、`ユーザー名#XXXX`、ニックネーム、@メンション が使用可能です。"
+other = "申し訳ありませんが、`{{.UserName}}`が誰だかわかりません...\n ID、ユーザー名、`ユーザー名#XXXX`、ニックネーム、@メンション が使用可能です。"
 
 ["settings.SettingAutoRefresh.False"]
 hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
