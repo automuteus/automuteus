@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
-	"log"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/denverquane/amongusdiscord/storage"
 )
@@ -470,6 +471,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 	end := time.Now().Unix()
 
 	userGames := make([]*storage.PostgresUserGame, 0)
+	gameToMap := make([]*storage.PostgresGameToMap, 0)
 
 	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
 		gameOver.GameOverReason == game.ImpostorBySabotage ||
@@ -524,6 +526,12 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 				PlayerRole:  int16(role),
 				PlayerWon:   won,
 			})
+
+			gameToMap = append(gameToMap, &storage.PostgresGameToMap{
+				GameID: dgs.MatchID,
+				MapID:  int32(dgs.AmongUsData.GetPlayMap()),
+			})
+			log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
 		}
 	}
 	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)

@@ -4,20 +4,28 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
-	"strconv"
-	"strings"
 )
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
-	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
-	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
+var NameToPlayMap = map[string]int32{
+	"the_skeld": (int32)(game.SKELD),
+	"mira_hq":   (int32)(game.MIRA),
+	"polus":     (int32)(game.POLUS),
+	"NoMap":     -1,
+}
+
+func (bot *Bot) UserStatsEmbed(userID, guildID string, mapId string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID, NameToPlayMap[mapId])
+	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID, NameToPlayMap[mapId])
 
 	avatarURL := ""
 	mem, err := bot.PrimarySession.GuildMember(guildID, userID)
@@ -71,7 +79,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		//	ID:    "responses.userStatsEmbed.Premium",
 		//	Other: "Showing additional Premium Stats!\n(Note: stats are still in **BETA**, and will be likely be inaccurate while we work to improve them).",
 		//})
-		colorRankings := bot.PostgresInterface.ColorRankingForPlayerOnServer(userID, guildID)
+		colorRankings := bot.PostgresInterface.ColorRankingForPlayerOnServer(userID, guildID, NameToPlayMap[mapId])
 		if len(colorRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i := 0; i < len(colorRankings) && i < leaderBoardSize; i++ {
@@ -91,7 +99,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		nameRankings := bot.PostgresInterface.NamesRankingForPlayerOnServer(userID, guildID)
+		nameRankings := bot.PostgresInterface.NamesRankingForPlayerOnServer(userID, guildID, NameToPlayMap[mapId])
 		if len(nameRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i := 0; i < len(nameRankings) && i < leaderBoardSize; i++ {
@@ -143,9 +151,9 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
-		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+		totalCrewmateGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.CrewmateRole), NameToPlayMap[mapId])
 		if totalCrewmateGames > 0 {
-			crewmateWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.CrewmateRole))
+			crewmateWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.CrewmateRole), NameToPlayMap[mapId])
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.userStatsEmbed.CrewmateWins",
@@ -166,9 +174,9 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
-		totalImposterGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+		totalImposterGames := bot.PostgresInterface.NumGamesAsRoleOnServer(userID, guildID, int16(game.ImposterRole), NameToPlayMap[mapId])
 		if totalImposterGames > 0 {
-			imposterWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.ImposterRole))
+			imposterWins := bot.PostgresInterface.NumWinsAsRoleOnServer(userID, guildID, int16(game.ImposterRole), NameToPlayMap[mapId])
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.userStatsEmbed.ImposterWins",
@@ -200,7 +208,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			Inline: false,
 		})
 
-		playerRankings := bot.PostgresInterface.OtherPlayersRankingForPlayerOnServer(userID, guildID)
+		playerRankings := bot.PostgresInterface.OtherPlayersRankingForPlayerOnServer(userID, guildID, NameToPlayMap[mapId])
 		if len(playerRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range playerRankings {
@@ -218,7 +226,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			}
 		}
 
-		bestImpostorTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.ImposterRole), 2)
+		bestImpostorTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.ImposterRole), 2, NameToPlayMap[mapId])
 		if len(bestImpostorTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range bestImpostorTeammateRankings {
@@ -244,7 +252,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
-		worstImpostorTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.ImposterRole), 2)
+		worstImpostorTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.ImposterRole), 2, NameToPlayMap[mapId])
 		if len(worstImpostorTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstImpostorTeammateRankings {
@@ -275,7 +283,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
-		bestCrewmateTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin())
+		bestCrewmateTeammateRankings := bot.PostgresInterface.BestTeammateByRole(userID, guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin(), NameToPlayMap[mapId])
 		if len(bestCrewmateTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range bestCrewmateTeammateRankings {
@@ -301,7 +309,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
-		worstCrewmateTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin())
+		worstCrewmateTeammateRankings := bot.PostgresInterface.WorstTeammateByRole(userID, guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin(), NameToPlayMap[mapId])
 		if len(bestCrewmateTeammateRankings) > 0 {
 			buf := bytes.NewBuffer([]byte{})
 			for i, v := range worstCrewmateTeammateRankings {
@@ -536,7 +544,7 @@ func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.Guild
 	return "<@" + userID + ">"
 }
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, mapId string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarURL := ""
 	g, err := bot.PrimarySession.Guild(guildID)
@@ -549,7 +557,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		avatarURL = g.IconURL()
 	}
 
-	gamesPlayed := bot.PostgresInterface.NumGamesPlayedOnGuild(guildID)
+	gamesPlayed := bot.PostgresInterface.NumGamesPlayedOnGuild(guildID, NameToPlayMap[mapId])
 
 	fields := make([]*discordgo.MessageEmbedField, 1)
 	fields[0] = &discordgo.MessageEmbedField{
@@ -562,8 +570,8 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	}
 
 	if gamesPlayed > 0 {
-		crewmateWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, game.CrewmateRole)
-		imposterWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, game.ImposterRole)
+		crewmateWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, NameToPlayMap[mapId], game.CrewmateRole)
+		imposterWins := bot.PostgresInterface.NumGamesWonAsRoleOnServer(guildID, NameToPlayMap[mapId], game.ImposterRole)
 
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
@@ -600,7 +608,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		//})
 		gid, err := strconv.ParseUint(guildID, 10, 64)
 		if err == nil {
-			totalGameRankings := bot.PostgresInterface.TotalGamesRankingForServer(gid)
+			totalGameRankings := bot.PostgresInterface.TotalGamesRankingForServer(gid, NameToPlayMap[mapId])
 
 			buf := bytes.NewBuffer([]byte{})
 			for i := 0; i < len(totalGameRankings) && i < leaderboardSize; i++ {
@@ -622,9 +630,31 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
-			overallGameRankings := bot.PostgresInterface.TotalWinRankingForServer(gid)
+			gamesPlayedPerMap := bot.PostgresInterface.TotalGamesOnEachMap(gid)
 			buf = bytes.NewBuffer([]byte{})
 			count := 0
+			for i := 0; i < len(gamesPlayedPerMap) && count < leaderboardSize; i++ {
+				elem := gamesPlayedPerMap[i]
+				buf.WriteString(fmt.Sprintf("%d | %s", elem.Count, game.MapNames[(game.PlayMap)(elem.MapType)]))
+				if i < len(gamesPlayedPerMap)-1 && count < leaderboardSize-1 {
+					buf.WriteByte('\n')
+				}
+				count++
+			}
+			if mapId == "NoMap" {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.guildStatsEmbed.MapStats",
+						Other: "Total number of games per map",
+					}),
+					Value:  buf.String(),
+					Inline: true,
+				})
+			}
+
+			overallGameRankings := bot.PostgresInterface.TotalWinRankingForServer(gid, NameToPlayMap[mapId])
+			buf = bytes.NewBuffer([]byte{})
+			count = 0
 			for i := 0; i < len(overallGameRankings) && count < leaderboardSize; i++ {
 				elem := overallGameRankings[i]
 				if elem.Count > int64(leaderboardMin) {
@@ -654,7 +684,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				Inline: false,
 			})
 
-			crewmateGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 0)
+			crewmateGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 0, NameToPlayMap[mapId])
 			buf = bytes.NewBuffer([]byte{})
 			count = 0
 			for i := 0; i < len(crewmateGameRankings) && count < leaderboardSize; i++ {
@@ -681,7 +711,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
-			imposterGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 1)
+			imposterGameRankings := bot.PostgresInterface.TotalWinRankingForServerByRole(gid, 1, NameToPlayMap[mapId])
 			buf = bytes.NewBuffer([]byte{})
 			count = 0
 			for i := 0; i < len(imposterGameRankings) && count < leaderboardSize; i++ {
@@ -714,7 +744,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				Inline: false,
 			})
 
-			bestImpostorTeammateForServerRankings := bot.PostgresInterface.BestTeammateForServerByRole(guildID, int16(game.ImposterRole), 2)
+			bestImpostorTeammateForServerRankings := bot.PostgresInterface.BestTeammateForServerByRole(guildID, int16(game.ImposterRole), 2, NameToPlayMap[mapId])
 			if len(bestImpostorTeammateForServerRankings) > 0 {
 				buf := bytes.NewBuffer([]byte{})
 				for i, v := range bestImpostorTeammateForServerRankings {
@@ -736,7 +766,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
-			worstImpostorTeammateServerRankings := bot.PostgresInterface.WorstTeammateForServerByRole(guildID, int16(game.ImposterRole), 2)
+			worstImpostorTeammateServerRankings := bot.PostgresInterface.WorstTeammateForServerByRole(guildID, int16(game.ImposterRole), 2, NameToPlayMap[mapId])
 			if len(worstImpostorTeammateServerRankings) > 0 {
 				buf := bytes.NewBuffer([]byte{})
 				for i, v := range worstImpostorTeammateServerRankings {
@@ -763,7 +793,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
-			bestCrewmateTeammateServerRankings := bot.PostgresInterface.BestTeammateForServerByRole(guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin())
+			bestCrewmateTeammateServerRankings := bot.PostgresInterface.BestTeammateForServerByRole(guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin(), NameToPlayMap[mapId])
 			if len(bestCrewmateTeammateServerRankings) > 0 {
 				buf := bytes.NewBuffer([]byte{})
 				for i, v := range bestCrewmateTeammateServerRankings {
@@ -785,7 +815,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
-			worstCrewmateTeammateRankings := bot.PostgresInterface.WorstTeammateForServerByRole(guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin())
+			worstCrewmateTeammateRankings := bot.PostgresInterface.WorstTeammateForServerByRole(guildID, int16(game.CrewmateRole), sett.GetLeaderboardMin(), NameToPlayMap[mapId])
 			if len(worstCrewmateTeammateRankings) > 0 {
 				buf := bytes.NewBuffer([]byte{})
 				for i, v := range worstCrewmateTeammateRankings {
