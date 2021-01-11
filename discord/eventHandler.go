@@ -80,9 +80,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
+					bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
 
-					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
@@ -115,7 +115,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					shouldHandleTracked, userID := bot.processPlayer(sett, player, dgsRequest)
 					if shouldHandleTracked {
-						bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
+						bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
 					}
 					correlatedUserID = userID
 				case task.GameOverJob:
@@ -154,10 +154,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							if sett.GetMatchSummaryChannelID() != "" {
 								channelID = sett.GetMatchSummaryChannelID()
 							}
-							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(channelID, embed)
+							msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
 							if delTime > 0 && err == nil {
 								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-								go MessageDeleteWorker(bot.PrimarySession, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
+								go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
 							} else if err == nil {
 								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 							}
@@ -296,7 +296,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 
 			// only update the message if we're not in the tasks phase (info leaks)
 			if dgs.AmongUsData.GetPhase() != game.TASKS {
-				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+				edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 				if edited {
 					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
@@ -313,7 +313,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
@@ -327,7 +327,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 			}
 			if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
-					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
@@ -336,7 +336,7 @@ func (bot *Bot) processPlayer(sett *storage.GuildSettings, player game.Player, d
 				log.Println("NOT updating the discord status message; would leak info")
 				return false, userID
 			}
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
@@ -376,7 +376,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		if edited {
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
@@ -387,9 +387,9 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		fallthrough
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
+		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, NoPriority, dgsRequest)
 
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		if edited {
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
@@ -402,20 +402,20 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			priority = NoPriority
 		}
 
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, priority, dgsRequest)
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, priority, dgsRequest)
+		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		if edited {
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, DeadPriority, dgsRequest)
+		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, DeadPriority, dgsRequest)
 
 		if sett.AutoRefresh {
 			bot.RefreshGameStateMessage(dgsRequest, sett)
 		} else {
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
@@ -432,7 +432,7 @@ func (bot *Bot) processLobby(sett *storage.GuildSettings, lobby game.Lobby, dgsR
 	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+	edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 	if edited {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 	}

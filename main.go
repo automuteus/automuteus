@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"io"
 	"log"
 	"math/rand"
@@ -121,7 +122,7 @@ func discordMainWrapper() error {
 		return errors.New("no GALACTUS_ADDR specified; exiting")
 	}
 
-	galactusClient, err := discord.NewGalactusClient(galactusAddr)
+	galactusClient, err := galactus_client.NewGalactusClient(galactusAddr)
 	if err != nil {
 		log.Println("Error connecting to Galactus!")
 		return err

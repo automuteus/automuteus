@@ -71,7 +71,7 @@ func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.
 	}
 }
 
-func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildSettings, s *discordgo.Session, g *discordgo.Guild, m *discordgo.MessageCreate, args []string) {
+func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildSettings, g *discordgo.Guild, m discordgo.MessageCreate, args []string) {
 	prefix := sett.CommandPrefix
 	cmd := command.GetCommand(args[0])
 
@@ -86,12 +86,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 	switch {
 	case cmd.IsAdmin && !isAdmin:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
 	case cmd.IsOperator && (!isPermissioned && !isAdmin):
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
@@ -101,14 +101,14 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Help:
 			if len(args[1:]) == 0 {
 				embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, &embed)
 			} else {
 				cmd = command.GetCommand(args[1])
 				if cmd.CommandType != command.Null {
 					embed := ConstructEmbedForCommand(prefix, cmd, sett)
-					s.ChannelMessageSendEmbed(m.ChannelID, embed)
+					bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 				} else {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Help.notFound",
 						Other: "I didn't recognize that command! View `help` for all available commands!",
 					}))
@@ -116,7 +116,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 
 		case command.New:
-			bot.handleNewGameMessage(s, m, g, sett)
+			bot.handleNewGameMessage(bot.GalactusClient, m, g, sett)
 
 		case command.End:
 			log.Println("User typed end to end the current game")
@@ -141,7 +141,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				bot.applyToAll(dgs, false, false)
 			}
 
-			edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
@@ -151,16 +151,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Link:
 			if len(args[1:]) < 2 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 			} else {
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 				if lock == nil {
 					break
 				}
-				bot.linkPlayer(s, dgs, args[1:])
+				bot.linkPlayer(bot.GalactusClient, g, dgs, args[1:])
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+				edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 				if edited {
 					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 				}
@@ -169,7 +169,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Unlink:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
@@ -185,7 +185,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					// update the state message to reflect the player leaving
-					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
@@ -198,12 +198,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Settings:
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			isPrem := (premStatus != 0) && (days == storage.NoExpiryCode || days > 0)
-			bot.HandleSettingsCommand(s, m, sett, args, isPrem)
+			bot.HandleSettingsCommand(bot.GalactusClient, &m, sett, args, isPrem)
 
 		case command.Map:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 			} else {
 				mapVersion := args[len(args)-1]
 
@@ -218,7 +218,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				mapItem, err := NewMapItem(mapName)
 				if err != nil {
 					log.Println(err)
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Map.notFound",
 						Other: "I don't have a map by that name!",
 					}))
@@ -226,9 +226,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 				switch mapVersion {
 				case "simple":
-					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Simple)
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, mapItem.MapImage.Simple)
 				case detailedMapString:
-					s.ChannelMessageSend(m.ChannelID, mapItem.MapImage.Detailed)
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, mapItem.MapImage.Detailed)
 				default:
 					log.Println("mapVersion has unexpected value for 'map' command")
 				}
@@ -237,18 +237,18 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Cache:
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
 					log.Println(err)
-					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, "I couldn't find a user by that name or ID!")
 					break
 				}
 				if len(args[2:]) == 0 {
 					cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
 					if len(cached) == 0 {
-						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.HandleCommand.Cache.emptyCachedNames",
 							Other: "I don't have any cached player names stored for that user!",
 						}))
@@ -263,14 +263,14 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 						}
 						buf.WriteString("```")
 
-						s.ChannelMessageSend(m.ChannelID, buf.String())
+						bot.GalactusClient.SendChannelMessage(m.ChannelID, buf.String())
 					}
 				} else if strings.ToLower(args[2]) == clearArgumentString || strings.ToLower(args[2]) == "c" {
 					err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, userID)
 					if err != nil {
 						log.Println(err)
 					} else {
-						s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.HandleCommand.Cache.Success",
 							Other: "Successfully deleted all cached names for that user!",
 						}))
@@ -286,19 +286,16 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				}
 				if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
 					embed := ConstructEmbedForCommand(prefix, cmd, sett)
-					s.ChannelMessageSendEmbed(m.ChannelID, embed)
+					bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 				} else {
 					embed := bot.privacyResponse(m.GuildID, m.Author.ID, arg, sett)
-					s.ChannelMessageSendEmbed(m.ChannelID, embed)
+					bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 				}
 			}
 
 		case command.Info:
 			embed := bot.infoResponse(m.GuildID, sett)
-			_, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
-			if err != nil {
-				log.Println(err)
-			}
+			bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 
 		case command.DebugState:
 			if m.Author != nil {
@@ -313,7 +310,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							if end > len(jBytes) {
 								end = len(jBytes)
 							}
-							s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
+							bot.GalactusClient.SendChannelMessage(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
 						}
 					}
 				}
@@ -321,11 +318,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case command.ASCII:
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSend(m.ChannelID, ASCIICrewmate)
+				bot.GalactusClient.SendChannelMessage(m.ChannelID, ASCIICrewmate)
 			} else {
 				id, err := extractUserIDFromMention(args[1])
 				if id == "" || err != nil {
-					s.ChannelMessageSend(m.ChannelID, "I couldn't find a user by that name or ID!")
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, "I couldn't find a user by that name or ID!")
 				} else {
 					imposter := false
 					count := 1
@@ -339,7 +336,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					}
-					s.ChannelMessageSend(m.ChannelID, ASCIIStarfield(sett, args[1], imposter, count))
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, ASCIIStarfield(sett, args[1], imposter, count))
 				}
 			}
 
@@ -347,7 +344,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
-				s.ChannelMessageSendEmbed(m.ChannelID, embed)
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if userID == "" || err != nil {
@@ -355,13 +352,13 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					if arg == "g" || arg == "guild" || arg == "server" {
 						if len(args) > 2 && args[2] == "reset" {
 							if !isAdmin {
-								s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+								bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 									ID:    "message_handlers.handleResetGuild.noPerms",
 									Other: "Only Admins are capable of resetting server stats",
 								}))
 							} else {
 								if len(args) == 3 {
-									_, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+									_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 										ID:    "commands.StatsCommand.Reset.NoConfirm",
 										Other: "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!",
 									},
@@ -374,9 +371,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 								} else if args[3] == "confirm" {
 									err := bot.PostgresInterface.DeleteAllGamesForServer(m.GuildID)
 									if err != nil {
-										s.ChannelMessageSend(m.ChannelID, "Encountered the following error when deleting the server's stats: "+err.Error())
+										bot.GalactusClient.SendChannelMessage(m.ChannelID, "Encountered the following error when deleting the server's stats: "+err.Error())
 									} else {
-										s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+										bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 											ID:    "commands.StatsCommand.Reset.Success",
 											Other: "Successfully reset your guild's stats!",
 										}))
@@ -384,7 +381,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 								}
 							}
 						} else {
-							_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+							_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
 							if err != nil {
 								log.Println(err)
 							}
@@ -397,22 +394,22 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
+								bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
 							}
 						} else {
-							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
+							bot.GalactusClient.SendChannelMessage(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
 						}
 					}
 				} else {
 					if len(args) > 2 && args[2] == "reset" {
 						if !isAdmin {
-							s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 								ID:    "message_handlers.handleResetGuild.noPerms",
 								Other: "Only Admins are capable of resetting server stats",
 							}))
 						} else {
 							if len(args) == 3 {
-								_, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+								_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 									ID:    "commands.StatsCommand.ResetUser.NoConfirm",
 									Other: "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!",
 								},
@@ -426,9 +423,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							} else if args[3] == "confirm" {
 								err := bot.PostgresInterface.DeleteAllGamesForUser(userID)
 								if err != nil {
-									s.ChannelMessageSend(m.ChannelID, "Encountered the following error when deleting that user's stats: "+err.Error())
+									bot.GalactusClient.SendChannelMessage(m.ChannelID, "Encountered the following error when deleting that user's stats: "+err.Error())
 								} else {
-									s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+									bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 										ID:    "commands.StatsCommand.ResetUser.Success",
 										Other: "Successfully reset {{.User}}'s stats!",
 									},
@@ -439,7 +436,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					} else {
-						s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+						bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
 					}
 				}
 			}
@@ -447,25 +444,25 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		case command.Premium:
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			if len(args[1:]) == 0 {
-				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {
 					if arg == "invite" || arg == "invites" || arg == "inv" {
-						_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+						_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
 						if err != nil {
 							log.Println(err)
 						}
 					} else {
-						s.ChannelMessageSend(m.ChannelID, "Sorry, I didn't recognize that premium command or argument!")
+						bot.GalactusClient.SendChannelMessage(m.ChannelID, "Sorry, I didn't recognize that premium command or argument!")
 					}
 				} else {
-					s.ChannelMessageSend(m.ChannelID, "Viewing the premium invites is an Admin-only command")
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, "Viewing the premium invites is an Admin-only command")
 				}
 			}
 
 		default:
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.default",
 				Other: "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands",
 			},
@@ -476,5 +473,5 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		}
 	}
 
-	deleteMessage(s, m.ChannelID, m.Message.ID)
+	bot.GalactusClient.DeleteChannelMessage(m.ChannelID, m.Message.ID)
 }

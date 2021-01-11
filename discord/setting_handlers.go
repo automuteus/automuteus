@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/denverquane/amongusdiscord/discord/setting"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/locale"
@@ -96,9 +97,9 @@ func getSetting(arg string) setting.SettingType {
 	return setting.NullSetting
 }
 
-func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) {
+func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) {
 	if len(args) == 1 {
-		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, setting.AllSettings, sett, prem))
+		galactus.SendChannelMessageEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, setting.AllSettings, sett, prem))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
@@ -107,76 +108,76 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	settType := getSetting(args[1])
 	switch settType {
 	case setting.Prefix:
-		isValid = CommandPrefixSetting(s, m, sett, args)
+		isValid = CommandPrefixSetting(galactus, m, sett, args)
 	case setting.Language:
-		isValid = SettingLanguage(s, m, sett, args)
+		isValid = SettingLanguage(galactus, m, sett, args)
 	case setting.AdminUserIDs:
-		isValid = SettingAdminUserIDs(s, m, sett, args)
+		isValid = SettingAdminUserIDs(galactus, m, sett, args)
 	case setting.RoleIDs:
-		isValid = SettingPermissionRoleIDs(s, m, sett, args)
+		isValid = SettingPermissionRoleIDs(galactus, m, sett, args)
 	case setting.UnmuteDead:
-		isValid = SettingUnmuteDeadDuringTasks(s, m, sett, args)
+		isValid = SettingUnmuteDeadDuringTasks(galactus, m, sett, args)
 	case setting.Delays:
-		isValid = SettingDelays(s, m, sett, args)
+		isValid = SettingDelays(galactus, m, sett, args)
 	case setting.VoiceRules:
-		isValid = SettingVoiceRules(s, m, sett, args)
+		isValid = SettingVoiceRules(galactus, m, sett, args)
 	case setting.MapVersion:
-		isValid = SettingMapVersion(s, m, sett, args)
+		isValid = SettingMapVersion(galactus, m, sett, args)
 	case setting.MatchSummary:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingMatchSummary(s, m, sett, args)
+		isValid = SettingMatchSummary(galactus, m, sett, args)
 	case setting.MatchSummaryChannel:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingMatchSummaryChannel(s, m, sett, args)
+		isValid = SettingMatchSummaryChannel(galactus, m, sett, args)
 	case setting.AutoRefresh:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingAutoRefresh(s, m, sett, args)
+		isValid = SettingAutoRefresh(galactus, m, sett, args)
 	case setting.LeaderboardMention:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingLeaderboardNameMention(s, m, sett, args)
+		isValid = SettingLeaderboardNameMention(galactus, m, sett, args)
 	case setting.LeaderboardSize:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingLeaderboardSize(s, m, sett, args)
+		isValid = SettingLeaderboardSize(galactus, m, sett, args)
 	case setting.LeaderboardMin:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingLeaderboardMin(s, m, sett, args)
+		isValid = SettingLeaderboardMin(galactus, m, sett, args)
 	case setting.MuteSpectators:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingMuteSpectators(s, m, sett, args)
+		isValid = SettingMuteSpectators(galactus, m, sett, args)
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
+		galactus.SendChannelMessage(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 	case setting.Reset:
 		sett = storage.MakeGuildSettings()
-		s.ChannelMessageSend(m.ChannelID, "Resetting guild settings to default values")
+		galactus.SendChannelMessage(m.ChannelID, "Resetting guild settings to default values")
 		isValid = true
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.HandleSettingsCommand.default",
 			Other: "Sorry, `{{.Arg}}` is not a valid setting!\n",
 		},
@@ -193,15 +194,15 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 	}
 }
 
-func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), setting.AllSettings[setting.Prefix], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 	if len(args[2]) > 10 {
 		// prevent someone from setting something ridiculous lol
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.CommandPrefixSetting.tooLong",
 			Other: "Sorry, the prefix `{{.CommandPrefix}}` is too long ({{.Length}} characters, max 10). Try something shorter.",
 		},
@@ -212,7 +213,7 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 		return false
 	}
 
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.CommandPrefixSetting.changes",
 		Other: "Guild prefix changed from `{{.From}}` to `{{.To}}`. Use that from now on!",
 	},
@@ -225,10 +226,10 @@ func CommandPrefixSetting(s *discordgo.Session, m *discordgo.MessageCreate, sett
 	return true
 }
 
-func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetLanguage(), setting.AllSettings[setting.Language], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
@@ -241,7 +242,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 	if args[2] == "reload" {
 		locale.LoadTranslations()
 
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.reloaded",
 			Other: "Localization files are reloaded ({{.Count}}). Available language codes: {{.Langs}}",
 		},
@@ -258,7 +259,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 			strLangs += fmt.Sprintf("\n[%s] - %s", langCode, langName)
 		}
 
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.list",
 			Other: "Available languages: {{.Langs}}",
 		},
@@ -269,7 +270,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 	}
 
 	if len(args[2]) < 2 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.tooShort",
 			Other: "Sorry, the language code is short. Available language codes: {{.Langs}}.",
 		},
@@ -280,7 +281,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 	}
 
 	if len(locale.GetBundle().LanguageTags()) < 2 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.notLoaded",
 			Other: "Localization files were not loaded! {{.Langs}}",
 		},
@@ -293,7 +294,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 
 	langName := locale.GetLanguages()[args[2]]
 	if langName == "" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.notFound",
 			Other: "Language not found! Available language codes: {{.Langs}}",
 		},
@@ -306,7 +307,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 
 	sett.SetLanguage(args[2])
 
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLanguage.set",
 		Other: "Localization is set to {{.LangName}}",
 	},
@@ -316,7 +317,7 @@ func SettingLanguage(s *discordgo.Session, m *discordgo.MessageCreate, sett *sto
 	return true
 }
 
-func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingAdminUserIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
@@ -326,7 +327,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 				ID:    "settings.SettingAdminUserIDs.noBotAdmins",
 				Other: "No Bot Admins",
 			}), setting.AllSettings[setting.AdminUserIDs], sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		} else {
 			listOfAdmins := ""
 			for index, ID := range adminIDs {
@@ -340,7 +341,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 				}
 			}
 			embed := ConstructEmbedForSetting(listOfAdmins, setting.AllSettings[setting.AdminUserIDs], sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		}
 		return false
 	}
@@ -356,7 +357,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 			}
 			ID, err := extractUserIDFromMention(userName)
 			if ID == "" || err != nil {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.notFound",
 					Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID, username, username#XXXX, nickname or @mention",
 				},
@@ -372,20 +373,21 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 			if ID != "" {
 				newAdminIDs = append(newAdminIDs, ID)
 				// mention User without pinging
-				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-					Content: sett.LocalizeMessage(&i18n.Message{
-						ID:    "settings.SettingAdminUserIDs.newBotAdmin",
-						Other: "<@{{.UserID}}> is now a bot admin!",
-					},
-						map[string]interface{}{
-							"UserID": ID,
-						}),
-					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-				})
+				// TODO FIX
+				//galactus.SendChannelMessageComplex(m.ChannelID, &discordgo.MessageSend{
+				//	Content: sett.LocalizeMessage(&i18n.Message{
+				//		ID:    "settings.SettingAdminUserIDs.newBotAdmin",
+				//		Other: "<@{{.UserID}}> is now a bot admin!",
+				//	},
+				//		map[string]interface{}{
+				//			"UserID": ID,
+				//		}),
+				//	AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				//})
 			}
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAdminUserIDs.clearAdmins",
 			Other: "Clearing all AdminUserIDs!",
 		}))
@@ -395,7 +397,7 @@ func SettingAdminUserIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	return true
 }
 
-func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingPermissionRoleIDs(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
@@ -405,7 +407,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 				ID:    "settings.SettingPermissionRoleIDs.noRoleAdmins",
 				Other: "No Role Admins",
 			}), setting.AllSettings[setting.RoleIDs], sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		} else {
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
@@ -419,7 +421,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 				}
 			}
 			embed := ConstructEmbedForSetting(listOfRoles, setting.AllSettings[setting.RoleIDs], sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		}
 		return false
 	}
@@ -434,9 +436,9 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 				// User added a double space by accident, ignore it
 				continue
 			}
-			ID := getRoleFromString(s, m.GuildID, roleName)
+			ID := getRoleFromString(galactus, m.GuildID, roleName)
 			if ID == "" {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",
 					Other: "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role",
 				},
@@ -452,20 +454,21 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 			if ID != "" {
 				newRoleIDs = append(newRoleIDs, ID)
 				// mention User without pinging
-				s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-					Content: sett.LocalizeMessage(&i18n.Message{
-						ID:    "settings.SettingPermissionRoleIDs.newBotAdmins",
-						Other: "<@&{{.UserID}}>s are now bot admins!",
-					},
-						map[string]interface{}{
-							"UserID": ID,
-						}),
-					AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
-				})
+				// TODO FIX
+				//galactus.SendChannelMessageComplex(m.ChannelID, &discordgo.MessageSend{
+				//	Content: sett.LocalizeMessage(&i18n.Message{
+				//		ID:    "settings.SettingPermissionRoleIDs.newBotOperators",
+				//		Other: "<@&{{.UserID}}>s are now bot operators!",
+				//	},
+				//		map[string]interface{}{
+				//			"UserID": ID,
+				//		}),
+				//	AllowedMentions: &discordgo.MessageAllowedMentions{Users: nil},
+				//})
 			}
 		}
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingPermissionRoleIDs.clearRoles",
 			Other: "Clearing all PermissionRoleIDs!",
 		}))
@@ -475,7 +478,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	return true
 }
 
-func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingUnmuteDeadDuringTasks(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		current := "false"
@@ -483,18 +486,18 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 			current = "true"
 		}
 		embed := ConstructEmbedForSetting(current, setting.AllSettings[setting.UnmuteDead], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 	switch {
 	case args[2] == "true":
 		if unmuteDead {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_unmuteDead",
 				Other: "It's already true!",
 			}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
 				Other: "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!",
 			}))
@@ -503,19 +506,19 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 		}
 	case args[2] == "false":
 		if unmuteDead {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.false_unmuteDead",
 				Other: "I will no longer immediately unmute dead people. Good choice!",
 			}))
 			sett.SetUnmuteDeadDuringTasks(false)
 			return true
 		}
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
 			Other: "It's already false!",
 		}))
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},
@@ -526,16 +529,16 @@ func SettingUnmuteDeadDuringTasks(s *discordgo.Session, m *discordgo.MessageCrea
 	return false
 }
 
-func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingDelays(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting("N/A", setting.AllSettings[setting.Delays], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 	// User passes phase name, phase name and new delay value
 	if len(args) < 4 {
 		// User didn't pass 2 phases, tell them the list of game phases
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID: "settings.SettingDelays.missingPhases",
 			Other: "The list of game phases are `Lobby`, `Tasks` and `Discussion`.\n" +
 				"You need to type both phases the game is transitioning from and to to change the delay.",
@@ -546,7 +549,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	var gamePhase1 = getPhaseFromString(args[2])
 	var gamePhase2 = getPhaseFromString(args[3])
 	if gamePhase1 == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.Phase.UNINITIALIZED",
 			Other: "I don't know what `{{.PhaseName}}` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -555,7 +558,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 			}))
 		return false
 	} else if gamePhase2 == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.Phase.UNINITIALIZED",
 			Other: "I don't know what `{{.PhaseName}}` is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -568,7 +571,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	oldDelay := sett.GetDelay(gamePhase1, gamePhase2)
 	if len(args) == 4 {
 		// no number was passed, User was querying the delay
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.delayBetweenPhases",
 			Other: "Currently, the delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` is {{.OldDelay}}.",
 		},
@@ -582,7 +585,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 
 	newDelay, err := strconv.Atoi(args[4])
 	if err != nil || newDelay < 0 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.wrongNumber",
 			Other: "`{{.Number}}` is not a valid number! Please try again",
 		},
@@ -593,7 +596,7 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	}
 
 	sett.SetDelay(gamePhase1, gamePhase2, newDelay)
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingDelays.setDelayBetweenPhases",
 		Other: "The delay when passing from `{{.PhaseA}}` to `{{.PhaseB}}` changed from {{.OldDelay}} to {{.NewDelay}}.",
 	},
@@ -606,20 +609,20 @@ func SettingDelays(s *discordgo.Session, m *discordgo.MessageCreate, sett *stora
 	return true
 }
 
-func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingVoiceRules(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.NA",
 			Other: "N/A",
 		}), setting.AllSettings[setting.VoiceRules], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	// now for a bunch of input checking
 	if len(args) < 5 {
 		// User didn't pass enough args
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.enoughArgs",
 			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`",
 		}))
@@ -632,7 +635,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	case args[2] == "mute":
 		args[2] = "muted"
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherMuteDeaf",
 			Other: "`{{.Arg}}` is neither `mute` nor `deaf`!",
 		},
@@ -644,7 +647,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 
 	gamePhase := getPhaseFromString(args[3])
 	if gamePhase == game.UNINITIALIZED {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.Phase.UNINITIALIZED",
 			Other: "I don't know what {{.PhaseName}} is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
@@ -655,7 +658,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	if args[4] != "alive" && args[4] != "dead" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherAliveDead",
 			Other: "`{{.Arg}}` is neither `alive` or `dead`!",
 		},
@@ -675,7 +678,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	if len(args) == 5 {
 		// User was only querying
 		if oldValue {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingCurrentlyOldValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently {{.PlayerDiscordState}}.",
 			},
@@ -685,7 +688,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 					"PlayerDiscordState": args[2],
 				}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingCurrentlyValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently NOT {{.PlayerDiscordState}}.",
 			},
@@ -705,7 +708,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	case args[5] == "false":
 		newValue = false
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherTrueFalse",
 			Other: "`{{.Arg}}` is neither `true` or `false`!",
 		},
@@ -717,7 +720,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 
 	if newValue == oldValue {
 		if newValue {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingAlreadyValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already {{.PlayerDiscordState}}!",
 			},
@@ -727,7 +730,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 					"PlayerDiscordState": args[2],
 				}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingVoiceRules.queryingAlreadyUnValues",
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already un{{.PlayerDiscordState}}!",
 			},
@@ -747,7 +750,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	if newValue {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.setValues",
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be {{.PlayerDiscordState}}.",
 		},
@@ -757,7 +760,7 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 				"PlayerDiscordState": args[2],
 			}))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.setUnValues",
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be un{{.PlayerDiscordState}}.",
 		},
@@ -770,16 +773,16 @@ func SettingVoiceRules(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	return true
 }
 
-func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMatchSummary(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), setting.AllSettings[setting.MatchSummary], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Unrecognized",
 			Other: "{{.Minutes}} is not a valid number. See `{{.CommandPrefix}} settings matchSummary` for usage",
 		},
@@ -790,7 +793,7 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 		return false
 	}
 	if num > 60 || num < -1 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.OutOfRange",
 			Other: "You provided a number too high or too low. Please specify a number between [0-60], or -1 to never delete match summaries",
 		}))
@@ -800,17 +803,17 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	sett.SetDeleteGameSummaryMinutes(int(num))
 	switch {
 	case num == -1:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success-1",
 			Other: "From now on, I'll never delete match summary messages.",
 		}))
 	case num == 0:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success0",
 			Other: "From now on, I'll delete match summary messages immediately.",
 		}))
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Success",
 			Other: "From now on, I'll delete match summary messages after {{.Minutes}} minutes.",
 		},
@@ -822,17 +825,17 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 	return true
 }
 
-func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMatchSummaryChannel(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), setting.AllSettings[setting.MatchSummaryChannel], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	// now to find the channel they are referencing
 	channelID := ""
 	channelName := "" // we track name to confirm to the User they selected the right channel
-	channelList, _ := s.GuildChannels(m.GuildID)
+	channelList, _ := galactus.GetGuildChannels(m.GuildID)
 	for _, c := range channelList {
 		// Check if channel is a text channel
 		if c.Type != discordgo.ChannelTypeGuildText {
@@ -848,7 +851,7 @@ func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate
 
 	// check if channel was found
 	if channelID == "" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummaryChannel.withoutChannelID",
 			Other: "Could not find the text channel `{{.channelName}}`! Pass in the name or the ID, and make sure the bot can see it.",
 		},
@@ -857,7 +860,7 @@ func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate
 			}))
 		return false
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummaryChannel.withChannelName",
 			Other: "Match Summary text channel changed to `{{.channelName}}`!",
 		},
@@ -869,16 +872,16 @@ func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate
 	}
 }
 
-func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingAutoRefresh(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), setting.AllSettings[setting.AutoRefresh], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	val := args[2]
 	if val != "t" && val != "true" && val != "f" && val != "false" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAutoRefresh.Unrecognized",
 			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage",
 		},
@@ -892,12 +895,12 @@ func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *
 	newSet := val == "t" || val == "true"
 	sett.SetAutoRefresh(newSet)
 	if newSet {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAutoRefresh.True",
 			Other: "From now on, I'll AutoRefresh the game status message",
 		}))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAutoRefresh.False",
 			Other: "From now on, I will not AutoRefresh the game status message",
 		}))
@@ -906,17 +909,17 @@ func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *
 	return true
 }
 
-func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMapVersion(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), setting.AllSettings[setting.MapVersion], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	val := strings.ToLower(args[2])
 	valid := map[string]bool{"simple": true, "detailed": true}
 	if !valid[val] {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMapVersion.Unrecognized",
 			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage",
 		},
@@ -928,7 +931,7 @@ func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	}
 
 	sett.SetMapVersion(val)
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingMapVersion.Success",
 		Other: "From now on, I will display map images as {{.Arg}}",
 	},
@@ -939,16 +942,16 @@ func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 	return true
 }
 
-func SettingLeaderboardNameMention(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardNameMention(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), setting.AllSettings[setting.LeaderboardMention], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	val := args[2]
 	if val != "t" && val != "true" && val != "f" && val != "false" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMention.Unrecognized",
 			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings leaderboardMention` for usage",
 		},
@@ -962,12 +965,12 @@ func SettingLeaderboardNameMention(s *discordgo.Session, m *discordgo.MessageCre
 	newSet := val == "t" || val == "true"
 	sett.SetLeaderboardMention(newSet)
 	if newSet {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMention.True",
 			Other: "From now on, I'll mention players directly in the leaderboard",
 		}))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMention.False",
 			Other: "From now on, I'll use player nicknames/usernames in the leaderboard",
 		}))
@@ -976,16 +979,16 @@ func SettingLeaderboardNameMention(s *discordgo.Session, m *discordgo.MessageCre
 	return true
 }
 
-func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardSize(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), setting.AllSettings[setting.LeaderboardSize], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardSize.Unrecognized",
 			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardSize` for usage",
 		},
@@ -996,7 +999,7 @@ func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, se
 		return false
 	}
 	if num > 10 || num < 1 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardSize.OutOfRange",
 			Other: "You provided a number too high or too low. Please specify a number between [1-10]",
 		}))
@@ -1005,7 +1008,7 @@ func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, se
 
 	sett.SetLeaderboardSize(int(num))
 
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLeaderboardSize.Success",
 		Other: "From now on, I'll display {{.Players}} players on the leaderboard",
 	},
@@ -1016,16 +1019,16 @@ func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, se
 	return true
 }
 
-func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingLeaderboardMin(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), setting.AllSettings[setting.LeaderboardMin], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMin.Unrecognized",
 			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardMin` for usage",
 		},
@@ -1036,7 +1039,7 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 		return false
 	}
 	if num > 100 || num < 1 {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMin.OutOfRange",
 			Other: "You provided a number too high or too low. Please specify a number between [1-100]",
 		}))
@@ -1045,7 +1048,7 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 
 	sett.SetLeaderboardMin(int(num))
 
-	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLeaderboardMin.Success",
 		Other: "From now on, I'll display only players with {{.Games}}+ qualifying games on the leaderboard",
 	},
@@ -1056,7 +1059,7 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 	return true
 }
 
-func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingMuteSpectators(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
 	muteSpec := sett.GetMuteSpectator()
 	if len(args) == 2 {
 		current := "false"
@@ -1064,18 +1067,18 @@ func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, set
 			current = "true"
 		}
 		embed := ConstructEmbedForSetting(current, setting.AllSettings[setting.MuteSpectators], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 	switch {
 	case args[2] == "true":
 		if muteSpec {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
 				Other: "It's already true!",
 			}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingMuteSpectators.true_noMuteSpectators",
 				Other: "I will now mute spectators just like dead players. \n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**",
 			}))
@@ -1084,19 +1087,19 @@ func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, set
 		}
 	case args[2] == "false":
 		if muteSpec {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingMuteSpectators.false_muteSpectators",
 				Other: "I will no longer mute spectators like dead players",
 			}))
 			sett.SetMuteSpectator(false)
 			return true
 		}
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
 			Other: "It's already false!",
 		}))
 	default:
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingUnmuteDeadDuringTasks.wrongArg",
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},

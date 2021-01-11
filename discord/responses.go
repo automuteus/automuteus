@@ -158,9 +158,6 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *sto
 
 func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
-	if strings.HasPrefix(version, "6.9") {
-		version = "😎 " + version + " 😎"
-	}
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -184,8 +181,8 @@ func (bot *Bot) infoResponse(guildID string, sett *storage.GuildSettings) *disco
 				map[string]interface{}{
 					"Version": version,
 					"Commit":  commit,
-					"ID":      fmt.Sprintf("%d", bot.PrimarySession.ShardID),
-					"Num":     fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
+					//"ID":      fmt.Sprintf("%d", bot.PrimarySession.ShardID),
+					//"Num":     fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
 				}),
 			IconURL:      "",
 			ProxyIconURL: "",

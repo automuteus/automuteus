@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"math/rand"
 	"regexp"
@@ -53,14 +54,14 @@ func getPhaseFromString(input string) game.Phase {
 	}
 }
 
-func getRoleFromString(s *discordgo.Session, guildID string, input string) string {
+func getRoleFromString(galactus *galactus_client.GalactusClient, guildID string, input string) string {
 	// find which role the User was referencing in their message
 	// first check if is mentionned
 	ID, err := extractRoleIDFromMention(input)
 	if err == nil {
 		return ID
 	}
-	roles, _ := s.GuildRoles(guildID)
+	roles, _ := galactus.GetGuildRoles(guildID)
 	for _, role := range roles {
 		if input == role.ID || input == strings.ToLower(role.Name) {
 			return role.ID
@@ -114,57 +115,34 @@ func mentionByUserID(userID string) string {
 	return "<@!" + userID + ">"
 }
 
-func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	dmChannel, err := s.UserChannelCreate(userID)
+func sendMessageDM(galactus *galactus_client.GalactusClient, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
+	dmChannel, err := galactus.CreateUserChannel(userID)
 	if err != nil {
 		log.Println(err)
 	}
-	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
+	m, err := galactus.SendChannelMessageEmbed(dmChannel.ID, message)
 	if err != nil {
 		log.Println(err)
 	}
 	return m
 }
 
-func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageSendEmbed(channelID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return msg
-}
-
-func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
-	err := s.ChannelMessageDelete(channelID, messageID)
+func addReaction(galactus *galactus_client.GalactusClient, channelID, messageID, emojiID string) {
+	err := galactus.AddReaction(channelID, messageID, emojiID)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
-	err := s.MessageReactionAdd(channelID, messageID, emojiID)
+func removeAllReactions(galactus *galactus_client.GalactusClient, channelID, messageID string) {
+	err := galactus.RemoveAllReactions(channelID, messageID)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
-	err := s.MessageReactionsRemoveAll(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeReaction(s *discordgo.Session, channelID, messageID, emojiNameOrID, userID string) {
-	err := s.MessageReactionRemove(channelID, messageID, emojiNameOrID, userID)
+func removeReaction(galactus *galactus_client.GalactusClient, channelID, messageID, emojiNameOrID, userID string) {
+	err := galactus.RemoveReaction(channelID, messageID, emojiNameOrID, userID)
 	if err != nil {
 		log.Println(err)
 	}

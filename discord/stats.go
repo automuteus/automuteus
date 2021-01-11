@@ -20,7 +20,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
 
 	avatarURL := ""
-	mem, err := bot.PrimarySession.GuildMember(guildID, userID)
+	mem, err := bot.GalactusClient.GetGuildMember(guildID, userID)
 	if err != nil {
 		log.Println(err)
 	} else if mem.User != nil {
@@ -363,7 +363,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, string, string) {
 	info := rediskey.GetCachedUserInfo(context.Background(), bot.RedisInterface.client, userID, guildID)
 	if info == "" {
-		mem, err := bot.PrimarySession.GuildMember(guildID, userID)
+		mem, err := bot.GalactusClient.GetGuildMember(guildID, userID)
 		if err != nil {
 			log.Println(err)
 			return "", "", ""
@@ -401,7 +401,7 @@ func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.Guild
 func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
 	gname := ""
 	avatarURL := ""
-	g, err := bot.PrimarySession.Guild(guildID)
+	g, err := bot.GalactusClient.GetGuild(guildID)
 
 	if err != nil {
 		log.Println(err)

@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	"log"
 	"sync"
 	"time"
 
@@ -29,28 +31,28 @@ func (dgs *GameState) Exists() bool {
 	return dgs.GameStateMsg.MessageID != ""
 }
 
-func (dgs *GameState) AddReaction(s *discordgo.Session, emoji string) {
+func (dgs *GameState) AddReaction(galactus *galactus_client.GalactusClient, emoji string) {
 	if dgs.GameStateMsg.MessageID != "" {
-		addReaction(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
+		addReaction(galactus, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
 	}
 }
 
-func (dgs *GameState) RemoveAllReactions(s *discordgo.Session) {
+func (dgs *GameState) RemoveAllReactions(galactus *galactus_client.GalactusClient) {
 	if dgs.GameStateMsg.MessageID != "" {
-		removeAllReactions(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		removeAllReactions(galactus, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 	}
 }
 
-func (dgs *GameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
+func (dgs *GameState) AddAllReactions(galactus *galactus_client.GalactusClient, emojis []Emoji) {
 	for _, e := range emojis {
-		dgs.AddReaction(s, e.FormatForReaction())
+		dgs.AddReaction(galactus, e.FormatForReaction())
 	}
-	dgs.AddReaction(s, "❌")
+	dgs.AddReaction(galactus, "❌")
 }
 
-func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session) {
+func (dgs *GameState) DeleteGameStateMsg(client *galactus_client.GalactusClient) {
 	if dgs.GameStateMsg.MessageID != "" {
-		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		client.DeleteChannelMessage(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		dgs.GameStateMsg.MessageID = ""
 	}
 }
@@ -59,7 +61,7 @@ var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
+func (dgs GameState) Edit(galactus *galactus_client.GalactusClient, me *discordgo.MessageEmbed) bool {
 	newEdit := false
 
 	if !ValidFields(me) {
@@ -70,7 +72,7 @@ func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool
 
 	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
-		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		go deferredEditWorker(galactus, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		newEdit = true
 	}
 	// whether or not it's found, replace the contents with the new message
@@ -97,7 +99,7 @@ func RemovePendingDGSEdit(messageID string) {
 	DeferredEditsLock.Unlock()
 }
 
-func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
+func deferredEditWorker(galactus *galactus_client.GalactusClient, channelID, messageID string) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
@@ -106,13 +108,16 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	DeferredEditsLock.Unlock()
 
 	if me != nil {
-		editMessageEmbed(s, channelID, messageID, me)
+		galactus.EditChannelMessageEmbed(channelID, messageID, *me)
 	}
 }
 
-func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
+func (dgs *GameState) CreateMessage(galactus *galactus_client.GalactusClient, me *discordgo.MessageEmbed, channelID string, authorID string) {
 	dgs.GameStateMsg.LeaderID = authorID
-	msg := sendMessageEmbed(s, channelID, me)
+	msg, err := galactus.SendChannelMessageEmbed(channelID, me)
+	if err != nil {
+		log.Println(err)
+	}
 	if msg != nil {
 		dgs.GameStateMsg.MessageAuthorID = msg.Author.ID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID

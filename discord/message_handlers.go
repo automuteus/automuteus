@@ -11,6 +11,7 @@ import (
 	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/metrics"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"os"
 	"strconv"
@@ -27,45 +28,21 @@ const DefaultMaxActiveGames = 150
 
 const downloadURL = "https://capture.automute.us"
 
-func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// IgnoreSpectator all messages created by the bot itself
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
-	if redis_common.IsUserBanned(bot.RedisInterface.client, m.Author.ID) {
-		return
-	}
-
-	lock := bot.RedisInterface.LockSnowflake(m.ID)
-	// couldn't obtain lock; bail bail bail!
-	if lock == nil {
-		return
-	}
-	defer lock.Release(ctx)
-
-	g, err := s.State.Guild(m.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+func (bot *Bot) handleMessageCreate(m discordgo.MessageCreate) {
 	contents := m.Content
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	prefix := sett.GetCommandPrefix()
 
-	bot.GalactusClient.SendChannelMessage(m.ChannelID, "This is a test")
-
-	if strings.Contains(m.Content, "<@!"+s.State.User.ID+">") {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleMessageCreate.respondPrefix",
-			Other: "I respond to the prefix {{.CommandPrefix}}",
-		},
-			map[string]interface{}{
-				"CommandPrefix": prefix,
-			}))
-		return
-	}
+	//if strings.Contains(m.Content, "<@!"+s.State.User.ID+">") {
+	//	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	//		ID:    "message_handlers.handleMessageCreate.respondPrefix",
+	//		Other: "I respond to the prefix {{.CommandPrefix}}",
+	//	},
+	//		map[string]interface{}{
+	//			"CommandPrefix": prefix,
+	//		}))
+	//	return
+	//}
 
 	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
 	if globalPrefix != "" && strings.HasPrefix(contents, globalPrefix) {
@@ -74,35 +51,47 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	}
 
 	if strings.HasPrefix(contents, prefix) {
-		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-			if banned {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID:    "message_handlers.softban",
-					Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
-				},
-					map[string]interface{}{
-						"User": mentionByUserID(m.Author.ID),
-					}))
-			} else {
-				msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID:    "message_handlers.generalRatelimit",
-					Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
-				},
-					map[string]interface{}{
-						"User": mentionByUserID(m.Author.ID),
-					}))
-				if err == nil {
-					go func() {
-						time.Sleep(time.Second * 3)
-						s.ChannelMessageDelete(m.ChannelID, msg.ID)
-					}()
-				}
-			}
+		//if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
+		//	banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
+		//	if banned {
+		//		_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		//			ID:    "message_handlers.softban",
+		//			Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
+		//		},
+		//			map[string]interface{}{
+		//				"User": mentionByUserID(m.Author.ID),
+		//			}))
+		//		if err != nil {
+		//			log.Println(err)
+		//		}
+		//
+		//	} else {
+		//		msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		//			ID:    "message_handlers.generalRatelimit",
+		//			Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
+		//		},
+		//			map[string]interface{}{
+		//				"User": mentionByUserID(m.Author.ID),
+		//			}))
+		//		if err == nil {
+		//			go func() {
+		//				time.Sleep(time.Second * 3)
+		//				bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
+		//			}()
+		//		} else {
+		//			log.Println(err)
+		//		}
+		//	}
+		//
+		//	return
+		//}
+		//redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
 
+		g, err := bot.GalactusClient.GetGuild(m.GuildID)
+		if err != nil {
+			log.Println(err)
 			return
 		}
-		redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
 
 		oldLen := len(contents)
 		contents = strings.Replace(contents, prefix+" ", "", 1)
@@ -137,9 +126,9 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				return
 			}
 			embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
-			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+			bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, &embed)
 			// delete the user's message
-			deleteMessage(s, m.ChannelID, m.ID)
+			bot.GalactusClient.DeleteChannelMessage(m.ChannelID, m.ID)
 		} else {
 			args := strings.Split(contents, " ")
 
@@ -147,7 +136,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				args[i] = strings.ToLower(v)
 			}
 
-			bot.HandleCommand(isAdmin, isPermissioned, sett, s, g, m, args)
+			bot.HandleCommand(isAdmin, isPermissioned, sett, g, m, args)
 		}
 	}
 }
@@ -217,16 +206,16 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 			idMatched := false
 			if m.Emoji.Name == "▶️" {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
-				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
-				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
-				go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
+				go removeReaction(bot.GalactusClient, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
+				go removeReaction(bot.GalactusClient, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
+				go dgs.AddAllReactions(bot.GalactusClient, bot.StatusEmojis[true])
 			} else {
 				for color, e := range bot.StatusEmojis[true] {
 					if e.ID == m.Emoji.ID {
 						idMatched = true
 						log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
 						// the User doesn't exist in our userdata cache; add them
-						user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
+						user, added := dgs.checkCacheAndAddUser(g, bot.GalactusClient, m.UserID)
 						if !added {
 							log.Println("No users found in Discord for UserID " + m.UserID)
 							idMatched = false
@@ -258,8 +247,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 				}
 				// make sure to update any voice changes if they occurred
 				if idMatched {
-					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
-					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
+					bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, gsr)
+					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
@@ -313,7 +302,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	userData, err := dgs.GetUser(m.UserID)
 	if err != nil {
 		// the User doesn't exist in our userdata cache; add them
-		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
+		userData, _ = dgs.checkCacheAndAddUser(g, bot.GalactusClient, m.UserID)
 	}
 
 	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
@@ -364,7 +353,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings) {
+func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -373,7 +362,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	for lock == nil {
 		if retries > 10 {
 			log.Println("DEADLOCK in obtaining game state lock, upon calling new")
-			s.ChannelMessageSend(m.ChannelID, "I wasn't able to make a new game, maybe try in a different text channel?")
+			galactus.SendChannelMessage(m.ChannelID, "I wasn't able to make a new game, maybe try in a different text channel?")
 			return
 		}
 		retries++
@@ -386,14 +375,14 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
 		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
 		if banned {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.softban",
 				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
 			}, map[string]interface{}{
 				"User": mentionByUserID(m.Author.ID),
 			}))
 		} else {
-			s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
 				Other: "{{.User}} You're creating games too fast! Please slow down!",
 			}, map[string]interface{}{
@@ -406,7 +395,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
 
-	channels, err := s.GuildChannels(m.GuildID)
+	channels, err := galactus.GetGuildChannels(m.GuildID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -432,7 +421,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 		}
 	}
 	if tracking.ChannelID == "" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleNewGameMessage.noChannel",
 			Other: "{{.User}}, please join a voice channel before starting a match!",
 		}, map[string]interface{}{
@@ -461,7 +450,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 				num = DefaultMaxActiveGames
 			}
 			if activeGames > num {
-				s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID: "message_handlers.handleNewGameMessage.lockout",
 					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\n" +
 						"Please try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\n" +
@@ -541,12 +530,12 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 	log.Println("Generated URL for connection: " + hyperlink)
 
-	sendMessageDM(s, m.Author.ID, &embed)
+	sendMessageDM(bot.GalactusClient, m.Author.ID, &embed)
 
-	bot.handleGameStartMessage(s, m, sett, tracking, g, connectCode)
+	bot.handleGameStartMessage(galactus, m, sett, tracking, g, connectCode)
 }
 
-func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(galactus *galactus_client.GalactusClient, m discordgo.MessageCreate, sett *storage.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -558,7 +547,7 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	}
 	dgs.AmongUsData.SetRoomRegionMap("", "", game.EMPTYMAP)
 
-	dgs.clearGameTracking(s)
+	dgs.clearGameTracking(bot.GalactusClient)
 
 	dgs.Running = true
 
@@ -569,12 +558,12 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 		}
 		for _, v := range g.VoiceStates {
 			if v.ChannelID == channel.ChannelID {
-				dgs.checkCacheAndAddUser(g, s, v.UserID)
+				dgs.checkCacheAndAddUser(g, galactus, v.UserID)
 			}
 		}
 	}
 
-	dgs.CreateMessage(s, bot.gameStateResponse(dgs, sett), m.ChannelID, m.Author.ID)
+	dgs.CreateMessage(galactus, bot.gameStateResponse(dgs, sett), m.ChannelID, m.Author.ID)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -582,5 +571,5 @@ func (bot *Bot) handleGameStartMessage(s *discordgo.Session, m *discordgo.Messag
 	// +12 emojis, 1 for X
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 
-	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
+	go dgs.AddAllReactions(bot.GalactusClient, bot.StatusEmojis[true])
 }

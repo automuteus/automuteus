@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
@@ -29,9 +30,7 @@ type Bot struct {
 
 	ChannelsMapLock sync.RWMutex
 
-	PrimarySession *discordgo.Session
-
-	GalactusClient *GalactusClient
+	GalactusClient *galactus_client.GalactusClient
 
 	RedisInterface *RedisInterface
 
@@ -46,7 +45,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *galactus_client.GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -66,7 +65,6 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 
 		EndGameChannels:   make(map[string]chan EndGameMessage),
 		ChannelsMapLock:   sync.RWMutex{},
-		PrimarySession:    dg,
 		GalactusClient:    gc,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
@@ -83,6 +81,10 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
+
+	bot.GalactusClient.RegisterHandler(galactus_client.MessageCreate, bot.handleMessageCreate)
+
+	bot.GalactusClient.StartPolling(time.Second)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 
@@ -156,7 +158,7 @@ func (bot *Bot) statsRefreshWorker(dur time.Duration) {
 }
 
 func (bot *Bot) Close() {
-	bot.PrimarySession.Close()
+	bot.GalactusClient.StopPolling()
 	bot.RedisInterface.Close()
 	bot.StorageInterface.Close()
 }
@@ -240,19 +242,13 @@ func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *GameState, args []string) {
-	g, err := s.State.Guild(dgs.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+func (bot *Bot) linkPlayer(galactus *galactus_client.GalactusClient, g *discordgo.Guild, dgs *GameState, args []string) {
 	userID, err := extractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}
 
-	_, added := dgs.checkCacheAndAddUser(g, s, userID)
+	_, added := dgs.checkCacheAndAddUser(g, galactus, userID)
 	if !added {
 		log.Println("No users found in Discord for UserID " + userID)
 	}
@@ -287,7 +283,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
-	dgs.DeleteGameStateMsg(bot.PrimarySession)
+	dgs.DeleteGameStateMsg(bot.GalactusClient)
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -298,10 +294,10 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
 
-func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
+func MessageDeleteWorker(galactus *galactus_client.GalactusClient, msgChannelID, msgID string, waitDur time.Duration) {
 	log.Printf("Message worker is sleeping for %s before deleting message", waitDur.String())
 	time.Sleep(waitDur)
-	deleteMessage(s, msgChannelID, msgID)
+	galactus.DeleteChannelMessage(msgChannelID, msgID)
 }
 
 func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
@@ -315,8 +311,8 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
 	if dgs.GameStateMsg.MessageChannelID != "" {
-		dgs.DeleteGameStateMsg(bot.PrimarySession) // delete the old message
-		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+		dgs.DeleteGameStateMsg(bot.GalactusClient) // delete the old message
+		dgs.CreateMessage(bot.GalactusClient, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 	}
 
@@ -325,7 +321,7 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	// add the emojis to the refreshed message
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
-		dgs.AddReaction(bot.PrimarySession, "▶️")
+		dgs.AddReaction(bot.GalactusClient, "▶️")
 		// go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}
 }

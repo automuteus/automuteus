@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
-	"github.com/bwmarrin/discordgo"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strconv"
@@ -43,7 +43,7 @@ func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) {
 }
 
 func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
-	g, err := bot.PrimarySession.State.Guild(dgs.GuildID)
+	g, err := bot.GalactusClient.GetGuild(dgs.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -56,7 +56,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 		if err != nil {
 			// the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, bot.GalactusClient, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -95,15 +95,14 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 }
 
 // handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
-	g, err := sess.State.Guild(dgs.GuildID)
-
+	g, err := galactus.GetGuild(dgs.GuildID)
 	if err != nil || g == nil {
 		lock.Release(ctx)
 		return
@@ -117,7 +116,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 		if err != nil {
 			// the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, bot.GalactusClient, voiceState.UserID)
 			if !added {
 				continue
 			}

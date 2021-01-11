@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"strings"
 
@@ -88,7 +89,7 @@ func (dgs *GameState) Reset() {
 	dgs.AmongUsData = amongus.NewAmongUsData()
 }
 
-func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
+func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, galactus *galactus_client.GalactusClient, userID string) (UserData, bool) {
 	if g == nil {
 		return UserData{}, false
 	}
@@ -100,7 +101,7 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 			return user, true
 		}
 	}
-	mem, err := s.GuildMember(g.ID, userID)
+	mem, err := galactus.GetGuildMember(g.ID, userID)
 	if err != nil {
 		log.Println(err)
 		return UserData{}, false
@@ -110,14 +111,14 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 	return user, true
 }
 
-func (dgs *GameState) clearGameTracking(s *discordgo.Session) {
+func (dgs *GameState) clearGameTracking(client *galactus_client.GalactusClient) {
 	// clear the discord User links to underlying player data
 	dgs.ClearAllPlayerData()
 
 	// reset all the Tracking channels
 	dgs.Tracking = TrackingChannel{}
 
-	dgs.DeleteGameStateMsg(s)
+	dgs.DeleteGameStateMsg(client)
 }
 
 func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *storage.GuildSettings) string {
