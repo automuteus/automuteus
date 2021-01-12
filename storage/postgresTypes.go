@@ -82,3 +82,11 @@ type PostgresUserMostFrequentFirstTargetRanking struct {
 	Count      int64   `db:"total"`
 	DeathRate  float64 `db:"death_rate"`
 }
+
+type PostgresUserMostFrequentKilledByanking struct {
+	UserID     uint64  `db:"user_id"`
+	TeammateID uint64  `db:"teammate_id"`
+	TotalDeath int64   `db:"total_death"`
+	Encounter  int64   `db:"encounter"`
+	DeathRate  float64 `db:"death_rate"`
+}
