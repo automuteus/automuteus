@@ -323,3 +323,28 @@ func (psqlInterface *PsqlInterface) WorstTeammateForServerByRole(guildID string,
 	}
 	return r
 }
+
+func (psqlInterface *PsqlInterface) UserWinByActionAndRole(userdID, guildID string, action string, role int16) []*PostgresUserActionRanking {
+	r := []*PostgresUserActionRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT users_games.user_id, "+
+		"COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ) as total_action, "+
+		"total_user.total as total, "+
+		"total_user.win_rate as win_rate "+
+		"FROM users_games "+
+		"LEFT JOIN (SELECT user_id, guild_id, player_role, "+
+		"COUNT(users_games.player_won) as total, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+		"FROM users_games "+
+		"GROUP BY user_id, player_role, guild_id "+
+		") total_user on total_user.user_id = users_games.user_id and users_games.player_role = total_user.player_role and users_games.guild_id = total_user.guild_id "+
+		"LEFT JOIN game_events ge ON users_games.game_id = ge.game_id AND ge.user_id = users_games.user_id "+
+		"WHERE users_games.user_id = $2 AND users_games.guild_id = $3 "+
+		"AND users_games.player_role = $4 "+
+		"GROUP BY users_games.user_id, total, win_rate "+
+		"ORDER BY win_rate DESC, total DESC;", action, userdID, guildID, role)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}

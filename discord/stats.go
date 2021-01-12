@@ -326,6 +326,99 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 				Inline: true,
 			})
 		}
+
+		userExiledAsImpostor := bot.PostgresInterface.UserWinByActionAndRole(userID, guildID, strconv.Itoa(int(game.EXILED)), int16(game.ImposterRole))
+		if len(userExiledAsImpostor) > 0 {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: false,
+			})
+			buf := bytes.NewBuffer([]byte{})
+			for i, v := range userExiledAsImpostor {
+				if i < leaderBoardSize {
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% %s\n", v.TotalAction, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Exiled",
+							Other: "Exiled",
+						}),
+						v.WinRate,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Won",
+							Other: "Won",
+						})))
+				} else {
+					break
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ExiledAsImpostor",
+					Other: "Exiled as Impostor",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+		}
+
+		userExiledAsCrewmate := bot.PostgresInterface.UserWinByActionAndRole(userID, guildID, strconv.Itoa(int(game.EXILED)), int16(game.CrewmateRole))
+		if len(userExiledAsImpostor) > 0 {
+			buf := bytes.NewBuffer([]byte{})
+			for i, v := range userExiledAsCrewmate {
+				if i < leaderBoardSize {
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% %s\n", v.TotalAction, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Exiled",
+							Other: "Exiled",
+						}),
+						v.WinRate,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Won",
+							Other: "Won",
+						})))
+				} else {
+					break
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ExiledAsCrewmate",
+					Other: "Exiled as Crewmate",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+		}
+
+		userKilledAsCrewmate := bot.PostgresInterface.UserWinByActionAndRole(userID, guildID, strconv.Itoa(int(game.DIED)), int16(game.CrewmateRole))
+		if len(userKilledAsCrewmate) > 0 {
+			buf := bytes.NewBuffer([]byte{})
+			for i, v := range userKilledAsCrewmate {
+				if i < leaderBoardSize {
+					buf.WriteString(fmt.Sprintf("%d/%d %s | %.0f%% %s\n", v.TotalAction, v.Count,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Killed",
+							Other: "Killed",
+						}),
+						v.WinRate,
+						sett.LocalizeMessage(&i18n.Message{
+							ID:    "responses.stats.Won",
+							Other: "Won",
+						})))
+				} else {
+					break
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.ExiledAsCrewmate",
+					Other: "Killed as Crewmate",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+		}
+
 	}
 
 	fields = TrimEmbedFields(fields)
