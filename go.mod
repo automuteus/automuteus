@@ -9,7 +9,7 @@ require (
 	github.com/automuteus/galactus v1.2.2
 	github.com/automuteus/utils v0.0.6
 	github.com/bsm/redislock v0.7.0
-	github.com/bwmarrin/discordgo v0.22.0
+	github.com/bwmarrin/discordgo v0.22.1
 	github.com/georgysavva/scany v0.2.7
 	github.com/go-redis/redis/v8 v8.4.8
 	github.com/gorilla/mux v1.8.0
