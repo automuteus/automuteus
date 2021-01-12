@@ -75,3 +75,10 @@ type PostgresUserActionRanking struct {
 	Count       int64   `db:"total"`
 	WinRate     float64 `db:"win_rate"`
 }
+
+type PostgresUserMostFrequentFirstTargetRanking struct {
+	UserID     uint64  `db:"user_id"`
+	TotalDeath int64   `db:"total_death"`
+	Count      int64   `db:"total"`
+	DeathRate  float64 `db:"death_rate"`
+}

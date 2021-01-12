@@ -419,6 +419,31 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 			})
 		}
 
+		userFirstTimeKilled := bot.PostgresInterface.UserFrequentFirstTarget(userID, guildID, strconv.Itoa(int(game.DIED)), sett.GetLeaderboardSize())
+		if len(userFirstTimeKilled) > 0 {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: false,
+			})
+			buf := bytes.NewBuffer([]byte{})
+			for i, v := range userFirstTimeKilled {
+				if i < leaderBoardSize {
+					buf.WriteString(fmt.Sprintf("%d/%d | %.0f%%\n", v.TotalDeath, v.Count, v.DeathRate))
+				} else {
+					break
+				}
+			}
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.userStatsEmbed.FrequentFirstTarget",
+					Other: "Frequent first target",
+				}),
+				Value:  buf.String(),
+				Inline: true,
+			})
+		}
+
 	}
 
 	fields = TrimEmbedFields(fields)
@@ -762,6 +787,31 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 				})
 			}
 
+			userMostFirstTimeKilledForServer := bot.PostgresInterface.UserMostFrequentFirstTargetForServer(guildID, strconv.Itoa(int(game.DIED)), sett.GetLeaderboardSize())
+			if len(userMostFirstTimeKilledForServer) > 0 {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:   "\u200b",
+					Value:  "\u200b",
+					Inline: false,
+				})
+				buf := bytes.NewBuffer([]byte{})
+				for i, v := range userMostFirstTimeKilledForServer {
+					if i < leaderboardSize {
+						buf.WriteString(fmt.Sprintf("%d/%d | %.0f%% | %s\n", v.TotalDeath, v.Count, v.DeathRate,
+							bot.MentionWithCacheData(strconv.FormatUint(v.UserID, 10), guildID, sett)))
+					} else {
+						break
+					}
+				}
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name: sett.LocalizeMessage(&i18n.Message{
+						ID:    "responses.userStatsEmbed.MostFrequentFirstTarget",
+						Other: "Most Frequent First Target",
+					}),
+					Value:  buf.String(),
+					Inline: true,
+				})
+			}
 		}
 	}
 
