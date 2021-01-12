@@ -132,7 +132,7 @@ There is a [`docker-compose.yml`](docker-compose.yml) file in this repository th
 
 ### Steps:
 
-- Install Docker and Docker Compose on the machine you will be using to host AutoMuteUs
+- Install [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) on the machine you will be using to host AutoMuteUs
 - Download the [`docker-compose.yml`](docker-compose.yml) from this repository, and create a `.env` file in the same directory that will contain your Environment Variables. On Linux/UNIX systems you can use `touch .env` to create this file, but a template [`sample.env`](sample.env) is provided in this repository for reference. 
 - Provide your specific Environment Variables in the `.env` file, as relevant to your configuration. Please see the Environment Variables reference further down in this Readme for details, as well as the [`sample.env`](sample.env) provided.
 - Run `docker-compose pull`. This will download the latest built Docker images from Dockerhub that are required to run AutoMuteUs.
@@ -152,6 +152,16 @@ AutoMuteUs exists in the FreeBSD Ports tree as [`games/automuteus`](https://www.
 
 ## Old version
 If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and hate Docker because of it (I don't blame you) you can self host [2.4.3](https://github.com/denverquane/automuteus/releases/tag/2.4.3) instead. **If you are using this method, continue using the newest capture!**
+
+## Development Instructions
+The easiest way to test changes is to use docker-compose, but instead of using a pre-built image, building the automuteus docker image from source. Thankfully, this is easy to do:
+
+1. In the `docker-compose.yml` comment out the line `image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}` and uncomment the `build .` line.
+2. Make any changes to the code or sql file that you would like.
+3. Use the command `docker-compose build` to build the set of docker images with your change
+4. Start the stack with `docker-compose up`
+
+Just remember that you will need to do a rebuild of the docker images every time you make a change.
 
 ## Environment Variables
 
