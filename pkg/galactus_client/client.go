@@ -83,10 +83,15 @@ type DiscordMessage struct {
 }
 
 type GalactusClient struct {
-	Address              string
-	client               *http.Client
-	killChannel          chan bool
-	messageCreateHandler func(m discordgo.MessageCreate)
+	Address                   string
+	client                    *http.Client
+	killChannel               chan bool
+	messageCreateHandler      func(m discordgo.MessageCreate)
+	messageReactionAddHandler func(m discordgo.MessageReactionAdd)
+	voiceStateUpdateHandler   func(m discordgo.VoiceStateUpdate)
+	guildDeleteHandler        func(m discordgo.GuildDelete)
+
+	//TODO guild create
 }
 
 func NewGalactusClient(address string) (*GalactusClient, error) {
@@ -165,6 +170,30 @@ func (galactus *GalactusClient) dispatch(msg DiscordMessage) {
 		} else {
 			galactus.messageCreateHandler(messageCreate)
 		}
+	case MessageReactionAdd:
+		var messageReactionAdd discordgo.MessageReactionAdd
+		err := json.Unmarshal(msg.Data, &messageReactionAdd)
+		if err != nil {
+			log.Println(err)
+		} else {
+			galactus.messageReactionAddHandler(messageReactionAdd)
+		}
+	case VoiceStateUpdate:
+		var voiceStateUpdate discordgo.VoiceStateUpdate
+		err := json.Unmarshal(msg.Data, &voiceStateUpdate)
+		if err != nil {
+			log.Println(err)
+		} else {
+			galactus.voiceStateUpdateHandler(voiceStateUpdate)
+		}
+	case GuildDelete:
+		var guildDelete discordgo.GuildDelete
+		err := json.Unmarshal(msg.Data, &guildDelete)
+		if err != nil {
+			log.Println(err)
+		} else {
+			galactus.guildDeleteHandler(guildDelete)
+		}
 	}
 }
 
@@ -174,10 +203,24 @@ func (galactus *GalactusClient) StopPolling() {
 	}
 }
 
-func (galactus *GalactusClient) RegisterHandler(msgType DiscordMessageType, f interface{}) {
+func (galactus *GalactusClient) RegisterHandler(msgType DiscordMessageType, f interface{}) bool {
 	switch msgType {
 	case MessageCreate:
 		galactus.messageCreateHandler = f.(func(m discordgo.MessageCreate))
 		log.Println("Registered Message Create Handler")
+		return true
+	case MessageReactionAdd:
+		galactus.messageReactionAddHandler = f.(func(m discordgo.MessageReactionAdd))
+		log.Println("Registered Message Reaction Add Handler")
+		return true
+	case GuildDelete:
+		galactus.guildDeleteHandler = f.(func(m discordgo.GuildDelete))
+		log.Println("Registered Guild Delete Handler")
+		return true
+	case VoiceStateUpdate:
+		galactus.voiceStateUpdateHandler = f.(func(m discordgo.VoiceStateUpdate))
+		log.Println("Registered Voice State Update Handler")
+		return true
 	}
+	return false
 }

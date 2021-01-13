@@ -2,6 +2,7 @@ package discord
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,55 +132,58 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
 
-					// we only need a read-only state for making the game summary message
-					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
-					if dgs != nil {
-						delTime := sett.GetDeleteGameSummaryMinutes()
-						if delTime != 0 {
-							winners := getWinners(*dgs, gameOverResult)
-							buf := bytes.NewBuffer([]byte{})
-							for i, v := range winners {
-								roleStr := "Crewmate"
-								if v.role == game.ImposterRole {
-									roleStr = "Imposter"
-								}
-								buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
-								if i < len(winners)-1 {
-									buf.WriteRune(',')
-								} else {
-									buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
-								}
-							}
-							embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
-							channelID := dgs.GameStateMsg.MessageChannelID
-							if sett.GetMatchSummaryChannelID() != "" {
-								channelID = sett.GetMatchSummaryChannelID()
-							}
-							msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
-							if delTime > 0 && err == nil {
-								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-								go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
-							} else if err == nil {
-								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
-							}
-						}
-						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
-
-						// refresh the game message if the setting is marked (it is not locked, the previous dgs is
-						// read-only). This means the original msg is refreshed, not the gameover message
-						if sett.AutoRefresh {
-							bot.RefreshGameStateMessage(dgsRequest, sett)
-						}
-
-						// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
-						lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-						for lock == nil {
-							lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-						}
-						dgs.MatchID = -1
-						dgs.MatchStartUnix = -1
-						bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					for dgs == nil {
+						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 					}
+					//once we've locked the gamestate, we know for certain that it's current; then we can release the lock
+					lock.Release(context.Background())
+
+					delTime := sett.GetDeleteGameSummaryMinutes()
+					if delTime != 0 {
+						winners := getWinners(*dgs, gameOverResult)
+						buf := bytes.NewBuffer([]byte{})
+						for i, v := range winners {
+							roleStr := "Crewmate"
+							if v.role == game.ImposterRole {
+								roleStr = "Imposter"
+							}
+							buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
+							if i < len(winners)-1 {
+								buf.WriteRune(',')
+							} else {
+								buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
+							}
+						}
+						embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+						channelID := dgs.GameStateMsg.MessageChannelID
+						if sett.GetMatchSummaryChannelID() != "" {
+							channelID = sett.GetMatchSummaryChannelID()
+						}
+						msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
+						if delTime > 0 && err == nil {
+							metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+							go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
+						} else if err == nil {
+							metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+						}
+					}
+					go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
+
+					// refresh the game message if the setting is marked (it is not locked, the previous dgs is
+					// read-only). This means the original msg is refreshed, not the gameover message
+					if sett.AutoRefresh {
+						bot.RefreshGameStateMessage(dgsRequest, sett)
+					}
+
+					// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
+					lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					for lock == nil {
+						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+					}
+					dgs.MatchID = -1
+					dgs.MatchStartUnix = -1
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 				}
 				if job.JobType != task.ConnectionJob {
 					go func(userID string, ge storage.PostgresGameEvent) {

@@ -74,16 +74,13 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 		captureTimeout:    GameTimeoutSeconds,
 	}
 	dg.LogLevel = discordgo.LogInformational
-
-	dg.AddHandler(bot.handleVoiceStateChange)
-	// Register the messageCreate func as a callback for MessageCreate events.
-	dg.AddHandler(bot.handleMessageCreate)
-	dg.AddHandler(bot.handleReactionGameStartAdd)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
-	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
 
 	bot.GalactusClient.RegisterHandler(galactus_client.MessageCreate, bot.handleMessageCreate)
+	bot.GalactusClient.RegisterHandler(galactus_client.VoiceStateUpdate, bot.handleVoiceStateChange)
+	bot.GalactusClient.RegisterHandler(galactus_client.GuildDelete, bot.leaveGuild)
+	bot.GalactusClient.RegisterHandler(galactus_client.MessageReactionAdd, bot.handleReactionGameStartAdd)
 
 	bot.GalactusClient.StartPolling(time.Second)
 
@@ -233,7 +230,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	}
 }
 
-func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
+func (bot *Bot) leaveGuild(m discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
 	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
 

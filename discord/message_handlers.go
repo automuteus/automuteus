@@ -140,24 +140,9 @@ func (bot *Bot) handleMessageCreate(m discordgo.MessageCreate) {
 	}
 }
 
-func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	// IgnoreSpectator all reactions created by the bot itself
-	if m.UserID == s.State.User.ID {
-		return
-	}
+func (bot *Bot) handleReactionGameStartAdd(m discordgo.MessageReactionAdd) {
 
-	if redis_common.IsUserBanned(bot.RedisInterface.client, m.UserID) {
-		return
-	}
-
-	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
-	// couldn't obtain lock; bail bail bail!
-	if lock == nil {
-		return
-	}
-	defer lock.Release(ctx)
-
-	g, err := s.State.Guild(m.GuildID)
+	g, err := bot.GalactusClient.GetGuild(m.GuildID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -174,11 +159,11 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock != nil && dgs != nil && dgs.Exists() {
 		// verify that the User is reacting to the state/status message
-		if dgs.IsReactionTo(m) {
+		if dgs.IsReactionTo(&m) {
 			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
 				banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.UserID)
 				if banned {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.softban",
 						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
 					},
@@ -186,7 +171,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 							"User": mentionByUserID(m.UserID),
 						}))
 				} else {
-					msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
 						Other: "{{.User}}, you're reacting too fast! Please slow down!",
 					}, map[string]interface{}{
@@ -195,7 +180,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					if err == nil {
 						go func() {
 							time.Sleep(time.Second * 3)
-							s.ChannelMessageDelete(m.ChannelID, msg.ID)
+							bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
 						}()
 					}
 				}
@@ -229,9 +214,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 								idMatched = false
 							}
 						}
-
 						// then remove the player's reaction if we matched, or if we didn't
-						go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
+						go bot.GalactusClient.RemoveReaction(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
 						break
 					}
 				}
@@ -240,7 +224,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					if m.Emoji.Name == "❌" {
 						log.Println("Removing player " + m.UserID)
 						dgs.ClearPlayerData(m.UserID)
-						go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
+						// then remove the player's reaction if we matched, or if we didn't
+						go bot.GalactusClient.RemoveReaction(m.ChannelID, m.MessageID, "❌", m.UserID)
 						idMatched = true
 					}
 				}
@@ -261,16 +246,7 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 // voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
 // relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 // the same mute/unmute, erroneously
-func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
-	// couldn't obtain lock; bail bail bail!
-	if snowFlakeLock == nil {
-		return
-	}
-	defer snowFlakeLock.Release(ctx)
-
-	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-
+func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
 		GuildID:      m.GuildID,
@@ -291,7 +267,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		}
 	}
 
-	g, err := s.State.Guild(dgs.GuildID)
+	g, err := bot.GalactusClient.GetGuild(dgs.GuildID)
 
 	if err != nil || g == nil {
 		return
@@ -330,6 +306,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		dgs.UpdateUserData(m.UserID, userData)
 
 		if dgs.Running {
+			prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := task.UserModifyRequest{
 				Premium: prem,
