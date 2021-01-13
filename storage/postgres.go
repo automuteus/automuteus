@@ -3,14 +3,15 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/automuteus/utils/pkg/premium"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type PsqlInterface struct {
@@ -183,6 +184,11 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 	return err
 }
 
+func (psqlInterface *PsqlInterface) insertGameToMap(gameToMap PostgresGameToMap) error {
+	_, err := psqlInterface.Pool.Exec(context.Background(), "INSERT INTO game_to_map VALUES ($1, $2);", gameToMap.GameID, gameToMap.MapID)
+	return err
+}
+
 const SecsInADay = 86400
 const SubDays = 31         // use 31 because there shouldn't ever be a gap; whenever a renewal happens on the 31st day, that should be valid
 const NoExpiryCode = -9999 // dumb, but no one would ever have expired premium for 9999 days
@@ -266,6 +272,15 @@ func (psqlInterface *PsqlInterface) UpdateGameAndPlayers(gameID int64, winType i
 		if err != nil {
 			log.Println(err)
 		}
+	}
+
+	return nil
+}
+
+func (psqlInterface *PsqlInterface) UpdateGameToMap(gameToMap PostgresGameToMap) error {
+	err := psqlInterface.insertGameToMap(gameToMap)
+	if err != nil {
+		return err
 	}
 
 	return nil

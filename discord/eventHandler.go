@@ -471,7 +471,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 	end := time.Now().Unix()
 
 	userGames := make([]*storage.PostgresUserGame, 0)
-	gameToMap := make([]*storage.PostgresGameToMap, 0)
+	var gameToMap storage.PostgresGameToMap
 
 	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
 		gameOver.GameOverReason == game.ImpostorBySabotage ||
@@ -527,16 +527,20 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 				PlayerWon:   won,
 			})
 
-			gameToMap = append(gameToMap, &storage.PostgresGameToMap{
-				GameID: dgs.MatchID,
-				MapID:  int32(dgs.AmongUsData.GetPlayMap()),
-			})
+			gameToMap.GameID = dgs.MatchID
+			gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap()
+			
 			log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
 		}
 	}
 	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
 
 	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = psql.UpdateGameToMap(gameToMap)
 	if err != nil {
 		log.Println(err)
 	}
