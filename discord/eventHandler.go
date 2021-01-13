@@ -528,8 +528,8 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 			})
 
 			gameToMap.GameID = dgs.MatchID
-			gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap()
-			
+			gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap())
+
 			log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
 		}
 	}
