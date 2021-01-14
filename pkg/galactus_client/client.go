@@ -50,6 +50,12 @@ const GetGuildRolesFull = GetGuildRolesPartial + "{guildID}"
 const UserChannelCreatePartial = "/createUserChannel/"
 const UserChannelCreateFull = UserChannelCreatePartial + "{userID}"
 
+const GetGuildEmojisPartial = "/guildEmojis/"
+const GetGuildEmojisFull = GetGuildEmojisPartial + "{guildID}"
+
+const CreateGuildEmojiPartial = "/guildEmojiCreate/"
+const CreateGuildEmojiFull = CreateGuildEmojiPartial + "{guildID}/{name}"
+
 const RequestJob = "/request/job"
 const JobCount = "/totalJobs"
 
