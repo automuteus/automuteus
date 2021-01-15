@@ -323,3 +323,112 @@ func (psqlInterface *PsqlInterface) WorstTeammateForServerByRole(guildID string,
 	}
 	return r
 }
+
+func (psqlInterface *PsqlInterface) UserWinByActionAndRole(userdID, guildID string, action string, role int16) []*PostgresUserActionRanking {
+	r := []*PostgresUserActionRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT users_games.user_id, "+
+		"COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ) as total_action, "+
+		"total_user.total as total, "+
+		"total_user.win_rate as win_rate "+
+		"FROM users_games "+
+		"LEFT JOIN (SELECT user_id, guild_id, player_role, "+
+		"COUNT(users_games.player_won) as total, "+
+		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+		"FROM users_games "+
+		"GROUP BY user_id, player_role, guild_id "+
+		") total_user on total_user.user_id = users_games.user_id and users_games.player_role = total_user.player_role and users_games.guild_id = total_user.guild_id "+
+		"LEFT JOIN game_events ge ON users_games.game_id = ge.game_id AND ge.user_id = users_games.user_id "+
+		"WHERE users_games.user_id = $2 AND users_games.guild_id = $3 "+
+		"AND users_games.player_role = $4 "+
+		"GROUP BY users_games.user_id, total, win_rate "+
+		"ORDER BY win_rate DESC, total DESC;", action, userdID, guildID, role)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) UserFrequentFirstTarget(userID, guildID string, action string, leaderboardSize int) []*PostgresUserMostFrequentFirstTargetRanking {
+	r := []*PostgresUserMostFrequentFirstTargetRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) AS total_death, "+
+		"users_games.user_id, total, "+
+		"COUNT(*)::decimal / total * 100 as death_rate "+
+		"FROM users_games "+
+		"LEFT JOIN LATERAL (SELECT game_events.user_id "+
+		"FROM game_events WHERE game_events.game_id = users_games.game_id and payload ->> 'Action' = $1 "+
+		"ORDER BY event_time FETCH FIRST 1 ROW ONLY ) AS ge ON TRUE "+
+		"LEFT JOIN LATERAL (SELECT count(*) as total from users_games where users_games.user_id = ge.user_id and player_role = 0) as TOTAL_GAME ON TRUE "+
+		"WHERE users_games.guild_id = $2 AND users_games.user_id = ge.user_id AND users_games.user_id = $3"+
+		"GROUP BY users_games.user_id, total  "+
+		"ORDER BY total_death DESC "+
+		"LIMIT $4;", action, guildID, userID, leaderboardSize)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) UserMostFrequentFirstTargetForServer(guildID string, action string, leaderboardSize int) []*PostgresUserMostFrequentFirstTargetRanking {
+	r := []*PostgresUserMostFrequentFirstTargetRanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) AS total_death, "+
+		"users_games.user_id, total, "+
+		"COUNT(*)::decimal / total * 100 as death_rate "+
+		"FROM users_games "+
+		"LEFT JOIN LATERAL (SELECT game_events.user_id "+
+		"FROM game_events WHERE game_events.game_id = users_games.game_id and payload ->> 'Action' = $1 "+
+		"ORDER BY event_time FETCH FIRST 1 ROW ONLY ) AS ge ON TRUE "+
+		"LEFT JOIN LATERAL (SELECT count(*) as total from users_games where users_games.user_id = ge.user_id and player_role = 0) as TOTAL_GAME ON TRUE "+
+		"WHERE users_games.guild_id = $2 AND users_games.user_id = ge.user_id AND total > 3"+
+		"GROUP BY users_games.user_id, total  "+
+		"ORDER BY death_rate DESC, total_death DESC "+
+		"LIMIT $3;", action, guildID, leaderboardSize)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) UserMostFrequentKilledBy(userID, guildID string) []*PostgresUserMostFrequentKilledByanking {
+	r := []*PostgresUserMostFrequentKilledByanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT users_games.user_id, "+
+		"usG.user_id as teammate_id, "+
+		"COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ) as total_death, "+
+		"COUNT(usG.user_id) as encounter, (COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ))::decimal/count(usG.player_name) * 100 as death_rate "+
+		"FROM users_games "+
+		"LEFT JOIN users_games usG on users_games.game_id = usG.game_id and usG.player_role = $2 "+
+		"LEFT JOIN (SELECT user_id, guild_id, player_role, COUNT(users_games.player_won) as total "+
+		"FROM users_games "+
+		"GROUP BY user_id, player_role, guild_id) total_user on total_user.user_id = users_games.user_id and users_games.player_role = total_user.player_role and users_games.guild_id = total_user.guild_id "+
+		"LEFT JOIN game_events ge ON users_games.game_id = ge.game_id AND ge.user_id = $3 "+
+		"WHERE users_games.guild_id = $4 AND users_games.user_id = $3 AND users_games.player_role = $5 "+
+		"GROUP BY users_games.user_id, usG.user_id, users_games.user_id, total "+
+		"ORDER BY death_rate DESC, total_death DESC, encounter DESC;", strconv.Itoa(int(game.DIED)), strconv.Itoa(int(game.ImposterRole)), userID, guildID, strconv.Itoa(int(game.CrewmateRole)))
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) UserMostFrequentKilledByServer(guildID string) []*PostgresUserMostFrequentKilledByanking {
+	r := []*PostgresUserMostFrequentKilledByanking{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT users_games.user_id, "+
+		"usG.user_id as teammate_id, "+
+		"COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ) as total_death, "+
+		"COUNT(usG.user_id) as encounter, (COUNT(ge.user_id) FILTER ( WHERE payload ->> 'Action' = $1 ))::decimal/count(usG.player_name) * 100 as death_rate "+
+		"FROM users_games "+
+		"INNER JOIN users_games usG on users_games.game_id = usG.game_id and usG.player_role = $2 "+
+		"INNER JOIN (SELECT user_id, guild_id, player_role, COUNT(users_games.player_won) as total "+
+		"FROM users_games "+
+		"GROUP BY user_id, player_role, guild_id) total_user on total_user.user_id = users_games.user_id and users_games.player_role = total_user.player_role and users_games.guild_id = total_user.guild_id "+
+		"INNER JOIN game_events ge ON users_games.game_id = ge.game_id AND ge.user_id = users_games.user_id "+
+		"WHERE users_games.guild_id = $3 AND users_games.player_role = $4 "+
+		"GROUP BY users_games.user_id, usG.user_id, users_games.user_id, total "+
+		"ORDER BY death_rate DESC, total_death DESC, encounter DESC;", strconv.Itoa(int(game.DIED)), strconv.Itoa(int(game.ImposterRole)), guildID, strconv.Itoa(int(game.CrewmateRole)))
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
