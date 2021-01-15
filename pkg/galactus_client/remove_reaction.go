@@ -2,13 +2,14 @@ package galactus_client
 
 import (
 	"bytes"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
 func (galactus *GalactusClient) RemoveReaction(channelID, messageID, emojiID, userID string) error {
-	resp, err := galactus.client.Post(galactus.Address+RemoveReactionPartial+channelID+"/"+messageID+"/"+emojiID+"/"+userID, "application/json", bytes.NewBufferString(""))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.RemoveReactionPartial+channelID+"/"+messageID+"/"+emojiID+"/"+userID, "application/json", bytes.NewBufferString(""))
 	if err != nil {
 		return err
 	}

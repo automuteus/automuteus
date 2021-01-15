@@ -2,13 +2,14 @@ package galactus_client
 
 import (
 	"bytes"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
 func (galactus *GalactusClient) DeleteChannelMessage(channelID, messageID string) error {
-	resp, err := galactus.client.Post(galactus.Address+DeleteMessagePartial+channelID+"/"+messageID, "application/json", bytes.NewBufferString(""))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.DeleteMessagePartial+channelID+"/"+messageID, "application/json", bytes.NewBufferString(""))
 	if err != nil {
 		return err
 	}

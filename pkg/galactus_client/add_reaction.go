@@ -2,13 +2,14 @@ package galactus_client
 
 import (
 	"bytes"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
 func (galactus *GalactusClient) AddReaction(channelID, messageID, emojiID string) error {
-	resp, err := galactus.client.Post(galactus.Address+AddReactionPartial+channelID+"/"+messageID+"/"+emojiID, "application/json", bytes.NewBufferString(""))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.AddReactionPartial+channelID+"/"+messageID+"/"+emojiID, "application/json", bytes.NewBufferString(""))
 	if err != nil {
 		return err
 	}

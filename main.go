@@ -25,7 +25,6 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
-const DefaultTaskTimeoutMs = 10000
 
 func main() {
 	// seed the rand generator (used for making connection codes)

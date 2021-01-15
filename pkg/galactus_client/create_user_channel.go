@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,7 @@ import (
 )
 
 func (galactus *GalactusClient) CreateUserChannel(userID string) (*discordgo.Channel, error) {
-	resp, err := galactus.client.Post(galactus.Address+UserChannelCreatePartial+userID, "application/json", bytes.NewBufferString(""))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.UserChannelCreatePartial+userID, "application/json", bytes.NewBufferString(""))
 	if err != nil {
 		return nil, err
 	}

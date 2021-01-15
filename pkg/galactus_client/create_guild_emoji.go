@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,7 @@ import (
 )
 
 func (galactus *GalactusClient) CreateGuildEmoji(guildID, emojiName, content string) (*discordgo.Emoji, error) {
-	resp, err := galactus.client.Post(galactus.Address+CreateGuildEmojiPartial+guildID+"/"+emojiName, "application/json", bytes.NewBufferString(content))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.CreateGuildEmojiPartial+guildID+"/"+emojiName, "application/json", bytes.NewBufferString(content))
 	if err != nil {
 		return nil, err
 	}

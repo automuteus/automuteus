@@ -3,6 +3,7 @@ package galactus_client
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
@@ -10,7 +11,7 @@ import (
 )
 
 func (galactus *GalactusClient) SendChannelMessage(channelID string, message string) (*discordgo.Message, error) {
-	resp, err := galactus.client.Post(galactus.Address+SendMessagePartial+channelID, "application/json", bytes.NewBufferString(message))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.SendMessagePartial+channelID, "application/json", bytes.NewBufferString(message))
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func (galactus *GalactusClient) SendChannelMessageEmbed(channelID string, embed 
 		return nil, err
 	}
 
-	resp, err := galactus.client.Post(galactus.Address+SendMessageEmbedPartial+channelID, "application/json", bytes.NewBuffer(message))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.SendMessageEmbedPartial+channelID, "application/json", bytes.NewBuffer(message))
 	if err != nil {
 		return nil, err
 	}

@@ -37,8 +37,6 @@ func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) {
 	mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
-	} else {
-		go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 	}
 }
 
@@ -88,8 +86,6 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 		if mdsc == nil {
 			log.Println("Nil response from modifyUsers, probably not good...")
-		} else {
-			go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 		}
 	}
 }
@@ -213,7 +209,5 @@ func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserMo
 	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req, lock)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
-	} else {
-		go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 	}
 }

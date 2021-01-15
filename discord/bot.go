@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"github.com/automuteus/galactus/pkg/discord_message"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
@@ -65,11 +66,11 @@ func MakeAndStartBot(url, emojiGuildID string,
 		captureTimeout:    GameTimeoutSeconds,
 	}
 
-	bot.GalactusClient.RegisterHandler(galactus_client.MessageCreate, bot.handleMessageCreate)
-	bot.GalactusClient.RegisterHandler(galactus_client.VoiceStateUpdate, bot.handleVoiceStateChange)
-	bot.GalactusClient.RegisterHandler(galactus_client.GuildDelete, bot.leaveGuild)
-	bot.GalactusClient.RegisterHandler(galactus_client.MessageReactionAdd, bot.handleReactionGameStartAdd)
-	bot.GalactusClient.RegisterHandler(galactus_client.GuildCreate, bot.handleNewGuild)
+	bot.GalactusClient.RegisterHandler(discord_message.MessageCreate, bot.handleMessageCreate)
+	bot.GalactusClient.RegisterHandler(discord_message.VoiceStateUpdate, bot.handleVoiceStateChange)
+	bot.GalactusClient.RegisterHandler(discord_message.GuildDelete, bot.leaveGuild)
+	bot.GalactusClient.RegisterHandler(discord_message.MessageReactionAdd, bot.handleReactionGameStartAdd)
+	bot.GalactusClient.RegisterHandler(discord_message.GuildCreate, bot.handleNewGuild)
 
 	bot.GalactusClient.StartPolling()
 

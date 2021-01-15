@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/automuteus/galactus/pkg/endpoint"
 	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,7 @@ import (
 )
 
 func (galactus *GalactusClient) GetGuildMember(guildID, userID string) (*discordgo.Member, error) {
-	resp, err := galactus.client.Post(galactus.Address+GetGuildMemberPartial+guildID+"/"+userID, "application/json", bytes.NewBufferString(""))
+	resp, err := galactus.client.Post(galactus.Address+endpoint.GetGuildMemberPartial+guildID+"/"+userID, "application/json", bytes.NewBufferString(""))
 	if err != nil {
 		return nil, err
 	}

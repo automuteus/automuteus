@@ -3,9 +3,9 @@ package discord
 import (
 	"context"
 	"fmt"
-	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
@@ -321,8 +321,6 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 			mdsc := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if mdsc == nil {
 				log.Println("Nil response from modifyUsers, probably not good...")
-			} else {
-				go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 			}
 		}
 	}
@@ -419,7 +417,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 		// Premium users should always be allowed to start new games; only check the free guilds
 		if premStatus == premium.FreeTier {
-			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+			activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)
 			if err != nil {
