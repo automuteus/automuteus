@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -55,28 +54,12 @@ func discordMainWrapper() error {
 	}
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
+	if emojiGuildID == "" {
+		log.Println("No EMOJI_GUILD_ID specified!!! Emojis will be added to a RANDOM guild, I recommend you specify " +
+			"which guild you'd like me to add emojis to by specifying EMOJI_GUILD_ID")
+	}
 
 	log.Println(version + "-" + commit)
-
-	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
-	if discordToken == "" {
-		return errors.New("no DISCORD_BOT_TOKEN provided")
-	}
-
-	numShardsStr := os.Getenv("NUM_SHARDS")
-	numShards, err := strconv.Atoi(numShardsStr)
-	if err != nil {
-		numShards = 1
-	}
-
-	shardIDStr := os.Getenv("SHARD_ID")
-	shardID, err := strconv.Atoi(shardIDStr)
-	if shardID >= numShards {
-		return errors.New("you specified a shardID higher than or equal to the total number of shards")
-	}
-	if err != nil {
-		shardID = 0
-	}
 
 	url := os.Getenv("HOST")
 	if url == "" {
@@ -152,7 +135,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(version, commit, url, emojiGuildID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")

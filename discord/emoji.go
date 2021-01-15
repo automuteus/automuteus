@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/base64"
+	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -55,7 +56,7 @@ func emptyStatusEmojis() AlivenessEmojis {
 	return topMap
 }
 
-func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
+func (bot *Bot) addAllMissingEmojis(galactus *galactus_client.GalactusClient, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
@@ -68,7 +69,7 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 		}
 		if !alreadyExists {
 			b64 := emoji.DownloadAndBase64Encode()
-			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
+			em, err := galactus.CreateGuildEmoji(guildID, emoji.Name, b64)
 			if err != nil {
 				log.Println(err)
 			} else {

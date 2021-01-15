@@ -363,6 +363,11 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
+	// on a gameover event from the capture, it's like going to the lobby; use that logic
+	if phase == game.GAMEOVER {
+		phase = game.LOBBY
+	}
+
 	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
 	if oldPhase == phase {
 		lock.Release(ctx)
@@ -386,10 +391,6 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
 		bot.applyToAll(dgs, false, false)
-		// on a gameover event from the capture, it's like going to the lobby; use that delay
-	case game.GAMEOVER:
-		phase = game.LOBBY
-		fallthrough
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, NoPriority, dgsRequest)

@@ -96,6 +96,7 @@ type GalactusClient struct {
 	messageReactionAddHandler func(m discordgo.MessageReactionAdd)
 	voiceStateUpdateHandler   func(m discordgo.VoiceStateUpdate)
 	guildDeleteHandler        func(m discordgo.GuildDelete)
+	guildCreateHandler        func(m discordgo.GuildCreate)
 
 	//TODO guild create
 }
@@ -200,6 +201,14 @@ func (galactus *GalactusClient) dispatch(msg DiscordMessage) {
 		} else {
 			galactus.guildDeleteHandler(guildDelete)
 		}
+	case GuildCreate:
+		var guildCreate discordgo.GuildCreate
+		err := json.Unmarshal(msg.Data, &guildCreate)
+		if err != nil {
+			log.Println(err)
+		} else {
+			galactus.guildCreateHandler(guildCreate)
+		}
 	}
 }
 
@@ -226,6 +235,10 @@ func (galactus *GalactusClient) RegisterHandler(msgType DiscordMessageType, f in
 	case VoiceStateUpdate:
 		galactus.voiceStateUpdateHandler = f.(func(m discordgo.VoiceStateUpdate))
 		log.Println("Registered Voice State Update Handler")
+		return true
+	case GuildCreate:
+		galactus.guildCreateHandler = f.(func(m discordgo.GuildCreate))
+		log.Println("Registered Guild Create Handler")
 		return true
 	}
 	return false
