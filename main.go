@@ -25,6 +25,7 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
+const DefaultTaskTimeoutMs = 10000
 
 func main() {
 	// seed the rand generator (used for making connection codes)
@@ -127,6 +128,7 @@ func discordMainWrapper() error {
 		return err
 	}
 
+	// on the official bot, we don't want to accidentally clobber schemas
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
 		go psql.LoadAndExecFromFile("./storage/postgres.sql")
 	}
@@ -135,7 +137,9 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	bot := discord.MakeAndStartBot(version, commit, url, emojiGuildID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	redisClient.SetVersionAndCommit(version, commit)
+
+	bot := discord.MakeAndStartBot(url, emojiGuildID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")

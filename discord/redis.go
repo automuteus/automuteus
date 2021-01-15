@@ -30,6 +30,10 @@ type RedisInterface struct {
 	client *redis.Client
 }
 
+func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
+	rediskey.SetVersionAndCommit(context.Background(), redisInterface.client, version, commit)
+}
+
 func (redisInterface *RedisInterface) InitMock() {
 	mr, err := miniredis.Run()
 	if err != nil {

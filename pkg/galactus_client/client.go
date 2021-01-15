@@ -91,14 +91,12 @@ type DiscordMessage struct {
 type GalactusClient struct {
 	Address                   string
 	client                    *http.Client
-	killChannel               chan bool
+	killChannel               chan struct{}
 	messageCreateHandler      func(m discordgo.MessageCreate)
 	messageReactionAddHandler func(m discordgo.MessageReactionAdd)
 	voiceStateUpdateHandler   func(m discordgo.VoiceStateUpdate)
 	guildDeleteHandler        func(m discordgo.GuildDelete)
 	guildCreateHandler        func(m discordgo.GuildCreate)
-
-	//TODO guild create
 }
 
 func NewGalactusClient(address string) (*GalactusClient, error) {
@@ -121,45 +119,54 @@ func NewGalactusClient(address string) (*GalactusClient, error) {
 	return &gc, nil
 }
 
-func (galactus *GalactusClient) StartPolling(interval time.Duration) error {
+func (galactus *GalactusClient) StartPolling() error {
+
 	if galactus.killChannel != nil {
 		return errors.New("client is already polling")
 	}
-	galactus.killChannel = make(chan bool)
+	galactus.killChannel = make(chan struct{})
+	connected := false
 
-	ticker := time.NewTicker(interval).C
 	go func() {
 		for {
 			select {
 			case <-galactus.killChannel:
 				return
 
-			case <-ticker:
-				code := http.StatusOK
+			default:
+				req, err := http.NewRequest("POST", galactus.Address+RequestJob, bytes.NewBufferString(""))
+				if err != nil {
+					log.Println("Invalid URL provided: " + galactus.Address + RequestJob)
+					break
+				}
+				req.Cancel = galactus.killChannel
 
-				for code == http.StatusOK {
-					response, err := http.Post(galactus.Address+RequestJob, "application/json", bytes.NewBufferString(""))
+				response, err := http.DefaultClient.Do(req)
+				if err != nil {
+					connected = false
+					log.Printf("Could not reach Galactus at %s; is this the right URL, and is Galactus online?", galactus.Address+RequestJob)
+					log.Println("Waiting 1 second before retrying")
+					time.Sleep(time.Second * 1)
+				} else {
+					if !connected {
+						log.Println("Successful connection to Galactus")
+						connected = true
+					}
+					body, err := ioutil.ReadAll(response.Body)
 					if err != nil {
-						log.Println("error when trying to POST for new job")
-						code = http.StatusBadGateway
-					} else {
-						code = response.StatusCode
-						body, err := ioutil.ReadAll(response.Body)
+						log.Println(err)
+					}
+
+					if response.StatusCode == http.StatusOK {
+						var msg DiscordMessage
+						err := json.Unmarshal(body, &msg)
 						if err != nil {
 							log.Println(err)
+						} else {
+							galactus.dispatch(msg)
 						}
-
-						if code == http.StatusOK {
-							var msg DiscordMessage
-							err := json.Unmarshal(body, &msg)
-							if err != nil {
-								log.Println(err)
-							} else {
-								galactus.dispatch(msg)
-							}
-						}
-						response.Body.Close()
 					}
+					response.Body.Close()
 				}
 			}
 		}
@@ -214,7 +221,7 @@ func (galactus *GalactusClient) dispatch(msg DiscordMessage) {
 
 func (galactus *GalactusClient) StopPolling() {
 	if galactus.killChannel != nil {
-		galactus.killChannel <- true
+		galactus.killChannel <- struct{}{}
 	}
 }
 

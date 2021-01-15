@@ -43,9 +43,13 @@ type Bot struct {
 	captureTimeout int
 }
 
-// MakeAndStartBot does what it sounds like
-// TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, url, emojiGuildID string, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *galactus_client.GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(url, emojiGuildID string,
+	redisInterface *RedisInterface,
+	storageInterface *storage.StorageInterface,
+	psql *storage.PsqlInterface,
+	gc *galactus_client.GalactusClient,
+	logPath string) *Bot {
+
 	bot := Bot{
 		url:          url,
 		ConnsToGames: make(map[string]string),
@@ -67,11 +71,9 @@ func MakeAndStartBot(version, commit, url, emojiGuildID string, redisInterface *
 	bot.GalactusClient.RegisterHandler(galactus_client.MessageReactionAdd, bot.handleReactionGameStartAdd)
 	bot.GalactusClient.RegisterHandler(galactus_client.GuildCreate, bot.handleNewGuild)
 
-	bot.GalactusClient.StartPolling(time.Second)
+	bot.GalactusClient.StartPolling()
 
 	bot.ensureEmojisExist(emojiGuildID)
-
-	rediskey.SetVersionAndCommit(context.Background(), bot.RedisInterface.client, version, commit)
 
 	nodeID := os.Getenv("SCW_NODE_ID")
 	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
