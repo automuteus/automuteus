@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	galactus_client "github.com/automuteus/galactus/pkg/client"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/discord/command"
@@ -307,9 +307,9 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 		if dgs.Running {
 			prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
-			req := task.UserModifyRequest{
+			req := discord.UserModifyRequest{
 				Premium: prem,
-				Users: []task.UserModify{
+				Users: []discord.UserModify{
 					{
 						UserID: uid,
 						Mute:   mute,

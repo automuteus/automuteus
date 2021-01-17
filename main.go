@@ -111,9 +111,11 @@ func discordMainWrapper(logger *zap.Logger) error {
 	}
 
 	galactusClient, err := galactus_client.NewGalactusClient(galactusAddr, logger)
-	if err != nil {
-		log.Println("Error connecting to Galactus!")
-		return err
+	for err != nil {
+		logger.Error("error connecting to galactus. Retrying every second until it is reachable",
+			zap.Error(err))
+		time.Sleep(time.Second)
+		galactusClient, err = galactus_client.NewGalactusClient(galactusAddr, logger)
 	}
 
 	settings.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/capture"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/automuteus/utils/pkg/task"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -56,7 +56,7 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 	}
 
 	for _, v := range events {
-		if v.EventType == int16(task.StateJob) {
+		if v.EventType == int16(capture.State) {
 			if v.Payload == DiscussCode {
 				stats.NumMeetings++
 				stats.Events = append(stats.Events, SimpleEvent{
@@ -71,7 +71,7 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 					Data:            "",
 				})
 			}
-		} else if v.EventType == int16(task.PlayerJob) {
+		} else if v.EventType == int16(capture.Player) {
 			player := game.Player{}
 			err := json.Unmarshal([]byte(v.Payload), &player)
 			if err != nil {

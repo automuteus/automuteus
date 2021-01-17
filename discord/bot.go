@@ -139,7 +139,7 @@ func (bot *Bot) statsRefreshWorker(dur time.Duration) {
 }
 
 func (bot *Bot) Close() {
-	bot.GalactusClient.StopPolling()
+	bot.GalactusClient.StopAllPolling()
 	bot.RedisInterface.Close()
 	bot.StorageInterface.Close()
 }

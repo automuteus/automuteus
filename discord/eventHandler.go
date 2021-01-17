@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
+	"github.com/automuteus/utils/pkg/capture"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/pkg/metrics"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
 	"strings"
@@ -25,8 +24,6 @@ type EndGameMessage bool
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
 	log.Println("Started Redis Subscription worker for " + connectCode)
 
-	notify := task.Subscribe(ctx, bot.RedisInterface.client, connectCode)
-
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
 
 	dgsRequest := GameStateRequest{
@@ -34,190 +31,178 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 		ConnectCode: connectCode,
 	}
 
-	// indicate to the broker that we're online and ready to start processing messages
-	task.Ack(ctx, bot.RedisInterface.client, connectCode)
+	f := func(msg capture.Event) {
+		timer.Reset(time.Second * time.Duration(bot.captureTimeout))
 
-	for {
-		select {
-		case message := <-notify.Channel():
-			timer.Reset(time.Second * time.Duration(bot.captureTimeout))
-			if message == nil {
+		log.Printf("Popped job of type %d w/ payload %s\n", msg.EventType, string(msg.Payload))
+		bot.refreshGameLiveness(connectCode)
+		bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
+
+		gameEvent := storage.PostgresGameEvent{
+			GameID:    -1,
+			UserID:    nil,
+			EventTime: int32(time.Now().Unix()),
+			EventType: int16(msg.EventType),
+			Payload:   string(msg.Payload),
+		}
+		correlatedUserID := ""
+
+		switch msg.EventType {
+		case capture.Connection:
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			for lock == nil {
+				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			}
+			if string(msg.Payload) == trueString {
+				dgs.Linked = true
+			} else {
+				dgs.Linked = false
+			}
+			dgs.ConnectCode = connectCode
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
+			bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
+
+			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
+			if edited {
+				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			}
+		case capture.Lobby:
+			var lobby game.Lobby
+			err := json.Unmarshal(msg.Payload, &lobby)
+			if err != nil {
+				log.Println(err)
 				break
 			}
 
-			// anytime we get a notification message, continue pulling messages off the list until there are no more
-			for {
-				job, err := task.PopJob(ctx, bot.RedisInterface.client, connectCode)
-				if errors.Is(err, redis.Nil) {
-					break
-				} else if err != nil {
-					log.Println(err)
-					break
-				}
-				log.Printf("Popped job of type %d w/ payload %s\n", job.JobType, job.Payload.(string))
-				bot.refreshGameLiveness(connectCode)
-				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
+			bot.processLobby(sett, lobby, dgsRequest)
+		case capture.State:
+			num, err := strconv.ParseInt(string(msg.Payload), 10, 64)
+			if err != nil {
+				log.Println(err)
+				break
+			}
 
-				gameEvent := storage.PostgresGameEvent{
-					GameID:    -1,
-					UserID:    nil,
-					EventTime: int32(time.Now().Unix()),
-					EventType: int16(job.JobType),
-					Payload:   job.Payload.(string),
-				}
-				correlatedUserID := ""
+			bot.processTransition(game.Phase(num), dgsRequest)
+		case capture.Player:
+			var player game.Player
+			err := json.Unmarshal(msg.Payload, &player)
+			if err != nil {
+				log.Println(err)
+				break
+			}
 
-				switch job.JobType {
-				case task.ConnectionJob:
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					for lock == nil {
-						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
+			shouldHandleTracked, userID := bot.processPlayer(sett, player, dgsRequest)
+			if shouldHandleTracked {
+				bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
+			}
+			correlatedUserID = userID
+		case capture.GameOver:
+			var gameOverResult game.Gameover
+			// log.Println("Successfully identified game over event:")
+			// log.Println(job.Payload)
+			err := json.Unmarshal(msg.Payload, &gameOverResult)
+			if err != nil {
+				log.Println(err)
+				break
+			}
+
+			sett := bot.StorageInterface.GetGuildSettings(guildID)
+
+			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			for dgs == nil {
+				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			}
+			//once we've locked the gamestate, we know for certain that it's current; then we can release the lock
+			lock.Release(context.Background())
+
+			delTime := sett.GetDeleteGameSummaryMinutes()
+			if delTime != 0 {
+				winners := getWinners(*dgs, gameOverResult)
+				buf := bytes.NewBuffer([]byte{})
+				for i, v := range winners {
+					roleStr := "Crewmate"
+					if v.role == game.ImposterRole {
+						roleStr = "Imposter"
 					}
-					if job.Payload == trueString {
-						dgs.Linked = true
+					buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
+					if i < len(winners)-1 {
+						buf.WriteRune(',')
 					} else {
-						dgs.Linked = false
+						buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
 					}
-					dgs.ConnectCode = connectCode
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
-
-					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
-				case task.LobbyJob:
-					var lobby game.Lobby
-					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					bot.processLobby(sett, lobby, dgsRequest)
-				case task.StateJob:
-					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					bot.processTransition(game.Phase(num), dgsRequest)
-				case task.PlayerJob:
-					var player game.Player
-					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					shouldHandleTracked, userID := bot.processPlayer(sett, player, dgsRequest)
-					if shouldHandleTracked {
-						bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
-					}
-					correlatedUserID = userID
-				case task.GameOverJob:
-					var gameOverResult game.Gameover
-					// log.Println("Successfully identified game over event:")
-					// log.Println(job.Payload)
-					err := json.Unmarshal([]byte(job.Payload.(string)), &gameOverResult)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
-
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					for dgs == nil {
-						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					}
-					//once we've locked the gamestate, we know for certain that it's current; then we can release the lock
-					lock.Release(context.Background())
-
-					delTime := sett.GetDeleteGameSummaryMinutes()
-					if delTime != 0 {
-						winners := getWinners(*dgs, gameOverResult)
-						buf := bytes.NewBuffer([]byte{})
-						for i, v := range winners {
-							roleStr := "Crewmate"
-							if v.role == game.ImposterRole {
-								roleStr = "Imposter"
-							}
-							buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
-							if i < len(winners)-1 {
-								buf.WriteRune(',')
-							} else {
-								buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
-							}
-						}
-						embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
-						channelID := dgs.GameStateMsg.MessageChannelID
-						if sett.GetMatchSummaryChannelID() != "" {
-							channelID = sett.GetMatchSummaryChannelID()
-						}
-						msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
-						if delTime > 0 && err == nil {
-							metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-							go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
-						} else if err == nil {
-							metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
-						}
-					}
-					go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
-
-					// refresh the game message if the setting is marked (it is not locked, the previous dgs is
-					// read-only). This means the original msg is refreshed, not the gameover message
-					if sett.AutoRefresh {
-						bot.RefreshGameStateMessage(dgsRequest, sett)
-					}
-
-					// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
-					lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					for lock == nil {
-						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					}
-					dgs.MatchID = -1
-					dgs.MatchStartUnix = -1
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 				}
-				if job.JobType != task.ConnectionJob {
-					go func(userID string, ge storage.PostgresGameEvent) {
-						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
-						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
-							ge.GameID = dgs.MatchID
-							if userID != "" {
-								num, err := strconv.ParseUint(userID, 10, 64)
-								if err != nil {
-									log.Println(err)
-									ge.UserID = nil
-								} else {
-									ge.UserID = &num
-								}
-								log.Printf("Adding postgres event with user id %d\n", ge.UserID)
-							}
-
-							err := bot.PostgresInterface.AddEvent(&ge)
-							if err != nil {
-								log.Println(err)
-							}
-						}
-					}(correlatedUserID, gameEvent)
+				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+				channelID := dgs.GameStateMsg.MessageChannelID
+				if sett.GetMatchSummaryChannelID() != "" {
+					channelID = sett.GetMatchSummaryChannelID()
+				}
+				msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
+				if delTime > 0 && err == nil {
+					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+					go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
+				} else if err == nil {
+					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 				}
 			}
-			break
+			go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
 
+			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
+			// read-only). This means the original msg is refreshed, not the gameover message
+			if sett.AutoRefresh {
+				bot.RefreshGameStateMessage(dgsRequest, sett)
+			}
+
+			// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
+			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			for lock == nil {
+				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			}
+			dgs.MatchID = -1
+			dgs.MatchStartUnix = -1
+			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		}
+		if msg.EventType != capture.Connection {
+			go func(userID string, ge storage.PostgresGameEvent) {
+				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
+				if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
+					ge.GameID = dgs.MatchID
+					if userID != "" {
+						num, err := strconv.ParseUint(userID, 10, 64)
+						if err != nil {
+							log.Println(err)
+							ge.UserID = nil
+						} else {
+							ge.UserID = &num
+						}
+						log.Printf("Adding postgres event with user id %d\n", ge.UserID)
+					}
+
+					err := bot.PostgresInterface.AddEvent(&ge)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+			}(correlatedUserID, gameEvent)
+		}
+	}
+
+	bot.GalactusClient.RegisterCaptureHandler(connectCode, f)
+
+	err := bot.GalactusClient.StartPolling(galactus_client.CapturePolling, connectCode)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for {
+		select {
 		case <-timer.C:
 			timer.Stop()
 			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
-			err := notify.Close()
-			if err != nil {
-				log.Println(err)
-			}
+			bot.GalactusClient.StopCapturePolling(connectCode)
 			go bot.forceEndGame(dgsRequest)
 			bot.ChannelsMapLock.Lock()
 			delete(bot.EndGameChannels, connectCode)
@@ -226,10 +211,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			return
 		case <-endGameChannel:
 			log.Println("Redis subscriber received kill signal, closing all pubsubs")
-			err := notify.Close()
-			if err != nil {
-				log.Println(err)
-			}
+			bot.GalactusClient.StopCapturePolling(connectCode)
 			bot.forceEndGame(dgsRequest)
 			return
 		}
