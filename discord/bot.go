@@ -2,14 +2,14 @@ package discord
 
 import (
 	"context"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/galactus/pkg/discord_message"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/metrics"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"os"
@@ -42,6 +42,9 @@ type Bot struct {
 	logPath string
 
 	captureTimeout int
+
+	globalPrefix  string
+	defaultPrefix string
 }
 
 func MakeAndStartBot(url, emojiGuildID string,
@@ -66,13 +69,16 @@ func MakeAndStartBot(url, emojiGuildID string,
 		captureTimeout:    GameTimeoutSeconds,
 	}
 
-	bot.GalactusClient.RegisterHandler(discord_message.MessageCreate, bot.handleMessageCreate)
-	bot.GalactusClient.RegisterHandler(discord_message.VoiceStateUpdate, bot.handleVoiceStateChange)
-	bot.GalactusClient.RegisterHandler(discord_message.GuildDelete, bot.leaveGuild)
-	bot.GalactusClient.RegisterHandler(discord_message.MessageReactionAdd, bot.handleReactionGameStartAdd)
-	bot.GalactusClient.RegisterHandler(discord_message.GuildCreate, bot.handleNewGuild)
+	bot.GalactusClient.RegisterDiscordHandler(discord_message.MessageCreate, bot.handleMessageCreate)
+	bot.GalactusClient.RegisterDiscordHandler(discord_message.VoiceStateUpdate, bot.handleVoiceStateChange)
+	bot.GalactusClient.RegisterDiscordHandler(discord_message.GuildDelete, bot.leaveGuild)
+	bot.GalactusClient.RegisterDiscordHandler(discord_message.MessageReactionAdd, bot.handleReactionGameStartAdd)
+	bot.GalactusClient.RegisterDiscordHandler(discord_message.GuildCreate, bot.handleNewGuild)
 
-	bot.GalactusClient.StartPolling()
+	err := bot.GalactusClient.StartPolling(galactus_client.DiscordPolling, "")
+	if err != nil {
+		log.Println(err)
+	}
 
 	bot.ensureEmojisExist(emojiGuildID)
 

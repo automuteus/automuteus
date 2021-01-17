@@ -2,10 +2,10 @@ package discord
 
 import (
 	"context"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"strconv"
 	"time"

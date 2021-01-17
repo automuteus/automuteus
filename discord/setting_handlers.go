@@ -3,10 +3,10 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/setting"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
@@ -173,7 +173,7 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 		}
 		galactus.SendChannelMessage(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
 	case setting.Reset:
-		sett = settings.MakeGuildSettings()
+		sett = bot.StorageInterface.NewGuildSettings()
 		galactus.SendChannelMessage(m.ChannelID, "Resetting guild settings to default values")
 		isValid = true
 	default:

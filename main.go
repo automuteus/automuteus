@@ -2,8 +2,9 @@ package main
 
 import (
 	"errors"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"math/rand"
@@ -25,19 +26,26 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
+const DefaultPrefix = ".au"
 
 func main() {
 	// seed the rand generator (used for making connection codes)
 	rand.Seed(time.Now().Unix())
-	err := discordMainWrapper()
+
+	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Println("Program exited with the following error:")
-		log.Println(err)
+		log.Fatal(err)
+	}
+
+	err = discordMainWrapper(logger)
+	if err != nil {
+		logger.Fatal("program exited with error",
+			zap.Error(err))
 		return
 	}
 }
 
-func discordMainWrapper() error {
+func discordMainWrapper(logger *zap.Logger) error {
 	logPath := os.Getenv("LOG_PATH")
 	if logPath == "" {
 		logPath = "./"
@@ -81,7 +89,11 @@ func discordMainWrapper() error {
 		if err != nil {
 			log.Println(err)
 		}
-		err = storageInterface.Init(storage.RedisParameters{
+		prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
+		if prefix == "" {
+			prefix = DefaultPrefix
+		}
+		err = storageInterface.Init(prefix, storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: redisPassword,
@@ -98,7 +110,7 @@ func discordMainWrapper() error {
 		return errors.New("no GALACTUS_ADDR specified; exiting")
 	}
 
-	galactusClient, err := galactus_client.NewGalactusClient(galactusAddr)
+	galactusClient, err := galactus_client.NewGalactusClient(galactusAddr, logger)
 	if err != nil {
 		log.Println("Error connecting to Galactus!")
 		return err

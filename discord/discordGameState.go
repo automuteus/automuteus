@@ -2,8 +2,8 @@ package discord
 
 import (
 	"fmt"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
 	"log"
 	"strings"
 

@@ -14,7 +14,8 @@ import (
 var ctx = context.Background()
 
 type StorageInterface struct {
-	client *redis.Client
+	client        *redis.Client
+	defaultPrefix string
 }
 
 type RedisParameters struct {
@@ -34,7 +35,7 @@ func (storageInterface *StorageInterface) InitMock() {
 	})
 }
 
-func (storageInterface *StorageInterface) Init(params interface{}) error {
+func (storageInterface *StorageInterface) Init(prefix string, params interface{}) error {
 	redisParams := params.(RedisParameters)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisParams.Addr,
@@ -43,7 +44,12 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 		DB:       0, // use default DB
 	})
 	storageInterface.client = rdb
+	storageInterface.defaultPrefix = prefix
 	return nil
+}
+
+func (storageInterface *StorageInterface) NewGuildSettings() *settings.GuildSettings {
+	return settings.MakeGuildSettings(storageInterface.defaultPrefix)
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
@@ -52,11 +58,11 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *sett
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	switch {
 	case errors.Is(err, redis.Nil):
-		s := settings.MakeGuildSettings()
+		s := settings.MakeGuildSettings(storageInterface.defaultPrefix)
 		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
 			log.Println(err)
-			return settings.MakeGuildSettings()
+			return settings.MakeGuildSettings(storageInterface.defaultPrefix)
 		}
 		err = storageInterface.client.Set(ctx, key, jBytes, 0).Err()
 		if err != nil {
@@ -65,13 +71,13 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *sett
 		return s
 	case err != nil:
 		log.Println(err)
-		return settings.MakeGuildSettings()
+		return settings.MakeGuildSettings(storageInterface.defaultPrefix)
 	default:
 		s := settings.GuildSettings{}
 		err := json.Unmarshal([]byte(j), &s)
 		if err != nil {
 			log.Println(err)
-			return settings.MakeGuildSettings()
+			return settings.MakeGuildSettings(storageInterface.defaultPrefix)
 		}
 		return &s
 	}

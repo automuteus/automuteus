@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"log"
 	"sync"
 	"time"

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/metrics"
+	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
 	"regexp"
 	"strconv"

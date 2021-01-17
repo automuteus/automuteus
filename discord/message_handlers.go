@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
@@ -11,8 +12,7 @@ import (
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/discord/command"
-	"github.com/denverquane/amongusdiscord/metrics"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
 	"os"
 	"strconv"
@@ -43,10 +43,9 @@ func (bot *Bot) handleMessageCreate(m discordgo.MessageCreate) {
 	//	return
 	//}
 
-	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
-	if globalPrefix != "" && strings.HasPrefix(contents, globalPrefix) {
+	if bot.globalPrefix != "" && strings.HasPrefix(contents, bot.globalPrefix) {
 		// if the global matches, then use that for future processing/control flow using the prefix
-		prefix = globalPrefix
+		prefix = bot.globalPrefix
 	}
 
 	if strings.HasPrefix(contents, prefix) {

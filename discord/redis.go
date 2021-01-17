@@ -9,7 +9,7 @@ import (
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/metrics"
+	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"

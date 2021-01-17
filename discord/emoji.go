@@ -2,7 +2,7 @@ package discord
 
 import (
 	"encoding/base64"
-	"github.com/denverquane/amongusdiscord/pkg/galactus_client"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"io/ioutil"
 	"log"
 	"net/http"
