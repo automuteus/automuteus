@@ -46,7 +46,7 @@ create table if not exists users_games
 
 create table if not exists game_to_map
 (
-    game_id bigserial,
+    game_id bigint REFERENCES games ON DELETE CASCADE,
     map_id  int
 );
 
