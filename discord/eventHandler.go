@@ -526,14 +526,14 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 				PlayerRole:  int16(role),
 				PlayerWon:   won,
 			})
-
-			gameToMap.GameID = dgs.MatchID
-			gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap())
-
-			log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
 		}
 	}
 	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
+
+	gameToMap.GameID = dgs.MatchID
+	gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap())
+
+	log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
 
 	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
 	if err != nil {
