@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/discord/command"
@@ -384,7 +385,21 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 								}
 							}
 						} else {
-							_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+							var err error
+							if len(args) == 3 && args[2] != "reset" || len(args) == 4 {
+								var nameString = strings.ReplaceAll(args[2], "\"", "")
+								if len(args) == 4 {
+									nameString = nameString + " " + strings.ReplaceAll(args[3], "\"", "")
+								}
+								mapItem, err := NewMapItem(nameString)
+								if err != nil {
+									s.ChannelMessageSend(m.ChannelID, err.Error())
+								} else {
+									s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, mapItem.Name, sett, premStatus))
+								}
+							} else {
+								_, err = s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, "NoMap", sett, premStatus))
+							}
 							if err != nil {
 								log.Println(err)
 							}
@@ -439,7 +454,20 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					} else {
-						s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+						if len(args) == 3 && args[2] != "reset" || len(args) == 4 {
+							var nameString = strings.ReplaceAll(args[2], "\"", "")
+							if len(args) == 4 {
+								nameString = nameString + " " + strings.ReplaceAll(args[3], "\"", "")
+							}
+							mapItem, err := NewMapItem(nameString)
+							if err != nil {
+								s.ChannelMessageSend(m.ChannelID, err.Error())
+							} else {
+								s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, mapItem.Name, sett, premStatus))
+							}
+						} else {
+							s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, "NoMap", sett, premStatus))
+						}
 					}
 				}
 			}

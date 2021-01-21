@@ -2,30 +2,44 @@ package storage
 
 import (
 	"context"
-	"github.com/automuteus/utils/pkg/game"
-	"github.com/georgysavva/scany/pgxscan"
 	"log"
 	"strconv"
+
+	"github.com/automuteus/utils/pkg/game"
+	"github.com/georgysavva/scany/pgxscan"
 )
 
-func (psqlInterface *PsqlInterface) NumGamesPlayedOnGuild(guildID string) int64 {
+func (psqlInterface *PsqlInterface) NumGamesPlayedOnGuild(guildID string, mapID int32) int64 {
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1;", gid)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1;", gid)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games g JOIN game_to_map gtm ON gtm.game_id=g.game_id WHERE guild_id=$1 AND gtm.map_id=$2 AND end_time != -1;", gid, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumGamesWonAsRoleOnServer(guildID string, role game.GameRole) int64 {
+func (psqlInterface *PsqlInterface) NumGamesWonAsRoleOnServer(guildID string, mapID int32, role game.GameRole) int64 {
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
 	var r int64
 	var err error
 	if role == game.CrewmateRole {
-		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=0 OR win_type=1 OR win_type=6)", gid)
+		if mapID == -1 {
+			err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=0 OR win_type=1 OR win_type=6)", gid)
+		} else {
+			err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games g JOIN game_to_map gtm ON gtm.game_id=g.game_id WHERE guild_id=$1 AND gtm.map_id=$2 AND (win_type=0 OR win_type=1 OR win_type=6)", gid, mapID)
+		}
 	} else {
-		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid)
+		if mapID == -1 {
+			err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid)
+		} else {
+			err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games g JOIN game_to_map gtm ON gtm.game_id=g.game_id WHERE guild_id=$1 AND gtm.map_id=$2 AND (win_type=2 OR win_type=3 OR win_type=4 OR win_type=5)", gid, mapID)
+		}
 	}
 	if err != nil {
 		log.Println(err)
@@ -34,9 +48,14 @@ func (psqlInterface *PsqlInterface) NumGamesWonAsRoleOnServer(guildID string, ro
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumGamesPlayedByUser(userID string) int64 {
+func (psqlInterface *PsqlInterface) NumGamesPlayedByUser(userID string, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1;", userID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1;", userID)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND gtm.map_id=$2;", userID, mapID)
+	}
 	if err != nil {
 		return -1
 	}
@@ -52,64 +71,99 @@ func (psqlInterface *PsqlInterface) NumGuildsPlayedInByUser(userID string) int64
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumGamesPlayedByUserOnServer(userID, guildID string) int64 {
+func (psqlInterface *PsqlInterface) NumGamesPlayedByUserOnServer(userID, guildID string, mapID int32) int64 {
 	var r int64
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2", userID, gid)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2", userID, gid)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND guild_id=$2 AND gtm.map_id=$3", userID, gid, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumWinsAsRoleOnServer(userID, guildID string, role int16) int64 {
+func (psqlInterface *PsqlInterface) NumWinsAsRoleOnServer(userID, guildID string, role int16, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true;", userID, guildID, role)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true;", userID, guildID, role)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND player_won=true AND gtm.map_id=$4;", userID, guildID, role, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumWinsAsRole(userID string, role int16) int64 {
+func (psqlInterface *PsqlInterface) NumWinsAsRole(userID string, role int16, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2 AND player_won=true;", userID, role)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2 AND player_won=true;", userID, role)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND player_role=$2 AND player_won=true AND gtm.map_id=$3;", userID, role, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumGamesAsRoleOnServer(userID, guildID string, role int16) int64 {
+func (psqlInterface *PsqlInterface) NumGamesAsRoleOnServer(userID, guildID string, role int16, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3;", userID, guildID, role)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_role=$3;", userID, guildID, role)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND guild_id=$2 AND player_role=$3 AND gtm.map_id=$4;", userID, guildID, role, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumGamesAsRole(userID string, role int16) int64 {
+func (psqlInterface *PsqlInterface) NumGamesAsRole(userID string, role int16, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2;", userID, role)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_role=$2;", userID, role)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND player_role=$2 AND gtm.map_id=$3;", userID, role, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumWinsOnServer(userID, guildID string) int64 {
+func (psqlInterface *PsqlInterface) NumWinsOnServer(userID, guildID string, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_won=true;", userID, guildID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND guild_id=$2 AND player_won=true;", userID, guildID)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND guild_id=$2 AND player_won=true AND gtm.map_id=$3;", userID, guildID, mapID)
+	}
 	if err != nil {
 		return -1
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) NumWins(userID string) int64 {
+func (psqlInterface *PsqlInterface) NumWins(userID string, mapID int32) int64 {
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_won=true;", userID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games WHERE user_id=$1 AND player_won=true;", userID)
+	} else {
+		err = pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE user_id=$1 AND gtm.map_id=$2;", userID, mapID)
+	}
 	if err != nil {
 		return -1
 	}
@@ -139,9 +193,14 @@ type StringModeCount struct {
 //	}
 //	return r
 //}
-func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildID string) []*Int16ModeCount {
+func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildID string, mapID int32) []*Int16ModeCount {
 	r := []*Int16ModeCount{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_color ORDER BY count desc;", userID, guildID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_color ORDER BY count desc;", userID, guildID)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id  WHERE user_id=$1 AND guild_id=$2 AND gtm.map_id=$3 GROUP BY player_name ORDER BY count desc;", userID, guildID, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -159,19 +218,28 @@ func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildI
 //	return r
 //}
 
-func (psqlInterface *PsqlInterface) NamesRankingForPlayerOnServer(userID, guildID string) []*StringModeCount {
+func (psqlInterface *PsqlInterface) NamesRankingForPlayerOnServer(userID, guildID string, mapID int32) []*StringModeCount {
 	r := []*StringModeCount{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_name) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_name ORDER BY count desc;", userID, guildID)
-
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_name) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_color ORDER BY count desc;", userID, guildID)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_name) AS mode FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id  WHERE user_id=$1 AND guild_id=$2 AND gtm.map_id=$3 GROUP BY player_name ORDER BY count desc;", userID, guildID, mapID)
+	}
 	if err != nil {
 		log.Println(err)
 	}
 	return r
 }
 
-func (psqlInterface *PsqlInterface) TotalGamesRankingForServer(guildID uint64) []*Uint64ModeCount {
+func (psqlInterface *PsqlInterface) TotalGamesRankingForServer(guildID uint64, mapID int32) []*Uint64ModeCount {
 	r := []*Uint64ModeCount{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY user_id) AS mode FROM users_games WHERE guild_id=$1 GROUP BY user_id ORDER BY count desc;", guildID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY user_id) AS mode FROM users_games WHERE guild_id=$1 GROUP BY user_id ORDER BY count desc;", guildID)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY user_id) AS mode FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id WHERE guild_id=$1 AND gtm.map_id=$2 GROUP BY user_id ORDER BY count desc;", guildID, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -179,14 +247,24 @@ func (psqlInterface *PsqlInterface) TotalGamesRankingForServer(guildID uint64) [
 	return r
 }
 
-func (psqlInterface *PsqlInterface) OtherPlayersRankingForPlayerOnServer(userID, guildID string) []*PostgresOtherPlayerRanking {
+func (psqlInterface *PsqlInterface) OtherPlayersRankingForPlayerOnServer(userID, guildID string, mapID int32) []*PostgresOtherPlayerRanking {
 	r := []*PostgresOtherPlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT distinct B.user_id,"+
-		"count(*) over (partition by B.user_id),"+
-		"(count(*) over (partition by B.user_id)::decimal / (SELECT count(*) from users_games where user_id=$1 AND guild_id=$2))*100 as percent "+
-		"FROM users_games A INNER JOIN users_games B ON A.game_id = B.game_id AND A.user_id != B.user_id "+
-		"WHERE A.user_id=$1 AND A.guild_id=$2 "+
-		"ORDER BY percent desc", userID, guildID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT distinct B.user_id,"+
+			"count(*) over (partition by B.user_id),"+
+			"(count(*) over (partition by B.user_id)::decimal / (SELECT count(*) from users_games where user_id=$1 AND guild_id=$2))*100 as percent "+
+			"FROM users_games A INNER JOIN users_games B ON A.game_id = B.game_id AND A.user_id != B.user_id "+
+			"WHERE A.user_id=$1 AND A.guild_id=$2 "+
+			"ORDER BY percent desc", userID, guildID)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT distinct B.user_id,"+
+			"count(*) over (partition by B.user_id),"+
+			"(count(*) over (partition by B.user_id)::decimal / (SELECT count(*) from users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id where user_id=$1 AND guild_id=$2 AND gtm.map_id=$3))*100 as percent "+
+			"FROM users_games A INNER JOIN users_games B ON A.game_id = B.game_id AND A.user_id != B.user_id JOIN game_to_map gtm ON gtm.game_id=A.game_id "+
+			"WHERE gtm.map_id=$3 AND A.user_id=$1 AND A.guild_id=$2 "+
+			"ORDER BY percent desc", userID, guildID, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -194,18 +272,32 @@ func (psqlInterface *PsqlInterface) OtherPlayersRankingForPlayerOnServer(userID,
 	return r
 }
 
-func (psqlInterface *PsqlInterface) TotalWinRankingForServerByRole(guildID uint64, role int16) []*PostgresPlayerRanking {
+func (psqlInterface *PsqlInterface) TotalWinRankingForServerByRole(guildID uint64, role int16, mapID int32) []*PostgresPlayerRanking {
 	r := []*PostgresPlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
-		"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
-		// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
-		"COUNT(*) AS total, "+
-		"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
-		// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
-		"FROM users_games "+
-		"WHERE guild_id = $1 AND player_role = $2 "+
-		"GROUP BY user_id "+
-		"ORDER BY win_rate DESC", guildID, role)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
+			"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
+			// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
+			"COUNT(*) AS total, "+
+			"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
+			"FROM users_games "+
+			"WHERE guild_id = $1 AND player_role = $2 "+
+			"GROUP BY user_id "+
+			"ORDER BY win_rate DESC", guildID, role)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
+			"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
+			// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
+			"COUNT(*) AS total, "+
+			"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
+			"FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id "+
+			"WHERE guild_id = $1 AND player_role = $2 AND gtm.map_id=$3"+
+			"GROUP BY user_id "+
+			"ORDER BY win_rate DESC", guildID, role, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -213,18 +305,42 @@ func (psqlInterface *PsqlInterface) TotalWinRankingForServerByRole(guildID uint6
 	return r
 }
 
-func (psqlInterface *PsqlInterface) TotalWinRankingForServer(guildID uint64) []*PostgresPlayerRanking {
+func (psqlInterface *PsqlInterface) TotalGamesOnEachMap(guildID uint64) []*PostgresMapInfo {
+	r := []*PostgresMapInfo{}
+
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "select map_id, COUNT(*) as count from game_to_map group by map_id")
+	if err != nil {
+		log.Println(err)
+	}
+	return r
+}
+
+func (psqlInterface *PsqlInterface) TotalWinRankingForServer(guildID uint64, mapID int32) []*PostgresPlayerRanking {
 	r := []*PostgresPlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
-		"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
-		// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
-		"COUNT(*) AS total, "+
-		"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
-		// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
-		"FROM users_games "+
-		"WHERE guild_id = $1 "+
-		"GROUP BY user_id "+
-		"ORDER BY win_rate DESC", guildID)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
+			"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
+			// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
+			"COUNT(*) AS total, "+
+			"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
+			"FROM users_games "+
+			"WHERE guild_id = $1 "+
+			"GROUP BY user_id "+
+			"ORDER BY win_rate DESC", guildID)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT user_id,"+
+			"COUNT(user_id) FILTER ( WHERE player_won = TRUE ) AS win, "+
+			// "COUNT(user_id) FILTER ( WHERE player_won = FALSE ) AS loss," +
+			"COUNT(*) AS total, "+
+			"(COUNT(user_id) FILTER ( WHERE player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			// "(COUNT(user_id) FILTER ( WHERE player_won = FALSE )::decimal / COUNT(*)) * 100 AS loss_rate" +
+			"FROM users_games ug JOIN game_to_map gtm ON gtm.game_id=ug.game_id "+
+			"WHERE guild_id = $1 AND gtm.map_id=$2"+
+			"GROUP BY user_id "+
+			"ORDER BY win_rate DESC", guildID, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -242,19 +358,35 @@ func (psqlInterface *PsqlInterface) DeleteAllGamesForUser(userID string) error {
 	return err
 }
 
-func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, role int16, leaderboardMin int) []*PostgresBestTeammatePlayerRanking {
+func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, role int16, leaderboardMin int, mapID int32) []*PostgresBestTeammatePlayerRanking {
 	r := []*PostgresBestTeammatePlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
-		"uG.user_id as teammate_id,"+
-		"COUNT(users_games.player_won) as total, "+
-		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
-		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
-		"FROM users_games "+
-		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
-		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) >= $4 "+
-		"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, userID, leaderboardMin)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+			"uG.user_id as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $4 "+
+			"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, userID, leaderboardMin)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+			"uG.user_id as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"JOIN game_to_map gtm ON gtm.game_id=uG.game_id AND users_games.game_id=gtm.game_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 AND gtm.map_id=$5 "+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $4 "+
+			"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, userID, leaderboardMin, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -262,19 +394,35 @@ func (psqlInterface *PsqlInterface) BestTeammateByRole(userID, guildID string, r
 	return r
 }
 
-func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, role int16, leaderboardMin int) []*PostgresWorstTeammatePlayerRanking {
+func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, role int16, leaderboardMin int, mapID int32) []*PostgresWorstTeammatePlayerRanking {
 	r := []*PostgresWorstTeammatePlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
-		"uG.user_id as teammate_id,"+
-		"COUNT(users_games.player_won) as total, "+
-		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
-		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
-		"FROM users_games "+
-		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
-		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) >= $4 "+
-		"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, userID, leaderboardMin)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+			"uG.user_id as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 "+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $4 "+
+			"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, userID, leaderboardMin)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT users_games.user_id, "+
+			"uG.user_id as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"JOIN game_to_map gtm ON gtm.game_id=uG.game_id AND users_games.game_id=gtm.game_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND users_games.user_id = $3 AND gtm.map_id=$5 "+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $4 "+
+			"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, userID, leaderboardMin, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -282,20 +430,37 @@ func (psqlInterface *PsqlInterface) WorstTeammateByRole(userID, guildID string, 
 	return r
 }
 
-func (psqlInterface *PsqlInterface) BestTeammateForServerByRole(guildID string, role int16, leaderboardMin int) []*PostgresBestTeammatePlayerRanking {
+func (psqlInterface *PsqlInterface) BestTeammateForServerByRole(guildID string, role int16, leaderboardMin int, mapID int32) []*PostgresBestTeammatePlayerRanking {
 	r := []*PostgresBestTeammatePlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
-		"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
-		"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id, "+
-		"COUNT(users_games.player_won) as total, "+
-		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
-		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
-		"FROM users_games "+
-		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 and uG.player_role = $2"+
-		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) >= $3 "+
-		"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, leaderboardMin)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id, "+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2"+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $3 "+
+			"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, leaderboardMin)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id, "+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = TRUE ) as win, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = TRUE )::decimal / COUNT(*)) * 100 AS win_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"JOIN game_to_map gtm ON gtm.game_id=uG.game_id AND users_games.game_id=gtm.game_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 and uG.player_role = $2 AND gtm.map_id = $4"+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $3 "+
+			"ORDER BY win_rate DESC, win DESC, total DESC", guildID, role, leaderboardMin, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -303,20 +468,37 @@ func (psqlInterface *PsqlInterface) BestTeammateForServerByRole(guildID string, 
 	return r
 }
 
-func (psqlInterface *PsqlInterface) WorstTeammateForServerByRole(guildID string, role int16, leaderboardMin int) []*PostgresWorstTeammatePlayerRanking {
+func (psqlInterface *PsqlInterface) WorstTeammateForServerByRole(guildID string, role int16, leaderboardMin int, mapID int32) []*PostgresWorstTeammatePlayerRanking {
 	r := []*PostgresWorstTeammatePlayerRanking{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
-		"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
-		"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id,"+
-		"COUNT(users_games.player_won) as total, "+
-		"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
-		"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
-		"FROM users_games "+
-		"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
-		"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2"+
-		"GROUP BY users_games.user_id, uG.user_id "+
-		"HAVING COUNT(users_games.player_won) >= $3 "+
-		"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, leaderboardMin)
+	var err error
+	if mapID == -1 {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2"+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $3 "+
+			"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, leaderboardMin)
+	} else {
+		err = pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT DISTINCT "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN users_games.user_id ELSE uG.user_id END, "+
+			"CASE WHEN users_games.user_id > uG.user_id THEN uG.user_id ELSE users_games.user_id END as teammate_id,"+
+			"COUNT(users_games.player_won) as total, "+
+			"COUNT(users_games.player_won) FILTER ( WHERE users_games.player_won = FALSE ) as loose, "+
+			"(COUNT(users_games.user_id) FILTER ( WHERE users_games.player_won = FALSE )::decimal / COUNT(*)) * 100 AS loose_rate "+
+			"FROM users_games "+
+			"INNER JOIN users_games uG ON users_games.game_id = uG.game_id AND users_games.user_id <> uG.user_id "+
+			"JOIN game_to_map gtm ON gtm.game_id=uG.game_id AND users_games.game_id=gtm.game_id "+
+			"WHERE users_games.guild_id = $1 AND users_games.player_role = $2 AND uG.player_role = $2 AND gtm.map_id = $4"+
+			"GROUP BY users_games.user_id, uG.user_id "+
+			"HAVING COUNT(users_games.player_won) >= $3 "+
+			"ORDER BY loose_rate DESC, loose DESC, total DESC", guildID, role, leaderboardMin, mapID)
+	}
 
 	if err != nil {
 		log.Println(err)

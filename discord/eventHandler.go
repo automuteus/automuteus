@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
-	"log"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/denverquane/amongusdiscord/storage"
 )
@@ -470,6 +471,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 	end := time.Now().Unix()
 
 	userGames := make([]*storage.PostgresUserGame, 0)
+	var gameToMap storage.PostgresGameToMap
 
 	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
 		gameOver.GameOverReason == game.ImpostorBySabotage ||
@@ -528,7 +530,17 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 	}
 	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
 
+	gameToMap.GameID = dgs.MatchID
+	gameToMap.MapID = int32(dgs.AmongUsData.GetPlayMap())
+
+	log.Printf("Game %d linked to map %d", dgs.MatchID, int32(dgs.AmongUsData.GetPlayMap()))
+
 	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = psql.UpdateGameToMap(gameToMap)
 	if err != nil {
 		log.Println(err)
 	}

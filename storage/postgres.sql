@@ -44,6 +44,12 @@ create table if not exists users_games
     PRIMARY KEY (user_id, game_id)
 );
 
+create table if not exists game_to_map
+(
+    game_id bigint REFERENCES games ON DELETE CASCADE,
+    map_id  int
+);
+
 create index if not exists guilds_id_index ON guilds (guild_id); --query guilds by ID
 create index if not exists guilds_premium_index ON guilds (premium); --query guilds by prem status
 

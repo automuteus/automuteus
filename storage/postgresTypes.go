@@ -31,6 +31,15 @@ type PostgresUserGame struct {
 	PlayerWon   bool   `db:"player_won"`
 }
 
+type PostgresGameToMap struct {
+	GameID int64 `db:"game_id"`
+	MapID  int32 `db:"map_id"`
+}
+
+type PostgresMapInfo struct {
+	MapType int32 `db:"map_id"`
+	Count   int32 `db:"count"`
+}
 type PostgresGameEvent struct {
 	EventID   uint64  `db:"event_id"`
 	UserID    *uint64 `db:"user_id"`
