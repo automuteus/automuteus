@@ -20,8 +20,8 @@ type PsqlInterface struct {
 	//https://brandur.org/postgres-connections
 }
 
-func ConstructPsqlConnectURL(addr, username, password string) string {
-	return fmt.Sprintf("postgres://%s?user=%s&password=%s", addr, username, password)
+func ConstructPsqlConnectURL(addr, username, password string, dbname string, sslmode string) string {
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s", username, password, addr, dbname, sslmode)
 }
 
 type PsqlParameters struct {

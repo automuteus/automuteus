@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
 	"io"
 	"log"
 	"math/rand"
@@ -19,6 +20,9 @@ import (
 
 	"github.com/denverquane/amongusdiscord/discord"
 	"github.com/joho/godotenv"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 var (
@@ -171,13 +175,27 @@ func discordMainWrapper() error {
 		return errors.New("no POSTGRES_PASS specified; exiting")
 	}
 
-	err = psql.Init(storage.ConstructPsqlConnectURL(pAddr, pUser, pPass))
+	pDbname := os.Getenv("POSTGRES_DB")
+	if pDbname == "" {
+		// if the user didn't choose any db name we set the default one
+		pDbname = "postgres"
+	}
+
+	err = psql.Init(storage.ConstructPsqlConnectURL(pAddr, pUser, pPass, pDbname, "disable"))
 	if err != nil {
 		return err
 	}
 
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		go psql.LoadAndExecFromFile("./storage/postgres.sql")
+		m, err := migrate.New(
+			"file://database/migrations",
+			storage.ConstructPsqlConnectURL(pAddr, pUser, pPass, pDbname, "disable"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := m.Up(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")

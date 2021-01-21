@@ -38,7 +38,7 @@ WORKDIR /app
 # Import the compiled executable and locales.
 COPY --from=builder /app /app
 COPY ./locales/ /app/locales
-COPY ./storage/postgres.sql /app/storage/postgres.sql
+COPY ./database /app/database
 
 # Port used for health/liveliness checks
 EXPOSE 8080
