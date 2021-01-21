@@ -44,6 +44,10 @@ github.com/automuteus/galactus v1.2.3-0.20210117085755-35f4242f3571 h1:1TlZkQNBw
 github.com/automuteus/galactus v1.2.3-0.20210117085755-35f4242f3571/go.mod h1:TRy9V8ypdB9X0fRgg3gLsKvl+c3uFUFvCLHlai4Wg0o=
 github.com/automuteus/galactus v1.2.3-0.20210117090820-5d779fcd864b h1:VN4LrPUJlmqeumb8sj8bVWzRaweFaNRe2bUYs4nKxH0=
 github.com/automuteus/galactus v1.2.3-0.20210117090820-5d779fcd864b/go.mod h1:/G39uZ+WHVNu9fGHaqbu6CdrRZaISeDs3eQR0LlKQaE=
+github.com/automuteus/galactus v1.2.3-0.20210121034853-06a3949464d0 h1:Xhv/FsbabtlN4QvwKPBPbhDxH8r3IrMAVASAyqlRQiQ=
+github.com/automuteus/galactus v1.2.3-0.20210121034853-06a3949464d0/go.mod h1:/G39uZ+WHVNu9fGHaqbu6CdrRZaISeDs3eQR0LlKQaE=
+github.com/automuteus/galactus v1.2.3-0.20210121042445-f769534c7494 h1:ecVgFMKd8FxQvUUIMeTb4TA4nlRdfNuSJAgFhy3bG58=
+github.com/automuteus/galactus v1.2.3-0.20210121042445-f769534c7494/go.mod h1:/G39uZ+WHVNu9fGHaqbu6CdrRZaISeDs3eQR0LlKQaE=
 github.com/automuteus/utils v0.0.6 h1:u14BvwfFzHN8A0aJ4qbeG7vkkyK2brnBYSOjMakWars=
 github.com/automuteus/utils v0.0.6/go.mod h1:3/DMXEOYYnBADTtb0rbBsDBD+d+QDdIpBRbvhy8cPoI=
 github.com/automuteus/utils v0.0.7 h1:WnGqvaqSxyysR6ixMltaF5RSIeoeL9ev9zRqqgVF3qk=

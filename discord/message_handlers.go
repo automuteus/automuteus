@@ -31,111 +31,81 @@ func (bot *Bot) handleMessageCreate(m discordgo.MessageCreate) {
 	contents := m.Content
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	prefix := sett.GetCommandPrefix()
-
-	//if strings.Contains(m.Content, "<@!"+s.State.User.ID+">") {
-	//	s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-	//		ID:    "message_handlers.handleMessageCreate.respondPrefix",
-	//		Other: "I respond to the prefix {{.CommandPrefix}}",
-	//	},
-	//		map[string]interface{}{
-	//			"CommandPrefix": prefix,
-	//		}))
+	//if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
+	//	banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
+	//	if banned {
+	//		_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	//			ID:    "message_handlers.softban",
+	//			Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
+	//		},
+	//			map[string]interface{}{
+	//				"User": mentionByUserID(m.Author.ID),
+	//			}))
+	//		if err != nil {
+	//			log.Println(err)
+	//		}
+	//
+	//	} else {
+	//		msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	//			ID:    "message_handlers.generalRatelimit",
+	//			Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
+	//		},
+	//			map[string]interface{}{
+	//				"User": mentionByUserID(m.Author.ID),
+	//			}))
+	//		if err == nil {
+	//			go func() {
+	//				time.Sleep(time.Second * 3)
+	//				bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
+	//			}()
+	//		} else {
+	//			log.Println(err)
+	//		}
+	//	}
+	//
 	//	return
 	//}
+	//redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
 
-	if bot.globalPrefix != "" && strings.HasPrefix(contents, bot.globalPrefix) {
-		// if the global matches, then use that for future processing/control flow using the prefix
-		prefix = bot.globalPrefix
+	g, err := bot.GalactusClient.GetGuild(m.GuildID)
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	if strings.HasPrefix(contents, prefix) {
-		//if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-		//	banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-		//	if banned {
-		//		_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		//			ID:    "message_handlers.softban",
-		//			Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
-		//		},
-		//			map[string]interface{}{
-		//				"User": mentionByUserID(m.Author.ID),
-		//			}))
-		//		if err != nil {
-		//			log.Println(err)
-		//		}
-		//
-		//	} else {
-		//		msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		//			ID:    "message_handlers.generalRatelimit",
-		//			Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
-		//		},
-		//			map[string]interface{}{
-		//				"User": mentionByUserID(m.Author.ID),
-		//			}))
-		//		if err == nil {
-		//			go func() {
-		//				time.Sleep(time.Second * 3)
-		//				bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
-		//			}()
-		//		} else {
-		//			log.Println(err)
-		//		}
-		//	}
-		//
-		//	return
-		//}
-		//redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
+	isAdmin, isPermissioned := false, false
 
-		g, err := bot.GalactusClient.GetGuild(m.GuildID)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		oldLen := len(contents)
-		contents = strings.Replace(contents, prefix+" ", "", 1)
-		if len(contents) == oldLen { // didn't have a space
-			contents = strings.Replace(contents, prefix, "", 1)
-		}
-
-		isAdmin, isPermissioned := false, false
-
-		if g.OwnerID == m.Author.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
-			// the guild owner should always have both permissions
-			// or if both permissions are still empty everyone get both
-			isAdmin = true
-			isPermissioned = true
+	if g.OwnerID == m.Author.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
+		// the guild owner should always have both permissions
+		// or if both permissions are still empty everyone get both
+		isAdmin = true
+		isPermissioned = true
+	} else {
+		// if we have no admins, then we MUST have mods as per the check above.
+		if len(sett.AdminUserIDs) == 0 {
+			// we have no admins, but we have mods, so make sure users fulfill that check
+			isAdmin = sett.HasRolePerms(m.Member)
 		} else {
-			// if we have no admins, then we MUST have mods as per the check above.
-			if len(sett.AdminUserIDs) == 0 {
-				// we have no admins, but we have mods, so make sure users fulfill that check
-				isAdmin = sett.HasRolePerms(m.Member)
-			} else {
-				// we have admins; make sure user is one
-				isAdmin = sett.HasAdminPerms(m.Author)
-			}
-			// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
-			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
+			// we have admins; make sure user is one
+			isAdmin = sett.HasAdminPerms(m.Author)
+		}
+		// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
+		isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
+	}
+
+	if len(contents) == 0 {
+		embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
+		bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, &embed)
+		// delete the user's message
+		bot.GalactusClient.DeleteChannelMessage(m.ChannelID, m.ID)
+	} else {
+		args := strings.Split(contents, " ")
+
+		for i, v := range args {
+			args[i] = strings.ToLower(v)
 		}
 
-		if len(contents) == 0 {
-			if len(prefix) <= 1 {
-				// prevent bot from spamming help message whenever the single character
-				// prefix is sent by mistake
-				return
-			}
-			embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
-			bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, &embed)
-			// delete the user's message
-			bot.GalactusClient.DeleteChannelMessage(m.ChannelID, m.ID)
-		} else {
-			args := strings.Split(contents, " ")
-
-			for i, v := range args {
-				args[i] = strings.ToLower(v)
-			}
-
-			bot.HandleCommand(isAdmin, isPermissioned, sett, g, m, args)
-		}
+		bot.HandleCommand(isAdmin, isPermissioned, sett, g, m, args)
 	}
 }
 
