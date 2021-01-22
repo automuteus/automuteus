@@ -203,7 +203,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			timer.Stop()
 			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
 			bot.GalactusClient.StopCapturePolling(connectCode)
-			go bot.forceEndGame(dgsRequest)
+			bot.forceEndGame(dgsRequest)
 			bot.ChannelsMapLock.Lock()
 			delete(bot.EndGameChannels, connectCode)
 			bot.ChannelsMapLock.Unlock()
