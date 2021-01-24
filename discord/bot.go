@@ -75,7 +75,7 @@ func MakeAndStartBot(url, emojiGuildID string,
 	bot.GalactusClient.RegisterDiscordHandler(discord_message.MessageReactionAdd, bot.handleReactionGameStartAdd)
 	bot.GalactusClient.RegisterDiscordHandler(discord_message.GuildCreate, bot.handleNewGuild)
 
-	err := bot.GalactusClient.StartPolling(galactus_client.DiscordPolling, "")
+	err := bot.GalactusClient.StartDiscordPolling()
 	if err != nil {
 		log.Println(err)
 	}

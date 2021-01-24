@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/capture"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
@@ -192,7 +191,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 	bot.GalactusClient.RegisterCaptureHandler(connectCode, f)
 
-	err := bot.GalactusClient.StartPolling(galactus_client.CapturePolling, connectCode)
+	err := bot.GalactusClient.StartCapturePolling(connectCode)
 	if err != nil {
 		log.Println(err)
 	}
