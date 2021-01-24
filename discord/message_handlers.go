@@ -10,7 +10,6 @@ import (
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bsm/redislock"
-	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
@@ -31,41 +30,6 @@ func (bot *Bot) handleMessageCreate(m discordgo.MessageCreate) {
 	contents := m.Content
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	prefix := sett.GetCommandPrefix()
-	//if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-	//	banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-	//	if banned {
-	//		_, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-	//			ID:    "message_handlers.softban",
-	//			Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
-	//		},
-	//			map[string]interface{}{
-	//				"User": mentionByUserID(m.Author.ID),
-	//			}))
-	//		if err != nil {
-	//			log.Println(err)
-	//		}
-	//
-	//	} else {
-	//		msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-	//			ID:    "message_handlers.generalRatelimit",
-	//			Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
-	//		},
-	//			map[string]interface{}{
-	//				"User": mentionByUserID(m.Author.ID),
-	//			}))
-	//		if err == nil {
-	//			go func() {
-	//				time.Sleep(time.Second * 3)
-	//				bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
-	//			}()
-	//		} else {
-	//			log.Println(err)
-	//		}
-	//	}
-	//
-	//	return
-	//}
-	//redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
 
 	g, err := bot.GalactusClient.GetGuild(m.GuildID)
 	if err != nil {
@@ -129,33 +93,6 @@ func (bot *Bot) handleReactionGameStartAdd(m discordgo.MessageReactionAdd) {
 	if lock != nil && dgs != nil && dgs.Exists() {
 		// verify that the User is reacting to the state/status message
 		if dgs.IsReactionTo(&m) {
-			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
-				banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.UserID)
-				if banned {
-					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.softban",
-						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
-					},
-						map[string]interface{}{
-							"User": mentionByUserID(m.UserID),
-						}))
-				} else {
-					msg, err := bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
-						Other: "{{.User}}, you're reacting too fast! Please slow down!",
-					}, map[string]interface{}{
-						"User": mentionByUserID(m.UserID),
-					}))
-					if err == nil {
-						go func() {
-							time.Sleep(time.Second * 3)
-							bot.GalactusClient.DeleteChannelMessage(m.ChannelID, msg.ID)
-						}()
-					}
-				}
-				return
-			}
-			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", redis_common.ReactionRateLimitDuration)
 			idMatched := false
 			if m.Emoji.Name == "▶️" {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
@@ -315,29 +252,6 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 		})
 	}
 
-	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
-		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-		if banned {
-			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.softban",
-				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
-			}, map[string]interface{}{
-				"User": mentionByUserID(m.Author.ID),
-			}))
-		} else {
-			galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
-				Other: "{{.User}} You're creating games too fast! Please slow down!",
-			}, map[string]interface{}{
-				"User": mentionByUserID(m.Author.ID),
-			}))
-		}
-		lock.Release(context.Background())
-		return
-	}
-
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
-
 	channels, err := galactus.GetGuildChannels(m.GuildID)
 	if err != nil {
 		log.Println(err)
@@ -370,7 +284,6 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 		}, map[string]interface{}{
 			"User": mentionByUserID(m.Author.ID),
 		}))
-		lock.Release(context.Background())
 		return
 	}
 
