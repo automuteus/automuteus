@@ -9,7 +9,6 @@ import (
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
 	"strconv"
 	"strings"
@@ -63,10 +62,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, dgsRequest)
 
-			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		case capture.Lobby:
 			var lobby game.Lobby
 			err := json.Unmarshal(msg.Payload, &lobby)
@@ -141,10 +137,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				}
 				msg, err := bot.GalactusClient.SendChannelMessageEmbed(channelID, embed)
 				if delTime > 0 && err == nil {
-					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 					go MessageDeleteWorker(bot.GalactusClient, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
-				} else if err == nil {
-					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 				}
 			}
 			go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
@@ -282,10 +275,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 			// only update the message if we're not in the tasks phase (info leaks)
 			if dgs.AmongUsData.GetPhase() != game.TASKS {
-				edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-				if edited {
-					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-				}
+				dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			}
 
 			return true, userID
@@ -299,10 +289,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
-			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			return true, userID
 		case updated:
 			userID := dgs.AttemptPairingByMatchingNames(data)
@@ -313,19 +300,13 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			}
 			if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
-					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
+					dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 					return true, userID
 				}
 				log.Println("NOT updating the discord status message; would leak info")
 				return false, userID
 			}
-			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			if player.Action == game.EXILED {
 				return false, userID // don't apply a mute to this player
 			}
@@ -367,19 +348,13 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
-		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		bot.applyToAll(dgs, false, false)
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, NoPriority, dgsRequest)
 
-		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 
 	case game.TASKS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
@@ -390,10 +365,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		}
 
 		bot.handleTrackedMembers(bot.GalactusClient, sett, delay, priority, dgsRequest)
-		edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
@@ -402,10 +374,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		if sett.AutoRefresh {
 			bot.RefreshGameStateMessage(dgsRequest, sett)
 		} else {
-			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 		}
 	}
 }
@@ -419,10 +388,7 @@ func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgs
 	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-	if edited {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-	}
+	dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 }
 
 func startGameInPostgres(dgs GameState, psql *storage.PsqlInterface) uint64 {

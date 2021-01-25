@@ -61,11 +61,9 @@ var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) Edit(galactus *galactus_client.GalactusClient, me *discordgo.MessageEmbed) bool {
-	newEdit := false
-
+func (dgs GameState) Edit(galactus *galactus_client.GalactusClient, me *discordgo.MessageEmbed) {
 	if !ValidFields(me) {
-		return false
+		return
 	}
 
 	DeferredEditsLock.Lock()
@@ -73,12 +71,10 @@ func (dgs GameState) Edit(galactus *galactus_client.GalactusClient, me *discordg
 	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
 		go deferredEditWorker(galactus, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-		newEdit = true
 	}
 	// whether or not it's found, replace the contents with the new message
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
-	return newEdit
 }
 
 func ValidFields(me *discordgo.MessageEmbed) bool {

@@ -11,7 +11,6 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/discord/command"
-	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
 	"os"
 	"strconv"
@@ -95,7 +94,6 @@ func (bot *Bot) handleReactionGameStartAdd(m discordgo.MessageReactionAdd) {
 		if dgs.IsReactionTo(&m) {
 			idMatched := false
 			if m.Emoji.Name == "▶️" {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
 				go removeReaction(bot.GalactusClient, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
 				go removeReaction(bot.GalactusClient, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
 				go dgs.AddAllReactions(bot.GalactusClient, bot.StatusEmojis[true])
@@ -138,10 +136,7 @@ func (bot *Bot) handleReactionGameStartAdd(m discordgo.MessageReactionAdd) {
 				// make sure to update any voice changes if they occurred
 				if idMatched {
 					bot.handleTrackedMembers(bot.GalactusClient, sett, 0, NoPriority, gsr)
-					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
+					dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 				}
 			}
 		}
@@ -422,10 +417,6 @@ func (bot *Bot) handleGameStartMessage(galactus *galactus_client.GalactusClient,
 	dgs.CreateMessage(galactus, bot.gameStateResponse(dgs, sett), m.ChannelID, m.Author.ID)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	// log.Println("Added self game state message")
-	// +12 emojis, 1 for X
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 13)
 
 	go dgs.AddAllReactions(bot.GalactusClient, bot.StatusEmojis[true])
 }

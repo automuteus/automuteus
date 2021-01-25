@@ -8,8 +8,6 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bsm/redislock"
-	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
 	"log"
@@ -65,11 +63,6 @@ func (bot *Bot) refreshGameLiveness(code string) {
 	})
 	before := t.Add(-time.Second * GameTimeoutSeconds)
 	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
-}
-
-func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
-	log.Println(rl.Message)
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.InvalidRequest, 1)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {

@@ -9,10 +9,8 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -81,9 +79,6 @@ func MakeAndStartBot(url, emojiGuildID string,
 	}
 
 	bot.ensureEmojisExist(emojiGuildID)
-
-	nodeID := os.Getenv("SCW_NODE_ID")
-	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 
 	go StartHealthCheckServer("8080")
 
@@ -259,9 +254,9 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
+	bot.GalactusClient.StopCapturePolling(dgs.ConnectCode)
 
 	dgs.DeleteGameStateMsg(bot.GalactusClient)
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -290,14 +285,12 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		dgs.DeleteGameStateMsg(bot.GalactusClient) // delete the old message
 		dgs.CreateMessage(bot.GalactusClient, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	// add the emojis to the refreshed message
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.GalactusClient, "▶️")
 		// go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}

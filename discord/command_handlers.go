@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/pkg/metrics"
 	"log"
 	"regexp"
 	"strconv"
@@ -97,7 +96,6 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			Other: "User does not have the required permissions to execute this command!",
 		}))
 	default:
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
 		switch cmd.CommandType {
 		case command.Help:
 			if len(args[1:]) == 0 {
@@ -142,10 +140,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 				bot.applyToAll(dgs, false, false)
 			}
 
-			edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 
 		case command.Refresh:
 			bot.RefreshGameStateMessage(gsr, sett)
@@ -161,10 +156,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 				bot.linkPlayer(bot.GalactusClient, g, dgs, args[1:])
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-				edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-				if edited {
-					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-				}
+				dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 			}
 
 		case command.Unlink:
@@ -186,10 +178,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 					// update the state message to reflect the player leaving
-					edited := dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
+					dgs.Edit(bot.GalactusClient, bot.gameStateResponse(dgs, sett))
 				}
 			}
 		case command.UnmuteAll:
