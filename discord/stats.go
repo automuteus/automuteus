@@ -412,7 +412,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSetti
 			}
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.userStatsEmbed.ExiledAsCrewmate",
+					ID:    "responses.userStatsEmbed.KilledAsCrewmate",
 					Other: "Killed as Crewmate",
 				}),
 				Value:  buf.String(),

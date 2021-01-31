@@ -606,9 +606,17 @@ other = "AutoMuteUs Premium に加入いただきありがとうございます�
 hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
 other = "設定"
 
+["responses.stats.Exiled"]
+hash = "sha1-9aaaf1d18b0ce565996c7f64d7ee15d4fdd7ad78"
+other = "追放"
+
 ["responses.stats.Games"]
 hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
 other = "ゲーム"
+
+["responses.stats.Killed"]
+hash = "sha1-7dd49b4b7a22a444bcd77cd463769f0133031a95"
+other = ":knife:"
 
 ["responses.stats.Lost"]
 hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
@@ -690,6 +698,14 @@ other = "Crewmateでの勝利数"
 hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
 other = "{{.User}}のユーザー戦績"
 
+["responses.userStatsEmbed.ExiledAsCrewmate"]
+hash = "sha1-3111532afc5cd985c2ac97782916cd3ab19aa85a"
+other = "Crewmateのときに追放された回数"
+
+["responses.userStatsEmbed.ExiledAsImpostor"]
+hash = "sha1-d24feb5a21aceb200a609b338a80ebef1ee518cc"
+other = "Impostorのときに追放された回数"
+
 ["responses.userStatsEmbed.FavoriteColors"]
 hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
 other = "好きな色"
@@ -698,6 +714,14 @@ other = "好きな色"
 hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
 other = "好きな名前"
 
+["responses.userStatsEmbed.FrequentFirstTarget"]
+hash = "sha1-d467f306762ee223ced0c41fa1b7aee743cee9d1"
+other = "最初に殺された回数"
+
+["responses.userStatsEmbed.FrequentKilledBy"]
+hash = "sha1-061d26dedb745f128b7a52ffd54231e8026b766f"
+other = "Imposterが頻繁に殺すCrewmate"
+
 ["responses.userStatsEmbed.GamesPlayed"]
 hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
 other = "プレイ回数"
@@ -705,6 +729,14 @@ other = "プレイ回数"
 ["responses.userStatsEmbed.ImposterWins"]
 hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
 other = "Impostorでの勝利数"
+
+["responses.userStatsEmbed.KilledAsCrewmate"]
+hash = "sha1-97d43e73fdff1e9be49235bb9eb0c20df19cc8e5"
+other = "Crewmateのときに殺された回数"
+
+["responses.userStatsEmbed.MostFrequentFirstTarget"]
+hash = "sha1-c06e5049d9006766de07ab13a90f9843bc863bc2"
+other = "最初によく殺されるCrewmate"
 
 ["responses.userStatsEmbed.NoPremium"]
 hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
