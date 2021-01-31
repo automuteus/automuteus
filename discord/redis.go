@@ -66,14 +66,14 @@ func (bot *Bot) refreshGameLiveness(code string) {
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SAdd(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SAdd(ctx, rediskey.TotalGuildsSet, rediskey.HashGuildID(guildID)).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SRem(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SRem(ctx, rediskey.TotalGuildsSet, rediskey.HashGuildID(guildID)).Result()
 	if err != nil {
 		log.Println(err)
 	}

@@ -53,7 +53,7 @@ func (storageInterface *StorageInterface) NewGuildSettings() *settings.GuildSett
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
-	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
+	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	switch {
@@ -84,7 +84,7 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *sett
 }
 
 func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *settings.GuildSettings) error {
-	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
+	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
 
 	jbytes, err := json.MarshalIndent(guildSettings, "", "  ")
 	if err != nil {
@@ -95,7 +95,7 @@ func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guild
 }
 
 func (storageInterface *StorageInterface) DeleteGuildSettings(guildID string) error {
-	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
+	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
 
 	err := storageInterface.client.Del(ctx, key).Err()
 	return err
