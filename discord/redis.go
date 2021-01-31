@@ -26,6 +26,7 @@ const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
 	client *redis.Client
+	locker *redislock.Client
 }
 
 func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
@@ -52,6 +53,7 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 		DB:       0, // use default DB
 	})
 	redisInterface.client = rdb
+	redisInterface.locker = redislock.New(redisInterface.client)
 	return nil
 }
 
@@ -99,8 +101,7 @@ type GameStateRequest struct {
 }
 
 func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
-	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, rediskey.VoiceChangesForGameCodeLock(connectCode), dur, &redislock.Options{
+	lock, err := redisInterface.locker.Obtain(ctx, rediskey.VoiceChangesForGameCodeLock(connectCode), dur, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
@@ -131,8 +132,7 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
-	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
+	lock, err := redisInterface.locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
@@ -303,8 +303,7 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 	})
 	key := rediskey.ConnectCodeData(guildID, connCode)
 
-	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
+	lock, err := redisInterface.locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
 		Metadata:      "",
 	})
@@ -414,8 +413,7 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 }
 
 func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
-	locker := redislock.New(redisInterface.client)
-	lock, err := locker.Obtain(ctx, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
+	lock, err := redisInterface.locker.Obtain(ctx, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
 	if errors.Is(err, redislock.ErrNotObtained) {
 		return nil
 	} else if err != nil {
