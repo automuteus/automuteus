@@ -10,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
+	"go.uber.org/zap"
 	"log"
 	"strconv"
 	"strings"
@@ -37,7 +38,7 @@ type Bot struct {
 
 	PostgresInterface *storage.PsqlInterface
 
-	logPath string
+	logger *zap.Logger
 
 	captureTimeout int
 
@@ -50,7 +51,7 @@ func MakeAndStartBot(url, emojiGuildID string,
 	storageInterface *storage.StorageInterface,
 	psql *storage.PsqlInterface,
 	gc *galactus_client.GalactusClient,
-	logPath string) *Bot {
+	logger *zap.Logger) *Bot {
 
 	bot := Bot{
 		url:          url,
@@ -63,7 +64,7 @@ func MakeAndStartBot(url, emojiGuildID string,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
 		PostgresInterface: psql,
-		logPath:           logPath,
+		logger:            logger,
 		captureTimeout:    GameTimeoutSeconds,
 	}
 

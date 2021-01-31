@@ -5,12 +5,10 @@ import (
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/settings"
 	"go.uber.org/zap"
-	"io"
 	"log"
 	"math/rand"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
 	"time"
 
@@ -46,21 +44,6 @@ func main() {
 }
 
 func discordMainWrapper(logger *zap.Logger) error {
-	logPath := os.Getenv("LOG_PATH")
-	if logPath == "" {
-		logPath = "./"
-	}
-
-	logEntry := os.Getenv("DISABLE_LOG_FILE")
-	if logEntry == "" {
-		file, err := os.Create(path.Join(logPath, "logs.txt"))
-		if err != nil {
-			return err
-		}
-		mw := io.MultiWriter(os.Stdout, file)
-		log.SetOutput(mw)
-	}
-
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 	if emojiGuildID == "" {
 		log.Println("No EMOJI_GUILD_ID specified!!! Emojis will be added to a RANDOM guild, I recommend you specify " +
@@ -152,7 +135,7 @@ func discordMainWrapper(logger *zap.Logger) error {
 
 	redisClient.SetVersionAndCommit(version, commit)
 
-	bot := discord.MakeAndStartBot(url, emojiGuildID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(url, emojiGuildID, &redisClient, &storageInterface, &psql, galactusClient, logger)
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")

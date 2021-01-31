@@ -1,18 +1,22 @@
 package discord
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/setting"
+	"github.com/denverquane/amongusdiscord/storage"
+	"go.uber.org/zap"
 	"os"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
-	"log"
 	"strconv"
 	"strings"
 )
@@ -102,13 +106,26 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 		galactus.SendChannelMessageEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, setting.AllSettings, sett, prem))
 		return
 	}
-	// if command invalid, no need to reapply changes to json file
+	// if command invalid, no need to reapply changes to redis records
 	isValid := false
 
 	settType := getSetting(args[1])
 	switch settType {
 	case setting.Prefix:
-		isValid = CommandPrefixSetting(galactus, m, sett, args)
+		var prefix string
+		isValid, prefix = CommandPrefixSetting(galactus, m, sett, args)
+		if isValid {
+			hashedGuildID := string(storage.HashGuildID(m.GuildID))
+			err := bot.RedisInterface.client.Set(context.Background(), rediskey.GuildPrefix(hashedGuildID), prefix, time.Hour*12).Err()
+			if err != nil {
+				bot.logger.Error("could not set guild prefix in redis",
+					zap.Error(err),
+					zap.String("guildID", m.GuildID),
+					zap.String("hashedID", hashedGuildID),
+					zap.String("prefix", prefix),
+				)
+			}
+		}
 	case setting.Language:
 		isValid = SettingLanguage(galactus, m, sett, args)
 	case setting.AdminUserIDs:
@@ -168,7 +185,9 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
-			log.Println(err)
+			bot.logger.Error("error marshalling settings to JSON",
+				zap.Error(err),
+			)
 			return
 		}
 		galactus.SendChannelMessage(m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes))
@@ -189,16 +208,19 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 	if isValid {
 		err := bot.StorageInterface.SetGuildSettings(m.GuildID, sett)
 		if err != nil {
-			log.Println(err)
+			bot.logger.Error("error setting guild settings",
+				zap.Error(err),
+				zap.String("guildID", m.GuildID),
+			)
 		}
 	}
 }
 
-func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
+func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (bool, string) {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), setting.AllSettings[setting.Prefix], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
-		return false
+		return false, ""
 	}
 	if len(args[2]) > 10 {
 		// prevent someone from setting something ridiculous lol
@@ -210,7 +232,7 @@ func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo
 				"CommandPrefix": args[2],
 				"Length":        len(args[2]),
 			}))
-		return false
+		return false, ""
 	}
 
 	galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -223,7 +245,7 @@ func CommandPrefixSetting(galactus *galactus_client.GalactusClient, m *discordgo
 		}))
 
 	sett.SetCommandPrefix(args[2])
-	return true
+	return true, args[2]
 }
 
 func SettingLanguage(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
