@@ -114,7 +114,7 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 		var prefix string
 		isValid, prefix = CommandPrefixSetting(galactus, m, sett, args)
 		if isValid {
-			hashedGuildID := string(rediskey.HashGuildID(m.GuildID))
+			hashedGuildID := rediskey.HashGuildID(m.GuildID)
 			err := bot.RedisInterface.client.Set(context.Background(), rediskey.GuildPrefix(hashedGuildID), prefix, time.Hour*12).Err()
 			if err != nil {
 				bot.logger.Error("could not set guild prefix in redis",

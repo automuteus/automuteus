@@ -3,7 +3,6 @@ package discord
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 )
@@ -38,17 +37,17 @@ func NewMapItem(name string) (*MapItem, error) {
 
 	base, err := url.Parse(BaseMapURL)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	simpleURL, err := base.Parse(name + ".png?raw=true")
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	detailedURL, err := base.Parse(name + "_detailed.png?raw=true")
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	mapImage := MapImage{

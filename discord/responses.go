@@ -213,11 +213,8 @@ func (bot *Bot) infoResponse(guildID string, sett *settings.GuildSettings) *disc
 		Inline: true,
 	}
 	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Library",
-			Other: "Library",
-		}),
-		Value:  "discordgo",
+		Name:   "Top.gg",
+		Value:  "[Vote](https://top.gg/bot/753795015830011944/vote)",
 		Inline: true,
 	}
 	fields[2] = &discordgo.MessageEmbedField{
@@ -462,6 +459,10 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 	}
 
 	emojiLeave := "❌"
+	thumb, err := getThumbnailFromMap(playMap, sett)
+	if err != nil {
+		log.Println(err)
+	}
 	msg := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -484,7 +485,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 		},
 		Color:     color,
 		Image:     nil,
-		Thumbnail: getThumbnailFromMap(playMap, sett),
+		Thumbnail: thumb,
 		Video:     nil,
 		Provider:  nil,
 		Author:    nil,
@@ -523,6 +524,11 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 		}
 	}
 
+	thumb, err := getThumbnailFromMap(playMap, sett)
+	if err != nil {
+		log.Println(err)
+	}
+
 	msg := discordgo.MessageEmbed{
 		URL:         "",
 		Type:        "",
@@ -532,7 +538,7 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 		Footer:      footer,
 		Color:       12745742, // DARK GOLD
 		Image:       nil,
-		Thumbnail:   getThumbnailFromMap(playMap, sett),
+		Thumbnail:   thumb,
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,
@@ -541,12 +547,12 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 	return &msg
 }
 
-func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *discordgo.MessageEmbedThumbnail {
+func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) (*discordgo.MessageEmbedThumbnail, error) {
 	var thumbNail *discordgo.MessageEmbedThumbnail = nil
 	if playMap != game.EMPTYMAP {
 		mapItem, err := NewMapItem(game.MapNames[playMap])
 		if err != nil {
-			log.Println(err)
+			return nil, err
 		} else {
 			if sett.MapVersion == "detailed" {
 				thumbNail = &discordgo.MessageEmbedThumbnail{
@@ -559,7 +565,7 @@ func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *di
 			}
 		}
 	}
-	return thumbNail
+	return thumbNail, nil
 }
 
 func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
@@ -583,6 +589,10 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 		color = 15158332 // RED
 	}
 	title := sett.LocalizeMessage(amongus.ToLocale(phase))
+	thumb, err := getThumbnailFromMap(playMap, sett)
+	if err != nil {
+		log.Println(err)
+	}
 
 	msg := discordgo.MessageEmbed{
 		URL:         "",
@@ -593,7 +603,7 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 		Color:       color,
 		Footer:      nil,
 		Image:       nil,
-		Thumbnail:   getThumbnailFromMap(playMap, sett),
+		Thumbnail:   thumb,
 		Video:       nil,
 		Provider:    nil,
 		Author:      nil,

@@ -293,6 +293,5 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	// add the emojis to the refreshed message
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		dgs.AddReaction(bot.GalactusClient, "▶️")
-		// go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}
 }

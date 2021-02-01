@@ -11,6 +11,7 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/discord/command"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"strconv"
@@ -273,12 +274,12 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 		}
 	}
 	if tracking.ChannelID == "" {
-		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		go galactus.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleNewGameMessage.noChannel",
 			Other: "{{.User}}, please join a voice channel before starting a match!",
 		}, map[string]interface{}{
 			"User": mentionByUserID(m.Author.ID),
-		}))
+		}), time.Second*5)
 		return
 	}
 
@@ -301,7 +302,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 				num = DefaultMaxActiveGames
 			}
 			if activeGames > num {
-				galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				go galactus.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID: "message_handlers.handleNewGameMessage.lockout",
 					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\n" +
 						"Please try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\n" +
@@ -309,7 +310,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 				}, map[string]interface{}{
 					"CommandPrefix": sett.CommandPrefix,
 					"Games":         fmt.Sprintf("%d/%d", activeGames, num),
-				}))
+				}), time.Second*10)
 				lock.Release(context.Background())
 				return
 			}
@@ -378,8 +379,9 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 			},
 		},
 	}
-
-	log.Println("Generated URL for connection: " + hyperlink)
+	bot.logger.Info("generated URL for connection",
+		zap.String("URL", hyperlink),
+	)
 
 	sendMessageDM(bot.GalactusClient, m.Author.ID, &embed)
 

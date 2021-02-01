@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
+	"go.uber.org/zap"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/discord/command"
@@ -18,6 +20,7 @@ import (
 
 const (
 	MaxDebugMessageSize = 1980
+	simpleMapString     = "simple"
 	detailedMapString   = "detailed"
 	clearArgumentString = "clear"
 	trueString          = "true"
@@ -85,16 +88,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 	}
 
 	switch {
-	case cmd.IsAdmin && !isAdmin:
-		bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+	case (cmd.IsAdmin && !isAdmin) || (cmd.IsOperator && (!isPermissioned && !isAdmin)):
+		go bot.GalactusClient.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
-		}))
-	case cmd.IsOperator && (!isPermissioned && !isAdmin):
-		bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleMessageCreate.noPerms",
-			Other: "User does not have the required permissions to execute this command!",
-		}))
+		}), time.Second*5)
 	default:
 		switch cmd.CommandType {
 		case command.Help:
@@ -107,10 +105,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 					embed := ConstructEmbedForCommand(prefix, cmd, sett)
 					bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
 				} else {
-					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					go bot.GalactusClient.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Help.notFound",
 						Other: "I didn't recognize that command! View `help` for all available commands!",
-					}))
+					}), time.Second*5)
 				}
 			}
 
@@ -166,9 +164,15 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
-					log.Println(err)
+					bot.logger.Error("error extracting userID from mention",
+						zap.Error(err),
+						zap.String("message", args[1]),
+					)
 				} else {
-					log.Print(fmt.Sprintf("Removing player %s", userID))
+					bot.logger.Info("removing player",
+						zap.String("userID", userID),
+						zap.String("message", args[1]),
+					)
 					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 					if lock == nil {
 						break
@@ -199,7 +203,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 
 				var mapName string
 				switch mapVersion {
-				case "simple", detailedMapString:
+				case simpleMapString, detailedMapString:
 					mapName = strings.Join(args[1:len(args)-1], " ")
 				default:
 					mapName = strings.Join(args[1:], " ")
@@ -207,20 +211,25 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 				}
 				mapItem, err := NewMapItem(mapName)
 				if err != nil {
-					log.Println(err)
-					bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					bot.logger.Error("error in setting map type",
+						zap.Error(err),
+						zap.String("mapName", mapName),
+					)
+					go bot.GalactusClient.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.HandleCommand.Map.notFound",
 						Other: "I don't have a map by that name!",
-					}))
+					}), time.Second*5)
 					break
 				}
 				switch mapVersion {
-				case "simple":
+				case simpleMapString:
 					bot.GalactusClient.SendChannelMessage(m.ChannelID, mapItem.MapImage.Simple)
 				case detailedMapString:
 					bot.GalactusClient.SendChannelMessage(m.ChannelID, mapItem.MapImage.Detailed)
 				default:
-					log.Println("mapVersion has unexpected value for 'map' command")
+					bot.logger.Info("mapVersion has unexpected value for 'map' command",
+						zap.String("message", mapVersion),
+					)
 				}
 			}
 
@@ -231,17 +240,21 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
 				if err != nil {
-					log.Println(err)
-					bot.GalactusClient.SendChannelMessage(m.ChannelID, "I couldn't find a user by that name or ID!")
+					bot.logger.Error("no player found with name or ID",
+						zap.Error(err),
+						zap.String("message", args[1]),
+					)
+					go bot.GalactusClient.SendAndDeleteMessage(m.ChannelID,
+						"I couldn't find a user by that name or ID!", time.Second*5)
 					break
 				}
 				if len(args[2:]) == 0 {
 					cached := bot.RedisInterface.GetUsernameOrUserIDMappings(m.GuildID, userID)
 					if len(cached) == 0 {
-						bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						go bot.GalactusClient.SendAndDeleteMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.HandleCommand.Cache.emptyCachedNames",
 							Other: "I don't have any cached player names stored for that user!",
-						}))
+						}), time.Second*5)
 					} else {
 						buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.HandleCommand.Cache.cachedNames",
@@ -258,7 +271,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 				} else if strings.ToLower(args[2]) == clearArgumentString || strings.ToLower(args[2]) == "c" {
 					err := bot.RedisInterface.DeleteLinksByUserID(m.GuildID, userID)
 					if err != nil {
-						log.Println(err)
+						bot.logger.Error("error deleting links by userID",
+							zap.Error(err),
+							zap.String("userID", userID),
+						)
 					} else {
 						bot.GalactusClient.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.HandleCommand.Cache.Success",

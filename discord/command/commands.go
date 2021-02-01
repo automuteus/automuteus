@@ -406,7 +406,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Info.args",
 			Other: "None",
 		},
-		Aliases:    []string{"info", "inf", "in", "i"},
+		Aliases:    []string{"info", "invite", "inv", "add", "inf", "in", "i"},
 		IsSecret:   false,
 		Emoji:      "📰",
 		IsAdmin:    false,
