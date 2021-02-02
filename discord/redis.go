@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/utils/pkg/rediskey"
-	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/go-redis/redis/v8"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
 	"log"
 	"time"
 )
@@ -17,16 +18,16 @@ import (
 var ctx = context.Background()
 
 const LockTimeoutMs = 250
-const LinearBackoffMs = 100
-const MaxRetries = 10
-const SnowflakeLockMs = 3000
+const GameStateLockDuration = time.Millisecond * 250
+const RetryInterval = time.Millisecond * 250
+const MaxRetries = 8
 
 // 15 minute timeout
 const GameTimeoutSeconds = 900
 
 type RedisInterface struct {
 	client *redis.Client
-	locker *redislock.Client
+	locker *redsync.Redsync
 }
 
 func (redisInterface *RedisInterface) SetVersionAndCommit(version, commit string) {
@@ -53,7 +54,8 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 		DB:       0, // use default DB
 	})
 	redisInterface.client = rdb
-	redisInterface.locker = redislock.New(redisInterface.client)
+	pool := goredis.NewPool(rdb)
+	redisInterface.locker = redsync.New(pool)
 	return nil
 }
 
@@ -100,19 +102,15 @@ type GameStateRequest struct {
 	ConnectCode  string
 }
 
-func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
-	lock, err := redisInterface.locker.Obtain(ctx, rediskey.VoiceChangesForGameCodeLock(connectCode), dur, &redislock.Options{
-		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
-		Metadata:      "",
-	})
-	if errors.Is(err, redislock.ErrNotObtained) {
-		return nil
-	} else if err != nil {
-		log.Println(err)
-		return nil
+func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) (*redsync.Mutex, error) {
+	mutex := redisInterface.locker.NewMutex(rediskey.VoiceChangesForGameCodeLock(connectCode), redsync.WithExpiry(dur), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
+
+	err := mutex.Lock()
+	if err != nil {
+		return nil, err
 	}
 
-	return lock
+	return mutex, nil
 }
 
 // need at least one of these fields to fetch
@@ -130,20 +128,16 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 	return dgs
 }
 
-func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *GameState) {
+func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redsync.Mutex, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
-	lock, err := redisInterface.locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
-		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
-		Metadata:      "",
-	})
-	if errors.Is(err, redislock.ErrNotObtained) {
-		return nil, nil
-	} else if err != nil {
-		log.Println(err)
+	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(GameStateLockDuration), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
+
+	err := mutex.Lock()
+	if err != nil {
 		return nil, nil
 	}
 
-	return lock, redisInterface.getDiscordGameState(gsr)
+	return mutex, redisInterface.getDiscordGameState(gsr)
 }
 
 func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest) *GameState {
@@ -180,10 +174,10 @@ func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
 	return key
 }
 
-func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock *redislock.Lock) {
+func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock *redsync.Mutex) {
 	if data == nil {
 		if lock != nil {
-			lock.Release(ctx)
+			lock.Unlock()
 		}
 		return
 	}
@@ -199,7 +193,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock 
 	// randomly, it's unique to every single amongus, and the capture and bot BOTH agree on the linkage
 	if key == "" && data.ConnectCode == "" {
 		if lock != nil {
-			lock.Release(ctx)
+			lock.Unlock()
 		}
 		return
 	}
@@ -209,7 +203,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock 
 	if err != nil {
 		log.Println(err)
 		if lock != nil {
-			lock.Release(ctx)
+			lock.Unlock()
 		}
 		return
 	}
@@ -220,7 +214,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock 
 	}
 
 	if lock != nil {
-		lock.Release(ctx)
+		lock.Unlock()
 	}
 
 	if data.ConnectCode != "" {
@@ -302,18 +296,13 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 		ConnectCode: connCode,
 	})
 	key := rediskey.ConnectCodeData(guildID, connCode)
+	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(GameStateLockDuration), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
 
-	lock, err := redisInterface.locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
-		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
-		Metadata:      "",
-	})
-	switch {
-	case errors.Is(err, redislock.ErrNotObtained):
-		fmt.Println("Could not obtain lock!")
-	case err != nil:
-		log.Fatalln(err)
-	default:
-		defer lock.Release(ctx)
+	err := mutex.Lock()
+	if err != nil {
+		log.Println("Could not obtain lock to delete guild state!")
+		log.Println(err)
+		return
 	}
 
 	// delete all the pointers to the underlying -actual- discord data
@@ -410,17 +399,6 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 	}
 
 	return err
-}
-
-func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
-	lock, err := redisInterface.locker.Obtain(ctx, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
-	if errors.Is(err, redislock.ErrNotObtained) {
-		return nil
-	} else if err != nil {
-		log.Println(err)
-		return nil
-	}
-	return lock
 }
 
 func (redisInterface *RedisInterface) Close() error {

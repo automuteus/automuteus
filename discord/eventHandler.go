@@ -2,7 +2,6 @@ package discord
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/capture"
@@ -112,7 +111,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 			}
 			//once we've locked the gamestate, we know for certain that it's current; then we can release the lock
-			lock.Release(context.Background())
+			lock.Unlock()
 
 			delTime := sett.GetDeleteGameSummaryMinutes()
 			if delTime != 0 {
@@ -332,7 +331,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 
 	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
 	if oldPhase == phase {
-		lock.Release(ctx)
+		lock.Unlock()
 		return
 	}
 	dgs.Linked = true

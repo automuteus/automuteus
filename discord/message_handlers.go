@@ -9,8 +9,8 @@ import (
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bsm/redislock"
 	"github.com/denverquane/amongusdiscord/discord/command"
+	"github.com/go-redsync/redsync/v4"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -159,11 +159,12 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 	if stateLock == nil {
 		return
 	}
-	defer stateLock.Release(ctx)
+	defer stateLock.Unlock()
 
-	var voiceLock *redislock.Lock
+	var voiceLock *redsync.Mutex
+	var err error
 	if dgs.ConnectCode != "" {
-		voiceLock = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		voiceLock, err = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
 		if voiceLock == nil {
 			return
 		}
@@ -311,7 +312,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 					"CommandPrefix": sett.CommandPrefix,
 					"Games":         fmt.Sprintf("%d/%d", activeGames, num),
 				}), time.Second*10)
-				lock.Release(context.Background())
+				lock.Unlock()
 				return
 			}
 		}

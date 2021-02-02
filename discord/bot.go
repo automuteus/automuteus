@@ -200,7 +200,7 @@ func (bot *Bot) handleNewGuild(m discordgo.GuildCreate) {
 			bot.EndGameChannels[dgs.ConnectCode] = killChan
 			bot.ChannelsMapLock.Unlock()
 		}
-		lock.Release(ctx)
+		lock.Unlock()
 	}
 
 }

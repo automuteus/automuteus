@@ -9,10 +9,10 @@ require (
 	github.com/alicebob/miniredis/v2 v2.14.1
 	github.com/automuteus/galactus v1.2.2
 	github.com/automuteus/utils v0.0.11
-	github.com/bsm/redislock v0.7.0
 	github.com/bwmarrin/discordgo v0.23.1
 	github.com/georgysavva/scany v0.2.7
 	github.com/go-redis/redis/v8 v8.4.10
+	github.com/go-redsync/redsync/v4 v4.0.4
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jackc/pgx/v4 v4.10.1
@@ -24,4 +24,4 @@ require (
 )
 
 // TODO replace when V7 comes out
-replace github.com/automuteus/galactus v1.2.2 => github.com/automuteus/galactus v1.2.3-0.20210201033529-705ec97d9fbf
+replace github.com/automuteus/galactus v1.2.2 => github.com/automuteus/galactus v1.2.3-0.20210202025420-55f263e04269

@@ -1,11 +1,10 @@
 package discord
 
 import (
-	"context"
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bsm/redislock"
+	"github.com/go-redsync/redsync/v4"
 	"log"
 	"strconv"
 	"time"
@@ -100,7 +99,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 
 	g, err := galactus.GetGuild(dgs.GuildID)
 	if err != nil || g == nil {
-		lock.Release(ctx)
+		lock.Unlock()
 		return
 	}
 
@@ -165,7 +164,10 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 	// we relinquish the lock while we wait
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	voiceLock := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
+	voiceLock, err := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
+	if err != nil {
+		return
+	}
 
 	if delay > 0 {
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
@@ -191,7 +193,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 				}
 				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 			} else if voiceLock != nil {
-				voiceLock.Release(context.Background())
+				voiceLock.Unlock()
 			}
 		} else {
 			// no priority; issue all at once
@@ -205,7 +207,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 	}
 }
 
-func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req discord.UserModifyRequest, lock *redislock.Lock) {
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req discord.UserModifyRequest, lock *redsync.Mutex) {
 	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req, lock)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
