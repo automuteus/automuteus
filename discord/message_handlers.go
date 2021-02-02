@@ -164,10 +164,11 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 	var voiceLock *redsync.Mutex
 	var err error
 	if dgs.ConnectCode != "" {
-		voiceLock, err = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		voiceLock, err = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode)
 		if voiceLock == nil {
 			return
 		}
+		defer voiceLock.Unlock()
 	}
 
 	g, err := bot.GalactusClient.GetGuild(dgs.GuildID)
@@ -221,7 +222,7 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 					},
 				},
 			}
-			mdsc := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			mdsc := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req)
 			if mdsc == nil {
 				log.Println("Nil response from modifyUsers, probably not good...")
 			}

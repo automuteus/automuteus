@@ -28,6 +28,8 @@ github.com/automuteus/galactus v1.2.3-0.20210201033529-705ec97d9fbf h1:jQx6rcjnR
 github.com/automuteus/galactus v1.2.3-0.20210201033529-705ec97d9fbf/go.mod h1:jKRtZkV0ULStTyuFlWo6MUsVJJKc80U9zP1XE3jCg6k=
 github.com/automuteus/galactus v1.2.3-0.20210202025420-55f263e04269 h1:2tn+vD3GDg1+KxTnn91ts7SMgZHO9BptQMdYI19o+6Q=
 github.com/automuteus/galactus v1.2.3-0.20210202025420-55f263e04269/go.mod h1:i7tXVfIfk760kJIk9rW5nISlxNm0PYhpbqJuTfxJGsg=
+github.com/automuteus/galactus v1.2.3-0.20210202042014-ec5e7ecd0a7d h1:ENJ2xLNqtg8xKs0jhfh9TyUl6/rG7U2QO3lg/kjhfqw=
+github.com/automuteus/galactus v1.2.3-0.20210202042014-ec5e7ecd0a7d/go.mod h1:i7tXVfIfk760kJIk9rW5nISlxNm0PYhpbqJuTfxJGsg=
 github.com/automuteus/utils v0.0.11 h1:0AE++H2xawEDxZGMg8iZm61R6QQdbgrTx7EYXlGSfzo=
 github.com/automuteus/utils v0.0.11/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=

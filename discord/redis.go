@@ -17,11 +17,6 @@ import (
 
 var ctx = context.Background()
 
-const LockTimeoutMs = 250
-const GameStateLockDuration = time.Millisecond * 250
-const RetryInterval = time.Millisecond * 250
-const MaxRetries = 8
-
 // 15 minute timeout
 const GameTimeoutSeconds = 900
 
@@ -102,8 +97,8 @@ type GameStateRequest struct {
 	ConnectCode  string
 }
 
-func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) (*redsync.Mutex, error) {
-	mutex := redisInterface.locker.NewMutex(rediskey.VoiceChangesForGameCodeLock(connectCode), redsync.WithExpiry(dur), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
+func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string) (*redsync.Mutex, error) {
+	mutex := redisInterface.locker.NewMutex(rediskey.VoiceChangesForGameCodeLock(connectCode), redsync.WithTries(1))
 
 	err := mutex.Lock()
 	if err != nil {
@@ -130,7 +125,7 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redsync.Mutex, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
-	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(GameStateLockDuration), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
+	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(time.Second*3), redsync.WithTries(1))
 
 	err := mutex.Lock()
 	if err != nil {
@@ -296,7 +291,7 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 		ConnectCode: connCode,
 	})
 	key := rediskey.ConnectCodeData(guildID, connCode)
-	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(GameStateLockDuration), redsync.WithRetryDelay(RetryInterval), redsync.WithTries(MaxRetries))
+	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithTries(1))
 
 	err := mutex.Lock()
 	if err != nil {

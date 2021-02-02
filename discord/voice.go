@@ -4,7 +4,6 @@ import (
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/go-redsync/redsync/v4"
 	"log"
 	"strconv"
 	"time"
@@ -33,7 +32,7 @@ func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) {
 		},
 	}
 	// nil lock because this is an override; we don't care about legitimately obtaining the lock
-	mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+	mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	}
@@ -81,8 +80,8 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 			Premium: prem,
 			Users:   users,
 		}
-		// nil lock because this is an override; we don't care about legitimately obtaining the lock
-		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+
+		mdsc := bot.GalactusClient.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req)
 		if mdsc == nil {
 			log.Println("Nil response from modifyUsers, probably not good...")
 		}
@@ -164,10 +163,11 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 	// we relinquish the lock while we wait
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	voiceLock, err := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
-	if err != nil {
+	voiceLock, err := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode)
+	if err != nil || voiceLock == nil {
 		return
 	}
+	defer voiceLock.Unlock()
 
 	if delay > 0 {
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
@@ -182,8 +182,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 				Premium: prem,
 				Users:   users[:priorityRequests],
 			}
-			// no lock; we're not done yet
-			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, nil)
+			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
 			log.Println("Finished issuing high priority mutes")
 			rem := users[priorityRequests:]
 			if len(rem) > 0 {
@@ -191,9 +190,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 					Premium: prem,
 					Users:   rem,
 				}
-				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
-			} else if voiceLock != nil {
-				voiceLock.Unlock()
+				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
 			}
 		} else {
 			// no priority; issue all at once
@@ -202,13 +199,13 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 				Premium: prem,
 				Users:   users,
 			}
-			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
 		}
 	}
 }
 
-func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req discord.UserModifyRequest, lock *redsync.Mutex) {
-	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req, lock)
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req discord.UserModifyRequest) {
+	mdsc := bot.GalactusClient.ModifyUsers(guildID, connectCode, req)
 	if mdsc == nil {
 		log.Println("Nil response from modifyUsers, probably not good...")
 	}
