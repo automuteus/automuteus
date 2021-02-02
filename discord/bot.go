@@ -26,10 +26,6 @@ type Bot struct {
 
 	StatusEmojis AlivenessEmojis
 
-	EndGameChannels map[string]chan EndGameMessage
-
-	ChannelsMapLock sync.RWMutex
-
 	GalactusClient *galactus_client.GalactusClient
 
 	RedisInterface *RedisInterface
@@ -58,8 +54,6 @@ func MakeAndStartBot(url, emojiGuildID string,
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		EndGameChannels:   make(map[string]chan EndGameMessage),
-		ChannelsMapLock:   sync.RWMutex{},
 		GalactusClient:    gc,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
@@ -190,15 +184,11 @@ func (bot *Bot) handleNewGuild(m discordgo.GuildCreate) {
 		}
 		if dgs != nil && dgs.ConnectCode != "" {
 			log.Println("Resubscribing to Redis events for an old game: " + connCode)
-			killChan := make(chan EndGameMessage)
-			go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
+
+			go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode)
 			dgs.Subscribed = true
 
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-			bot.ChannelsMapLock.Lock()
-			bot.EndGameChannels[dgs.ConnectCode] = killChan
-			bot.ChannelsMapLock.Unlock()
 		}
 		lock.Unlock()
 	}
@@ -260,6 +250,19 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	dgs.DeleteGameStateMsg(bot.GalactusClient)
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+
+	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
+
+	// Note, this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
+	bot.RedisInterface.DeleteDiscordGameState(dgs)
+}
+
+func (bot *Bot) forceEndGameWithState(dgs *GameState) {
+	bot.GalactusClient.StopCapturePolling(dgs.ConnectCode)
+
+	dgs.DeleteGameStateMsg(bot.GalactusClient)
+
+	bot.RedisInterface.SetDiscordGameState(dgs, nil)
 
 	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 

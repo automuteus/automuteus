@@ -287,10 +287,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 
 	// allow people with a previous game going to be able to make new games
 	if dgs.GameStateMsg.MessageID != "" {
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
-		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
+		bot.forceEndGameWithState(dgs)
 
 		dgs.Reset()
 	} else {
@@ -318,6 +315,7 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 			}
 		}
 	}
+	lock.Extend()
 
 	connectCode := generateConnectCode(m.GuildID)
 
@@ -325,17 +323,11 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 
 	bot.RedisInterface.RefreshActiveGame(m.GuildID, connectCode)
 
-	killChan := make(chan EndGameMessage)
-
-	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode, killChan)
+	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode)
 
 	dgs.Subscribed = true
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	bot.ChannelsMapLock.Lock()
-	bot.EndGameChannels[connectCode] = killChan
-	bot.ChannelsMapLock.Unlock()
 
 	hyperlink, minimalURL := formCaptureURL(bot.url, connectCode)
 

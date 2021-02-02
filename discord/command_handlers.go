@@ -118,12 +118,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 		case command.End:
 			log.Println("User typed end to end the current game")
 
-			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-			if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-				v <- true
-			}
-			delete(bot.EndGameChannels, dgs.ConnectCode)
+			bot.forceEndGame(gsr)
 
+			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			bot.applyToAll(dgs, false, false)
 
 		case command.Pause:

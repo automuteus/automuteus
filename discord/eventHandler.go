@@ -8,6 +8,7 @@ import (
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/amongus"
+	"go.uber.org/zap"
 	"log"
 	"strconv"
 	"strings"
@@ -18,7 +19,7 @@ import (
 
 type EndGameMessage bool
 
-func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
+func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 	log.Println("Started Redis Subscription worker for " + connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
@@ -188,25 +189,13 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 		log.Println(err)
 	}
 
-	for {
-		select {
-		case <-timer.C:
-			timer.Stop()
-			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
-			bot.GalactusClient.StopCapturePolling(connectCode)
-			bot.forceEndGame(dgsRequest)
-			bot.ChannelsMapLock.Lock()
-			delete(bot.EndGameChannels, connectCode)
-			bot.ChannelsMapLock.Unlock()
-
-			return
-		case <-endGameChannel:
-			log.Println("Redis subscriber received kill signal, closing all pubsubs")
-			bot.GalactusClient.StopCapturePolling(connectCode)
-			bot.forceEndGame(dgsRequest)
-			return
-		}
-	}
+	<-timer.C
+	timer.Stop()
+	bot.logger.Info("stopping capture event listener after expiring due to inactivity",
+		zap.String("connectCode", connectCode),
+		zap.Int("inactiveSeconds", bot.captureTimeout),
+	)
+	bot.forceEndGame(dgsRequest)
 }
 
 type winnerRecord struct {

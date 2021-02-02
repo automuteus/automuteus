@@ -123,9 +123,11 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 	return dgs
 }
 
+const GameStateLockExpiry = time.Second * 3
+
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redsync.Mutex, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
-	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(time.Second*3), redsync.WithTries(1))
+	mutex := redisInterface.locker.NewMutex(key+":lock", redsync.WithExpiry(GameStateLockExpiry), redsync.WithTries(10))
 
 	err := mutex.Lock()
 	if err != nil {
