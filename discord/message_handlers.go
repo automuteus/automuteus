@@ -210,10 +210,15 @@ func (bot *Bot) handleVoiceStateChange(m discordgo.VoiceStateUpdate) {
 		dgs.UpdateUserData(m.UserID, userData)
 
 		if dgs.Running {
-			prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premTier := premium.FreeTier
+			premiumRecord, err := bot.GalactusClient.GetGuildPremium(m.GuildID)
+			if err == nil && !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days) {
+				premTier = premiumRecord.Tier
+			}
+
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := discord.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users: []discord.UserModify{
 					{
 						UserID: uid,
@@ -291,9 +296,13 @@ func (bot *Bot) handleNewGameMessage(galactus *galactus_client.GalactusClient, m
 
 		dgs.Reset()
 	} else {
-		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+		premTier := premium.FreeTier
+		premiumRecord, err := bot.GalactusClient.GetGuildPremium(m.GuildID)
+		if err == nil && !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days) {
+			premTier = premiumRecord.Tier
+		}
 		// Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == premium.FreeTier {
+		if premTier == premium.FreeTier {
 			activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)

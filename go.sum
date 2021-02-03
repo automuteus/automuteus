@@ -30,8 +30,14 @@ github.com/automuteus/galactus v1.2.3-0.20210202025420-55f263e04269 h1:2tn+vD3GD
 github.com/automuteus/galactus v1.2.3-0.20210202025420-55f263e04269/go.mod h1:i7tXVfIfk760kJIk9rW5nISlxNm0PYhpbqJuTfxJGsg=
 github.com/automuteus/galactus v1.2.3-0.20210202042014-ec5e7ecd0a7d h1:ENJ2xLNqtg8xKs0jhfh9TyUl6/rG7U2QO3lg/kjhfqw=
 github.com/automuteus/galactus v1.2.3-0.20210202042014-ec5e7ecd0a7d/go.mod h1:i7tXVfIfk760kJIk9rW5nISlxNm0PYhpbqJuTfxJGsg=
+github.com/automuteus/galactus v1.2.3-0.20210203015332-27ac0dd320f5 h1:xLgFrtnMh+tggvvoC/x7cnAW4ZJHqMQFTlJc+VOgDV4=
+github.com/automuteus/galactus v1.2.3-0.20210203015332-27ac0dd320f5/go.mod h1:jdmvL3433VsUCSorvR1UZtnvwvqxBpFsApb7qxnpRCc=
 github.com/automuteus/utils v0.0.11 h1:0AE++H2xawEDxZGMg8iZm61R6QQdbgrTx7EYXlGSfzo=
 github.com/automuteus/utils v0.0.11/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
+github.com/automuteus/utils v0.0.13 h1:G1cIBQzNUb+QAYEhwJXM5ZtZBFOAYenEBUpGIldCC48=
+github.com/automuteus/utils v0.0.13/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
+github.com/automuteus/utils v0.0.14 h1:xaAAMs0Z4a3muwRB337jIqqPHKodwvCT9MQn/SJArCk=
+github.com/automuteus/utils v0.0.14/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=

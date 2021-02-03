@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -632,7 +631,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 	fields := []*discordgo.MessageEmbedField{}
 
 	if tier != premium.FreeTier {
-		if daysRem > 0 || daysRem == storage.NoExpiryCode {
+		if daysRem > 0 || daysRem == premium.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
 				daysRemStr = sett.LocalizeMessage(&i18n.Message{

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/settings"
 	"go.uber.org/zap"
 	"log"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/discord/command"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -187,8 +187,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			bot.applyToAll(dgs, false, false)
 
 		case command.Settings:
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			isPrem := (premStatus != 0) && (days == storage.NoExpiryCode || days > 0)
+			isPrem := false
+			premiumRecord, err := bot.GalactusClient.GetGuildPremium(m.GuildID)
+			if err == nil {
+				isPrem = !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days)
+			}
 			bot.HandleSettingsCommand(bot.GalactusClient, &m, sett, args, isPrem)
 
 		case command.Map:
@@ -344,7 +347,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			}
 
 		case command.Stats:
-			premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			isPrem := false
+			premiumRecord, err := bot.GalactusClient.GetGuildPremium(m.GuildID)
+			if err == nil {
+				isPrem = !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days)
+			}
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, embed)
@@ -384,7 +391,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 								}
 							}
 						} else {
-							_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+							_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, isPrem))
 							if err != nil {
 								log.Println(err)
 							}
@@ -397,7 +404,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
+								bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, isPrem))
 							}
 						} else {
 							bot.GalactusClient.SendChannelMessage(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
@@ -439,20 +446,26 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 							}
 						}
 					} else {
-						bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+						bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, isPrem))
 					}
 				}
 			}
 
 		case command.Premium:
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			tier := premium.FreeTier
+			daysRem := 0
+			premiumRecord, err := bot.GalactusClient.GetGuildPremium(m.GuildID)
+			if err == nil {
+				tier = premiumRecord.Tier
+				daysRem = premiumRecord.Days
+			}
 			if len(args[1:]) == 0 {
-				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
+				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, tier, daysRem, sett))
 			} else {
 				arg := strings.ToLower(args[1])
 				if isAdmin {
 					if arg == "invite" || arg == "invites" || arg == "inv" {
-						_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+						_, err := bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumInvitesEmbed(tier, sett))
 						if err != nil {
 							log.Println(err)
 						}

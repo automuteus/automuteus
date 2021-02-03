@@ -3,14 +3,12 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/automuteus/utils/pkg/premium"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
-	"time"
 )
 
 type PsqlInterface struct {
@@ -181,38 +179,6 @@ func (psqlInterface *PsqlInterface) updateGame(gameID int64, winType int16, endT
 func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error {
 	_, err := psqlInterface.Pool.Exec(context.Background(), "INSERT INTO users_games VALUES ($1, $2, $3, $4, $5, $6, $7);", player.UserID, player.GuildID, player.GameID, player.PlayerName, player.PlayerColor, player.PlayerRole, player.PlayerWon)
 	return err
-}
-
-const SecsInADay = 86400
-const SubDays = 31         // use 31 because there shouldn't ever be a gap; whenever a renewal happens on the 31st day, that should be valid
-const NoExpiryCode = -9999 // dumb, but no one would ever have expired premium for 9999 days
-
-func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (premium.Tier, int) {
-	// self-hosting; only return the true guild status if this variable is set
-	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		return premium.SelfHostTier, NoExpiryCode
-	}
-
-	gid, err := strconv.ParseUint(guildID, 10, 64)
-	if err != nil {
-		log.Println(err)
-		return premium.FreeTier, 0
-	}
-
-	guild, err := psqlInterface.GetGuild(gid)
-	if err != nil {
-		return premium.FreeTier, 0
-	}
-
-	daysRem := NoExpiryCode
-
-	if guild.TxTimeUnix != nil {
-		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
-		// 31 - days elapsed
-		daysRem = int(SubDays - (diff / SecsInADay))
-	}
-
-	return premium.Tier(guild.Premium), daysRem
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {

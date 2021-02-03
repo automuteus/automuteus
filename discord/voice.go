@@ -3,6 +3,7 @@ package discord
 import (
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/discord"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strconv"
@@ -19,10 +20,14 @@ const (
 
 func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) {
 	log.Println("Forcibly applying mute/deaf to " + userID)
-	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+	premTier := premium.FreeTier
+	premiumRecord, err := bot.GalactusClient.GetGuildPremium(dgs.GuildID)
+	if err == nil && !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days) {
+		premTier = premiumRecord.Tier
+	}
 	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := discord.UserModifyRequest{
-		Premium: prem,
+		Premium: premTier,
 		Users: []discord.UserModify{
 			{
 				UserID: uid,
@@ -75,9 +80,13 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 		}
 	}
 	if len(users) > 0 {
-		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premTier := premium.FreeTier
+		premiumRecord, err := bot.GalactusClient.GetGuildPremium(dgs.GuildID)
+		if err == nil && !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days) {
+			premTier = premiumRecord.Tier
+		}
 		req := discord.UserModifyRequest{
-			Premium: prem,
+			Premium: premTier,
 			Users:   users,
 		}
 
@@ -175,11 +184,15 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 	}
 
 	if dgs.Running && len(users) > 0 {
-		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premTier := premium.FreeTier
+		premiumRecord, err := bot.GalactusClient.GetGuildPremium(dgs.GuildID)
+		if err == nil && !premium.IsExpired(premiumRecord.Tier, premiumRecord.Days) {
+			premTier = premiumRecord.Tier
+		}
 
 		if priorityRequests > 0 {
 			req := discord.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users:   users[:priorityRequests],
 			}
 			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
@@ -187,7 +200,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 			rem := users[priorityRequests:]
 			if len(rem) > 0 {
 				req = discord.UserModifyRequest{
-					Premium: prem,
+					Premium: premTier,
 					Users:   rem,
 				}
 				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
@@ -196,7 +209,7 @@ func (bot *Bot) handleTrackedMembers(galactus *galactus_client.GalactusClient, s
 			// no priority; issue all at once
 			log.Println("Issuing mutes/deafens with no particular priority")
 			req := discord.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users:   users,
 			}
 			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req)
