@@ -158,6 +158,12 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 
 func (bot *Bot) infoResponse(guildID string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
+	if version == "" {
+		version = "unknown_version"
+	}
+	if commit == "" {
+		commit = "unknown_commit"
+	}
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
