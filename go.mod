@@ -24,4 +24,4 @@ require (
 )
 
 // TODO replace when V7 comes out
-replace github.com/automuteus/galactus v1.2.2 => github.com/automuteus/galactus v1.2.3-0.20210203015332-27ac0dd320f5
+replace github.com/automuteus/galactus v1.2.2 => github.com/automuteus/galactus v1.2.3-0.20210209052631-1bd854dca0cf
