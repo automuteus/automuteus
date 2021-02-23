@@ -12,6 +12,7 @@ import (
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/discord/setting"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -206,6 +207,11 @@ func (bot *Bot) infoResponse(guildID string, sett *settings.GuildSettings) *disc
 	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
 	if totalGames == rediskey.NotFound {
 		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	}
+
+	// magic number for the total games played prior to stats reset
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+		totalGames += 262000
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, 12)
