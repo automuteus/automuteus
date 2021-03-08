@@ -94,6 +94,7 @@ The Discord Bot uses the `.au` prefix for any commands by default; if you change
 | `.au pause`    | `.au p` | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
 | `.au privacy`  |         |             | View privacy and data collection information about the bot                                                      |                                    |
 | `.au info`     | `.au i` | None        | View general info about the Bot                                                                                 |                                    |
+| `.au map`      |         | MAPNAME     | View an image of an in-game map in the text channel. Two supported versions: simple or detailed(vent, camera, etc) | `.au map skeld detailed` |
 
 _In addition to handful of more secretive Easter Egg commands..._
 
