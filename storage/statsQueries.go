@@ -353,12 +353,13 @@ func (psqlInterface *PsqlInterface) UserFrequentFirstTarget(userID, guildID stri
 	r := []*PostgresUserMostFrequentFirstTargetRanking{}
 	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) AS total_death, "+
 		"users_games.user_id, total, "+
-		"COUNT(*)::decimal / total * 100 as death_rate "+
+		"COUNT(*)::decimal / total * 100 AS death_rate "+
 		"FROM users_games "+
 		"LEFT JOIN LATERAL (SELECT game_events.user_id "+
-		"FROM game_events WHERE game_events.game_id = users_games.game_id and payload ->> 'Action' = $1 "+
+		"FROM game_events WHERE game_events.game_id = users_games.game_id AND payload ->> 'Action' = $1 "+
 		"ORDER BY event_time FETCH FIRST 1 ROW ONLY ) AS ge ON TRUE "+
-		"LEFT JOIN LATERAL (SELECT count(*) as total from users_games where users_games.user_id = ge.user_id and player_role = 0) as TOTAL_GAME ON TRUE "+
+		"LEFT JOIN LATERAL (SELECT count(*) AS total "+
+		"FROM users_games WHERE users_games.user_id = ge.user_id AND users_games.guild_id = $2 AND player_role = 0) AS TOTAL_GAME ON TRUE "+
 		"WHERE users_games.guild_id = $2 AND users_games.user_id = ge.user_id AND users_games.user_id = $3"+
 		"GROUP BY users_games.user_id, total  "+
 		"ORDER BY total_death DESC "+
@@ -374,12 +375,13 @@ func (psqlInterface *PsqlInterface) UserMostFrequentFirstTargetForServer(guildID
 	r := []*PostgresUserMostFrequentFirstTargetRanking{}
 	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) AS total_death, "+
 		"users_games.user_id, total, "+
-		"COUNT(*)::decimal / total * 100 as death_rate "+
+		"COUNT(*)::decimal / total * 100 AS death_rate "+
 		"FROM users_games "+
 		"LEFT JOIN LATERAL (SELECT game_events.user_id "+
-		"FROM game_events WHERE game_events.game_id = users_games.game_id and payload ->> 'Action' = $1 "+
+		"FROM game_events WHERE game_events.game_id = users_games.game_id AND payload ->> 'Action' = $1 "+
 		"ORDER BY event_time FETCH FIRST 1 ROW ONLY ) AS ge ON TRUE "+
-		"LEFT JOIN LATERAL (SELECT count(*) as total from users_games where users_games.user_id = ge.user_id and player_role = 0) as TOTAL_GAME ON TRUE "+
+		"LEFT JOIN LATERAL (SELECT COUNT(*) AS total "+
+		"FROM users_games WHERE users_games.user_id = ge.user_id AND users_games.guild_id = $2 AND player_role = 0) AS TOTAL_GAME ON TRUE "+
 		"WHERE users_games.guild_id = $2 AND users_games.user_id = ge.user_id AND total > 3"+
 		"GROUP BY users_games.user_id, total  "+
 		"ORDER BY death_rate DESC, total_death DESC "+
