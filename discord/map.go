@@ -32,6 +32,8 @@ func NewMapItem(name string) (*MapItem, error) {
 		name = "mira_hq"
 	case "polus":
 		name = "polus"
+	//case "dleks":
+	//	name = "dleks"
 	//case "airship", "ship":
 	//	name = "airship"
 	default:
