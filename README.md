@@ -63,7 +63,7 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 # Quickstart and Demo (click the image):
 
-[![Quickstart](https://img.youtube.com/vi/VYx6kM1O4FM/default.jpg)](https://youtu.be/VYx6kM1O4FM)
+[![Quickstart](https://img.youtube.com/vi/VYx6kM1O4FM/hqdefault.jpg)](https://youtu.be/VYx6kM1O4FM)
 
 # Usage and Commands
 
