@@ -29,6 +29,7 @@ type GuildSettings struct {
 	LeaderboardSize          int    `json:"leaderboardSize"`
 	LeaderboardMin           int    `json:"leaderboardMin"`
 	MuteSpectator            bool   `json:"muteSpectator"`
+	DisplayRoomCode          string `json:"displayRoomCode"`
 }
 
 func MakeGuildSettings() *GuildSettings {
@@ -52,6 +53,7 @@ func MakeGuildSettings() *GuildSettings {
 		LeaderboardSize:          3,
 		LeaderboardMin:           3,
 		MuteSpectator:            false,
+		DisplayRoomCode:          "always",
 		lock:                     sync.RWMutex{},
 	}
 }
@@ -222,4 +224,15 @@ func (gs *GuildSettings) SetVoiceRule(isMute bool, phase game.Phase, alive strin
 
 func (gs *GuildSettings) GetVoiceState(alive bool, tracked bool, phase game.Phase) (bool, bool) {
 	return gs.VoiceRules.GetVoiceState(alive, tracked, phase)
+}
+
+func (gs *GuildSettings) GetDisplayRoomCode() string {
+	if gs.DisplayRoomCode == "" {
+		return "always"
+	}
+	return gs.DisplayRoomCode
+}
+
+func (gs *GuildSettings) SetDisplayRoomCode(r string) {
+	gs.DisplayRoomCode = r
 }

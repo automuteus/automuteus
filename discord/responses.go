@@ -347,6 +347,12 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 		Inline: true,
 	})
 	if room != "" {
+		switch {
+		case sett.DisplayRoomCode == "spoiler":
+			room = fmt.Sprintf("||%v||", room)
+		case sett.DisplayRoomCode == "never":
+			room = strings.Repeat("\\*", len(room))
+		}
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.RoomCode",
