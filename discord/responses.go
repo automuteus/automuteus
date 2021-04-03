@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/discord/setting"
-	"log"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/denverquane/amongusdiscord/amongus"
 
@@ -353,13 +354,12 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 		Inline: true,
 	})
 	if room != "" {
-		//TODO reimplement w/ v7 + settings changes
-		//switch {
-		//case sett.DisplayRoomCode == "spoiler":
-		//	room = fmt.Sprintf("||%v||", room)
-		//case sett.DisplayRoomCode == "never":
-		//	room = strings.Repeat("\\*", len(room))
-		//}
+		switch {
+		case sett.DisplayRoomCode == "spoiler":
+			room = fmt.Sprintf("||%v||", room)
+		case sett.DisplayRoomCode == "never":
+			room = strings.Repeat("\\*", len(room))
+		}
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.RoomCode",

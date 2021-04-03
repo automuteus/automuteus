@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
 	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/setting"
 	"go.uber.org/zap"
-	"os"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -1148,8 +1149,7 @@ func SettingMuteSpectators(galactus *galactus_client.GalactusClient, m *discordg
 
 func SettingDisplayRoomCode(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		//TODO implement
-		code := "TODO" //sett.GetDisplayRoomCode()
+		code := sett.GetDisplayRoomCode()
 		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", code), setting.AllSettings[setting.DisplayRoomCode], sett)
 		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
@@ -1169,8 +1169,7 @@ func SettingDisplayRoomCode(galactus *galactus_client.GalactusClient, m *discord
 		return false
 	}
 
-	//TODO implement
-	//sett.SetDisplayRoomCode(val)
+	sett.SetDisplayRoomCode(val)
 	if val == "spoiler" {
 		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.Spoiler",
