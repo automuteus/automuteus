@@ -164,6 +164,12 @@ func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.Message
 			break
 		}
 		isValid = SettingMuteSpectators(s, m, sett, args)
+	case setting.DisplayRoomCode:
+		if !prem {
+			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			break
+		}
+		isValid = SettingDisplayRoomCode(s, m, sett, args)
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -1105,4 +1111,46 @@ func SettingMuteSpectators(s *discordgo.Session, m *discordgo.MessageCreate, set
 			}))
 	}
 	return false
+}
+
+func SettingDisplayRoomCode(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+	if len(args) == 2 {
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), setting.AllSettings[setting.DisplayRoomCode], sett)
+		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		return false
+	}
+
+	val := strings.ToLower(args[2])
+	valid := map[string]bool{"always": true, "spoiler": true, "never": true}
+	if !valid[val] {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingDisplayRoomCode.Unrecognized",
+			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings displayRoomCode` for usage",
+		},
+			map[string]interface{}{
+				"Arg":           val,
+				"CommandPrefix": sett.CommandPrefix,
+			}))
+		return false
+	}
+
+	sett.SetDisplayRoomCode(val)
+	if val == "spoiler" {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingDisplayRoomCode.Spoiler",
+			Other: "From now on, I will mark the room code as spoiler in the message",
+		},
+			map[string]interface{}{
+				"Arg": val,
+			}))
+	} else {
+		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingDisplayRoomCode.AlwaysOrNever",
+			Other: "From now on, I will {{.Arg}} display the room code in the message",
+		},
+			map[string]interface{}{
+				"Arg": val,
+			}))
+	}
+	return true
 }
