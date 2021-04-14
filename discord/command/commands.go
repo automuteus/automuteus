@@ -318,7 +318,7 @@ var AllCommands = []Command{
 			ID:    "commands.AllCommands.Privacy.args",
 			Other: "showme, optin, or optout",
 		},
-		Aliases:    []string{"private", "priv", "gpdr"},
+		Aliases:    []string{"private", "priv", "gdpr"},
 		IsSecret:   false,
 		Emoji:      "🔍",
 		IsAdmin:    false,
