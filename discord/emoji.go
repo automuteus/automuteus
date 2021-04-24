@@ -50,8 +50,8 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
-	topMap[true] = make([]Emoji, 12) // 12 colors for alive/dead
-	topMap[false] = make([]Emoji, 12)
+	topMap[true] = make([]Emoji, 24) // 12 colors for alive/dead
+	topMap[false] = make([]Emoji, 24)
 	return topMap
 }
 
@@ -134,6 +134,54 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 			Name: "aulime",
 			ID:   "762392088121442334",
 		},
+		game.Skincolor: {
+			Name: "auskincolor",
+			ID:   "835189203381256193",
+		},
+		game.Bordeaux: {
+			Name: "aubordeaux",
+			ID:   "835222234318241842",
+		},
+		game.Olive: {
+			Name: "auolive",
+			ID:   "835248969777021030",
+		},
+		game.Turqoise: {
+			Name: "auturqoise",
+			ID:   "835249842577997834",
+		},
+		game.Mint: {
+			Name: "aumint",
+			ID:   "835253671276970024",
+		},
+		game.Lavender: {
+			Name: "aulavender",
+			ID:   "835254463094718474",
+		},
+		game.Nougat: {
+			Name: "aunougat",
+			ID:   "835284359694909540",
+		},
+		game.Peach: {
+			Name: "aupeach",
+			ID:   "835322590582538280",
+		},
+		game.Neongreen: {
+			Name: "auneongreen",
+			ID:   "835319035709227018",
+		},
+		game.Hotpink: {
+			Name: "auhotpink",
+			ID:   "835319857682710544",
+		},
+		game.Gray: {
+			Name: "augray",
+			ID:   "835320515660480563",
+		},
+		game.Petrol: {
+			Name: "aupetrol",
+			ID:   "835321101293846529",
+		},
 	},
 	false: []Emoji{
 		game.Red: {
@@ -183,6 +231,54 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		game.Lime: {
 			Name: "aulimedead",
 			ID:   "762397192366325793",
+		},
+		game.Skincolor: {
+			Name: "auskincolordead",
+			ID:   "835189220154015775",
+		},
+		game.Bordeaux: {
+			Name: "aubordeauxdead",
+			ID:   "835222251703369828",
+		},
+		game.Olive: {
+			Name: "auolivedead",
+			ID:   "835248989338075146",
+		},
+		game.Turqoise: {
+			Name: "auturqoisedead",
+			ID:   "835249860823220325",
+		},
+		game.Mint: {
+			Name: "aumintdead",
+			ID:   "835253689526255716",
+		},
+		game.Lavender: {
+			Name: "aulavenderdead",
+			ID:   "835254483842760775",
+		},
+		game.Nougat: {
+			Name: "aunougatdead",
+			ID:   "835284392812609556",
+		},
+		game.Peach: {
+			Name: "aupeachdead",
+			ID:   "835322622916689990",
+		},
+		game.Neongreen: {
+			Name: "auneongreendead",
+			ID:   "835319053458997249",
+		},
+		game.Hotpink: {
+			Name: "auhotpinkdead",
+			ID:   "835319875479404545",
+		},
+		game.Gray: {
+			Name: "augraydead",
+			ID:   "835320547948757023",
+		},
+		game.Petrol: {
+			Name: "aupetroldead",
+			ID:   "835321129232760853",
 		},
 	},
 }
