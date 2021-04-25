@@ -133,9 +133,9 @@ func (psqlInterface *PsqlInterface) GetUser(userID uint64) (*PostgresUser, error
 	return nil, nil
 }
 
-func (psqlInterface *PsqlInterface) GetGame(connectCode, matchID string) (*PostgresGame, error) {
+func (psqlInterface *PsqlInterface) GetGame(guildID, connectCode, matchID string) (*PostgresGame, error) {
 	games := []*PostgresGame{}
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &games, "SELECT * FROM games WHERE game_id = $1 AND connect_code = $2;", matchID, connectCode)
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &games, "SELECT * FROM games WHERE guild_id = $1 AND game_id = $2 AND connect_code = $3;", guildID, matchID, connectCode)
 	if err != nil {
 		return nil, err
 	}
