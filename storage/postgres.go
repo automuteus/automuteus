@@ -3,14 +3,15 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/automuteus/utils/pkg/premium"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type PsqlInterface struct {
@@ -269,6 +270,18 @@ func (psqlInterface *PsqlInterface) UpdateGameAndPlayers(gameID int64, winType i
 	}
 
 	return nil
+}
+
+func (psqlInterface *PsqlInterface) GetGuildGames(guildID string, histSize int) ([]*PostgresGame, error) {
+	games := []*PostgresGame{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &games, "SELECT * FROM games WHERE guild_id = $1 AND win_type != -1 ORDER BY start_time DESC LIMIT $2;", guildID, histSize)
+	if err != nil {
+		return nil, err
+	}
+	if len(games) > 0 {
+		return games, nil
+	}
+	return nil, nil
 }
 
 func (psqlInterface *PsqlInterface) Close() {

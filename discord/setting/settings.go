@@ -21,6 +21,8 @@ const (
 	LeaderboardMin
 	MuteSpectators
 	DisplayRoomCode
+	HistorySize
+	TimeOffset
 	Show
 	Reset
 	NullSetting
@@ -339,7 +341,45 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.DisplayRoomCode.args",
 			Other: "<always/spoiler/never>",
 		},
-		Aliases: []string{"displayRoomCode", "roomcode", "code", "rc"},
+		Aliases: []string{"roomcode", "code", "rc"},
+		Premium: true,
+	},
+	{
+		SettingType: HistorySize,
+		Name:        "historySize",
+		Example:     "historySize 30",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.HistorySize.shortDesc",
+			Other: "History Size for Stats",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.HistorySize.desc",
+			Other: "Specify the size of the guild history",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.HistorySize.args",
+			Other: "<number>",
+		},
+		Aliases: []string{"histsize", "history", "hist"},
+		Premium: true,
+	},
+	{
+		SettingType: TimeOffset,
+		Name:        "timeOffset",
+		Example:     "timeOffset 9",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.TimeOffset.shortDesc",
+			Other: "Adjust time difference in Stats",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.TimeOffset.desc",
+			Other: "Specify the time difference in hours to adjust the time in Stats, usually equal to the time difference from UTC",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.TimeOffset.args",
+			Other: "<hours, between -12.0 and 14.0>",
+		},
+		Aliases: []string{"offset", "timezone", "tz", "time"},
 		Premium: true,
 	},
 	{

@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
@@ -910,6 +911,105 @@ func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *stora
 
 	stats := storage.StatsFromGameAndEvents(gameData, events)
 	return stats.ToDiscordEmbed(connectCode+":"+matchID, sett)
+}
+
+func (bot *Bot) GuildHistoryEmbed(guildID string, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+	games, _ := bot.PostgresInterface.GetGuildGames(guildID, sett.GetHistorySize())
+
+	gname := ""
+	avatarURL := ""
+	g, err := bot.PrimarySession.Guild(guildID)
+
+	if err != nil {
+		log.Println(err)
+		gname = guildID
+	} else {
+		gname = g.Name
+		avatarURL = g.IconURL()
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	buf.WriteString(sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.guildHistoryEmbed.Desc",
+		Other: "History for {{.GuildName}}",
+	}, map[string]interface{}{
+		"GuildName": gname,
+	}))
+	buf.WriteString("\n\n")
+	buf.WriteString(sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.guildHistoryEmbed.Lead",
+		Other: "You can view the stats and timeline for each matches by `{{.CommandPrefix}} stats <MatchID>` using following Match IDs.",
+	}, map[string]interface{}{
+		"CommandPrefix": sett.CommandPrefix,
+	}))
+	buf.WriteString("\n\n")
+
+	if len(games) > 0 {
+		for _, v := range games {
+			winRoleEmoji := "⚪"
+			switch game.GameResult(v.WinType) {
+			case game.HumansByTask:
+				winRoleEmoji = "🔵🔨"
+			case game.HumansByVote:
+				winRoleEmoji = "🔵🗳️"
+			case game.HumansDisconnect:
+				winRoleEmoji = "🔵🔌"
+			case game.ImpostorDisconnect:
+				winRoleEmoji = "🔴🔌"
+			case game.ImpostorBySabotage:
+				winRoleEmoji = "🔴🚨"
+			case game.ImpostorByVote:
+				winRoleEmoji = "🔴🗳️"
+			case game.ImpostorByKill:
+				winRoleEmoji = "🔴🔪"
+			}
+			buf.WriteString(fmt.Sprintf("%s **`%s:%d`** | %s (%s)\n",
+				winRoleEmoji,
+				v.ConnectCode,
+				v.GameID,
+				time.Unix(int64(v.StartTime), 0).Add(time.Duration(sett.GetTimeOffset()*60)*time.Minute).Format("Jan 2, 3:04 PM"),
+				(time.Second * time.Duration(v.EndTime-v.StartTime)).String(),
+			))
+		}
+	}
+
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.guildHistoryEmbed.Legend",
+				Other: "Legend",
+			}),
+			Value: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.guildHistoryEmbed.LegendDesc",
+				Other: "🔵Crewmates or 🔴Imposters won by\n🔨Tasks, 🗳️Voting, 🚨Sabotage, 🔪Kill, or 🔌Disconnection",
+			}),
+			Inline: false,
+		},
+	}
+
+	var embed = discordgo.MessageEmbed{
+		URL:  "",
+		Type: "",
+		Title: sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.guildHistoryEmbed.Title",
+			Other: "Guild History",
+		}),
+		Description: buf.String(),
+		Timestamp:   "",
+		Color:       10181046, // PURPLE
+		Image:       nil,
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL:      avatarURL,
+			ProxyURL: "",
+			Width:    0,
+			Height:   0,
+		},
+		Video:    nil,
+		Provider: nil,
+		Author:   nil,
+		Fields:   fields,
+	}
+	return &embed
 }
 
 func TrimEmbedFields(fields []*discordgo.MessageEmbedField) []*discordgo.MessageEmbedField {

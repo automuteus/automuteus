@@ -390,6 +390,11 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 								log.Println(err)
 							}
 						}
+					} else if arg == "h" || arg == "hist" || arg == "history" {
+						_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildHistoryEmbed(m.GuildID, sett))
+						if err != nil {
+							log.Println(err)
+						}
 					} else {
 						arg = strings.ToUpper(arg)
 						log.Println(arg)

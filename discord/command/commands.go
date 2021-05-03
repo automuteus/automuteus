@@ -1,8 +1,9 @@
 package command
 
 import (
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type Type int
@@ -382,7 +383,7 @@ var AllCommands = []Command{
 		},
 		Arguments: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.args",
-			Other: "<@discord user> or \"guild\"",
+			Other: "<@discord user>, \"guild\", or \"history\"",
 		},
 		Aliases:    []string{"stat", "st"},
 		IsSecret:   false,
