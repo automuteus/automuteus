@@ -383,7 +383,7 @@ var AllCommands = []Command{
 		},
 		Arguments: &i18n.Message{
 			ID:    "commands.AllCommands.Stats.args",
-			Other: "<@discord user>, \"guild\", or \"history\"",
+			Other: "<@discord user>, \"guild\", \"history\", or <match-id>",
 		},
 		Aliases:    []string{"stat", "st"},
 		IsSecret:   false,

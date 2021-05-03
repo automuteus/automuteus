@@ -902,14 +902,19 @@ func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *stora
 	}
 
 	events := []*storage.PostgresGameEvent{}
+	users := []*storage.PostgresUserGame{}
 	if gameData != nil {
 		events, err = bot.PostgresInterface.GetGameEvents(matchID)
 		if err != nil {
 			log.Fatal(err)
 		}
+		users, err = bot.PostgresInterface.GetGameUsers(matchID)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	stats := storage.StatsFromGameAndEvents(gameData, events)
+	stats := storage.StatsFromGameAndEvents(gameData, events, users)
 	return stats.ToDiscordEmbed(connectCode+":"+matchID, sett)
 }
 

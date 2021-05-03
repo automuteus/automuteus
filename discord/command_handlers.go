@@ -403,7 +403,10 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, premStatus))
+								_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, premStatus))
+								if err != nil {
+									log.Println(err)
+								}
 							}
 						} else {
 							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")

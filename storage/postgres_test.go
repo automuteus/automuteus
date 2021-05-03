@@ -33,6 +33,11 @@ func TestPsqlInterface_Init(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	stats := StatsFromGameAndEvents(game, events)
+	users, err := psql.GetGameUsers("78467")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stats := StatsFromGameAndEvents(game, events, users)
 	log.Println(stats.ToString())
 }

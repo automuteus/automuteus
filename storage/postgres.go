@@ -284,6 +284,15 @@ func (psqlInterface *PsqlInterface) GetGuildGames(guildID string, histSize int) 
 	return nil, nil
 }
 
+func (psqlInterface *PsqlInterface) GetGameUsers(matchID string) ([]*PostgresUserGame, error) {
+	users := []*PostgresUserGame{}
+	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &users, "SELECT * FROM users_games WHERE game_id = $1 ORDER BY player_won ASC;", matchID)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (psqlInterface *PsqlInterface) Close() {
 	psqlInterface.Pool.Close()
 }
