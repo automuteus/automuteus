@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/discord/command"
@@ -397,7 +398,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, premStatus))
+								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, premStatus))
 							}
 						} else {
 							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
