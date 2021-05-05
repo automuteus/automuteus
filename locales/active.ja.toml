@@ -191,8 +191,8 @@ hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
 other = "Botの設定を変更"
 
 ["commands.AllCommands.Stats.args"]
-hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
-other = "<@Discord ユーザー名> または \"guild\""
+hash = "sha1-da06c3785fa4b146f6e18c5df65d36e3b66920db"
+other = "<@Discord ユーザー名>, \"guild\", \"history\" または <マッチ ID>"
 
 ["commands.AllCommands.Stats.desc"]
 hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
@@ -402,6 +402,26 @@ other = "管理者のみがサーバー戦績をリセットできます"
 hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
 other = "現在、{{.User}}を5分間無視しています。スパムを辞めてください。"
 
+["responses.guildHistoryEmbed.Desc"]
+hash = "sha1-35d87edce09ac7e23699f05385a0634a0ddcb4fe"
+other = "{{.GuildName}} の戦歴"
+
+["responses.guildHistoryEmbed.Lead"]
+hash = "sha1-e9d097bf73ee5c291789ba64a9126e68b50350a6"
+other = "以下のマッチ ID を利用して `{{.CommandPrefix}} stats <MatchID>` を実行すると、マッチごとの戦績やタイムラインを確認できます。"
+
+["responses.guildHistoryEmbed.Legend"]
+hash = "sha1-5846955db6bef539707c3590c701613c5f0cf50f"
+other = "凡例"
+
+["responses.guildHistoryEmbed.LegendDesc"]
+hash = "sha1-4f1477ca45c25021f9aef21fa567d6607cdaad74"
+other = "🔵クルー、🔴インポスター が\n🔨タスク、🗳️投票、🚨サボタージュ、🔪キル、🔌切断 で勝利"
+
+["responses.guildHistoryEmbed.Title"]
+hash = "sha1-4b40d02f55181f09a2e04aa5ae219a188b4cf5b9"
+other = "ギルド戦歴"
+
 ["responses.guildStatsEmbed.CrewmateWins"]
 hash = "sha1-4b341227bf20f5d8c48d85df89d049dc496b205f"
 other = "Crewmate勝率 ({{.Min}}ゲーム以上)"
@@ -485,6 +505,94 @@ other = "ボイスチャンネル"
 ["responses.makeDescription.GameNotRunning"]
 hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
 other = "\n⚠**中断されました！**⚠\n\n"
+
+["responses.matchStatsEmbed.Crewmates"]
+hash = "sha1-7166adb337038aad1f554b8034a27fbaa5760727"
+other = "クルー"
+
+["responses.matchStatsEmbed.Death"]
+hash = "sha1-78ccc207fbacc9bc4dfd3a3866839ae6538079d1"
+other = "☠️ 死亡"
+
+["responses.matchStatsEmbed.DeathDesc"]
+hash = "sha1-d9f441304e3106e6b67e9842fd11c3aa618702ee"
+other = "{{.Death}} (キル {{.Killed}}, 追放 {{.VotedOff}})"
+
+["responses.matchStatsEmbed.DisconnectedEvent"]
+hash = "sha1-5e142616b5e6ca0fade3597a56a34362337f5471"
+other = "🔌 **{{.PlayerName}}** 切断"
+
+["responses.matchStatsEmbed.DiscussionEvent"]
+hash = "sha1-d6153b23aa91352b3a8fe9c538db1a8561b48249"
+other = "💬 緊急会議"
+
+["responses.matchStatsEmbed.Duration"]
+hash = "sha1-93cdf6b0e70c434e4ae23f0fade9c2a752124e1b"
+other = "⏲️ 期間"
+
+["responses.matchStatsEmbed.End"]
+hash = "sha1-08ce4a698661ab8cac16dc7fdca13665b516c8a9"
+other = "🕑 終了"
+
+["responses.matchStatsEmbed.ExiledEvent"]
+hash = "sha1-8cce9930d8a7369b6b602886e9018516ad46da36"
+other = "⛔ **{{.PlayerName}}** 追放"
+
+["responses.matchStatsEmbed.GameEvents"]
+hash = "sha1-ba78b2376fcdeda45ba65be8c9f1091400c27163"
+other = "📋 イベント"
+
+["responses.matchStatsEmbed.HumansByTask"]
+hash = "sha1-6c7b80c4a6557c2cb94b113f6f4f572d027da9b1"
+other = "**クルー** が **タスク** で勝利！"
+
+["responses.matchStatsEmbed.HumansByVote"]
+hash = "sha1-4cc43136d99dfeaddbc4d2f8cf90fc3998c27bdc"
+other = "**クルー** が **インポスターの追放** で勝利！"
+
+["responses.matchStatsEmbed.HumansDisconnect"]
+hash = "sha1-11a7b83fede2ee63f2e1a497b6a2362fbe11bb71"
+other = "**クルー** が **インポスターの切断** で勝利！"
+
+["responses.matchStatsEmbed.Imposters"]
+hash = "sha1-a883c9bdedbcc4c884f5d865ae14c41d40e82a29"
+other = "インポスター"
+
+["responses.matchStatsEmbed.ImpostorByKill"]
+hash = "sha1-cec6cfcba11635b63ced7bdeb623462e11548908"
+other = "**インポスター** が **クルーのキル** で勝利！"
+
+["responses.matchStatsEmbed.ImpostorBySabotage"]
+hash = "sha1-d9e17147d2a3407e2e869fcdc5ebb784564baaf1"
+other = "**インポスター** が **サボタージュ** で勝利！"
+
+["responses.matchStatsEmbed.ImpostorByVote"]
+hash = "sha1-2f66d84822c85a5378287184a56265b085852b31"
+other = "**インポスター** が **クルーの追放** で勝利！"
+
+["responses.matchStatsEmbed.ImpostorDisconnect"]
+hash = "sha1-a1fcc58c9ad82c8e78a4ab3a7dace48586a76909"
+other = "**インポスター** が **クルーの切断** で勝利！"
+
+["responses.matchStatsEmbed.KilledEvent"]
+hash = "sha1-b15efce6401398db6d60343da381f2fb6e2143ce"
+other = "🔪 **{{.PlayerName}}** キル"
+
+["responses.matchStatsEmbed.Meetings"]
+hash = "sha1-3be12dd419d66a687b83d0288e808063337219e6"
+other = "💬 緊急会議"
+
+["responses.matchStatsEmbed.Players"]
+hash = "sha1-a6882a1f5653492ece25584e5fa4e9c38e41fc6e"
+other = "🎮 プレイヤー"
+
+["responses.matchStatsEmbed.Start"]
+hash = "sha1-216b421f07b01a1aa2a62e5805b1250cbb0b506d"
+other = "🕑 開始"
+
+["responses.matchStatsEmbed.TaskEvent"]
+hash = "sha1-7187b8994947bfa41e54c19f596823065443d679"
+other = "🔨 タスク"
 
 ["responses.matchStatsEmbed.Title"]
 hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
@@ -818,6 +926,30 @@ other = "ロビー → タスク のような、ゲームのフェーズ間の�
 hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
 other = "ステージ間の遅延調整"
 
+["settings.AllSettings.DisplayRoomCode.args"]
+hash = "sha1-6ce2a447439270836cb2f74ed22d28051be06157"
+other = "<always/spoiler/never>"
+
+["settings.AllSettings.DisplayRoomCode.desc"]
+hash = "sha1-2db49213af1f37abc163e251e5ce0eab618ecf16"
+other = "ボットのメッセージ中の部屋コードの表示モード（常時、ネタバレ、非表示）を変更"
+
+["settings.AllSettings.DisplayRoomCode.shortDesc"]
+hash = "sha1-d37bb9c6bfa5430a7cc2381a6eb8daac0ba5a010"
+other = "部屋コードの表示を変更"
+
+["settings.AllSettings.HistorySize.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<数値>"
+
+["settings.AllSettings.HistorySize.desc"]
+hash = "sha1-7a95ced214b10094e3b8cfb67fb2fe471d2ad946"
+other = "表示する戦歴の数を指定"
+
+["settings.AllSettings.HistorySize.shortDesc"]
+hash = "sha1-d12f4385fff47dea3cd3b45cd8ec20c3d81d9a8a"
+other = "表示する戦歴の数を指定"
+
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
 other = "<language> または reload"
@@ -962,6 +1094,18 @@ other = "このサーバーの全部のBot設定を表示"
 hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
 other = "全設定を表示"
 
+["settings.AllSettings.TimeOffset.args"]
+hash = "sha1-65db0835846bbb2953cb5ee51a92f1602b0e28e6"
+other = "<時差（時間単位）、-12.0 から 14.0 まで>"
+
+["settings.AllSettings.TimeOffset.desc"]
+hash = "sha1-e48190108f08ab0fe1bd8f93dc11cf20f65b7bda"
+other = "戦績に表示する時刻の時差を指定、通常は UTC からの時差に等しい"
+
+["settings.AllSettings.TimeOffset.shortDesc"]
+hash = "sha1-1b983b9c7f00fbae7511aa9e191603aa0628b914"
+other = "戦績の時差を指定"
+
 ["settings.AllSettings.UnmuteDead.args"]
 hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false (有効/無効)>"
@@ -1065,6 +1209,30 @@ other = "`{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延が {{.OldDe
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
 other = "`{{.Number}}` は有効な数字ではありません！"
+
+["settings.SettingDisplayRoomCode.AlwaysOrNever"]
+hash = "sha1-7c6373972e9cb90f632f418048d7f3fc4a13c0c0"
+other = "以降、メッセージ中のルームコードの表示モードを {{.Arg}} にします"
+
+["settings.SettingDisplayRoomCode.Spoiler"]
+hash = "sha1-758e6a0d7d90f080df874cb032fb7e34e71b379c"
+other = "以降、メッセージ中のルームコードをネタバレタグ付きで表示します"
+
+["settings.SettingDisplayRoomCode.Unrecognized"]
+hash = "sha1-dba098d1b3c3c782ae8b70b903c7a316e445d5f0"
+other = "{{.Arg}} は正しい値ではありません。`{{.CommandPrefix}} settings displayRoomCode` で設定方法を確認してください"
+
+["settings.SettingHistorySize.OutOfRange"]
+hash = "sha1-446364eaa0943941837ca2e78878de4cfe387a45"
+other = "指定された数値が大きすぎるか小さすぎます。1 から 30 の間の数値を指定してください"
+
+["settings.SettingHistorySize.Success"]
+hash = "sha1-bee132f0fbcee1a68fccc8e7cef30d32388de1f4"
+other = "以降、戦歴に過去 {{.History}} 回分を表示します"
+
+["settings.SettingHistorySize.Unrecognized"]
+hash = "sha1-91b2c46378acd696880adae199536f6d29aabe62"
+other = "{{.Number}} は正しい値ではありません。`{{.CommandPrefix}} settings historySize` で設定方法を確認してください"
 
 ["settings.SettingLanguage.list"]
 hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
@@ -1185,6 +1353,18 @@ other = "Botの管理役職はありません。"
 ["settings.SettingPermissionRoleIDs.notFound"]
 hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
 other = "申し訳ありませんが、`{{.RoleName}}` が何の役職なのか分かりません...。 役職ID、役職名、@役職メンション が使用可能です。"
+
+["settings.SettingTimeOffset.OutOfRange"]
+hash = "sha1-a496adeb31d1c1a7802943337df977cd4cb9a5d9"
+other = "指定された数値が大きすぎるか小さすぎます。-12.0 から 14.0 の間の数値を指定してください"
+
+["settings.SettingTimeOffset.Success"]
+hash = "sha1-a40340025be00ec5a3cddf7b50c3675ee331a365"
+other = "以降、戦績の時刻を {{.TimeZone}} 時間の時差で表示します"
+
+["settings.SettingTimeOffset.Unrecognized"]
+hash = "sha1-b32550eaf886bfbd17bbc54d1de9eea415840fea"
+other = "{{.Number}} は正しい値ではありません。`{{.CommandPrefix}} settings timeOffset` で設定方法を確認してください"
 
 ["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
 hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
