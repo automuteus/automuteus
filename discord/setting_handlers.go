@@ -183,10 +183,10 @@ func (bot *Bot) HandleSettingsCommand(galactus *galactus_client.GalactusClient, 
 		isValid = SettingMuteSpectators(galactus, m, sett, args)
 	case setting.DisplayRoomCode:
 		if !prem {
-			s.ChannelMessageSend(m.ChannelID, nonPremiumSettingResponse(sett))
+			galactus.SendChannelMessage(m.ChannelID, nonPremiumSettingResponse(sett))
 			break
 		}
-		isValid = SettingDisplayRoomCode(s, m, sett, args)
+		isValid = SettingDisplayRoomCode(galactus, m, sett, args)
 	case setting.Show:
 		jBytes, err := json.MarshalIndent(sett, "", "  ")
 		if err != nil {
@@ -1146,17 +1146,19 @@ func SettingMuteSpectators(galactus *galactus_client.GalactusClient, m *discordg
 	return false
 }
 
-func SettingDisplayRoomCode(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) bool {
+func SettingDisplayRoomCode(galactus *galactus_client.GalactusClient, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) bool {
 	if len(args) == 2 {
-		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), setting.AllSettings[setting.DisplayRoomCode], sett)
-		s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+		//TODO implement
+		code := "TODO" //sett.GetDisplayRoomCode()
+		embed := ConstructEmbedForSetting(fmt.Sprintf("%v", code), setting.AllSettings[setting.DisplayRoomCode], sett)
+		galactus.SendChannelMessageEmbed(m.ChannelID, &embed)
 		return false
 	}
 
 	val := strings.ToLower(args[2])
 	valid := map[string]bool{"always": true, "spoiler": true, "never": true}
 	if !valid[val] {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.Unrecognized",
 			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings displayRoomCode` for usage",
 		},
@@ -1167,9 +1169,10 @@ func SettingDisplayRoomCode(s *discordgo.Session, m *discordgo.MessageCreate, se
 		return false
 	}
 
-	sett.SetDisplayRoomCode(val)
+	//TODO implement
+	//sett.SetDisplayRoomCode(val)
 	if val == "spoiler" {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.Spoiler",
 			Other: "From now on, I will mark the room code as spoiler in the message",
 		},
@@ -1177,7 +1180,7 @@ func SettingDisplayRoomCode(s *discordgo.Session, m *discordgo.MessageCreate, se
 				"Arg": val,
 			}))
 	} else {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		galactus.SendChannelMessage(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.AlwaysOrNever",
 			Other: "From now on, I will {{.Arg}} display the room code in the message",
 		},

@@ -1,0 +1,4 @@
+V7 TODOs:
+
+- Reimplement Game Activity functionality
+- Fix Game Code Censor functionality

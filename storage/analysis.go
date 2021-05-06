@@ -12,8 +12,6 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
-	"time"
 )
 
 var DiscussCode = fmt.Sprintf("%d", game.DISCUSS)
