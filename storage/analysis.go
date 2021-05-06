@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/automuteus/utils/pkg/capture"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
@@ -44,11 +47,16 @@ type GameStatistics struct {
 
 func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) GameStatistics {
 	stats := GameStatistics{
-		GameDuration: time.Second * time.Duration(pgame.EndTime-pgame.StartTime),
-		WinType:      game.GameResult(pgame.WinType),
+		GameDuration: 0,
+		WinType:      game.Unknown,
 		NumMeetings:  0,
 		NumDeaths:    0,
 		Events:       []SimpleEvent{},
+	}
+
+	if pgame != nil {
+		stats.GameDuration = time.Second * time.Duration(pgame.EndTime-pgame.StartTime)
+		stats.WinType = game.GameResult(pgame.WinType)
 	}
 
 	if len(events) < 2 {

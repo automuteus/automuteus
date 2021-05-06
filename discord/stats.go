@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
-	"strconv"
-	"strings"
 )
 
 func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
@@ -893,15 +894,18 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(matchID, connectCode string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
-	gameData, err := bot.PostgresInterface.GetGame(connectCode, matchID)
+func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+	gameData, err := bot.PostgresInterface.GetGame(guildID, connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	events, err := bot.PostgresInterface.GetGameEvents(matchID)
-	if err != nil {
-		log.Fatal(err)
+	events := []*storage.PostgresGameEvent{}
+	if gameData != nil {
+		events, err = bot.PostgresInterface.GetGameEvents(matchID)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	stats := storage.StatsFromGameAndEvents(gameData, events)

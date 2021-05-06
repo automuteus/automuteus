@@ -20,6 +20,7 @@ const (
 	LeaderboardSize
 	LeaderboardMin
 	MuteSpectators
+	DisplayRoomCode
 	Show
 	Reset
 	NullSetting
@@ -320,6 +321,25 @@ var AllSettings = []Setting{
 			Other: "<true/false>",
 		},
 		Aliases: []string{"mutespectator", "mutespec", "spectators", "spectator", "spec"},
+		Premium: true,
+	},
+	{
+		SettingType: DisplayRoomCode,
+		Name:        "displayRoomCode",
+		Example:     "displayRoomCode spoiler",
+		ShortDesc: &i18n.Message{
+			ID:    "settings.AllSettings.DisplayRoomCode.shortDesc",
+			Other: "Visibility for the ROOM CODE",
+		},
+		Description: &i18n.Message{
+			ID:    "settings.AllSettings.DisplayRoomCode.desc",
+			Other: "Specify the visibility (always, spoiler, never) for the ROOM CODE in the message",
+		},
+		Arguments: &i18n.Message{
+			ID:    "settings.AllSettings.DisplayRoomCode.args",
+			Other: "<always/spoiler/never>",
+		},
+		Aliases: []string{"displayRoomCode", "roomcode", "code", "rc"},
 		Premium: true,
 	},
 	{

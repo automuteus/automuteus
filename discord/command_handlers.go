@@ -404,7 +404,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GameStatsEmbed(strs[1], strs[0], sett, isPrem))
+								bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, isPrem))
 							}
 						} else {
 							bot.GalactusClient.SendChannelMessage(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")

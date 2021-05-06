@@ -88,6 +88,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 				log.Println(err)
 				break
 			}
+					if player.Color > 11 || player.Color < 0 {
+						break
+					}
 
 			sett := bot.StorageInterface.GetGuildSettings(guildID)
 			shouldHandleTracked, userID := bot.processPlayer(sett, player, dgsRequest)

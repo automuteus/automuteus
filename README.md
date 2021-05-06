@@ -63,7 +63,7 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 # Quickstart and Demo (click the image):
 
-[![Quickstart](https://img.youtube.com/vi/kO4cqMKV2yI/0.jpg)](https://youtu.be/kO4cqMKV2yI)
+[![Quickstart](http://i3.ytimg.com/vi/VYx6kM1O4FM/hqdefault.jpg)](https://youtu.be/VYx6kM1O4FM)
 
 # Usage and Commands
 
@@ -94,6 +94,7 @@ The Discord Bot uses the `.au` prefix for any commands by default; if you change
 | `.au pause`    | `.au p` | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
 | `.au privacy`  |         |             | View privacy and data collection information about the bot                                                      |                                    |
 | `.au info`     | `.au i` | None        | View general info about the Bot                                                                                 |                                    |
+| `.au map`      |         | MAPNAME     | View an image of an in-game map in the text channel. Two supported versions: simple or detailed(vent, camera, etc) | `.au map skeld detailed` |
 
 _In addition to handful of more secretive Easter Egg commands..._
 

@@ -23,7 +23,7 @@ func TestPsqlInterface_Init(t *testing.T) {
 
 	psql.GetGuildPremiumStatus("141082723635691521")
 
-	game, err := psql.GetGame("B7B80986", "78467")
+	game, err := psql.GetGame("141082723635691521", "B7B80986", "78467")
 	if err != nil {
 		log.Fatal(err)
 	}
