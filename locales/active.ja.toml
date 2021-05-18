@@ -920,7 +920,7 @@ other = "<true/false (有効/無効)>"
 
 ["settings.AllSettings.MuteSpectators.desc"]
 hash = "sha1-e8a9a8d8000ed326525f1548be0cca7b6a9402d4"
-other = "観客を死んだプレイヤーと同様に扱うべきかどうか (音声ルールに従わせます)。\n**注: セルフホストしていない場合、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
+other = "観客を死んだプレイヤーと同様に扱うべきかどうか (音声ルールに従わせます)。\n**注: セルフホストをしておらず、 Premium worker ボットも使用していない場合、遅延や速度低下が発生する可能性があります！**"
 
 ["settings.AllSettings.MuteSpectators.shortDesc"]
 hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
@@ -1068,7 +1068,7 @@ other = "現在の `{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延�
 
 ["settings.SettingDelays.missingPhases"]
 hash = "sha1-d24fe4229c5953629205ba23e5203879be1db2c6"
-other = "ゲームのフェーズは `Lobby` 、 `Tasks` 、 `Discussion` です。\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
+other = "ゲームのフェーズ一覧は `Lobby` 、 `Tasks` 、 `Discussion` です。\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
 
 ["settings.SettingDelays.setDelayBetweenPhases"]
 hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
@@ -1192,7 +1192,7 @@ other = "観客を死んだプレイヤーと同じようにミュートしな�
 
 ["settings.SettingMuteSpectators.true_noMuteSpectators"]
 hash = "sha1-fdc47919bc2805420aa085dace4eab2d815d5c75"
-other = "観客を死んだプレイヤーと同じようにミュートします。\n\n**注: セルフホストしていない、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
+other = "観客を死んだプレイヤーと同じようにミュートします。\n\n**注: セルフホストをしておらず、 Premium worker ボットも使用していない場合、遅延や速度低下が発生する可能性があります！**"
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
 hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
