@@ -159,8 +159,8 @@ hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
 other = "showme, optin, optout"
 
 ["commands.AllCommands.Privacy.desc"]
-hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
-other = "AuteMuteUsのプライバシーとデータ収集の詳細情報\n詳細は [こちら](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
+hash = "sha1-67002092cd50cd9d0f47581d44080d586857743d"
+other = "AuteMuteUsのプライバシーとデータ収集の情報\n詳細は [こちら](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
 
 ["commands.AllCommands.Privacy.shortDesc"]
 hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
@@ -331,8 +331,8 @@ hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
 other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
 
 ["discordGameState.trackChannel.voiceChannelNotfound"]
-hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "{{.channelName}} という名前のVCは見つかりませんでした。\n"
+hash = "sha1-ed16ffcda7d71ceb0fb57f51d847d561ab6f94be"
+other = "{{.channelName}} という名前のボイスチャンネルはありませんでした。"
 
 ["discordGameState.trackChannel.voiceChannelSet"]
 hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
@@ -343,7 +343,7 @@ hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
 other = "{{.Mins}} 分後にメッセージを削除します。"
 
 ["eventHandler.gameOver.matchID"]
-hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
+hash = "sha1-36a8384dbf99d6e7cfe03cef62e8a30ff3a22753"
 other = "ゲーム終了！ マッチIDを使用してマッチの統計情報を表示します: `{{.MatchID}}`\n{{.Winners}}"
 
 ["locale.language.name"]
@@ -363,8 +363,8 @@ hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
 other = "{{.CommandPrefix}} で返事をします"
 
 ["message_handlers.handleNewGameMessage.embed.Description"]
-hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "このリンクをクリックしてキャプチャ: \n <{{.hyperlink}}>\n\nキャプチャソフトを入れてない? 最新版は [ここ！]({{.downloadURL}})\n\n手動でキャプチャするなら:"
+hash = "sha1-191bc4559e717a63efbd471d5a47500c2f0cb5da"
+other = "このリンクをクリックしてキャプチャ開始: \n <{{.hyperlink}}>\n\nキャプチャソフトを入れてない? 最新版は [こちら！]({{.downloadURL}})\n\n手動でキャプチャするなら:"
 
 ["message_handlers.handleNewGameMessage.embed.Fields.Code"]
 hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
@@ -379,7 +379,7 @@ hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
 other = "ゲームを開始しました！"
 
 ["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
+hash = "sha1-f196941e4f9f4e3056834b819ba7975b55f9a6d2"
 other = "これ以上ゲームを開始すると、Discordの制限に引っかかるか、現在実行中のゲームを抑制しなくてはいけません！😦\n数分後にもう一度お試しいただくか、AutoMuteUs Premium (`{{.CommandPrefix}} premium`) への加入をお考えください。\n現在のゲーム数: {{.Games}}"
 
 ["message_handlers.handleNewGameMessage.noChannel"]
@@ -443,11 +443,11 @@ hash = "sha1-cf0d3b04ef5176072c4b4f48b58284a365914dbb"
 other = "総合勝率 ({{.Min}}ゲーム以上)"
 
 ["responses.helpResponse.SubTitle"]
-hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[GitHubプロジェクトを見る](https://github.com/denverquane/automuteus) か [私たちのDiscordに参加！](https://discord.gg/ZkqZSWF)\n\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
+hash = "sha1-721fa1e4dfb900b7667379763deec62ab8c6d956"
+other = "[GitHubプロジェクトを見る](https://github.com/denverquane/automuteus) か [私達のDiscordに参加！](https://discord.gg/ZkqZSWF)\n\n`コマンドの詳細を表示するなら{{.CommandPrefix}} help <command>` と入力！"
 
 ["responses.helpResponse.Title"]
-hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
+hash = "sha1-a7af8d8b8e8e682885a2d98e3c6657e037eca16c"
 other = "AutoMuteUs Bot コマンド一覧:\n"
 
 ["responses.lobbyMessage.Footer.Text"]
@@ -483,8 +483,8 @@ hash = "sha1-f32f308546b6f6c3b1d900a56f0ea32909f5d7b3"
 other = "ボイスチャンネル"
 
 ["responses.makeDescription.GameNotRunning"]
-hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
-other = "\n⚠**中断されました！**⚠\n\n"
+hash = "sha1-3d7a18c3065b573a06dc4ea7f3ead371036aa8ca"
+other = "\n⚠ **中断されました！** ⚠\n\n"
 
 ["responses.matchStatsEmbed.Title"]
 hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
@@ -515,8 +515,8 @@ hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
 other = "{{.Tier}} ユーザーは {{.Count}}回 優先的なミュートBOTへのアクセスを受けられます！\n下記にご招待状を用意しました！"
 
 ["responses.premiumInviteResponseNoAccess.desc"]
-hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
-other = "{{.Tier}} ユーザーは優先的なミュートを受けられません！\n`{{.CommandPrefix}} premium` でAuteMuteUsのことをもっと知ろう"
+hash = "sha1-d87bd47f16c9b7626485ebe01d9bb590a4595268"
+other = "{{.Tier}} ユーザーは優先的なミュートを受けられません！\n`{{.CommandPrefix}} premium` でAuteMuteUs Premiumについて知ろう！"
 
 ["responses.premiumResponse.FastMute"]
 hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
@@ -527,15 +527,15 @@ hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
 other = "Premium ユーザーはミュートを高速にできる \"helper\" ボットをお使いいただけます！"
 
 ["responses.premiumResponse.FreeDescription"]
-hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
-other = "プレミアムなAutoMuteUsがお届けするクールなサービスを是非チェックしてください！\n\n[AutoMuteUs Premiumに加入する]({{.BaseURL}}{{.GuildID}})"
+hash = "sha1-0b516d9f17468f16f8ccd0eb4b99580386271fd1"
+other = "プレミアムなAutoMuteUsがお届けするクールな機能を是非チェックしてください！\n\n[AutoMuteUs Premiumに加入する]({{.BaseURL}}{{.GuildID}})"
 
 ["responses.premiumResponse.Invites"]
 hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
 other = "`{{.CommandPrefix}} premium invites` で招待できるPremium BOTの一覧を見よう！"
 
 ["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
+hash = "sha1-040c8042a8ed7223feb0f4f06e17e352a048e22a"
 other = "AutoMuteUs **{{.Tier}}**{{.DaysString}}をご利用のようです！サポートいただきありがとうございます！\n\nAutoMuteUs **{{.Tier}}**で使える特典は以下の通りです！"
 
 ["responses.premiumResponse.PremiumDescriptionDaysRemaining"]
@@ -543,7 +543,7 @@ hash = "sha1-f65aa5c43a7ebe1901c85300559ec6af58e36f12"
 other = " (残り{{.Days}}日)"
 
 ["responses.premiumResponse.PremiumDescriptionExpired"]
-hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
+hash = "sha1-73b084e4870ff6b84582c7fd345f7021472bf961"
 other = "おおっと！AutoMuteUs **{{.Tier}}**をご利用いただいていましたが、*{{.Days}}日前に期限切れ**になってしまいました！\n\n再加入をご検討ください: [AutoMuteUs Premiumに加入する]({{.BaseURL}}{{.GuildID}})"
 
 ["responses.premiumResponse.PriorityGameAccess"]
@@ -595,7 +595,7 @@ hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
 other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設定を変更することができます"
 
 ["responses.settingResponse.PremiumNoThanks"]
-hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
+hash = "sha1-d1afe75d94847ebdf1fdb611538858fbb7c766f4"
 other = "以下の設定は AutoMuteUs Premium 専用です。\n`{{.CommandPrefix}} premium` で詳細を確認しましょう！"
 
 ["responses.settingResponse.PremiumThanks"]
@@ -818,6 +818,18 @@ other = "ロビー → タスク のような、ゲームのフェーズ間の�
 hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
 other = "ステージ間の遅延調整"
 
+["settings.AllSettings.DisplayRoomCode.args"]
+hash = "sha1-6ce2a447439270836cb2f74ed22d28051be06157"
+other = "<always/spoiler/never> (常に表示/スポイラー表示/表示しない)"
+
+["settings.AllSettings.DisplayRoomCode.desc"]
+hash = "sha1-2db49213af1f37abc163e251e5ce0eab618ecf16"
+other = "Botのメッセージ内にゲームの部屋コードを表示するかどうか(always(常に表示)、spoiler(スポイラー表示)、never(表示しない))を選択します。"
+
+["settings.AllSettings.DisplayRoomCode.shortDesc"]
+hash = "sha1-d37bb9c6bfa5430a7cc2381a6eb8daac0ba5a010"
+other = "部屋コードの表示"
+
 ["settings.AllSettings.Language.args"]
 hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
 other = "<language> または reload"
@@ -835,7 +847,7 @@ hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false>"
 
 ["settings.AllSettings.LeaderboardMention.desc"]
-hash = "sha1-d2f89611905cb78ba8f0cb93e9fca7b98c98ad15"
+hash = "sha1-5a90b51eddd121e8116724283d202497e807ee9f"
 other = "戦績表示でプレイヤー名をメンション付きで表示する。\n**大人数サーバーでは無効にしてください！**"
 
 ["settings.AllSettings.LeaderboardMention.shortDesc"]
@@ -907,8 +919,8 @@ hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
 other = "<true/false (有効/無効)>"
 
 ["settings.AllSettings.MuteSpectators.desc"]
-hash = "sha1-6b5c5f2f2ef1b8c1326aa751aaaf5f885012c0ee"
-other = "観客を死んだプレイヤーと同じように扱うべきかどうか (音声ルールに従わせます)。\n**注: セルフホストしていない、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
+hash = "sha1-e8a9a8d8000ed326525f1548be0cca7b6a9402d4"
+other = "観客を死んだプレイヤーと同様に扱うべきかどうか (音声ルールに従わせます)。\n**注: セルフホストしていない場合、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
 
 ["settings.AllSettings.MuteSpectators.shortDesc"]
 hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
@@ -1011,11 +1023,11 @@ hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
 other = "例"
 
 ["settings.ConstructEmbedForSetting.StarterDesc"]
-hash = "sha1-5585eb79654b961ffbe58ffb393bfe024f6376fc"
+hash = "sha1-a228dc966e1a8e0edce727e7092f8f8d481d82e6"
 other = "この設定を変更するには `{{.CommandPrefix}} settings {{.Command}}` と入力してください。\n\n"
 
 ["settings.HandleSettingsCommand.default"]
-hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
+hash = "sha1-c385dea8630852a9a9f7fcb9c07f306c09b9f036"
 other = "申し訳ありませんが、`{{.Arg}}` は有効な設定ではありません！\n"
 
 ["settings.SettingAdminUserIDs.clearAdmins"]
@@ -1055,8 +1067,8 @@ hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
 other = "現在の `{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延は {{.OldDelay}} です。"
 
 ["settings.SettingDelays.missingPhases"]
-hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "フェーズ一覧は `Lobby`、`Tasks`、`Discussion` です。\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
+hash = "sha1-d24fe4229c5953629205ba23e5203879be1db2c6"
+other = "ゲームのフェーズは `Lobby` 、 `Tasks` 、 `Discussion` です。\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
 
 ["settings.SettingDelays.setDelayBetweenPhases"]
 hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
@@ -1065,6 +1077,18 @@ other = "`{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延が {{.OldDe
 ["settings.SettingDelays.wrongNumber"]
 hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
 other = "`{{.Number}}` は有効な数字ではありません！"
+
+["settings.SettingDisplayRoomCode.AlwaysOrNever"]
+hash = "sha1-7c6373972e9cb90f632f418048d7f3fc4a13c0c0"
+other = "From now on, I will {{.Arg}} display the room code in the message"
+
+["settings.SettingDisplayRoomCode.Spoiler"]
+hash = "sha1-758e6a0d7d90f080df874cb032fb7e34e71b379c"
+other = "これから、メッセージ中の部屋コードをスポイラーとして表示します。"
+
+["settings.SettingDisplayRoomCode.Unrecognized"]
+hash = "sha1-dba098d1b3c3c782ae8b70b903c7a316e445d5f0"
+other = "{{.Arg}}は正しくない値です。`{{.CommandPrefix}} settings displayRoomCode`で使い方を見よう"
 
 ["settings.SettingLanguage.list"]
 hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
@@ -1167,7 +1191,7 @@ hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
 other = "観客を死んだプレイヤーと同じようにミュートしなくなります"
 
 ["settings.SettingMuteSpectators.true_noMuteSpectators"]
-hash = "sha1-cb62081e4c9e37177e32ad916c63ef5ff4a812fe"
+hash = "sha1-fdc47919bc2805420aa085dace4eab2d815d5c75"
 other = "観客を死んだプレイヤーと同じようにミュートします。\n\n**注: セルフホストしていない、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
 
 ["settings.SettingPermissionRoleIDs.clearRoles"]
