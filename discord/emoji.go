@@ -136,27 +136,27 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		},
 		game.Maroon: {
 			Name: "aumaroon",
-			ID:   "854762167098277898",
+			ID:   "855108016881008670",
 		},
 		game.Rose: {
 			Name: "aurose",
-			ID:   "854762198596190219",
+			ID:   "855108016734732329",
 		},
 		game.Banana: {
 			Name: "aubanana",
-			ID:   "854762102802612244",
+			ID:   "855108016420552736",
 		},
 		game.Gray: {
 			Name: "augray",
-			ID:   "854762135708237875",
+			ID:   "855108016801054760",
 		},
 		game.Tan: {
 			Name: "autan",
-			ID:   "854762289839210516",
+			ID:   "855108016546250753",
 		},
 		game.Sunset: {
 			Name: "ausunset",
-			ID:   "854762255223750656",
+			ID:   "855108016466821151",
 		},
 	},
 	false: []Emoji{
@@ -210,27 +210,27 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		},
 		game.Maroon: {
 			Name: "aumaroondead",
-			ID:   "854762182272483358",
+			ID:   "855108016890576906",
 		},
 		game.Rose: {
 			Name: "aurosedead",
-			ID:   "854762214970884126",
+			ID:   "855108016817700936",
 		},
 		game.Banana: {
 			Name: "aubananadead",
-			ID:   "854762115566665748",
+			ID:   "855108016746266644",
 		},
 		game.Gray: {
 			Name: "augraydead",
-			ID:   "854762149003788318",
+			ID:   "855108016898048020",
 		},
 		game.Tan: {
 			Name: "autandead",
-			ID:   "854762306810806343",
+			ID:   "855108017007886356",
 		},
 		game.Sunset: {
 			Name: "ausunsetdead",
-			ID:   "854762273376960522",
+			ID:   "855108017096097802",
 		},
 	},
 }
