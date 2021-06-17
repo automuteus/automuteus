@@ -50,8 +50,8 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
-	topMap[true] = make([]Emoji, 12) // 12 colors for alive/dead
-	topMap[false] = make([]Emoji, 12)
+	topMap[true] = make([]Emoji, 18) // 18 colors for alive/dead
+	topMap[false] = make([]Emoji, 18)
 	return topMap
 }
 
@@ -134,6 +134,30 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 			Name: "aulime",
 			ID:   "762392088121442334",
 		},
+		game.Maroon: {
+			Name: "aumaroon",
+			ID:   "855108016881008670",
+		},
+		game.Rose: {
+			Name: "aurose",
+			ID:   "855108016734732329",
+		},
+		game.Banana: {
+			Name: "aubanana",
+			ID:   "855108016420552736",
+		},
+		game.Gray: {
+			Name: "augray",
+			ID:   "855108016801054760",
+		},
+		game.Tan: {
+			Name: "autan",
+			ID:   "855108016546250753",
+		},
+		game.Sunset: {
+			Name: "ausunset",
+			ID:   "855108016466821151",
+		},
 	},
 	false: []Emoji{
 		game.Red: {
@@ -183,6 +207,30 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		game.Lime: {
 			Name: "aulimedead",
 			ID:   "762397192366325793",
+		},
+		game.Maroon: {
+			Name: "aumaroondead",
+			ID:   "855108016890576906",
+		},
+		game.Rose: {
+			Name: "aurosedead",
+			ID:   "855108016817700936",
+		},
+		game.Banana: {
+			Name: "aubananadead",
+			ID:   "855108016746266644",
+		},
+		game.Gray: {
+			Name: "augraydead",
+			ID:   "855108016898048020",
+		},
+		game.Tan: {
+			Name: "autandead",
+			ID:   "855108017007886356",
+		},
+		game.Sunset: {
+			Name: "ausunsetdead",
+			ID:   "855108017096097802",
 		},
 	},
 }

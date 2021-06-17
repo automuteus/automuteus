@@ -145,11 +145,11 @@ func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.
 }
 
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.GuildSettings) []*discordgo.MessageEmbedField {
-	unsorted := make([]*discordgo.MessageEmbedField, 12)
+	unsorted := make([]*discordgo.MessageEmbedField, 18)
 	num := 0
 
 	for _, player := range dgs.AmongUsData.PlayerData {
-		if player.Color < 0 || player.Color > 11 {
+		if player.Color < 0 || player.Color > 17 {
 			break
 		}
 		for _, userData := range dgs.UserData {
@@ -180,7 +180,7 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *storage.G
 
 	sorted := make([]*discordgo.MessageEmbedField, num)
 	num = 0
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 18; i++ {
 		if unsorted[i] != nil {
 			sorted[num] = unsorted[i]
 			num++
