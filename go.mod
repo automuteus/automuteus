@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/alicebob/miniredis/v2 v2.14.1
 	github.com/automuteus/galactus v1.2.2
-	github.com/automuteus/utils v0.0.16
+	github.com/automuteus/utils v0.0.17
 	github.com/bwmarrin/discordgo v0.23.1
 	github.com/georgysavva/scany v0.2.7
 	github.com/go-redis/redis/v8 v8.4.10
@@ -25,5 +25,3 @@ require (
 
 // TODO replace when V7 comes out
 replace github.com/automuteus/galactus v1.2.2 => github.com/automuteus/galactus v1.2.3-0.20210209052631-1bd854dca0cf
-
-replace github.com/automuteus/utils v0.0.16 => github.com/automuteus/utils v0.0.17-0.20210518153316-f5e2b6d74158
