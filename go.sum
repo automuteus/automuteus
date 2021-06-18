@@ -24,8 +24,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
 github.com/automuteus/galactus v1.2.2 h1:8OMVzXutsHO+R1D1lW6qxzmZrAwNyTADw503B1ARGgg=
 github.com/automuteus/galactus v1.2.2/go.mod h1:fWFnpCRyOs9wSVHvksupPlMPiAEO6CGhbI+uPtrmJcs=
-github.com/automuteus/utils v0.0.17 h1:GyU/n24eO/K/OLjPOZenY+nw9H1vg+5q3bSTEX7QbMc=
-github.com/automuteus/utils v0.0.17/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
+github.com/automuteus/utils v0.0.18 h1:GyU/n24eO/K/OLjPOZenY+nw9H1vg+5q3bSTEX7QbMc=
+github.com/automuteus/utils v0.0.18/go.mod h1:rCHtrQ3nNXdagcOKW8Mcr4wAW3CaXyB1aArsdMtXS30=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
