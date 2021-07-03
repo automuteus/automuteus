@@ -279,7 +279,11 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	}
 	defer snowFlakeLock.Release(ctx)
 
-	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+	prem, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+	premTier := premium.FreeTier
+	if !premium.IsExpired(prem, days) {
+		premTier = prem
+	}
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 	gsr := GameStateRequest{
@@ -342,7 +346,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		if dgs.Running {
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := task.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users: []task.UserModify{
 					{
 						UserID: uid,
@@ -449,9 +453,14 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 
 		dgs.Reset()
 	} else {
-		premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+		premTier := premium.FreeTier
+		if !premium.IsExpired(premStatus, days) {
+			premTier = premStatus
+		}
+
 		// Premium users should always be allowed to start new games; only check the free guilds
-		if premStatus == premium.FreeTier {
+		if premTier == premium.FreeTier {
 			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
 			act := os.Getenv("MAX_ACTIVE_GAMES")
 			num, err := strconv.ParseInt(act, 10, 64)

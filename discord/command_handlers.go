@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
@@ -198,7 +199,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case command.Settings:
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-			isPrem := (premStatus != 0) && (days == storage.NoExpiryCode || days > 0)
+			isPrem := !premium.IsExpired(premStatus, days)
 			bot.HandleSettingsCommand(s, m, sett, args, isPrem)
 
 		case command.Map:
@@ -345,7 +346,8 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			}
 
 		case command.Stats:
-			premStatus, _ := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+			isPrem := !premium.IsExpired(premStatus, days)
 			if len(args[1:]) == 0 {
 				embed := ConstructEmbedForCommand(prefix, cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
@@ -385,7 +387,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 								}
 							}
 						} else {
-							_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, premStatus))
+							_, err := s.ChannelMessageSendEmbed(m.ChannelID, bot.GuildStatsEmbed(m.GuildID, sett, isPrem))
 							if err != nil {
 								log.Println(err)
 							}
@@ -398,7 +400,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							if len(strs) < 2 {
 								log.Println("Something very wrong with the regex for match/conn codes...")
 							} else {
-								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, premStatus))
+								s.ChannelMessageSendEmbed(m.ChannelID, bot.GameStatsEmbed(m.GuildID, strs[1], strs[0], sett, isPrem))
 							}
 						} else {
 							s.ChannelMessageSend(m.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
@@ -440,7 +442,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 							}
 						}
 					} else {
-						s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, premStatus))
+						s.ChannelMessageSendEmbed(m.ChannelID, bot.UserStatsEmbed(userID, m.GuildID, sett, isPrem))
 					}
 				}
 			}
@@ -450,10 +452,14 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			if len(args[1:]) == 0 {
 				s.ChannelMessageSendEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, premStatus, days, sett))
 			} else {
+				tier := premium.FreeTier
+				if !premium.IsExpired(premStatus, days) {
+					tier = premStatus
+				}
 				arg := strings.ToLower(args[1])
 				if isAdmin {
 					if arg == "invite" || arg == "invites" || arg == "inv" {
-						_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(premStatus, sett))
+						_, err := s.ChannelMessageSendEmbed(m.ChannelID, premiumInvitesEmbed(tier, sett))
 						if err != nil {
 							log.Println(err)
 						}
