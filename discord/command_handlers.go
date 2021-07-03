@@ -462,6 +462,9 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *settings.Guild
 			if len(args[1:]) == 0 {
 				bot.GalactusClient.SendChannelMessageEmbed(m.ChannelID, premiumEmbedResponse(m.GuildID, tier, daysRem, sett))
 			} else {
+				if premium.IsExpired(tier, daysRem) {
+					tier = premium.FreeTier
+				}
 				arg := strings.ToLower(args[1])
 				if isAdmin {
 					if arg == "invite" || arg == "invites" || arg == "inv" {
