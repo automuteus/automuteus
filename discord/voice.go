@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
@@ -21,10 +22,14 @@ const (
 
 func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) {
 	log.Println("Forcibly applying mute/deaf to " + userID)
-	prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+	prem, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+	premTier := premium.FreeTier
+	if !premium.IsExpired(prem, days) {
+		premTier = prem
+	}
 	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := task.UserModifyRequest{
-		Premium: prem,
+		Premium: premTier,
 		Users: []task.UserModify{
 			{
 				UserID: uid,
@@ -79,9 +84,13 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 		}
 	}
 	if len(users) > 0 {
-		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		prem, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premTier := premium.FreeTier
+		if !premium.IsExpired(prem, days) {
+			premTier = prem
+		}
 		req := task.UserModifyRequest{
-			Premium: prem,
+			Premium: premTier,
 			Users:   users,
 		}
 		// nil lock because this is an override; we don't care about legitimately obtaining the lock
@@ -178,11 +187,15 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 	}
 
 	if dgs.Running && len(users) > 0 {
-		prem, _ := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		prem, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premTier := premium.FreeTier
+		if !premium.IsExpired(prem, days) {
+			premTier = prem
+		}
 
 		if priorityRequests > 0 {
 			req := task.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users:   users[:priorityRequests],
 			}
 			// no lock; we're not done yet
@@ -191,7 +204,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			rem := users[priorityRequests:]
 			if len(rem) > 0 {
 				req = task.UserModifyRequest{
-					Premium: prem,
+					Premium: premTier,
 					Users:   rem,
 				}
 				bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
@@ -202,7 +215,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.Guil
 			// no priority; issue all at once
 			log.Println("Issuing mutes/deafens with no particular priority")
 			req := task.UserModifyRequest{
-				Premium: prem,
+				Premium: premTier,
 				Users:   users,
 			}
 			bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)

@@ -184,13 +184,11 @@ func (psqlInterface *PsqlInterface) insertPlayer(player *PostgresUserGame) error
 }
 
 const SecsInADay = 86400
-const SubDays = 31         // use 31 because there shouldn't ever be a gap; whenever a renewal happens on the 31st day, that should be valid
-const NoExpiryCode = -9999 // dumb, but no one would ever have expired premium for 9999 days
 
 func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (premium.Tier, int) {
 	// self-hosting; only return the true guild status if this variable is set
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		return premium.SelfHostTier, NoExpiryCode
+		return premium.SelfHostTier, premium.NoExpiryCode
 	}
 
 	gid, err := strconv.ParseUint(guildID, 10, 64)
@@ -204,12 +202,12 @@ func (psqlInterface *PsqlInterface) GetGuildPremiumStatus(guildID string) (premi
 		return premium.FreeTier, 0
 	}
 
-	daysRem := NoExpiryCode
+	daysRem := premium.NoExpiryCode
 
 	if guild.TxTimeUnix != nil {
 		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
 		// 31 - days elapsed
-		daysRem = int(SubDays - (diff / SecsInADay))
+		daysRem = int(premium.SubDays - (diff / SecsInADay))
 	}
 
 	return premium.Tier(guild.Premium), daysRem

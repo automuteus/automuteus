@@ -9,14 +9,13 @@ import (
 	"strings"
 
 	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
 	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
 
@@ -65,7 +64,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if prem != premium.FreeTier {
+	if isPrem {
 		leaderBoardSize := sett.GetLeaderboardSize()
 		extraDesc = ""
 		//extraDesc = sett.LocalizeMessage(&i18n.Message{
@@ -537,7 +536,7 @@ func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.Guild
 	return "<@" + userID + ">"
 }
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gname := ""
 	avatarURL := ""
 	g, err := bot.PrimarySession.Guild(guildID)
@@ -591,7 +590,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 		"CommandPrefix": sett.CommandPrefix,
 	})
 
-	if prem != premium.FreeTier {
+	if isPrem {
 		leaderboardSize := sett.GetLeaderboardSize()
 		leaderboardMin := sett.GetLeaderboardMin()
 		extraDesc = ""
@@ -894,7 +893,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, pre
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *storage.GuildSettings, prem premium.Tier) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gameData, err := bot.PostgresInterface.GetGame(guildID, connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)
