@@ -88,149 +88,190 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	true: []Emoji{
 		game.Red: {
 			Name: "aured",
-			ID:   "855577595138408458",
+			ID:   "866558066921177108",
 		},
 		game.Blue: {
 			Name: "aublue",
-			ID:   "855577594698399744",
+			ID:   "866558066484183060",
 		},
 		game.Green: {
 			Name: "augreen",
-			ID:   "855577594937081886",
+			ID:   "866558066568986664",
 		},
 		game.Pink: {
 			Name: "aupink",
-			ID:   "855577594719895622",
+			ID:   "866558067004538891",
 		},
 		game.Orange: {
 			Name: "auorange",
-			ID:   "855577595131068416",
+			ID:   "866558066902958090",
 		},
 		game.Yellow: {
 			Name: "auyellow",
-			ID:   "855577594560905237",
+			ID:   "866558067243221002",
 		},
 		game.Black: {
 			Name: "aublack",
-			ID:   "855577594803781632",
+			ID:   "866558066442895370",
 		},
 		game.White: {
 			Name: "auwhite",
-			ID:   "855577594577420339",
+			ID:   "866558067026165770",
 		},
 		game.Purple: {
 			Name: "aupurple",
-			ID:   "855577594937868289",
+			ID:   "866558066966396928",
 		},
 		game.Brown: {
 			Name: "aubrown",
-			ID:   "855577594657243136",
+			ID:   "866558066564136970",
 		},
 		game.Cyan: {
 			Name: "aucyan",
-			ID:   "855577594958446602",
+			ID:   "866558066525601853",
 		},
 		game.Lime: {
 			Name: "aulime",
-			ID:   "855577594949926912",
+			ID:   "866558066963382282",
 		},
 		game.Maroon: {
 			Name: "aumaroon",
-			ID:   "855577594966573067",
+			ID:   "866558066917113886",
 		},
 		game.Rose: {
 			Name: "aurose",
-			ID:   "855577594739949579",
+			ID:   "866558066921439242",
 		},
 		game.Banana: {
 			Name: "aubanana",
-			ID:   "855577594535477279",
+			ID:   "866558065917558797",
 		},
 		game.Gray: {
 			Name: "augray",
-			ID:   "855577594706919485",
+			ID:   "866558066174459905",
 		},
 		game.Tan: {
 			Name: "autan",
-			ID:   "855577594723565568",
+			ID:   "866558066820382721",
 		},
 		game.Coral: {
 			Name: "aucoral",
-			ID:   "855577594597998633",
+			ID:   "866558066552209448",
 		},
 	},
 	false: []Emoji{
 		game.Red: {
 			Name: "aureddead",
-			ID:   "855577594548191253",
+			ID:   "866558067255279636",
 		},
 		game.Blue: {
 			Name: "aubluedead",
-			ID:   "855577595391115364",
+			ID:   "866558066660999218",
 		},
 		game.Green: {
 			Name: "augreendead",
-			ID:   "855577594690535453",
+			ID:   "866558067088949258",
 		},
 		game.Pink: {
 			Name: "aupinkdead",
-			ID:   "855577594757382194",
+			ID:   "866558066945556512",
 		},
 		game.Orange: {
 			Name: "auorangedead",
-			ID:   "855577594879148032",
+			ID:   "866558067508510730",
 		},
 		game.Yellow: {
 			Name: "auyellowdead",
-			ID:   "855577594971947008",
+			ID:   "866558067206520862",
 		},
 		game.Black: {
 			Name: "aublackdead",
-			ID:   "855577595496497172",
+			ID:   "866558066668339250",
 		},
 		game.White: {
 			Name: "auwhitedead",
-			ID:   "855577595218755614",
+			ID:   "866558067231293450",
 		},
 		game.Purple: {
 			Name: "aupurpledead",
-			ID:   "855577594984005672",
+			ID:   "866558067223298048",
 		},
 		game.Brown: {
 			Name: "aubrowndead",
-			ID:   "855577594609795082",
+			ID:   "866558066945163304",
 		},
 		game.Cyan: {
 			Name: "aucyandead",
-			ID:   "855577594807713792",
+			ID:   "866558067051200512",
 		},
 		game.Lime: {
 			Name: "aulimedead",
-			ID:   "855577595834925066",
+			ID:   "866558067344408596",
 		},
 		game.Maroon: {
 			Name: "aumaroondead",
-			ID:   "855577594699448331",
+			ID:   "866558067238895626",
 		},
 		game.Rose: {
 			Name: "aurosedead",
-			ID:   "855577595232256011",
+			ID:   "866558067083444225",
 		},
 		game.Banana: {
 			Name: "aubananadead",
-			ID:   "855577594312130592",
+			ID:   "866558066342625350",
 		},
 		game.Gray: {
 			Name: "augraydead",
-			ID:   "855577594903527424",
+			ID:   "866558067049758740",
 		},
 		game.Tan: {
 			Name: "autandead",
-			ID:   "855577595222163476",
+			ID:   "866558067230638120",
 		},
 		game.Coral: {
 			Name: "aucoraldead",
-			ID:   "855577595563212860",
+			ID:   "866558067024723978",
 		},
 	},
 }
+
+/*
+Helpful for copy/paste into Discord to get new emoji IDs when they are re-uploaded...
+\:aured:
+\:aublue:
+\:augreen:
+\:aupink:
+\:auorange:
+\:auyellow:
+\:aublack:
+\:auwhite:
+\:aupurple:
+\:aubrown:
+\:aucyan:
+\:aulime:
+\:aumaroon:
+\:aurose:
+\:aubanana:
+\:augray:
+\:autan:
+\:aucoral:
+
+\:aureddead:
+\:aubluedead:
+\:augreendead:
+\:aupinkdead:
+\:auorangedead:
+\:auyellowdead:
+\:aublackdead:
+\:auwhitedead:
+\:aupurpledead:
+\:aubrowndead:
+\:aucyandead:
+\:aulimedead:
+\:aumaroondead:
+\:aurosedead:
+\:aubananadead:
+\:augraydead:
+\:autandead:
+\:aucoraldead:
+*/
