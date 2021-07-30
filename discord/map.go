@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"os"
 )
 
 type MapItem struct {
@@ -21,8 +22,6 @@ type MapImage struct {
 func (m *MapItem) String() string {
 	return m.Name
 }
-
-const BaseMapURL = "https://github.com/denverquane/automuteus/blob/master/assets/maps/"
 
 func NewMapItem(name string) (*MapItem, error) {
 	switch strings.ToLower(name) {
@@ -40,6 +39,11 @@ func NewMapItem(name string) (*MapItem, error) {
 		return nil, errors.New(fmt.Sprintf("Invalid map name: %s", name))
 	}
 
+	BaseMapURL := os.Getenv("BASE_MAP_URL")
+	if BaseMapURL == "" {
+		BaseMapURL = "https://github.com/denverquane/automuteus/blob/master/assets/maps/"
+	}
+	
 	base, err := url.Parse(BaseMapURL)
 	if err != nil {
 		log.Println(err)
