@@ -5,7 +5,7 @@ go 1.15
 // +heroku goVersion go1.15
 
 require (
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v0.4.1
 	github.com/automuteus/galactus v1.2.2
 	github.com/automuteus/utils v0.0.18
 	github.com/bsm/redislock v0.7.0
