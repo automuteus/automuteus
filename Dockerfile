@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine AS builder
+FROM golang:1.17-alpine AS builder
 
 # Git is required for getting the dependencies.
 # hadolint ignore=DL3018
