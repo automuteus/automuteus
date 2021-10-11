@@ -15,6 +15,8 @@ services:
       # 5000 is the default service port
       # Format is HostPort:ContainerPort
       - ${SERVICE_PORT:-5000}:5000
+    networks:
+      - application
     environment:
       # These are required and will fail if not present
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
@@ -42,6 +44,8 @@ services:
     ports:
       # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
       - ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT}
+    networks:
+      - application
     image: automuteus/galactus:${GALACTUS_TAG:?err}
     restart: always
     environment:
@@ -58,6 +62,8 @@ services:
     restart: always
     volumes:
       - "redis-data:/data"
+    networks:
+      - application
 
   postgres:
     image: postgres:12-alpine
@@ -67,8 +73,40 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASS}
     volumes:
       - "postgres-data:/var/lib/postgresql/data"
+    networks:
+      - application
+      - analytics
+
+  jupyterlab:
+    image: jlab-automuteus
+    restart: always
+    container_name: jlab-analytics
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:?err}
+      - POSTGRES_PASS=${POSTGRES_PASS:?err}
+      - POSTGRES_ADDR=${POSTGRES_ADDR}
+    build:
+      context: ./jupyter
+      dockerfile: Dockerfile
+    volumes:
+      - "./jupyter/work:/tmp/work"
+      - "./.jupyter:/root/.jupyter"
+    ports:
+      - "8090:8080"
+    networks:
+      - application
+      - analytics
+    tty: true
+    command: jupyter server --ip=0.0.0.0 --port=8080 --allow-root --no-browser --NotebookApp.token=''
 
 volumes:
   bot-logs:
   redis-data:
   postgres-data:
+
+networks:
+  application:
+  analytics:

@@ -1,0 +1,7 @@
+pandas
+numpy
+matplotlib
+ipywidgets >=7.0.0, <8.0
+bqplot
+psycopg2
+voila

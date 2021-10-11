@@ -34,3 +34,7 @@ logs.txt
 temp.png
 discuss.png
 ending.png
+
+# analytics settings
+.jupyter
+.ipynb_checkpoints
