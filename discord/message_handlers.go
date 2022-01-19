@@ -52,18 +52,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 	contents := m.Content
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
-	prefix := sett.GetCommandPrefix()
 
-	if strings.Contains(m.Content, "<@!"+s.State.User.ID+">") {
-		s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleMessageCreate.respondPrefix",
-			Other: "I respond to the prefix {{.CommandPrefix}}",
-		},
-			map[string]interface{}{
-				"CommandPrefix": prefix,
-			}))
-		return
-	}
+	prefix := sett.GetCommandPrefix()
 
 	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
 	if globalPrefix != "" && strings.HasPrefix(contents, globalPrefix) {
@@ -71,7 +61,8 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		prefix = globalPrefix
 	}
 
-	if strings.HasPrefix(contents, prefix) {
+	mention := "<@!" + s.State.User.ID + ">"
+	if strings.HasPrefix(contents, prefix) || strings.HasPrefix(contents, mention) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
 			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
 			if banned {
@@ -104,8 +95,10 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 
 		oldLen := len(contents)
 		contents = strings.Replace(contents, prefix+" ", "", 1)
-		if len(contents) == oldLen { // didn't have a space
+		contents = strings.Replace(contents, mention+" ", "", 1)
+		if len(contents) == oldLen { // wasn't replaced (no space)
 			contents = strings.Replace(contents, prefix, "", 1)
+			contents = strings.Replace(contents, mention, "", 1)
 		}
 
 		isAdmin, isPermissioned := false, false
@@ -134,7 +127,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			}
-			embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
+			embed := helpResponse(isAdmin, isPermissioned, command.AllCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			// delete the user's message
 			deleteMessage(s, m.ChannelID, m.ID)
@@ -474,7 +467,7 @@ func (bot *Bot) handleNewGameMessage(s *discordgo.Session, m *discordgo.MessageC
 						"Please try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\n" +
 						"Current Games: {{.Games}}",
 				}, map[string]interface{}{
-					"CommandPrefix": sett.CommandPrefix,
+					"CommandPrefix": sett.GetCommandPrefix(),
 					"Games":         fmt.Sprintf("%d/%d", activeGames, num),
 				}))
 				lock.Release(context.Background())

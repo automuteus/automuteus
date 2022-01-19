@@ -28,14 +28,14 @@ const (
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 // TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
+func ConstructEmbedForCommand(cmd command.Command, sett *storage.GuildSettings) *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:   "",
 		Type:  "",
 		Title: cmd.Emoji + " " + strings.Title(cmd.Command),
 		Description: sett.LocalizeMessage(cmd.Description,
 			map[string]interface{}{
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}),
 		Timestamp: "",
 		Color:     15844367, // GOLD
@@ -50,7 +50,7 @@ func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.
 					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
 					Other: "Example",
 				}),
-				Value:  "`" + fmt.Sprintf("%s %s", prefix, cmd.Example) + "`",
+				Value:  "`" + fmt.Sprintf("%s %s", sett.GetCommandPrefix(), cmd.Example) + "`",
 				Inline: false,
 			},
 			{
@@ -74,7 +74,6 @@ func ConstructEmbedForCommand(prefix string, cmd command.Command, sett *storage.
 }
 
 func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildSettings, s *discordgo.Session, g *discordgo.Guild, m *discordgo.MessageCreate, args []string) {
-	prefix := sett.CommandPrefix
 	cmd := command.GetCommand(args[0])
 
 	gsr := GameStateRequest{
@@ -102,12 +101,12 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 		switch cmd.CommandType {
 		case command.Help:
 			if len(args[1:]) == 0 {
-				embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
+				embed := helpResponse(isAdmin, isPermissioned, command.AllCommands, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			} else {
 				cmd = command.GetCommand(args[1])
 				if cmd.CommandType != command.Null {
-					embed := ConstructEmbedForCommand(prefix, cmd, sett)
+					embed := ConstructEmbedForCommand(cmd, sett)
 					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				} else {
 					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -152,7 +151,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			bot.RefreshGameStateMessage(gsr, sett)
 		case command.Link:
 			if len(args[1:]) < 2 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				embed := ConstructEmbedForCommand(cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -170,7 +169,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case command.Unlink:
 			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				embed := ConstructEmbedForCommand(cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
@@ -204,7 +203,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case command.Map:
 			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				embed := ConstructEmbedForCommand(cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				mapVersion := args[len(args)-1]
@@ -238,7 +237,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 
 		case command.Cache:
 			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				embed := ConstructEmbedForCommand(cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
@@ -287,7 +286,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 					arg = args[1]
 				}
 				if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
-					embed := ConstructEmbedForCommand(prefix, cmd, sett)
+					embed := ConstructEmbedForCommand(cmd, sett)
 					s.ChannelMessageSendEmbed(m.ChannelID, embed)
 				} else {
 					embed := bot.privacyResponse(m.GuildID, m.Author.ID, arg, sett)
@@ -349,7 +348,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 			isPrem := !premium.IsExpired(premStatus, days)
 			if len(args[1:]) == 0 {
-				embed := ConstructEmbedForCommand(prefix, cmd, sett)
+				embed := ConstructEmbedForCommand(cmd, sett)
 				s.ChannelMessageSendEmbed(m.ChannelID, embed)
 			} else {
 				userID, err := extractUserIDFromMention(args[1])
@@ -369,7 +368,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 										Other: "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!",
 									},
 										map[string]interface{}{
-											"CommandPrefix": prefix,
+											"CommandPrefix": sett.GetCommandPrefix(),
 										}))
 									if err != nil {
 										log.Println(err)
@@ -420,7 +419,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 									Other: "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!",
 								},
 									map[string]interface{}{
-										"CommandPrefix": prefix,
+										"CommandPrefix": sett.GetCommandPrefix(),
 										"User":          args[1],
 									}))
 								if err != nil {
@@ -477,7 +476,7 @@ func (bot *Bot) HandleCommand(isAdmin, isPermissioned bool, sett *storage.GuildS
 				Other: "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands",
 			},
 				map[string]interface{}{
-					"CommandPrefix":  prefix,
+					"CommandPrefix":  sett.GetCommandPrefix(),
 					"InvalidCommand": args[0],
 				}))
 		}

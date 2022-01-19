@@ -12,6 +12,8 @@ import (
 const DefaultLeaderboardSize = 3
 const DefaultLeaderboardMin = 3
 
+const OfficialBotMention = "@AutoMuteUs"
+
 type GuildSettings struct {
 	AdminUserIDs             []string        `json:"adminIDs"`
 	PermissionRoleIDs        []string        `json:"permissionRoleIDs"`
@@ -35,7 +37,11 @@ type GuildSettings struct {
 func MakeGuildSettings() *GuildSettings {
 	prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
 	if prefix == "" {
-		prefix = ".au"
+		if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+			prefix = OfficialBotMention
+		} else {
+			prefix = ".au"
+		}
 	}
 	return &GuildSettings{
 		CommandPrefix:            prefix,
@@ -88,6 +94,10 @@ func (gs *GuildSettings) HasRolePerms(mem *discordgo.Member) bool {
 }
 
 func (gs *GuildSettings) GetCommandPrefix() string {
+	// only applies to official bot after 04/31/2022
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+		return OfficialBotMention
+	}
 	return gs.CommandPrefix
 }
 

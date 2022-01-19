@@ -27,7 +27,7 @@ const ISO8601 = "2006-01-02T15:04:05-0700"
 
 const BasePremiumURL = "https://automute.us/premium?guild="
 
-func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -40,7 +40,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 			Other: "[View the Github Project](https://github.com/denverquane/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
 		},
 			map[string]interface{}{
-				"CommandPrefix": commandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}),
 		Timestamp: "",
 		Color:     15844367, // GOLD

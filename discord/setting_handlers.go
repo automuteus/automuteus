@@ -98,7 +98,7 @@ func getSetting(arg string) setting.SettingType {
 
 func (bot *Bot) HandleSettingsCommand(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) {
 	if len(args) == 1 {
-		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.CommandPrefix, setting.AllSettings, sett, prem))
+		s.ChannelMessageSendEmbed(m.ChannelID, settingResponse(sett.GetCommandPrefix(), setting.AllSettings, sett, prem))
 		return
 	}
 	// if command invalid, no need to reapply changes to json file
@@ -791,7 +791,7 @@ func SettingMatchSummary(s *discordgo.Session, m *discordgo.MessageCreate, sett 
 		},
 			map[string]interface{}{
 				"Minutes":       args[2],
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -890,7 +890,7 @@ func SettingAutoRefresh(s *discordgo.Session, m *discordgo.MessageCreate, sett *
 		},
 			map[string]interface{}{
 				"Arg":           val,
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -928,7 +928,7 @@ func SettingMapVersion(s *discordgo.Session, m *discordgo.MessageCreate, sett *s
 		},
 			map[string]interface{}{
 				"Arg":           val,
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -960,7 +960,7 @@ func SettingLeaderboardNameMention(s *discordgo.Session, m *discordgo.MessageCre
 		},
 			map[string]interface{}{
 				"Arg":           val,
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -997,7 +997,7 @@ func SettingLeaderboardSize(s *discordgo.Session, m *discordgo.MessageCreate, se
 		},
 			map[string]interface{}{
 				"Number":        args[2],
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -1037,7 +1037,7 @@ func SettingLeaderboardMin(s *discordgo.Session, m *discordgo.MessageCreate, set
 		},
 			map[string]interface{}{
 				"Number":        args[2],
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
@@ -1129,7 +1129,7 @@ func SettingDisplayRoomCode(s *discordgo.Session, m *discordgo.MessageCreate, se
 		},
 			map[string]interface{}{
 				"Arg":           val,
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}))
 		return false
 	}
