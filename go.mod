@@ -19,7 +19,6 @@ require (
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )

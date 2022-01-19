@@ -1,8 +1,7 @@
 package discord
 
 import (
-	galactus_client "github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/galactus/pkg/client"
+	galactus_client "github.com/automuteus/galactus/pkg/client"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/settings"
