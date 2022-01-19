@@ -107,8 +107,8 @@ hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
 other = "Discord ユーザーとの連携"
 
 ["commands.AllCommands.Map.args"]
-hash = "sha1-030b30e34ea561f86dd60a456431cc385a2beafb"
-other = "<マップ名> (skeld, mira_hq, polus) <マップバージョン> (オプション、simple または detailed)"
+hash = "sha1-69ef89859dc94b73d30a7a87d938542c03e348c9"
+other = "<マップ名> (skeld, mira_hq, polus, airship) <マップバージョン> (オプション、simple または detailed)"
 
 ["commands.AllCommands.Map.desc"]
 hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"

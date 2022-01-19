@@ -51,8 +51,8 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
-	topMap[true] = make([]Emoji, 12) // 12 colors for alive/dead
-	topMap[false] = make([]Emoji, 12)
+	topMap[true] = make([]Emoji, 18) // 18 colors for alive/dead
+	topMap[false] = make([]Emoji, 18)
 	return topMap
 }
 
@@ -89,101 +89,190 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	true: []Emoji{
 		game.Red: {
 			Name: "aured",
-			ID:   "762392085768175646",
+			ID:   "866558066921177108",
 		},
 		game.Blue: {
 			Name: "aublue",
-			ID:   "762392085629632512",
+			ID:   "866558066484183060",
 		},
 		game.Green: {
 			Name: "augreen",
-			ID:   "762392085889417226",
+			ID:   "866558066568986664",
 		},
 		game.Pink: {
 			Name: "aupink",
-			ID:   "762392085726363648",
+			ID:   "866558067004538891",
 		},
 		game.Orange: {
 			Name: "auorange",
-			ID:   "762392085264728095",
+			ID:   "866558066902958090",
 		},
 		game.Yellow: {
 			Name: "auyellow",
-			ID:   "762392085541158923",
+			ID:   "866558067243221002",
 		},
 		game.Black: {
 			Name: "aublack",
-			ID:   "762392086493790249",
+			ID:   "866558066442895370",
 		},
 		game.White: {
 			Name: "auwhite",
-			ID:   "762392085990866974",
+			ID:   "866558067026165770",
 		},
 		game.Purple: {
 			Name: "aupurple",
-			ID:   "762392085973303376",
+			ID:   "866558066966396928",
 		},
 		game.Brown: {
 			Name: "aubrown",
-			ID:   "762392086023634986",
+			ID:   "866558066564136970",
 		},
 		game.Cyan: {
 			Name: "aucyan",
-			ID:   "762392087945281557",
+			ID:   "866558066525601853",
 		},
 		game.Lime: {
 			Name: "aulime",
-			ID:   "762392088121442334",
+			ID:   "866558066963382282",
+		},
+		game.Maroon: {
+			Name: "aumaroon",
+			ID:   "866558066917113886",
+		},
+		game.Rose: {
+			Name: "aurose",
+			ID:   "866558066921439242",
+		},
+		game.Banana: {
+			Name: "aubanana",
+			ID:   "866558065917558797",
+		},
+		game.Gray: {
+			Name: "augray",
+			ID:   "866558066174459905",
+		},
+		game.Tan: {
+			Name: "autan",
+			ID:   "866558066820382721",
+		},
+		game.Coral: {
+			Name: "aucoral",
+			ID:   "866558066552209448",
 		},
 	},
 	false: []Emoji{
 		game.Red: {
 			Name: "aureddead",
-			ID:   "762397192362393640",
+			ID:   "866558067255279636",
 		},
 		game.Blue: {
 			Name: "aubluedead",
-			ID:   "762397192349679616",
+			ID:   "866558066660999218",
 		},
 		game.Green: {
 			Name: "augreendead",
-			ID:   "762397192060272724",
+			ID:   "866558067088949258",
 		},
 		game.Pink: {
 			Name: "aupinkdead",
-			ID:   "762397192643805194",
+			ID:   "866558066945556512",
 		},
 		game.Orange: {
 			Name: "auorangedead",
-			ID:   "762397192333819904",
+			ID:   "866558067508510730",
 		},
 		game.Yellow: {
 			Name: "auyellowdead",
-			ID:   "762397192425046016",
+			ID:   "866558067206520862",
 		},
 		game.Black: {
 			Name: "aublackdead",
-			ID:   "762397192291090462",
+			ID:   "866558066668339250",
 		},
 		game.White: {
 			Name: "auwhitedead",
-			ID:   "762397192409186344",
+			ID:   "866558067231293450",
 		},
 		game.Purple: {
 			Name: "aupurpledead",
-			ID:   "762397192404860958",
+			ID:   "866558067223298048",
 		},
 		game.Brown: {
 			Name: "aubrowndead",
-			ID:   "762397192102739989",
+			ID:   "866558066945163304",
 		},
 		game.Cyan: {
 			Name: "aucyandead",
-			ID:   "762397192307867698",
+			ID:   "866558067051200512",
 		},
 		game.Lime: {
 			Name: "aulimedead",
-			ID:   "762397192366325793",
+			ID:   "866558067344408596",
+		},
+		game.Maroon: {
+			Name: "aumaroondead",
+			ID:   "866558067238895626",
+		},
+		game.Rose: {
+			Name: "aurosedead",
+			ID:   "866558067083444225",
+		},
+		game.Banana: {
+			Name: "aubananadead",
+			ID:   "866558066342625350",
+		},
+		game.Gray: {
+			Name: "augraydead",
+			ID:   "866558067049758740",
+		},
+		game.Tan: {
+			Name: "autandead",
+			ID:   "866558067230638120",
+		},
+		game.Coral: {
+			Name: "aucoraldead",
+			ID:   "866558067024723978",
 		},
 	},
 }
+
+/*
+Helpful for copy/paste into Discord to get new emoji IDs when they are re-uploaded...
+\:aured:
+\:aublue:
+\:augreen:
+\:aupink:
+\:auorange:
+\:auyellow:
+\:aublack:
+\:auwhite:
+\:aupurple:
+\:aubrown:
+\:aucyan:
+\:aulime:
+\:aumaroon:
+\:aurose:
+\:aubanana:
+\:augray:
+\:autan:
+\:aucoral:
+
+\:aureddead:
+\:aubluedead:
+\:augreendead:
+\:aupinkdead:
+\:auorangedead:
+\:auyellowdead:
+\:aublackdead:
+\:auwhitedead:
+\:aupurpledead:
+\:aubrowndead:
+\:aucyandead:
+\:aulimedead:
+\:aumaroondead:
+\:aurosedead:
+\:aubananadead:
+\:augraydead:
+\:autandead:
+\:aucoraldead:
+*/

@@ -59,7 +59,7 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 # ⚠️ Requirements ⚠️
 
 1. You **must** run the [Capture application](https://github.com/automuteus/amonguscapture/releases/latest) on your Windows PC for the bot to work! Any Among Us games that don't have a user running the capture software will **not have automuting capabilities**!
-2. The [Capture application](https://github.com/automuteus/amonguscapture/releases) currently only supports the **Non-Beta Official Steam** release of the game.
+2. The [Capture application](https://github.com/automuteus/amonguscapture/releases) currently only supports the Steam, Epic Games, itch.io, and Microsoft Store releases of the game, but **does not** support beta or cracked versions.
 
 # Quickstart and Demo (click the image):
 

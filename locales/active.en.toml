@@ -24,7 +24,7 @@
 "commands.AllCommands.Link.args" = "<discord User> <in-game color or name>"
 "commands.AllCommands.Link.desc" = "Manually link a Discord User to their in-game color or name"
 "commands.AllCommands.Link.shortDesc" = "Link a Discord User"
-"commands.AllCommands.Map.args" = "<map_name> (skeld, mira_hq, polus) <version> (optional, simple or detailed)"
+"commands.AllCommands.Map.args" = "<map_name> (skeld, mira_hq, polus, airship) <version> (optional, simple or detailed)"
 "commands.AllCommands.Map.desc" = "Display an image of an in-game map in the text channel. Two supported versions: simple or detailed"
 "commands.AllCommands.Map.shortDesc" = "Display an in-game map"
 "commands.AllCommands.New.args" = "None"

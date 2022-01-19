@@ -88,7 +88,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string) {
 				log.Println(err)
 				break
 			}
-					if player.Color > 11 || player.Color < 0 {
+					if player.Color > 17 || player.Color < 0 {
 						break
 					}
 
