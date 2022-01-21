@@ -134,7 +134,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			}
-			embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
+			embed := helpResponse(isAdmin, isPermissioned, prefix, allCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			// delete the user's message
 			deleteMessage(s, m.ChannelID, m.ID)

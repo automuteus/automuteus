@@ -36,7 +36,6 @@ const (
 	CommandEnumASCII
 	CommandEnumStats
 	CommandEnumPremium
-	CommandEnumNull
 )
 
 type Command struct {
@@ -65,26 +64,18 @@ type Command struct {
 	)
 }
 
-func GetCommand(arg string) Command {
+func getCommand(arg string) (Command, bool) {
 	arg = strings.ToLower(arg)
-	for _, cmd := range AllCommands {
-		if arg == cmd.Command {
-			return cmd
-		}
-		for _, al := range cmd.Aliases {
-			if arg == al {
-				return cmd
-			}
-		}
-	}
-	return AllCommands[CommandEnumNull]
+	command, exists := commandMap[arg]
+	return command, exists
 }
 
 // note, this mapping is HIERARCHICAL. If you type `l`, "link" would be used over "log"
-var AllCommands []Command
+var allCommands []Command
+var commandMap = map[string]Command{}
 
 func init() {
-	AllCommands = []Command{
+	allCommands = []Command{
 		{
 			CommandType: CommandEnumHelp,
 			Command:     "help",
@@ -328,7 +319,6 @@ func init() {
 				ID:    "commands.AllCommands.Map.args",
 				Other: "<map_name> (skeld, mira_hq, polus, airship) <version> (optional, simple or detailed)",
 			},
-			Aliases:    []string{"map"},
 			IsSecret:   false,
 			Emoji:      "🗺",
 			IsAdmin:    false,
@@ -472,7 +462,7 @@ func init() {
 				ID:    "commands.AllCommands.Info.args",
 				Other: "None",
 			},
-			Aliases:    []string{"info", "inf", "in", "i"},
+			Aliases:    []string{"inf", "in", "i"},
 			IsSecret:   false,
 			Emoji:      "📰",
 			IsAdmin:    false,
@@ -496,7 +486,7 @@ func init() {
 				ID:    "commands.AllCommands.Ascii.args",
 				Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
 			},
-			Aliases:    []string{"ascii", "asc"},
+			Aliases:    []string{"asc"},
 			IsSecret:   true,
 			IsAdmin:    false,
 			IsOperator: false,
@@ -526,49 +516,58 @@ func init() {
 
 			fn: commandFnDebugState,
 		},
-		{
-			CommandType: CommandEnumNull,
-			Command:     "",
-			Example:     "",
-			ShortDesc:   nil,
-			Description: nil,
-			Arguments:   nil,
-			Aliases:     []string{""},
-			IsSecret:    true,
-			IsAdmin:     true,
-			IsOperator:  true,
+	}
 
-			fn: commandFnNull,
-		},
+	for _, cmd := range allCommands {
+		addCommand(cmd, cmd.Command)
+		for _, alias := range cmd.Aliases {
+			addCommand(cmd, alias)
+		}
 	}
 }
 
+func addCommand(command Command, key string) {
+	if key == "" {
+		log.Println(fmt.Sprintf("Provided a blank key for command: %s", command.Command))
+		return
+	}
+
+	if _, exist := commandMap[key]; exist {
+		log.Println(fmt.Sprintf("Conflict in keys: %s => %s", command.Command, key))
+		return
+	}
+
+	commandMap[key] = command
+}
+
 func commandFnHelp(
-	bot *Bot,
+	_ *Bot,
 	isAdmin bool,
 	isPermissioned bool,
 	sett *storage.GuildSettings,
 	session *discordgo.Session,
-	guild *discordgo.Guild,
+	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
+	_ Command,
 ) {
 	if len(args[1:]) == 0 {
-		embed := helpResponse(isAdmin, isPermissioned, sett.CommandPrefix, AllCommands, sett)
+		embed := helpResponse(isAdmin, isPermissioned, sett.CommandPrefix, allCommands, sett)
 		session.ChannelMessageSendEmbed(message.ChannelID, &embed)
-	} else {
-		cmd = GetCommand(args[1])
-		if cmd.CommandType != CommandEnumNull {
-			embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-			session.ChannelMessageSendEmbed(message.ChannelID, embed)
-		} else {
-			session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.Help.notFound",
-				Other: "I didn't recognize that command! View `help` for all available commands!",
-			}))
-		}
+		return
 	}
+
+	cmd, exists := getCommand(args[1])
+	if !exists {
+		session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.HandleCommand.Help.notFound",
+			Other: "I didn't recognize that command! View `help` for all available commands!",
+		}))
+		return
+	}
+
+	embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
+	session.ChannelMessageSendEmbed(message.ChannelID, embed)
 }
 
 func commandFnNew(
@@ -1129,30 +1128,4 @@ func commandFnPremium(
 			session.ChannelMessageSend(message.ChannelID, "Viewing the premium invites is an Admin-only command")
 		}
 	}
-}
-
-func commandFnNull(
-	bot *Bot,
-	isAdmin bool,
-	isPermissioned bool,
-	sett *storage.GuildSettings,
-	session *discordgo.Session,
-	guild *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd Command,
-) {
-	session.ChannelMessageSend(
-		message.ChannelID,
-		sett.LocalizeMessage(
-			&i18n.Message{
-				ID:    "commands.HandleCommand.default",
-				Other: "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands",
-			},
-			map[string]interface{}{
-				"CommandPrefix":  sett.CommandPrefix,
-				"InvalidCommand": args[0],
-			},
-		),
-	)
 }

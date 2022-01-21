@@ -59,7 +59,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
-		if !v.IsSecret && v.CommandType != CommandEnumHelp && v.CommandType != CommandEnumNull {
+		if !v.IsSecret && v.CommandType != CommandEnumHelp {
 			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:   v.Emoji + " " + v.Command,

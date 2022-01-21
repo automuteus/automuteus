@@ -91,13 +91,27 @@ func (bot *Bot) HandleCommand(
 	message *discordgo.MessageCreate,
 	args []string,
 ) {
-	cmd := GetCommand(args[0])
+	command, exists := getCommand(args[0])
 
-	if cmd.CommandType != CommandEnumNull {
-		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", cmd.Command, message.Author.ID))
+	if !exists {
+		log.Print(fmt.Sprintf("\"%s\" command typed by User %s\n", command.Command, message.Author.ID))
+		session.ChannelMessageSend(
+			message.ChannelID,
+			sett.LocalizeMessage(
+				&i18n.Message{
+					ID:    "commands.HandleCommand.default",
+					Other: "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands",
+				},
+				map[string]interface{}{
+					"CommandPrefix":  sett.CommandPrefix,
+					"InvalidCommand": args[0],
+				},
+			),
+		)
+		return
 	}
 
-	if cmd.IsAdmin && !isAdmin {
+	if command.IsAdmin && !isAdmin {
 		session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
@@ -105,7 +119,7 @@ func (bot *Bot) HandleCommand(
 		return
 	}
 
-	if cmd.IsOperator && (!isPermissioned && !isAdmin) {
+	if command.IsOperator && (!isPermissioned && !isAdmin) {
 		session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
@@ -114,6 +128,6 @@ func (bot *Bot) HandleCommand(
 	}
 
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-	cmd.fn(bot, isAdmin, isPermissioned, sett, session, guild, message, args, cmd)
+	command.fn(bot, isAdmin, isPermissioned, sett, session, guild, message, args, command)
 	deleteMessage(session, message.ChannelID, message.Message.ID)
 }
