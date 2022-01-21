@@ -5,14 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/rediskey"
-	"github.com/denverquane/amongusdiscord/discord/command"
-	"github.com/denverquane/amongusdiscord/discord/setting"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/premium"
+	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/denverquane/amongusdiscord/discord/setting"
 
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/storage"
@@ -27,7 +27,7 @@ const ISO8601 = "2006-01-02T15:04:05-0700"
 
 const BasePremiumURL = "https://automute.us/premium?guild="
 
-func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands []command.Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands []Command, sett *storage.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -59,7 +59,7 @@ func helpResponse(isAdmin, isPermissioned bool, commandPrefix string, commands [
 
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	for _, v := range commands {
-		if !v.IsSecret && v.CommandType != command.Help && v.CommandType != command.Null {
+		if !v.IsSecret && v.CommandType != CommandEnumHelp && v.CommandType != CommandEnumNull {
 			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:   v.Emoji + " " + v.Command,

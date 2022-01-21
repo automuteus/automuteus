@@ -3,19 +3,19 @@ package discord
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
-	"github.com/denverquane/amongusdiscord/discord/command"
 	"github.com/denverquane/amongusdiscord/metrics"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/denverquane/amongusdiscord/storage"
 
@@ -134,7 +134,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			}
-			embed := helpResponse(isAdmin, isPermissioned, prefix, command.AllCommands, sett)
+			embed := helpResponse(isAdmin, isPermissioned, prefix, AllCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			// delete the user's message
 			deleteMessage(s, m.ChannelID, m.ID)
