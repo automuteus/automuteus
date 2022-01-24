@@ -34,7 +34,7 @@ func ConstructEmbedForCommand(
 		Title: cmd.Emoji + " " + strings.Title(cmd.Command),
 		Description: sett.LocalizeMessage(cmd.Description,
 			map[string]interface{}{
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			}),
 		Timestamp: "",
 		Color:     15844367, // GOLD
@@ -49,7 +49,7 @@ func ConstructEmbedForCommand(
 					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
 					Other: "Example",
 				}),
-				Value:  "`" + fmt.Sprintf("%s %s", prefix, cmd.Example) + "`",
+				Value:  "`" + fmt.Sprintf("%s %s", sett.GetCommandPrefix(), cmd.Example) + "`",
 				Inline: false,
 			},
 			{

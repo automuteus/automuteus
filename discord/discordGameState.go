@@ -23,7 +23,7 @@ func (tc TrackingChannel) ToStatusString(sett *storage.GuildSettings) string {
 			Other: "**No Voice Channel! Use `{{.CommandPrefix}} track`!**",
 		},
 			map[string]interface{}{
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			})
 	}
 	return tc.ChannelName
@@ -36,7 +36,7 @@ func (tc TrackingChannel) ToDescString(sett *storage.GuildSettings) string {
 			Other: "**no Voice Channel! Use `{{.CommandPrefix}} track`!**",
 		},
 			map[string]interface{}{
-				"CommandPrefix": sett.CommandPrefix,
+				"CommandPrefix": sett.GetCommandPrefix(),
 			})
 	}
 	return sett.LocalizeMessage(&i18n.Message{

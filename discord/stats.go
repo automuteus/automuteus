@@ -61,7 +61,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		ID:    "responses.userStatsEmbed.NoPremium",
 		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
 	}, map[string]interface{}{
-		"CommandPrefix": sett.CommandPrefix,
+		"CommandPrefix": sett.GetCommandPrefix(),
 	})
 
 	if isPrem {
@@ -587,7 +587,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, isP
 		ID:    "responses.guildStatsEmbed.NoPremium",
 		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
 	}, map[string]interface{}{
-		"CommandPrefix": sett.CommandPrefix,
+		"CommandPrefix": sett.GetCommandPrefix(),
 	})
 
 	if isPrem {

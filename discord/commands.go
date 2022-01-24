@@ -552,7 +552,7 @@ func commandFnHelp(
 	_ Command,
 ) {
 	if len(args[1:]) == 0 {
-		embed := helpResponse(isAdmin, isPermissioned, sett.CommandPrefix, allCommands, sett)
+		embed := helpResponse(isAdmin, isPermissioned, allCommands, sett)
 		session.ChannelMessageSendEmbed(message.ChannelID, &embed)
 		return
 	}
