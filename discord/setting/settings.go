@@ -1,6 +1,10 @@
 package setting
 
-import "github.com/nicksnyder/go-i18n/v2/i18n"
+import (
+	"github.com/automuteus/utils/pkg/settings"
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+)
 
 type SettingType int
 
@@ -25,6 +29,10 @@ const (
 	Reset
 	NullSetting
 )
+
+type ISetting interface {
+	HandleSetting(*discordgo.MessageCreate, *settings.GuildSettings, []string) (interface{}, bool)
+}
 
 type Setting struct {
 	SettingType SettingType

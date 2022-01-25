@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/automuteus/utils/pkg/locale"
 	"io"
 	"log"
 	"math/rand"
@@ -14,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/locale"
 	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/denverquane/amongusdiscord/discord"
@@ -80,7 +80,7 @@ func discordMainWrapper() error {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
 
-	extraTokens := []string{}
+	var extraTokens []string
 	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
 	if extraTokenStr != "" {
 		extraTokens = strings.Split(extraTokenStr, ",")

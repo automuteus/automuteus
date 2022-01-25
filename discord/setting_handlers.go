@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/locale"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/discord/setting"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/locale"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"log"
@@ -16,11 +17,7 @@ import (
 	"strings"
 )
 
-type Setting interface {
-	HandleSetting(*discordgo.MessageCreate, *storage.GuildSettings, []string, bool) (interface{}, bool)
-}
-
-func ConstructEmbedForSetting(value string, setting setting.Setting, sett *storage.GuildSettings) discordgo.MessageEmbed {
+func ConstructEmbedForSetting(value string, setting setting.Setting, sett *settings.GuildSettings) discordgo.MessageEmbed {
 	title := setting.Name
 	if setting.Premium {
 		title = "💎 " + title
@@ -100,7 +97,7 @@ func getSetting(arg string) setting.SettingType {
 	return setting.NullSetting
 }
 
-func (bot *Bot) HandleSettingsCommand(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string, prem bool) (string, interface{}) {
+func (bot *Bot) HandleSettingsCommand(m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string, prem bool) (string, interface{}) {
 	if len(args) == 1 {
 		return m.ChannelID, settingResponse(sett.GetCommandPrefix(), setting.AllSettings, sett, prem)
 	}
@@ -176,7 +173,7 @@ func (bot *Bot) HandleSettingsCommand(m *discordgo.MessageCreate, sett *storage.
 		// TODO need to consider if the settings are too long? Is that possible?
 		return m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes)
 	case setting.Reset:
-		sett = storage.MakeGuildSettings()
+		sett = settings.MakeGuildSettings(os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX"), os.Getenv("AUTOMUTEUS_OFFICIAL") != "")
 		sendMsg = "Resetting guild settings to default values"
 		isValid = true
 	default:
@@ -198,7 +195,7 @@ func (bot *Bot) HandleSettingsCommand(m *discordgo.MessageCreate, sett *storage.
 	return channelID, sendMsg
 }
 
-func CommandPrefixSetting(_ *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func CommandPrefixSetting(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), setting.AllSettings[setting.Prefix], sett)
 		return &embed, false
@@ -226,19 +223,13 @@ func CommandPrefixSetting(_ *discordgo.MessageCreate, sett *storage.GuildSetting
 		}), true
 }
 
-func SettingLanguage(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingLanguage(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(sett.GetLanguage(), setting.AllSettings[setting.Language], sett), false
 	}
 
-	/* strLangs := ""
-	for id, data := range locale.GetLanguages() {
-		strLangs += id + " - " + data + "\n"
-	}
-	println(strLangs) */
-
 	if args[2] == "reload" {
-		locale.LoadTranslations()
+		locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.reloaded",
@@ -249,7 +240,7 @@ func SettingLanguage(m *discordgo.MessageCreate, sett *storage.GuildSettings, ar
 				"Count": len(locale.GetBundle().LanguageTags()),
 			}), false
 	} else if args[2] == "list" {
-		// locale.LoadTranslations()
+		// settings.LoadTranslations()
 
 		strLangs := ""
 		for langCode, langName := range locale.GetLanguages() {
@@ -307,7 +298,7 @@ func SettingLanguage(m *discordgo.MessageCreate, sett *storage.GuildSettings, ar
 		}), true
 }
 
-func SettingAdminUserIDs(_ *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingAdminUserIDs(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
@@ -332,7 +323,7 @@ func SettingAdminUserIDs(_ *discordgo.MessageCreate, sett *storage.GuildSettings
 			return ConstructEmbedForSetting(listOfAdmins, setting.AllSettings[setting.AdminUserIDs], sett), false
 		}
 	}
-	newAdminIDs := []string{}
+	var newAdminIDs []string
 	// users the User mentioned in their message
 	var userIDs []string
 
@@ -380,7 +371,7 @@ func SettingAdminUserIDs(_ *discordgo.MessageCreate, sett *storage.GuildSettings
 	}
 }
 
-func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
@@ -406,7 +397,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 		}
 	}
 
-	newRoleIDs := []string{}
+	var newRoleIDs []string
 	// roles the User mentioned in their message
 	var roleIDs []string
 
@@ -455,7 +446,7 @@ func SettingPermissionRoleIDs(s *discordgo.Session, m *discordgo.MessageCreate, 
 	}
 }
 
-func SettingUnmuteDeadDuringTasks(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingUnmuteDeadDuringTasks(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		current := "false"
@@ -501,7 +492,7 @@ func SettingUnmuteDeadDuringTasks(m *discordgo.MessageCreate, sett *storage.Guil
 	}
 }
 
-func SettingDelays(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingDelays(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting("N/A", setting.AllSettings[setting.Delays], sett), false
 	}
@@ -573,7 +564,7 @@ func SettingDelays(m *discordgo.MessageCreate, sett *storage.GuildSettings, args
 		}), true
 }
 
-func SettingVoiceRules(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingVoiceRules(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.NA",
@@ -727,7 +718,7 @@ func SettingVoiceRules(m *discordgo.MessageCreate, sett *storage.GuildSettings, 
 	}
 }
 
-func SettingMatchSummary(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingMatchSummary(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), setting.AllSettings[setting.MatchSummary], sett), false
 	}
@@ -773,7 +764,7 @@ func SettingMatchSummary(m *discordgo.MessageCreate, sett *storage.GuildSettings
 	}
 }
 
-func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), setting.AllSettings[setting.MatchSummaryChannel], sett), false
 	}
@@ -816,7 +807,7 @@ func SettingMatchSummaryChannel(s *discordgo.Session, m *discordgo.MessageCreate
 	}
 }
 
-func SettingAutoRefresh(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingAutoRefresh(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), setting.AllSettings[setting.AutoRefresh], sett), false
 	}
@@ -848,7 +839,7 @@ func SettingAutoRefresh(m *discordgo.MessageCreate, sett *storage.GuildSettings,
 	}
 }
 
-func SettingMapVersion(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingMapVersion(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), setting.AllSettings[setting.MapVersion], sett), false
 	}
@@ -876,7 +867,7 @@ func SettingMapVersion(m *discordgo.MessageCreate, sett *storage.GuildSettings, 
 		}), true
 }
 
-func SettingLeaderboardNameMention(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingLeaderboardNameMention(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), setting.AllSettings[setting.LeaderboardMention], sett), false
 	}
@@ -908,7 +899,7 @@ func SettingLeaderboardNameMention(m *discordgo.MessageCreate, sett *storage.Gui
 	}
 }
 
-func SettingLeaderboardSize(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingLeaderboardSize(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), setting.AllSettings[setting.LeaderboardSize], sett), false
 	}
@@ -942,7 +933,7 @@ func SettingLeaderboardSize(m *discordgo.MessageCreate, sett *storage.GuildSetti
 		}), true
 }
 
-func SettingLeaderboardMin(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingLeaderboardMin(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), setting.AllSettings[setting.LeaderboardMin], sett), false
 	}
@@ -976,7 +967,7 @@ func SettingLeaderboardMin(m *discordgo.MessageCreate, sett *storage.GuildSettin
 		}), true
 }
 
-func SettingMuteSpectators(_ *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingMuteSpectators(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	muteSpec := sett.GetMuteSpectator()
 	if len(args) == 2 {
 		current := "false"
@@ -1022,7 +1013,7 @@ func SettingMuteSpectators(_ *discordgo.MessageCreate, sett *storage.GuildSettin
 	}
 }
 
-func SettingDisplayRoomCode(m *discordgo.MessageCreate, sett *storage.GuildSettings, args []string) (interface{}, bool) {
+func SettingDisplayRoomCode(_ *discordgo.MessageCreate, sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), setting.AllSettings[setting.DisplayRoomCode], sett), false
 	}

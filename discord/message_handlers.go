@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"os"
 	"strconv"
@@ -16,8 +17,6 @@ import (
 	"github.com/bsm/redislock"
 	redis_common "github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/metrics"
-
-	"github.com/denverquane/amongusdiscord/storage"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -359,7 +358,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Guild, sett *storage.GuildSettings) (string, interface{}) {
+func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Guild, sett *settings.GuildSettings) (string, interface{}) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,
@@ -545,7 +544,7 @@ func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Gu
 	return "", nil
 }
 
-func (bot *Bot) handleGameStartMessage(m *discordgo.MessageCreate, sett *storage.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(m *discordgo.MessageCreate, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     m.GuildID,
 		TextChannel: m.ChannelID,

@@ -1,8 +1,8 @@
 package discord
 
 import (
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 	"testing"
 )
 
@@ -16,7 +16,7 @@ func TestHelpCommand(t *testing.T) {
 	originMessage := discordgo.MessageCreate{&discordgo.Message{
 		ChannelID: TestChannelID,
 	}}
-	sett := storage.MakeGuildSettings()
+	sett := settings.MakeGuildSettings("", false)
 
 	channelID, message := commandFnHelp(nil, false, false, sett, nil, &originMessage, args, nil)
 	assertHelpMessageProperties(message, channelID, t)

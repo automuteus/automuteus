@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"time"
 
@@ -102,7 +103,7 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 	return stats
 }
 
-func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *GuildSettings) *discordgo.MessageEmbed {
+func (stats *GameStatistics) ToDiscordEmbed(combinedID string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 
 	title := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.matchStatsEmbed.Title",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
@@ -307,7 +308,7 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 	deleteMessage(s, msgChannelID, msgID)
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -329,6 +330,5 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.PrimarySession, "▶️")
-		// go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}
 }

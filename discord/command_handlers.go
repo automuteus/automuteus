@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"regexp"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -26,7 +26,7 @@ var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 func ConstructEmbedForCommand(
 	prefix string,
 	cmd Command,
-	sett *storage.GuildSettings,
+	sett *settings.GuildSettings,
 ) *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		URL:   "",
@@ -75,7 +75,7 @@ func ConstructEmbedForCommand(
 type commandRequest struct {
 	isAdmin        bool
 	isPermissioned bool
-	sett           *storage.GuildSettings
+	sett           *settings.GuildSettings
 	session        *discordgo.Session
 	guild          *discordgo.Guild
 	message        *discordgo.MessageCreate
@@ -85,7 +85,7 @@ type commandRequest struct {
 func (bot *Bot) HandleCommand(
 	isAdmin bool,
 	isPermissioned bool,
-	sett *storage.GuildSettings,
+	sett *settings.GuildSettings,
 	session *discordgo.Session,
 	guild *discordgo.Guild,
 	message *discordgo.MessageCreate,
