@@ -52,6 +52,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	contents := m.Content
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
 
+	// can be a guild's old prefix setting, or @AutoMuteUs
 	prefix := sett.GetCommandPrefix()
 
 	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
@@ -60,6 +61,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		prefix = globalPrefix
 	}
 
+	// have to check the actual mention format, not the explicit string "@AutoMuteUs"
 	mention := "<@!" + s.State.User.ID + ">"
 	if strings.HasPrefix(contents, prefix) || strings.HasPrefix(contents, mention) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {

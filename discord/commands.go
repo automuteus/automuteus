@@ -631,8 +631,10 @@ func commandFnPause(
 		bot.applyToAll(dgs, false, false)
 	}
 
-	// TODO need something here to indicate it's an EDIT response
-	return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
+	// TODO refactor to return the edit, not perform it
+	dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+
+	return "", nil
 }
 
 func commandFnRefresh(
@@ -649,8 +651,9 @@ func commandFnRefresh(
 		GuildID:     message.GuildID,
 		TextChannel: message.ChannelID,
 	}
+	// TODO refactor to pass this back
 	bot.RefreshGameStateMessage(gsr, sett)
-	// TODO not accurate, pass up the edit
+
 	return "", nil
 }
 
@@ -678,8 +681,10 @@ func commandFnLink(
 		bot.linkPlayer(guild, dgs, args[1:])
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-		// TODO need something here to indicate it's an EDIT response
-		return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
+		// TODO refactor to return the edit, not perform it
+		dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+
+		return "", nil
 	}
 }
 
@@ -714,8 +719,10 @@ func commandFnUnlink(
 
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			// TODO need something here to indicate it's an EDIT response
-			return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
+			// TODO refactor to return the edit, not perform it
+			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+
+			return "", nil
 		}
 	}
 }
