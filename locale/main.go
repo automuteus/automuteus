@@ -1,11 +1,8 @@
 package locale
 
-import (
-	"log"
-	"testing"
-)
+import "log"
 
-func TestOwoToml(t *testing.T) {
+func main() {
 	err := OwoToml("../locales/active.en.toml", "../locales/active.zu.toml")
 	if err != nil {
 		log.Println(err)
