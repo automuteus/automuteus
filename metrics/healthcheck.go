@@ -1,4 +1,4 @@
-package discord
+package metrics
 
 import (
 	"github.com/gorilla/mux"

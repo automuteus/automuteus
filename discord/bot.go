@@ -8,6 +8,7 @@ import (
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
@@ -108,7 +109,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	nodeID := os.Getenv("SCW_NODE_ID")
 	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 
-	go StartHealthCheckServer("8080")
+	go metrics.StartHealthCheckServer("8080")
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
@@ -139,7 +140,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	}
 
 	// indicate to Kubernetes that we're ready to start receiving traffic
-	GlobalReady = true
+	metrics.GlobalReady = true
 
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bot.statsRefreshWorker(rediskey.TotalUsersExpiration)
@@ -240,7 +241,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	}
 }
 
-func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
+func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
 	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
 
@@ -251,7 +252,7 @@ func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 }
 
 func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
-	userID, err := extractUserIDFromMention(args[0])
+	userID, err := common.ExtractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}

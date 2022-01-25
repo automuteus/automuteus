@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
+	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/denverquane/amongusdiscord/common"
 	"log"
 	"strconv"
 	"strings"
@@ -701,7 +703,7 @@ func commandFnUnlink(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := extractUserIDFromMention(args[1])
+		userID, err := common.ExtractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
 			return "", nil
@@ -784,7 +786,7 @@ func commandFnMap(
 			mapName = strings.Join(args[1:], " ")
 			mapVersion = sett.GetMapVersion()
 		}
-		mapItem, err := NewMapItem(mapName)
+		mapItem, err := amongus.NewMapItem(mapName)
 		if err != nil {
 			log.Println(err)
 			return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -817,7 +819,7 @@ func commandFnCache(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := extractUserIDFromMention(args[1])
+		userID, err := common.ExtractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
 			return message.ChannelID, "I couldn't find a user by that name or ID!"
@@ -933,7 +935,7 @@ func commandFnDebugState(
 }
 
 func commandFnASCII(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
@@ -945,7 +947,7 @@ func commandFnASCII(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ASCIICrewmate
 	} else {
-		id, err := extractUserIDFromMention(args[1])
+		id, err := common.ExtractUserIDFromMention(args[1])
 		if id == "" || err != nil {
 			return message.ChannelID, "I couldn't find a user by that name or ID!"
 		} else {
@@ -981,7 +983,7 @@ func commandFnStats(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := extractUserIDFromMention(args[1])
+		userID, err := common.ExtractUserIDFromMention(args[1])
 		if userID == "" || err != nil {
 			arg := strings.ReplaceAll(args[1], "\"", "")
 			if arg == "g" || arg == "guild" || arg == "server" {

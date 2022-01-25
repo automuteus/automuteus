@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/automuteus/utils/pkg/game"
 	"log"
 	"math/rand"
 	"regexp"
@@ -18,55 +17,6 @@ type UserPatchParameters struct {
 	Userdata UserData
 	Deaf     bool
 	Mute     bool
-}
-
-func getPhaseFromString(input string) game.Phase {
-	if len(input) == 0 {
-		return game.UNINITIALIZED
-	}
-
-	switch strings.ToLower(input) {
-	case "lobby":
-		fallthrough
-	case "l":
-		return game.LOBBY
-	case "task":
-		fallthrough
-	case "t":
-		fallthrough
-	case "tasks":
-		fallthrough
-	case "game":
-		fallthrough
-	case "g":
-		return game.TASKS
-	case "discuss":
-		fallthrough
-	case "disc":
-		fallthrough
-	case "d":
-		fallthrough
-	case "discussion":
-		return game.DISCUSS
-	default:
-		return game.UNINITIALIZED
-	}
-}
-
-func getRoleFromString(s *discordgo.Session, guildID string, input string) string {
-	// find which role the User was referencing in their message
-	// first check if is mentionned
-	ID, err := extractRoleIDFromMention(input)
-	if err == nil {
-		return ID
-	}
-	roles, _ := s.GuildRoles(guildID)
-	for _, role := range roles {
-		if input == role.ID || input == strings.ToLower(role.Name) {
-			return role.ID
-		}
-	}
-	return ""
 }
 
 func generateConnectCode(guildID string) string {

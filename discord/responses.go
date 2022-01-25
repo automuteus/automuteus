@@ -3,7 +3,6 @@ package discord
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
@@ -376,7 +375,7 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 	return gameInfoFields
 }
 
-func menuMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	color := 15158332 // red
 	desc := ""
 	var footer *discordgo.MessageEmbedFooter
@@ -552,7 +551,7 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *discordgo.MessageEmbedThumbnail {
 	var thumbNail *discordgo.MessageEmbedThumbnail = nil
 	if playMap != game.EMPTYMAP {
-		mapItem, err := NewMapItem(game.MapNames[playMap])
+		mapItem, err := amongus.NewMapItem(game.MapNames[playMap])
 		if err != nil {
 			log.Println(err)
 		} else {
@@ -627,7 +626,7 @@ func (dgs *GameState) makeDescription(sett *settings.GuildSettings) string {
 
 func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
-	fields := []*discordgo.MessageEmbedField{}
+	var fields []*discordgo.MessageEmbedField
 
 	if tier != premium.FreeTier {
 		if daysRem > 0 || daysRem == premium.NoExpiryCode {
@@ -973,24 +972,4 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *settings.Gu
 		Fields:      nil,
 	}
 	return &msg
-}
-
-func extractUserIDFromMention(mention string) (string, error) {
-	// nickname format
-	switch {
-	case strings.HasPrefix(mention, "<@!") && strings.HasSuffix(mention, ">"):
-		return mention[3 : len(mention)-1], nil
-	case strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">"):
-		return mention[2 : len(mention)-1], nil
-	default:
-		return "", errors.New("mention does not conform to the correct format")
-	}
-}
-
-func extractRoleIDFromMention(mention string) (string, error) {
-	// role is formatted <&123456>
-	if strings.HasPrefix(mention, "<@&") && strings.HasSuffix(mention, ">") {
-		return mention[3 : len(mention)-1], nil
-	}
-	return "", errors.New("mention does not conform to the correct format")
 }
