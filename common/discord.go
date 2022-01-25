@@ -32,6 +32,10 @@ func ExtractUserIDFromMention(mention string) (string, error) {
 	case strings.HasPrefix(mention, "<@") && strings.HasSuffix(mention, ">"):
 		return mention[2 : len(mention)-1], nil
 	default:
+		_, err := strconv.ParseInt(mention, 10, 64)
+		if err == nil {
+			return mention, nil
+		}
 		return "", errors.New("mention does not conform to the correct format")
 	}
 }

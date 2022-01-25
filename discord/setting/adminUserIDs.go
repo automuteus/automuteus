@@ -7,6 +7,9 @@ import (
 )
 
 func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	adminIDs := sett.GetAdminUserIDs()
 	if len(args) == 2 {
 		adminCount := len(adminIDs) // caching for optimisation
@@ -46,18 +49,20 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 			if ID == "" || err != nil {
 				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.notFound",
-					Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID, username, username#XXXX, nickname or @mention",
+					Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID or @mention",
 				},
 					map[string]interface{}{
 						"UserName": userName,
 					}))
 				continue
+			} else {
+				userIDs = append(userIDs, ID)
 			}
-			userIDs = append(userIDs, ID)
 		}
+		oldIDs := sett.GetAdminUserIDs()
 
 		for _, ID := range userIDs {
-			if ID != "" {
+			if ID != "" && !contains(oldIDs, ID) {
 				newAdminIDs = append(newAdminIDs, ID)
 				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.newBotAdmin",
@@ -68,8 +73,13 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 					}))
 			}
 		}
-		sett.SetAdminUserIDs(newAdminIDs)
-		return sendMessages, true
+		if len(newAdminIDs) > 0 {
+			sett.SetAdminUserIDs(append(oldIDs, newAdminIDs...))
+			return sendMessages, true
+		} else {
+			return sendMessages, false
+		}
+
 	} else {
 		sett.SetAdminUserIDs(newAdminIDs)
 		return sett.LocalizeMessage(&i18n.Message{
@@ -77,4 +87,13 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 			Other: "Clearing all AdminUserIDs!",
 		}), true
 	}
+}
+
+func contains(arr []string, elem string) bool {
+	for _, v := range arr {
+		if v == elem {
+			return true
+		}
+	}
+	return false
 }
