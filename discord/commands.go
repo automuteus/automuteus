@@ -563,7 +563,7 @@ func commandFnHelp(
 		})
 	}
 
-	embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
+	embed := ConstructEmbedForCommand(cmd, sett)
 	return message.ChannelID, embed
 }
 
@@ -665,7 +665,7 @@ func commandFnLink(
 	cmd *Command,
 ) (string, interface{}) {
 	if len(args[1:]) < 2 {
-		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
 		gsr := GameStateRequest{
 			GuildID:     message.GuildID,
@@ -694,7 +694,7 @@ func commandFnUnlink(
 	cmd *Command,
 ) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if err != nil {
@@ -765,7 +765,7 @@ func commandFnMap(
 	cmd *Command,
 ) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
 		mapVersion := args[len(args)-1]
 
@@ -808,7 +808,7 @@ func commandFnCache(
 	cmd *Command,
 ) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if err != nil {
@@ -867,7 +867,7 @@ func commandFnPrivacy(
 			arg = args[1]
 		}
 		if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
-			return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+			return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 		} else {
 			return message.ChannelID, bot.privacyResponse(message.GuildID, message.Author.ID, arg, sett)
 		}
@@ -972,7 +972,7 @@ func commandFnStats(
 	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
 	isPrem := !premium.IsExpired(premStatus, days)
 	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
+		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if userID == "" || err != nil {

@@ -24,7 +24,6 @@ var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 // TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
 func ConstructEmbedForCommand(
-	prefix string,
 	cmd Command,
 	sett *settings.GuildSettings,
 ) *discordgo.MessageEmbed {
@@ -70,16 +69,6 @@ func ConstructEmbedForCommand(
 			},
 		},
 	}
-}
-
-type commandRequest struct {
-	isAdmin        bool
-	isPermissioned bool
-	sett           *settings.GuildSettings
-	session        *discordgo.Session
-	guild          *discordgo.Guild
-	message        *discordgo.MessageCreate
-	args           []string
 }
 
 func (bot *Bot) HandleCommand(
