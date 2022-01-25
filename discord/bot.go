@@ -249,19 +249,13 @@ func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *GameState, args []string) {
-	g, err := s.State.Guild(dgs.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
 	userID, err := extractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}
 
-	_, added := dgs.checkCacheAndAddUser(g, s, userID)
+	_, added := dgs.checkCacheAndAddUser(g, bot.PrimarySession, userID)
 	if !added {
 		log.Println("No users found in Discord for UserID " + userID)
 	}

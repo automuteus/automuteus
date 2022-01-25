@@ -10,7 +10,6 @@ import (
 
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -38,6 +37,8 @@ const (
 	CommandEnumPremium
 )
 
+const NoLock string = "Could not obtain lock"
+
 type Command struct {
 	Aliases     []string
 	Command     string
@@ -56,12 +57,11 @@ type Command struct {
 		isAdmin bool,
 		isPermissioned bool,
 		sett *storage.GuildSettings,
-		session *discordgo.Session,
 		guild *discordgo.Guild,
 		message *discordgo.MessageCreate,
 		args []string,
-		cmd Command,
-	)
+		cmd *Command,
+	) (string, interface{})
 }
 
 func getCommand(arg string) (Command, bool) {
@@ -295,12 +295,12 @@ func init() {
 				isAdmin bool,
 				isPermissioned bool,
 				sett *storage.GuildSettings,
-				session *discordgo.Session,
 				guild *discordgo.Guild,
 				message *discordgo.MessageCreate,
 				args []string,
-				cmd Command,
-			) {
+				cmd *Command,
+			) (string, interface{}) {
+				return "", nil
 			},
 		},
 		{
@@ -545,29 +545,26 @@ func commandFnHelp(
 	isAdmin bool,
 	isPermissioned bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	if len(args[1:]) == 0 {
 		embed := helpResponse(isAdmin, isPermissioned, allCommands, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, &embed)
-		return
+		return message.ChannelID, &embed
 	}
 
 	cmd, exists := getCommand(args[1])
 	if !exists {
-		session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.HandleCommand.Help.notFound",
 			Other: "I didn't recognize that command! View `help` for all available commands!",
-		}))
-		return
+		})
 	}
 
 	embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-	session.ChannelMessageSendEmbed(message.ChannelID, embed)
+	return message.ChannelID, embed
 }
 
 func commandFnNew(
@@ -575,13 +572,12 @@ func commandFnNew(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	guild *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
-	bot.handleNewGameMessage(session, message, guild, sett)
+	_ *Command,
+) (string, interface{}) {
+	return bot.handleNewGameMessage(message, guild, sett)
 }
 
 func commandFnEnd(
@@ -589,12 +585,11 @@ func commandFnEnd(
 	_ bool,
 	_ bool,
 	_ *storage.GuildSettings,
-	_ *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	log.Println("User typed end to end the current game")
 
 	gsr := GameStateRequest{
@@ -608,6 +603,7 @@ func commandFnEnd(
 	delete(bot.EndGameChannels, dgs.ConnectCode)
 
 	bot.applyToAll(dgs, false, false)
+	return message.ChannelID, nil
 }
 
 func commandFnPause(
@@ -615,19 +611,18 @@ func commandFnPause(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	gsr := GameStateRequest{
 		GuildID:     message.GuildID,
 		TextChannel: message.ChannelID,
 	}
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	if lock == nil {
-		return
+		return message.ChannelID, NoLock
 	}
 	dgs.Running = !dgs.Running
 
@@ -636,10 +631,8 @@ func commandFnPause(
 		bot.applyToAll(dgs, false, false)
 	}
 
-	edited := dgs.Edit(session, bot.gameStateResponse(dgs, sett))
-	if edited {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-	}
+	// TODO need something here to indicate it's an EDIT response
+	return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
 }
 
 func commandFnRefresh(
@@ -647,17 +640,18 @@ func commandFnRefresh(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	_ *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	gsr := GameStateRequest{
 		GuildID:     message.GuildID,
 		TextChannel: message.ChannelID,
 	}
 	bot.RefreshGameStateMessage(gsr, sett)
+	// TODO not accurate, pass up the edit
+	return "", nil
 }
 
 func commandFnLink(
@@ -665,15 +659,13 @@ func commandFnLink(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
-	_ *discordgo.Guild,
+	guild *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	if len(args[1:]) < 2 {
-		embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, embed)
+		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 	} else {
 		gsr := GameStateRequest{
 			GuildID:     message.GuildID,
@@ -681,15 +673,13 @@ func commandFnLink(
 		}
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
-			return
+			return message.ChannelID, NoLock
 		}
-		bot.linkPlayer(session, dgs, args[1:])
+		bot.linkPlayer(guild, dgs, args[1:])
 		bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-		edited := dgs.Edit(session, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		// TODO need something here to indicate it's an EDIT response
+		return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
 	}
 }
 
@@ -698,19 +688,18 @@ func commandFnUnlink(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, embed)
+		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
+			return "", nil
 		} else {
 			log.Print(fmt.Sprintf("Removing player %s", userID))
 			gsr := GameStateRequest{
@@ -719,17 +708,14 @@ func commandFnUnlink(
 			}
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 			if lock == nil {
-				return
+				return message.ChannelID, NoLock
 			}
 			dgs.ClearPlayerData(userID)
 
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-			// update the state message to reflect the player leaving
-			edited := dgs.Edit(session, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			// TODO need something here to indicate it's an EDIT response
+			return dgs.GameStateMsg.MessageID, bot.gameStateResponse(dgs, sett)
 		}
 	}
 }
@@ -739,18 +725,18 @@ func commandFnUnmuteAll(
 	_ bool,
 	_ bool,
 	_ *storage.GuildSettings,
-	_ *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	gsr := GameStateRequest{
 		GuildID:     message.GuildID,
 		TextChannel: message.ChannelID,
 	}
 	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 	bot.applyToAll(dgs, false, false)
+	return "", nil
 }
 
 func commandFnSettings(
@@ -758,15 +744,14 @@ func commandFnSettings(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
 	isPrem := !premium.IsExpired(premStatus, days)
-	bot.HandleSettingsCommand(session, message, sett, args, isPrem)
+	return bot.HandleSettingsCommand(message, sett, args, isPrem)
 }
 
 func commandFnMap(
@@ -774,15 +759,13 @@ func commandFnMap(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, embed)
+		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 	} else {
 		mapVersion := args[len(args)-1]
 
@@ -797,21 +780,21 @@ func commandFnMap(
 		mapItem, err := NewMapItem(mapName)
 		if err != nil {
 			log.Println(err)
-			session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+			return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.HandleCommand.Map.notFound",
 				Other: "I don't have a map by that name!",
-			}))
-			return
+			})
 		}
 		switch mapVersion {
 		case "simple":
-			session.ChannelMessageSend(message.ChannelID, mapItem.MapImage.Simple)
+			return message.ChannelID, mapItem.MapImage.Simple
 		case detailedMapString:
-			session.ChannelMessageSend(message.ChannelID, mapItem.MapImage.Detailed)
+			return message.ChannelID, mapItem.MapImage.Detailed
 		default:
 			log.Println("mapVersion has unexpected value for 'map' command")
 		}
 	}
+	return "", nil
 }
 
 func commandFnCache(
@@ -819,29 +802,26 @@ func commandFnCache(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, embed)
+		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
-			session.ChannelMessageSend(message.ChannelID, "I couldn't find a user by that name or ID!")
-			return
+			return message.ChannelID, "I couldn't find a user by that name or ID!"
 		}
 		if len(args[2:]) == 0 {
 			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(message.GuildID, userID)
 			if len(cached) == 0 {
-				session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Cache.emptyCachedNames",
 					Other: "I don't have any cached player names stored for that user!",
-				}))
+				})
 			} else {
 				buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Cache.cachedNames",
@@ -853,19 +833,21 @@ func commandFnCache(
 				}
 				buf.WriteString("```")
 
-				session.ChannelMessageSend(message.ChannelID, buf.String())
+				return message.ChannelID, buf.String()
 			}
 		} else if strings.ToLower(args[2]) == clearArgumentString || strings.ToLower(args[2]) == "c" {
 			err := bot.RedisInterface.DeleteLinksByUserID(message.GuildID, userID)
 			if err != nil {
 				log.Println(err)
+				return message.ChannelID, err
 			} else {
-				session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+				return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 					ID:    "commands.HandleCommand.Cache.Success",
 					Other: "Successfully deleted all cached names for that user!",
-				}))
+				})
 			}
 		}
+		return "", nil
 	}
 }
 
@@ -874,25 +856,23 @@ func commandFnPrivacy(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	if message.Author != nil {
 		var arg = ""
 		if len(args[1:]) > 0 {
 			arg = args[1]
 		}
 		if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
-			embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-			session.ChannelMessageSendEmbed(message.ChannelID, embed)
+			return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 		} else {
-			embed := bot.privacyResponse(message.GuildID, message.Author.ID, arg, sett)
-			session.ChannelMessageSendEmbed(message.ChannelID, embed)
+			return message.ChannelID, bot.privacyResponse(message.GuildID, message.Author.ID, arg, sett)
 		}
 	}
+	return "", nil
 }
 
 func commandFnInfo(
@@ -900,17 +880,13 @@ func commandFnInfo(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	embed := bot.infoResponse(message.GuildID, sett)
-	_, err := session.ChannelMessageSendEmbed(message.ChannelID, embed)
-	if err != nil {
-		log.Println(err)
-	}
+	return message.ChannelID, embed
 }
 
 func commandFnDebugState(
@@ -918,12 +894,11 @@ func commandFnDebugState(
 	_ bool,
 	_ bool,
 	_ *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	_ []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	if message.Author != nil {
 		gsr := GameStateRequest{
 			GuildID:     message.GuildID,
@@ -935,16 +910,19 @@ func commandFnDebugState(
 			if err != nil {
 				log.Println(err)
 			} else {
+				var msgs []string
 				for i := 0; i < len(jBytes); i += MaxDebugMessageSize {
 					end := i + MaxDebugMessageSize
 					if end > len(jBytes) {
 						end = len(jBytes)
 					}
-					session.ChannelMessageSend(message.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
+					msgs = append(msgs, fmt.Sprintf("```JSON\n%s\n```", jBytes[i:end]))
 				}
+				return message.ChannelID, msgs
 			}
 		}
 	}
+	return message.ChannelID, nil
 }
 
 func commandFnASCII(
@@ -952,18 +930,17 @@ func commandFnASCII(
 	_ bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	if len(args[1:]) == 0 {
-		session.ChannelMessageSend(message.ChannelID, ASCIICrewmate)
+		return message.ChannelID, ASCIICrewmate
 	} else {
 		id, err := extractUserIDFromMention(args[1])
 		if id == "" || err != nil {
-			session.ChannelMessageSend(message.ChannelID, "I couldn't find a user by that name or ID!")
+			return message.ChannelID, "I couldn't find a user by that name or ID!"
 		} else {
 			imposter := false
 			count := 1
@@ -977,7 +954,7 @@ func commandFnASCII(
 					}
 				}
 			}
-			session.ChannelMessageSend(message.ChannelID, ASCIIStarfield(sett, args[1], imposter, count))
+			return message.ChannelID, ASCIIStarfield(sett, args[1], imposter, count)
 		}
 	}
 }
@@ -987,17 +964,15 @@ func commandFnStats(
 	isAdmin bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	cmd Command,
-) {
+	cmd *Command,
+) (string, interface{}) {
 	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
 	isPrem := !premium.IsExpired(premStatus, days)
 	if len(args[1:]) == 0 {
-		embed := ConstructEmbedForCommand(sett.CommandPrefix, cmd, sett)
-		session.ChannelMessageSendEmbed(message.ChannelID, embed)
+		return message.ChannelID, ConstructEmbedForCommand(sett.CommandPrefix, *cmd, sett)
 	} else {
 		userID, err := extractUserIDFromMention(args[1])
 		if userID == "" || err != nil {
@@ -1005,39 +980,33 @@ func commandFnStats(
 			if arg == "g" || arg == "guild" || arg == "server" {
 				if len(args) > 2 && args[2] == "reset" {
 					if !isAdmin {
-						session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "message_handlers.handleResetGuild.noPerms",
 							Other: "Only Admins are capable of resetting server stats",
-						}))
+						})
 					} else {
 						if len(args) == 3 {
-							_, err := session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 								ID:    "commands.StatsCommand.Reset.NoConfirm",
 								Other: "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!",
 							},
 								map[string]interface{}{
 									"CommandPrefix": sett.CommandPrefix,
-								}))
-							if err != nil {
-								log.Println(err)
-							}
+								})
 						} else if args[3] == "confirm" {
 							err := bot.PostgresInterface.DeleteAllGamesForServer(message.GuildID)
 							if err != nil {
-								session.ChannelMessageSend(message.ChannelID, "Encountered the following error when deleting the server's stats: "+err.Error())
+								return message.ChannelID, "Encountered the following error when deleting the server's stats: " + err.Error()
 							} else {
-								session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+								return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 									ID:    "commands.StatsCommand.Reset.Success",
 									Other: "Successfully reset your guild's stats!",
-								}))
+								})
 							}
 						}
 					}
 				} else {
-					_, err := session.ChannelMessageSendEmbed(message.ChannelID, bot.GuildStatsEmbed(message.GuildID, sett, isPrem))
-					if err != nil {
-						log.Println(err)
-					}
+					return message.ChannelID, bot.GuildStatsEmbed(message.GuildID, sett, isPrem)
 				}
 			} else {
 				arg = strings.ToUpper(arg)
@@ -1045,54 +1014,52 @@ func commandFnStats(
 				if MatchIDRegex.MatchString(arg) {
 					strs := strings.Split(arg, ":")
 					if len(strs) < 2 {
-						log.Println("Something very wrong with the regex for match/conn codes...")
+						return message.ChannelID, "Something very wrong with the regex for match/conn codes..."
 					} else {
-						session.ChannelMessageSendEmbed(message.ChannelID, bot.GameStatsEmbed(message.GuildID, strs[1], strs[0], sett, isPrem))
+						return message.ChannelID, bot.GameStatsEmbed(message.GuildID, strs[1], strs[0], sett, isPrem)
 					}
 				} else {
-					session.ChannelMessageSend(message.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID")
+					return message.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID"
 				}
 			}
 		} else {
 			if len(args) > 2 && args[2] == "reset" {
 				if !isAdmin {
-					session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+					return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleResetGuild.noPerms",
 						Other: "Only Admins are capable of resetting server stats",
-					}))
+					})
 				} else {
 					if len(args) == 3 {
-						_, err := session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+						return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 							ID:    "commands.StatsCommand.ResetUser.NoConfirm",
 							Other: "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!",
 						},
 							map[string]interface{}{
 								"CommandPrefix": sett.CommandPrefix,
 								"User":          args[1],
-							}))
-						if err != nil {
-							log.Println(err)
-						}
+							})
 					} else if args[3] == "confirm" {
 						err := bot.PostgresInterface.DeleteAllGamesForUser(userID)
 						if err != nil {
-							session.ChannelMessageSend(message.ChannelID, "Encountered the following error when deleting that user's stats: "+err.Error())
+							return message.ChannelID, "Encountered the following error when deleting that user's stats: " + err.Error()
 						} else {
-							session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
+							return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 								ID:    "commands.StatsCommand.ResetUser.Success",
 								Other: "Successfully reset {{.User}}'s stats!",
 							},
 								map[string]interface{}{
 									"User": args[1],
-								}))
+								})
 						}
 					}
 				}
 			} else {
-				session.ChannelMessageSendEmbed(message.ChannelID, bot.UserStatsEmbed(userID, message.GuildID, sett, isPrem))
+				return message.ChannelID, bot.UserStatsEmbed(userID, message.GuildID, sett, isPrem)
 			}
 		}
 	}
+	return message.ChannelID, nil
 }
 
 func commandFnPremium(
@@ -1100,15 +1067,14 @@ func commandFnPremium(
 	isAdmin bool,
 	_ bool,
 	sett *storage.GuildSettings,
-	session *discordgo.Session,
 	_ *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-	_ Command,
-) {
+	_ *Command,
+) (string, interface{}) {
 	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
 	if len(args[1:]) == 0 {
-		session.ChannelMessageSendEmbed(message.ChannelID, premiumEmbedResponse(message.GuildID, premStatus, days, sett))
+		return message.ChannelID, premiumEmbedResponse(message.GuildID, premStatus, days, sett)
 	} else {
 		tier := premium.FreeTier
 		if !premium.IsExpired(premStatus, days) {
@@ -1117,15 +1083,12 @@ func commandFnPremium(
 		arg := strings.ToLower(args[1])
 		if isAdmin {
 			if arg == "invite" || arg == "invites" || arg == "inv" {
-				_, err := session.ChannelMessageSendEmbed(message.ChannelID, premiumInvitesEmbed(tier, sett))
-				if err != nil {
-					log.Println(err)
-				}
+				return message.ChannelID, premiumInvitesEmbed(tier, sett)
 			} else {
-				session.ChannelMessageSend(message.ChannelID, "Sorry, I didn't recognize that premium command or argument!")
+				return message.ChannelID, "Sorry, I didn't recognize that premium command or argument!"
 			}
 		} else {
-			session.ChannelMessageSend(message.ChannelID, "Viewing the premium invites is an Admin-only command")
+			return message.ChannelID, "Viewing the premium invites is an Admin-only command"
 		}
 	}
 }

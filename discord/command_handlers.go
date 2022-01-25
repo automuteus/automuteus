@@ -119,6 +119,7 @@ func (bot *Bot) HandleCommand(
 		return
 	}
 
+	// admins can invoke moderator commands
 	if command.IsOperator && (!isPermissioned && !isAdmin) {
 		session.ChannelMessageSend(message.ChannelID, sett.LocalizeMessage(&i18n.Message{
 			ID:    "message_handlers.handleMessageCreate.noPerms",
@@ -128,6 +129,23 @@ func (bot *Bot) HandleCommand(
 	}
 
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
-	command.fn(bot, isAdmin, isPermissioned, sett, session, guild, message, args, command)
+	channelID, msgToSend := command.fn(bot, isAdmin, isPermissioned, sett, guild, message, args, &command)
+	switch msgToSend.(type) {
+	case string:
+		session.ChannelMessageSend(channelID, msgToSend.(string))
+	case []string:
+		for _, v := range msgToSend.([]string) {
+			session.ChannelMessageSend(channelID, v)
+		}
+	case discordgo.MessageEmbed:
+		embed := msgToSend.(discordgo.MessageEmbed)
+		session.ChannelMessageSendEmbed(channelID, &embed)
+	case *discordgo.MessageEmbed:
+		session.ChannelMessageSendEmbed(channelID, msgToSend.(*discordgo.MessageEmbed))
+	case nil:
+		// do nothing
+	default:
+		log.Printf("Incapable of processing sendMessage of type: %T", msgToSend)
+	}
 	deleteMessage(session, message.ChannelID, message.Message.ID)
 }
