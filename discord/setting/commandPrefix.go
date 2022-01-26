@@ -6,11 +6,17 @@ import (
 )
 
 func FnCommandPrefix(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	if len(args) == 2 {
 		embed := ConstructEmbedForSetting(sett.GetCommandPrefix(), AllSettings[Prefix], sett)
 		return &embed, false
 	}
-	if len(args[2]) > 10 {
+	if args[2] == "<@!"+settings.OfficialBotMention+">" || args[2] == "<@"+settings.OfficialBotMention+">" {
+		args[2] = "@AutoMuteUs"
+	}
+	if len(args[2]) > 12 {
 		// prevent someone from setting something ridiculous lol
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.CommandPrefixSetting.tooLong",
