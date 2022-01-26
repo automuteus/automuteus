@@ -7,6 +7,9 @@ import (
 )
 
 func FnAutoRefresh(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), AllSettings[AutoRefresh], sett), false
 	}
@@ -24,6 +27,15 @@ func FnAutoRefresh(sett *settings.GuildSettings, args []string) (interface{}, bo
 	}
 
 	newSet := val == "t" || val == "true"
+	if sett.GetAutoRefresh() == newSet {
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingAutoRefresh.Noop",
+			Other: "AutoRefresh was already set to `{{.Value}}`; not doing anything",
+		},
+			map[string]interface{}{
+				"Value": newSet,
+			}), false
+	}
 	sett.SetAutoRefresh(newSet)
 	if newSet {
 		return sett.LocalizeMessage(&i18n.Message{
