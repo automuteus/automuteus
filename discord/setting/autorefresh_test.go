@@ -2,35 +2,18 @@ package setting
 
 import (
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bwmarrin/discordgo"
 	"testing"
 )
 
 func TestFnAutoRefresh(t *testing.T) {
-	_, valid := FnAutoRefresh(nil, []string{})
-	if valid {
-		t.Error("Sending nil settings should never result in valid settings change")
+	err := testSettingsFn(FnAutoRefresh)
+	if err != nil {
+		t.Error(err)
 	}
 
 	sett := settings.MakeGuildSettings("", false)
-	_, valid = FnAutoRefresh(sett, []string{})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
 
-	_, valid = FnAutoRefresh(sett, []string{"sett"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-
-	msg, valid := FnAutoRefresh(sett, []string{"sett", "refresh"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-	// test the return type
-	_ = msg.(discordgo.MessageEmbed)
-
-	_, valid = FnAutoRefresh(sett, []string{"sett", "refresh", "nontrue"})
+	_, valid := FnAutoRefresh(sett, []string{"sett", "refresh", "nontrue"})
 	if valid {
 		t.Error("Sending invalid (non true/false) val should never result in valid settings change")
 	}

@@ -2,35 +2,17 @@ package setting
 
 import (
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bwmarrin/discordgo"
 	"testing"
 )
 
 func TestFnAdminUserIDs(t *testing.T) {
-	_, valid := FnAdminUserIDs(nil, []string{})
-	if valid {
-		t.Error("Sending nil settings should never result in valid settings change")
+	err := testSettingsFn(FnAdminUserIDs)
+	if err != nil {
+		t.Error(err)
 	}
 
 	sett := settings.MakeGuildSettings("", false)
-	_, valid = FnAdminUserIDs(sett, []string{})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-
-	_, valid = FnAdminUserIDs(sett, []string{"sett"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-
-	msg, valid := FnAdminUserIDs(sett, []string{"sett", "admins"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-	// test the return type
-	_ = msg.(discordgo.MessageEmbed)
-
-	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "somegarbage"})
+	_, valid := FnAdminUserIDs(sett, []string{"sett", "admins", "somegarbage"})
 	if valid {
 		t.Error("Garbage admin IDs arg shouldn't result in valid settings change")
 	}

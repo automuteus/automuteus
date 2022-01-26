@@ -2,35 +2,18 @@ package setting
 
 import (
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bwmarrin/discordgo"
 	"testing"
 )
 
 func TestFnCommandPrefix(t *testing.T) {
-	_, valid := FnCommandPrefix(nil, []string{})
-	if valid {
-		t.Error("Sending nil settings should never result in valid settings change")
+	err := testSettingsFn(FnCommandPrefix)
+	if err != nil {
+		t.Error(err)
 	}
 
 	sett := settings.MakeGuildSettings("", false)
-	_, valid = FnCommandPrefix(sett, []string{})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
 
-	_, valid = FnCommandPrefix(sett, []string{"sett"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-
-	msg, valid := FnCommandPrefix(sett, []string{"sett", "prefix"})
-	if valid {
-		t.Error("Sending no args should never result in valid settings change")
-	}
-	// test the return type
-	_ = msg.(*discordgo.MessageEmbed)
-
-	_, valid = FnCommandPrefix(sett, []string{"sett", "somereallylongprefix"})
+	_, valid := FnCommandPrefix(sett, []string{"sett", "somereallylongprefix"})
 	if valid {
 		t.Error("Long prefixes are invalid and shouldn't result in valid settings change")
 	}
