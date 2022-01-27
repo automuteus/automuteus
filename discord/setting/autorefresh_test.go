@@ -1,17 +1,14 @@
 package setting
 
 import (
-	"github.com/automuteus/utils/pkg/settings"
 	"testing"
 )
 
 func TestFnAutoRefresh(t *testing.T) {
-	err := testSettingsFn(FnAutoRefresh)
+	sett, err := testSettingsFn(FnAutoRefresh)
 	if err != nil {
 		t.Error(err)
 	}
-
-	sett := settings.MakeGuildSettings("", false)
 
 	_, valid := FnAutoRefresh(sett, []string{"sett", "refresh", "nontrue"})
 	if valid {

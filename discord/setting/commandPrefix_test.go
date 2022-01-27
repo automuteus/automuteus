@@ -6,12 +6,10 @@ import (
 )
 
 func TestFnCommandPrefix(t *testing.T) {
-	err := testSettingsFn(FnCommandPrefix)
+	sett, err := testSettingsFn(FnCommandPrefix)
 	if err != nil {
 		t.Error(err)
 	}
-
-	sett := settings.MakeGuildSettings("", false)
 
 	_, valid := FnCommandPrefix(sett, []string{"sett", "somereallylongprefix"})
 	if valid {

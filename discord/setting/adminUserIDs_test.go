@@ -1,17 +1,15 @@
 package setting
 
 import (
-	"github.com/automuteus/utils/pkg/settings"
 	"testing"
 )
 
 func TestFnAdminUserIDs(t *testing.T) {
-	err := testSettingsFn(FnAdminUserIDs)
+	sett, err := testSettingsFn(FnAdminUserIDs)
 	if err != nil {
 		t.Error(err)
 	}
 
-	sett := settings.MakeGuildSettings("", false)
 	_, valid := FnAdminUserIDs(sett, []string{"sett", "admins", "somegarbage"})
 	if valid {
 		t.Error("Garbage admin IDs arg shouldn't result in valid settings change")

@@ -2,17 +2,14 @@ package setting
 
 import (
 	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/settings"
 	"testing"
 )
 
 func TestFnDelays(t *testing.T) {
-	err := testSettingsFn(FnDelays)
+	sett, err := testSettingsFn(FnDelays)
 	if err != nil {
 		t.Error(err)
 	}
-
-	sett := settings.MakeGuildSettings("", false)
 
 	_, valid := FnDelays(sett, []string{"sett", "delays", "incomplete"})
 	if valid {
