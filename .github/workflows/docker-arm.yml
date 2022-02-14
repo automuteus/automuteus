@@ -2,8 +2,6 @@ name: Build and publish Docker images
 
 on:
   push:
-    branches:
-      - '**'
     tags:
       - '*.*.*'
 
@@ -29,7 +27,7 @@ jobs:
 
       - name: Login to DockerHub
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -40,7 +38,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/386
+          platforms: linux/arm/v7,linux/arm64,linux/arm/v6
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}

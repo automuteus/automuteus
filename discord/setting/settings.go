@@ -1,6 +1,11 @@
 package setting
 
-import "github.com/nicksnyder/go-i18n/v2/i18n"
+import (
+	"github.com/automuteus/utils/pkg/settings"
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"strings"
+)
 
 type SettingType int
 
@@ -25,6 +30,10 @@ const (
 	Reset
 	NullSetting
 )
+
+type ISetting interface {
+	HandleSetting(*discordgo.MessageCreate, *settings.GuildSettings, []string) (interface{}, bool)
+}
 
 type Setting struct {
 	SettingType SettingType
@@ -380,4 +389,69 @@ var AllSettings = []Setting{
 		Aliases: []string{},
 		Premium: false,
 	},
+}
+
+func ConstructEmbedForSetting(value string, setting Setting, sett *settings.GuildSettings) discordgo.MessageEmbed {
+	title := setting.Name
+	if setting.Premium {
+		title = "💎 " + title
+	}
+	if value == "" {
+		value = "null"
+	}
+
+	desc := sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.ConstructEmbedForSetting.StarterDesc",
+		Other: "Type `{{.CommandPrefix}} settings {{.Command}}` to change this setting.\n\n",
+	}, map[string]interface{}{
+		"CommandPrefix": sett.GetCommandPrefix(),
+		"Command":       setting.Name,
+	})
+	return discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       setting.Name,
+		Description: desc + sett.LocalizeMessage(setting.Description),
+		Timestamp:   "",
+		Color:       15844367, // GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "settings.ConstructEmbedForSetting.Fields.CurrentValue",
+					Other: "Current Value",
+				}),
+				Value:  value,
+				Inline: false,
+			},
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "settings.ConstructEmbedForSetting.Fields.Example",
+					Other: "Example",
+				}),
+				Value:  "`" + setting.Example + "`",
+				Inline: false,
+			},
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "settings.ConstructEmbedForSetting.Fields.Arguments",
+					Other: "Arguments",
+				}),
+				Value:  "`" + sett.LocalizeMessage(setting.Arguments) + "`",
+				Inline: false,
+			},
+			{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "settings.ConstructEmbedForSetting.Fields.Aliases",
+					Other: "Aliases",
+				}),
+				Value:  strings.Join(setting.Aliases, ", "),
+				Inline: false,
+			},
+		},
+	}
 }

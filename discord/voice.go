@@ -3,10 +3,10 @@ package discord
 import (
 	"context"
 	"github.com/automuteus/utils/pkg/premium"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/storage"
 	"log"
 	"strconv"
 	"time"
@@ -104,7 +104,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 }
 
 // handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *storage.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {

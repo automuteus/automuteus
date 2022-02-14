@@ -4,9 +4,11 @@ import (
 	"context"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
@@ -107,15 +109,17 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	nodeID := os.Getenv("SCW_NODE_ID")
 	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 
-	go StartHealthCheckServer("8080")
+	go metrics.StartHealthCheckServer("8080")
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
 		prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
-		if prefix == "" {
+		if prefix == "" && os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
 			prefix = ".au"
+		} else if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
+			prefix = "@AutoMuteUs"
 		}
 
 		listeningTo = prefix + " help"
@@ -136,7 +140,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	}
 
 	// indicate to Kubernetes that we're ready to start receiving traffic
-	GlobalReady = true
+	metrics.GlobalReady = true
 
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bot.statsRefreshWorker(rediskey.TotalUsersExpiration)
@@ -237,7 +241,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 	}
 }
 
-func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
+func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
 	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
 
@@ -247,19 +251,13 @@ func (bot *Bot) leaveGuild(s *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) linkPlayer(s *discordgo.Session, dgs *GameState, args []string) {
-	g, err := s.State.Guild(dgs.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	userID, err := extractUserIDFromMention(args[0])
+func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
+	userID, err := common.ExtractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}
 
-	_, added := dgs.checkCacheAndAddUser(g, s, userID)
+	_, added := dgs.checkCacheAndAddUser(g, bot.PrimarySession, userID)
 	if !added {
 		log.Println("No users found in Discord for UserID " + userID)
 	}
@@ -311,7 +309,7 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 	deleteMessage(s, msgChannelID, msgID)
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.GuildSettings) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -333,6 +331,5 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *storage.Guil
 	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.PrimarySession, "▶️")
-		// go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 	}
 }

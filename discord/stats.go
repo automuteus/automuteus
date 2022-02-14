@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strconv"
 	"strings"
@@ -15,7 +16,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedByUserOnServer(userID, guildID)
 	wins := bot.PostgresInterface.NumWinsOnServer(userID, guildID)
 
@@ -61,7 +62,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *storage.GuildSettin
 		ID:    "responses.userStatsEmbed.NoPremium",
 		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
 	}, map[string]interface{}{
-		"CommandPrefix": sett.CommandPrefix,
+		"CommandPrefix": sett.GetCommandPrefix(),
 	})
 
 	if isPrem {
@@ -523,7 +524,7 @@ func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, stri
 	return split[0], split[1], split[2]
 }
 
-func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.GuildSettings) string {
+func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *settings.GuildSettings) string {
 	if !sett.LeaderboardMention {
 		userName, nickname, _ := bot.CheckOrFetchCachedUserData(userID, guildID)
 		if nickname != "" {
@@ -536,7 +537,7 @@ func (bot *Bot) MentionWithCacheData(userID, guildID string, sett *storage.Guild
 	return "<@" + userID + ">"
 }
 
-func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gname := ""
 	avatarURL := ""
 	g, err := bot.PrimarySession.Guild(guildID)
@@ -587,7 +588,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, isP
 		ID:    "responses.guildStatsEmbed.NoPremium",
 		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
 	}, map[string]interface{}{
-		"CommandPrefix": sett.CommandPrefix,
+		"CommandPrefix": sett.GetCommandPrefix(),
 	})
 
 	if isPrem {
@@ -893,7 +894,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *storage.GuildSettings, isP
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *storage.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
 	gameData, err := bot.PostgresInterface.GetGame(guildID, connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)

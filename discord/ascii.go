@@ -2,8 +2,8 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
 
-	"github.com/denverquane/amongusdiscord/storage"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -28,7 +28,7 @@ const ASCIICrewmate = "" +
 	"⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿  ⠀⠈⠻⣿⣿⣿⡿⠏⠀⠀⠀⠀\n" +
 	"⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
 
-func ASCIIStarfield(sett *storage.GuildSettings, name string, isImpostor bool, count int) string {
+func ASCIIStarfield(sett *settings.GuildSettings, name string, isImpostor bool, count int) string {
 	isImpostorStr := sett.LocalizeMessage(&i18n.Message{
 		ID:    "ascii.AsciiStarfield.isWasNot",
 		Other: "was not An Impostor.",
