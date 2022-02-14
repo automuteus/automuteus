@@ -6,7 +6,7 @@ go 1.15
 
 require (
 	github.com/automuteus/galactus v1.2.2
-	github.com/automuteus/utils v0.0.20
+	github.com/automuteus/utils v0.0.21
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/georgysavva/scany v0.2.7

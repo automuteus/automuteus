@@ -20,7 +20,7 @@ func FnCommandPrefix(sett *settings.GuildSettings, args []string) (interface{}, 
 		// prevent someone from setting something ridiculous lol
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.CommandPrefixSetting.tooLong",
-			Other: "Sorry, the prefix `{{.CommandPrefix}}` is too long ({{.Length}} characters, max 10). Try something shorter.",
+			Other: "Sorry, the prefix `{{.CommandPrefix}}` is too long ({{.Length}} characters, max 12). Try something shorter.",
 		},
 			map[string]interface{}{
 				"CommandPrefix": args[2],
