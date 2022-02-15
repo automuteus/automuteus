@@ -1,6 +1,6 @@
-"ascii.AsciiStarfield.isWas" = "是一个映射器。"
-"ascii.AsciiStarfield.isWasNot" = "不是一个映射器。"
-"commands.AllCommands.Ascii.args" = "<@discord 用户> <is imposter> (true|false) <x impostor remains> (计数)"
+"ascii.AsciiStarfield.isWas" = "was An Impostor."
+"ascii.AsciiStarfield.isWasNot" = "was not An Impostor."
+"commands.AllCommands.Ascii.args" = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
 "commands.AllCommands.Ascii.desc" = "Print an ASCII crewmate"
 "commands.AllCommands.Ascii.shortDesc" = "Print an ASCII crewmate"
 "commands.AllCommands.Cache.args" = '<player> (optionally, "clear")'
