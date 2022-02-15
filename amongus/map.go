@@ -41,7 +41,7 @@ func NewMapItem(name string) (*MapItem, error) {
 
 	BaseMapURL := os.Getenv("BASE_MAP_URL")
 	if BaseMapURL == "" {
-		BaseMapURL = "https://github.com/denverquane/automuteus/blob/master/assets/maps/"
+		BaseMapURL = "https://github.com/automuteus/automuteus/blob/master/assets/maps/"
 	}
 
 	base, err := url.Parse(BaseMapURL)

@@ -1,8 +1,8 @@
 package discord
 
 import (
+	"github.com/automuteus/automuteus/amongus"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/amongus"
 )
 
 // User struct

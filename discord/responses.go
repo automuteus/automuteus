@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
-	"github.com/denverquane/amongusdiscord/discord/setting"
 
-	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/automuteus/automuteus/amongus"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"

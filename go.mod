@@ -1,4 +1,4 @@
-module github.com/denverquane/amongusdiscord
+module github.com/automuteus/automuteus
 
 go 1.15
 

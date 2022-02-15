@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/automuteus/automuteus/amongus"
 	"log"
 	"strconv"
 	"strings"

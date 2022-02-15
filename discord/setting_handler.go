@@ -3,8 +3,8 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/discord/setting"
 	"os"
 
 	"github.com/bwmarrin/discordgo"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denverquane/amongusdiscord/amongus"
+	"github.com/automuteus/automuteus/amongus"
 )
 
 type UserDataSet map[string]UserData

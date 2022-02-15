@@ -2,33 +2,33 @@
     <a href="https://automute.us/#/" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
-    <a href="https://github.com/denverquane/amongusdiscord/actions?query=build" alt="Build Status">
-        <img src="https://github.com/denverquane/amongusdiscord/workflows/build/badge.svg" />
+    <a href="https://github.com/automuteus/automuteus/actions?query=build" alt="Build Status">
+        <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />
     </a>
-    <a href="https://github.com/denverquane/automuteus/releases/latest">
-    <img alt="GitHub release" src="https://img.shields.io/github/v/release/denverquane/automuteus" >
+    <a href="https://github.com/automuteus/automuteus/releases/latest">
+    <img alt="GitHub release" src="https://img.shields.io/github/v/release/automuteus/automuteus" >
     </a>
-    <a href="https://github.com/denverquane/amongusdiscord/graphs/contributors" alt="Contributors">
-        <img src="https://img.shields.io/github/contributors/denverquane/amongusdiscord" />
+    <a href="https://github.com/automuteus/automuteus/graphs/contributors" alt="Contributors">
+        <img src="https://img.shields.io/github/contributors/automuteus/automuteus" />
     </a>
     <a href="https://discord.gg/ZkqZSWF" alt="Discord Link">
         <img src="https://img.shields.io/discord/754465589958803548?logo=discord" />
     </a>
 </p>
 <p align="center">
-    <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Pulls">
+    <a href="https://hub.docker.com/repository/docker/automuteus/automuteus" alt="Pulls">
         <img src="https://img.shields.io/docker/pulls/denverquane/amongusdiscord.svg" />
     </a>
-    <a href="https://hub.docker.com/repository/docker/denverquane/amongusdiscord" alt="Stars">
+    <a href="https://hub.docker.com/repository/docker/automuteus/automuteus" alt="Stars">
         <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
     </a>
-    <a href="https://goreportcard.com/report/github.com/denverquane/automuteus" alt="Report Card">
-        <img src="https://goreportcard.com/badge/github.com/denverquane/automuteus" />
+    <a href="https://goreportcard.com/report/github.com/automuteus/automuteus" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/automuteus/automuteus" />
     </a>
 </p>
 
 <p align="center">
-    <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot" alt="invite">
+    <a href="https://add.automute.us" alt="invite">
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
     </a>
 </p>
@@ -37,14 +37,14 @@
 
 <div style="display: flex; align-item: center; justify: center;">
 <p style="">
-    <a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot"/>
+    <a href="https://add.automute.us"/>
         <img src="assets/DiscordBot_Black.gif", width=150>
     </a>
 </p>
 <div style="margin-left: 2%">
 AutoMuteUs is a Discord Bot to harness Among Us game data, and automatically mute/unmute players during games!
 
-Requires [amonguscapture](https://github.com/denverquane/amonguscapture) to capture and relay game data.
+Requires [amonguscapture](https://github.com/automuteus/amonguscapture) to capture and relay game data.
 
 Have any questions, concerns, bug reports, or just want to chat? Join our discord at https://discord.gg/ZkqZSWF!
 
@@ -58,8 +58,11 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 # ⚠️ Requirements ⚠️
 
-1. You **must** run the [Capture application](https://github.com/denverquane/amonguscapture/releases/latest) on your Windows PC for the bot to work! Any Among Us games that don't have a user running the capture software will **not have automuting capabilities**!
-2. The [Capture application](https://github.com/denverquane/amonguscapture/releases) currently only supports the Steam, Epic Games, itch.io, and Microsoft Store releases of the game, but **does not** support beta or cracked versions.
+1. You **must** run the [Capture application](https://github.com/automuteus/amonguscapture/releases/latest) on your
+   Windows PC for the bot to work! Any Among Us games that don't have a user running the capture software will **not
+   have automuting capabilities**!
+2. The [Capture application](https://github.com/automuteus/amonguscapture/releases) currently only supports the Steam,
+   Epic Games, itch.io, and Microsoft Store releases of the game, but **does not** support beta or cracked versions.
 
 # Quickstart and Demo (click the image):
 
@@ -113,7 +116,7 @@ Self-hosting requires robust knowledge and troubleshooting capability for Docker
 
 As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can be found here:
 
-<a href="https://discord.com/api/oauth2/authorize?client_id=753795015830011944&permissions=267746384&scope=bot" alt="invite">
+<a href="https://add.automute.us" alt="invite">
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
     </a>
 
@@ -149,15 +152,23 @@ Heroku hosting steps are are not yet updated for v3.0+ of AutoMuteUs, and as suc
 
 ## FreeBSD
 
-AutoMuteUs exists in the FreeBSD Ports tree as [`games/automuteus`](https://www.freshports.org/games/automuteus/). Instructions are included in the Port.
+AutoMuteUs exists in the FreeBSD Ports tree as [`games/automuteus`](https://www.freshports.org/games/automuteus/).
+Instructions are included in the Port.
 
 ## Old version
-If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and hate Docker because of it (I don't blame you) you can self host [2.4.3](https://github.com/denverquane/automuteus/releases/tag/2.4.3) instead. **If you are using this method, continue using the newest capture!**
+
+If, for whatever reason, you _really_ want to self host, but also don't want to figure out Docker or use Windows and
+hate Docker because of it (I don't blame you) you can self
+host [2.4.3](https://github.com/automuteus/automuteus/releases/tag/2.4.3) instead. **If you are using this method,
+continue using the newest capture!**
 
 ## Development Instructions
-The easiest way to test changes is to use docker-compose, but instead of using a pre-built image, building the automuteus docker image from source. Thankfully, this is easy to do:
 
-1. In the `docker-compose.yml` comment out the line `image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}` and uncomment the `build .` line.
+The easiest way to test changes is to use docker-compose, but instead of using a pre-built image, building the
+automuteus docker image from source. Thankfully, this is easy to do:
+
+1. In the `docker-compose.yml` comment out the line `image: automuteus/automuteus:${AUTOMUTEUS_TAG:?err}` and uncomment
+   the `build .` line.
 2. Make any changes to the code or sql file that you would like.
 3. Use the command `docker-compose build` to build the set of docker images with your change
 4. Start the stack with `docker-compose up`

@@ -17,7 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/discord"
+	"github.com/automuteus/automuteus/storage"
+
+	"github.com/automuteus/automuteus/discord"
 	"github.com/joho/godotenv"
 )
 
