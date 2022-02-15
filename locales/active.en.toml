@@ -3,7 +3,7 @@
 "commands.AllCommands.Ascii.args" = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
 "commands.AllCommands.Ascii.desc" = "Print an ASCII crewmate"
 "commands.AllCommands.Ascii.shortDesc" = "Print an ASCII crewmate"
-"commands.AllCommands.Cache.args" = "<player> (optionally, \"clear\")"
+"commands.AllCommands.Cache.args" = '<player> (optionally, "clear")'
 "commands.AllCommands.Cache.desc" = "View a player's cached in-game names, and/or clear them"
 "commands.AllCommands.Cache.shortDesc" = "View cached usernames"
 "commands.AllCommands.DebugState.args" = "None"
@@ -45,7 +45,7 @@
 "commands.AllCommands.Settings.args" = "<setting> <value>"
 "commands.AllCommands.Settings.desc" = "Adjust the bot settings. Type `{{.CommandPrefix}} settings` with no arguments to see more."
 "commands.AllCommands.Settings.shortDesc" = "Adjust bot settings"
-"commands.AllCommands.Stats.args" = "<@discord user> or \"guild\""
+"commands.AllCommands.Stats.args" = '<@discord user> or "guild"'
 "commands.AllCommands.Stats.desc" = "View Player and Guild stats"
 "commands.AllCommands.Stats.shortDesc" = "View Player and Guild stats"
 "commands.AllCommands.Unlink.args" = "<discord User>"
@@ -81,7 +81,7 @@
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "Unlinked"
 "discordGameState.ToStatusString.anyVoiceChannel" = "**No Voice Channel! Use `{{.CommandPrefix}} track`!**"
 "discordGameState.trackChannel.voiceChannelNotfound" = "No channel found by the name {{.channelName}}!\\n"
-"discordGameState.trackChannel.voiceChannelSet" = "Now Tracking \"{{.channelName}}\" Voice Channel for Automute!"
+"discordGameState.trackChannel.voiceChannelSet" = 'Now Tracking "{{.channelName}}" Voice Channel for Automute!'
 "eventHandler.gameOver.deleteMessageFooter" = "Deleting message {{.Mins}} mins from:"
 "eventHandler.gameOver.matchID" = "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\\n{{.Winners}}"
 "locale.language.name" = "English"
@@ -128,7 +128,7 @@
 "responses.premiumInviteResponse.desc" = "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!"
 "responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium"
 "responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
-"responses.premiumResponse.FastMuteDesc" = "Premium users get access to \"helper\" bots that make sure muting is fast!"
+"responses.premiumResponse.FastMuteDesc" = 'Premium users get access to "helper" bots that make sure muting is fast!'
 "responses.premiumResponse.FreeDescription" = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 "responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!"
 "responses.premiumResponse.PremiumDescription" = "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"
