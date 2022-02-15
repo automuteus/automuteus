@@ -6,6 +6,7 @@ import (
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
+	storageutils "github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
@@ -39,7 +40,7 @@ type Bot struct {
 
 	StorageInterface *storage.StorageInterface
 
-	PostgresInterface *storage.PsqlInterface
+	PostgresInterface *storageutils.PsqlInterface
 
 	logPath string
 
@@ -48,7 +49,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)

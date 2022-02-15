@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/denverquane/amongusdiscord/metrics"
@@ -15,8 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/denverquane/amongusdiscord/storage"
 )
 
 type EndGameMessage bool
