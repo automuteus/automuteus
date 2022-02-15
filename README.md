@@ -19,8 +19,8 @@
     <a href="https://hub.docker.com/repository/docker/automuteus/automuteus" alt="Pulls">
         <img src="https://img.shields.io/docker/pulls/denverquane/amongusdiscord.svg" />
     </a>
-    <a href="https://hub.docker.com/repository/docker/automuteus/automuteus" alt="Stars">
-        <img src="https://img.shields.io/docker/stars/denverquane/amongusdiscord.svg" />
+    <a href="https://automuteus.crowdin.com/automuteus" alt="localize">
+        <img alt="Localize" src="https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg">
     </a>
     <a href="https://goreportcard.com/report/github.com/automuteus/automuteus" alt="Report Card">
         <img src="https://goreportcard.com/badge/github.com/automuteus/automuteus" />
@@ -107,14 +107,26 @@ You can view privacy and data collection details for the Official Bot [here](PRI
 
 # Localization
 
-View details on Localization and Multi-Language support [here](LOCALIZATION.md).
+AutoMuteUs now uses [CrowdIn](https://crowdin.com/) for Localization and translations (thanks @MatadorProBr)!
+
+Help us translate the bot here:
+
+[![Crowdin](https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg)](https://automuteus.crowdin.com/automuteus)
+
+To extract strings for translation to `locales/en.toml`:
+
+```
+goi18n extract -outdir locales
+```
 
 # Self-Hosting
 
-If you would prefer to self-host the bot, the steps for doing so are provided below.
-Self-hosting requires robust knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and/or any other networking and routing config specific to your hosting solution.
+If you would prefer to self-host the bot, the steps for doing so are provided below. Self-hosting requires robust
+knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and/or any other networking and
+routing config specific to your hosting solution.
 
-As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can be found here:
+As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can
+be found here:
 
 <a href="https://add.automute.us" alt="invite">
         <img alt="Invite Link" src="https://img.shields.io/static/v1?label=bot&message=invite%20me&color=purple">
