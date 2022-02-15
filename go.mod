@@ -1,8 +1,6 @@
-module github.com/denverquane/amongusdiscord
+module github.com/automuteus/automuteus
 
 go 1.15
-
-// +heroku goVersion go1.15
 
 require (
 	github.com/automuteus/galactus v1.2.2

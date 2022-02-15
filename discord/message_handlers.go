@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
+	redis_common "github.com/automuteus/automuteus/common"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
-	redis_common "github.com/denverquane/amongusdiscord/common"
-	"github.com/denverquane/amongusdiscord/metrics"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"

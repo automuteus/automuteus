@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/task"
-	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/denverquane/amongusdiscord/storage"
+	"github.com/automuteus/automuteus/storage"
 )
 
 type EndGameMessage bool

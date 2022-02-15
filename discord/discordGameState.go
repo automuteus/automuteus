@@ -6,8 +6,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/automuteus/automuteus/amongus"
 	"github.com/bwmarrin/discordgo"
-	"github.com/denverquane/amongusdiscord/amongus"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 

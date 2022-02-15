@@ -1,8 +1,8 @@
 package setting
 
 import (
+	"github.com/automuteus/automuteus/common"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/common"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
