@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/automuteus/automuteus/storage"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bwmarrin/discordgo"

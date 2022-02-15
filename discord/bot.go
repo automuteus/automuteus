@@ -2,6 +2,9 @@ package discord
 
 import (
 	"context"
+	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/automuteus/metrics"
+	"github.com/automuteus/automuteus/storage"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
@@ -9,9 +12,6 @@ import (
 	storageutils "github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
-	"github.com/automuteus/automuteus/amongus"
-	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/automuteus/storage"
 	"log"
 	"os"
 	"strconv"
