@@ -1,12 +1,15 @@
 package setting
 
 import (
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/denverquane/amongusdiscord/common"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
@@ -43,7 +46,7 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 				// User added a double space by accident, ignore it
 				continue
 			}
-			ID, err := common.ExtractRoleIDFromText(roleName)
+			ID, err := discord.ExtractRoleIDFromText(roleName)
 			if err != nil {
 				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",

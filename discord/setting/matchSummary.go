@@ -2,12 +2,16 @@ package setting
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strconv"
 )
 
 func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), AllSettings[MatchSummary], sett), false
 	}
@@ -51,4 +55,34 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 				"Minutes": num,
 			}), true
 	}
+}
+
+func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
+	if len(args) == 2 {
+		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), AllSettings[MatchSummaryChannel], sett), false
+	}
+
+	channelID := args[2]
+	err := discord.ValidateSnowflake(channelID)
+	if err != nil {
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummaryChannel.invalidChannelID",
+			Other: "`{{.channelID}}` is not a valid channel ID!",
+		},
+			map[string]interface{}{
+				"channelID": args[2],
+			}), false
+	}
+
+	sett.SetMatchSummaryChannelID(channelID)
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingMatchSummaryChannel.withChannelID",
+		Other: "Match Summary text channel ID changed to `{{.channelID}}`!",
+	},
+		map[string]interface{}{
+			"channelName": channelID,
+		}), true
 }

@@ -6,6 +6,9 @@ import (
 )
 
 func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	muteSpec := sett.GetMuteSpectator()
 	if len(args) == 2 {
 		current := "false"

@@ -20,7 +20,7 @@ func TestFnAdminUserIDs(t *testing.T) {
 		t.Error("Bad mention format shouldn't result in valid settings change")
 	}
 
-	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "1234"})
+	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "888888066283941888"})
 	if !valid {
 		t.Error("Numeric input for admin ID should result in a valid settings change")
 	}
@@ -28,7 +28,7 @@ func TestFnAdminUserIDs(t *testing.T) {
 		t.Error("Expected 1 admin user id after setting")
 	}
 
-	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "<@!1234>"})
+	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "<@!888888066283941888>"})
 	if valid {
 		t.Error("Adding a pre-existing admin ID shouldn't result in a valid settings change")
 	}
@@ -36,7 +36,7 @@ func TestFnAdminUserIDs(t *testing.T) {
 		t.Error("Identical user ID shouldn't result in more than 1 admin ID")
 	}
 
-	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "<@!2345>"})
+	_, valid = FnAdminUserIDs(sett, []string{"sett", "admins", "<@!140581888888888888>"})
 	if !valid {
 		t.Error("Adding a new admin ID should result in a valid settings change")
 	}

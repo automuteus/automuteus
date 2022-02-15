@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/common"
 	"log"
 	"strconv"
 	"strings"
@@ -703,7 +703,7 @@ func commandFnUnlink(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := common.ExtractUserIDFromMention(args[1])
+		userID, err := discord.ExtractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
 			return "", nil
@@ -819,7 +819,7 @@ func commandFnCache(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := common.ExtractUserIDFromMention(args[1])
+		userID, err := discord.ExtractUserIDFromMention(args[1])
 		if err != nil {
 			log.Println(err)
 			return message.ChannelID, "I couldn't find a user by that name or ID!"
@@ -947,7 +947,7 @@ func commandFnASCII(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ASCIICrewmate
 	} else {
-		id, err := common.ExtractUserIDFromMention(args[1])
+		id, err := discord.ExtractUserIDFromMention(args[1])
 		if id == "" || err != nil {
 			return message.ChannelID, "I couldn't find a user by that name or ID!"
 		} else {
@@ -983,7 +983,7 @@ func commandFnStats(
 	if len(args[1:]) == 0 {
 		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
 	} else {
-		userID, err := common.ExtractUserIDFromMention(args[1])
+		userID, err := discord.ExtractUserIDFromMention(args[1])
 		if userID == "" || err != nil {
 			arg := strings.ReplaceAll(args[1], "\"", "")
 			if arg == "g" || arg == "guild" || arg == "server" {

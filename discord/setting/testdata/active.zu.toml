@@ -1,0 +1,1300 @@
+["ascii.AsciiStarfield.isWas"]
+hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
+other = "was An Impostow. @w@"
+
+["ascii.AsciiStarfield.isWasNot"]
+hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
+other = "was nyot An Impostow."
+
+["ascii.AsciiStarfield.remains"]
+hash = "sha1-d5aa7e4ca57db6752bd427d0978adbe9fa346fab"
+one = "Impostow wemains"
+other = "Impostows wemain"
+
+["commands.AllCommands.Ascii.args"]
+hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
+other = "<@discowd usew> <is impostew> (twue|fawse) <x impostow wemains> (count)"
+
+["commands.AllCommands.Ascii.desc"]
+hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
+other = "Pwint an ASCII cwewmate Owo"
+
+["commands.AllCommands.Ascii.shortDesc"]
+hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
+other = "Pwint an ASCII cwewmate"
+
+["commands.AllCommands.Cache.args"]
+hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
+other = "<pwayew> (optionyawwy, \"cweaw\")"
+
+["commands.AllCommands.Cache.desc"]
+hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
+other = "View a pwayew's cached in-game nyames, and/ow cweaw dem ◕w◕"
+
+["commands.AllCommands.Cache.shortDesc"]
+hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
+other = "View cached usewnyames ♥w♥"
+
+["commands.AllCommands.DebugState.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ☆w☆"
+
+["commands.AllCommands.DebugState.desc"]
+hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
+other = "View de fuww state of de Discowd Guiwd Data"
+
+["commands.AllCommands.DebugState.shortDesc"]
+hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
+other = "View de fuww state of de Discowd Guiwd Data"
+
+["commands.AllCommands.End.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ☆w☆"
+
+["commands.AllCommands.End.desc"]
+hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
+other = "End de cuwwent game"
+
+["commands.AllCommands.End.shortDesc"]
+hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
+other = "End de game OwO"
+
+["commands.AllCommands.Force.args"]
+hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
+other = "<phase nyame> (task, discuss, ow wobby / t,d, ow w)"
+
+["commands.AllCommands.Force.desc"]
+hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
+other = "Fowce de bot to twansition to anyodew game stage, if it doesn't twansition pwopewwy ÕwÕ"
+
+["commands.AllCommands.Force.shortDesc"]
+hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
+other = "Fowce de bot to twansition"
+
+["commands.AllCommands.Help.args"]
+hash = "sha1-98e9e7ae5c47c4681acc3258e2f28c67bbcbf221"
+other = "Nyonye, ow optionyaw Command to see info fow"
+
+["commands.AllCommands.Help.desc"]
+hash = "sha1-771a9d1f94d5c8279f643ef23407a8129db88016"
+other = "Dispway bot hewp message, ow see info about a Command ☆w☆"
+
+["commands.AllCommands.Help.shortDesc"]
+hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
+other = "Dispway hewp ◕w◕"
+
+["commands.AllCommands.Info.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ⓪w⓪"
+
+["commands.AllCommands.Info.desc"]
+hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
+other = "View info about de bot, wike totaw guiwd nyumbew, active games, etc Owo"
+
+["commands.AllCommands.Info.shortDesc"]
+hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
+other = "View Bot info"
+
+["commands.AllCommands.Link.args"]
+hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
+other = "<discowd Usew> <in-game cowow ow nyame> Owo"
+
+["commands.AllCommands.Link.desc"]
+hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
+other = "Manyuawwy wink a Discowd Usew to deiw in-game cowow ow nyame"
+
+["commands.AllCommands.Link.shortDesc"]
+hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
+other = "Wink a Discowd Usew ⓪w⓪"
+
+["commands.AllCommands.Map.args"]
+hash = "sha1-69ef89859dc94b73d30a7a87d938542c03e348c9"
+other = "<map_nyame> (skewd, miwa_hq, powus, aiwship) <vewsion> (optionyaw, simpwe ow detaiwed)"
+
+["commands.AllCommands.Map.desc"]
+hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"
+other = "Dispway an image of an in-game map in de text channyew. Two suppowted vewsions: simpwe ow detaiwed ✧w✧"
+
+["commands.AllCommands.Map.shortDesc"]
+hash = "sha1-81772e8a5083b687b68d3c4a3d1cac45cf7171aa"
+other = "Dispway an in-game map"
+
+["commands.AllCommands.New.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye øwø"
+
+["commands.AllCommands.New.desc"]
+hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
+other = "Stawt a nyew game Owo"
+
+["commands.AllCommands.New.shortDesc"]
+hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
+other = "Stawt a nyew game ØwØ"
+
+["commands.AllCommands.Pause.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ◔w◔"
+
+["commands.AllCommands.Pause.desc"]
+hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
+other = "Pause de bot so it doesn't automute/deafen. Wiww unmute/undeafen aww pwayews!"
+
+["commands.AllCommands.Pause.shortDesc"]
+hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
+other = "Pause de bot"
+
+["commands.AllCommands.Premium.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["commands.AllCommands.Premium.desc"]
+hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
+other = "View aww de featuwes and pewks of Pwemium AutoMuteUs membewship ♥w♥"
+
+["commands.AllCommands.Premium.shortDesc"]
+hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
+other = "View Pwemium Bot Featuwes owO"
+
+["commands.AllCommands.Privacy.args"]
+hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
+other = "showme, optin, ow optout"
+
+["commands.AllCommands.Privacy.desc"]
+hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
+other = "AutoMuteUs pwivacy and data cowwection detaiws.\\nMowe detaiws [hewe](https://gidub.com/denvewquanye/automuteus/bwob/mastew/PWIVACY.md) ØwØ"
+
+["commands.AllCommands.Privacy.shortDesc"]
+hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
+other = "View AutoMuteUs pwivacy infowmation owO"
+
+["commands.AllCommands.Refresh.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye"
+
+["commands.AllCommands.Refresh.desc"]
+hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
+other = "Wecweate de bot status message if it ends up too faw in de chat"
+
+["commands.AllCommands.Refresh.shortDesc"]
+hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
+other = "Wefwesh de bot status ◕w◕"
+
+["commands.AllCommands.Settings.args"]
+hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
+other = "<setting> <vawue>"
+
+["commands.AllCommands.Settings.desc"]
+hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
+other = "Adjust de bot settings. Type `{{.CommandPrefix}} settings` wid nyo awguments to see mowe. owO"
+
+["commands.AllCommands.Settings.shortDesc"]
+hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
+other = "Adjust bot settings ʘwʘ"
+
+["commands.AllCommands.Stats.args"]
+hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
+other = "<@discowd usew> ow \"guiwd\" ØwØ"
+
+["commands.AllCommands.Stats.desc"]
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "View Pwayew and Guiwd stats"
+
+["commands.AllCommands.Stats.shortDesc"]
+hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
+other = "View Pwayew and Guiwd stats"
+
+["commands.AllCommands.Unlink.args"]
+hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
+other = "<discowd Usew>"
+
+["commands.AllCommands.Unlink.desc"]
+hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
+other = "Manyuawwy unwink a Discowd Usew fwom deiw in-game pwayew ◔w◔"
+
+["commands.AllCommands.Unlink.shortDesc"]
+hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
+other = "Unwink a Discowd Usew"
+
+["commands.AllCommands.UnmuteAll.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye @w@"
+
+["commands.AllCommands.UnmuteAll.desc"]
+hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
+other = "Fowce de bot to unmute aww winked pwayews"
+
+["commands.AllCommands.UnmuteAll.shortDesc"]
+hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
+other = "Fowce de bot to unmute aww @w@"
+
+["commands.ConstructEmbedForCommand.Fields.Aliases"]
+hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
+other = "Awiases"
+
+["commands.ConstructEmbedForCommand.Fields.Arguments"]
+hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
+other = "Awguments (owo)"
+
+["commands.ConstructEmbedForCommand.Fields.Example"]
+hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
+other = "Exampwe OwO"
+
+["commands.HandleCommand.Cache.Success"]
+hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
+other = "Successfuwwy deweted aww cached nyames fow dat usew!"
+
+["commands.HandleCommand.Cache.cachedNames"]
+hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
+other = "Cached in-game nyames:"
+
+["commands.HandleCommand.Cache.emptyCachedNames"]
+hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
+other = "I don't have any cached pwayew nyames stowed fow dat usew! ✧w✧"
+
+["commands.HandleCommand.ForgetMe.Success"]
+hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
+other = "✅ {{.User}} I successfuwwy deweted youw cached pwayew nyames owO"
+
+["commands.HandleCommand.Help.notFound"]
+hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
+other = "I didn't wecognyize dat command! View `hewp` fow aww avaiwabwe commands! owO"
+
+["commands.HandleCommand.Map.notFound"]
+hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
+other = "I don't have a map by dat nyame! OwO"
+
+["commands.HandleCommand.ShowMe.cachedNames"]
+hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
+other = "❗ {{.User}} Hewe's youw cached in-game nyames:"
+
+["commands.HandleCommand.ShowMe.emptyCachedNames"]
+hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
+other = "❌ {{.User}} I don't have any cached pwayew nyames stowed fow you! ゜w゜"
+
+["commands.HandleCommand.ShowMe.linkedID"]
+hash = "sha1-ca1be91310babf06d344413ec8c473a63f9382ca"
+other = "❗ {{.User}} You awe opted **in** to data cowwection fow game statistics"
+
+["commands.HandleCommand.ShowMe.unlinkedID"]
+hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
+other = "❌ {{.User}} You awe opted **out** of data cowwection fow game statistics, ow you haven't pwayed a game yet"
+
+["commands.HandleCommand.default"]
+hash = "sha1-b4f45bce2b6d42b61760ca87da4f6e3f81bf3ef4"
+other = "Sowwy, I didn't undewstand `{{.InvalidCommand}}`! Pwease see `{{.CommandPrefix}} hewp` fow commands ⓪w⓪"
+
+["commands.HandleCommand.optin.FailDB"]
+hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
+other = "❌ {{.User}} You awe awweady opted into data cowwection uwu"
+
+["commands.HandleCommand.optin.SuccessDB"]
+hash = "sha1-d6b06c52ea81ebd4706188a5fa458fae87d2cfc0"
+other = "✅ {{.User}} I successfuwwy opted you into data cowwection Owo"
+
+["commands.HandleCommand.optout.FailDB"]
+hash = "sha1-44bc33283d79d608b5f55000562cd08a951da08b"
+other = "❌ {{.User}} You awe awweady opted out of data cowwection owO"
+
+["commands.HandleCommand.optout.SuccessDB"]
+hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
+other = "✅ {{.User}} I successfuwwy opted you out of data cowwection (owo)"
+
+["commands.StatsCommand.Reset.NoConfirm"]
+hash = "sha1-02f29c22d1485fc7d56721ccb23503baa527dc7c"
+other = "Pwease type `{{.CommandPrefix}} stats guiwd weset confiwm` if you awe 100% cewtain dat you wish to **compwetewy weset** youw guiwd's stats! uwu"
+
+["commands.StatsCommand.Reset.Success"]
+hash = "sha1-766274dbca3b0ccc8a31e542dd03396a8c1cd8a8"
+other = "Successfuwwy weset youw guiwd's stats!"
+
+["commands.StatsCommand.ResetUser.NoConfirm"]
+hash = "sha1-385cd382e629cdb8afb8b489e86da579f0a049c4"
+other = "Pwease type `{{.CommandPrefix}} stats `{{.User}}` weset confiwm` if you awe 100% cewtain dat you wish to **compwetewy weset** dat usew's stats! ◔w◔"
+
+["commands.StatsCommand.ResetUser.Success"]
+hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
+other = "Successfuwwy weset {{.User}}'s stats!"
+
+["discordGameState.ToDescString.anyVoiceChannel"]
+hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
+other = "**nyo Voice Channyew! Use `{{.CommandPrefix}} twack`!**"
+
+["discordGameState.ToDescString.voiceChannelName"]
+hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
+other = "de **{{.channelName}}** voice channyew!"
+
+["discordGameState.ToEmojiEmbedFields.Unlinked"]
+hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
+other = "Unwinked ◕w◕"
+
+["discordGameState.ToStatusString.anyVoiceChannel"]
+hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
+other = "**Nyo Voice Channyew! Use `{{.CommandPrefix}} twack`!** øwø"
+
+["discordGameState.trackChannel.voiceChannelNotfound"]
+hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
+other = "Nyo channyew found by de nyame {{.channelName}}!\\n"
+
+["discordGameState.trackChannel.voiceChannelSet"]
+hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
+other = "Nyow Twacking \"{{.channelName}}\" Voice Channyew fow Automute!"
+
+["eventHandler.gameOver.deleteMessageFooter"]
+hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
+other = "Deweting message {{.Mins}} mins fwom:"
+
+["eventHandler.gameOver.matchID"]
+hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
+other = "Game Ovew! View de match's stats using Match ID: `{{.MatchID}}`\\n{{.Winners}}"
+
+["locale.language.name"]
+hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
+other = "Engwish uwu"
+
+["message_handlers.generalRatelimit"]
+hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
+other = "{{.User}}, you'we issuing commands too fast! Pwease swow down! ✧w✧"
+
+["message_handlers.handleMessageCreate.noPerms"]
+hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
+other = "Usew does nyot have de wequiwed pewmissions to execute dis command! ÓwÓ"
+
+["message_handlers.handleMessageCreate.respondPrefix"]
+hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
+other = "I wespond to de pwefix {{.CommandPrefix}} ☆w☆"
+
+["message_handlers.handleNewGameMessage.embed.Description"]
+hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
+other = "Cwick de fowwowing wink to wink youw captuwe: \\n <{{.hyperlink}}>\\n\\nDon't have de captuwe instawwed? Watest vewsion [hewe]({{.downloadURL}})\\n\\nTo wink youw captuwe manyuawwy:"
+
+["message_handlers.handleNewGameMessage.embed.Fields.Code"]
+hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
+other = "Code ÓwÓ"
+
+["message_handlers.handleNewGameMessage.embed.Fields.URL"]
+hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
+other = "UWW"
+
+["message_handlers.handleNewGameMessage.embed.Title"]
+hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
+other = "You just stawted a game!"
+
+["message_handlers.handleNewGameMessage.lockout"]
+hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
+other = "If I stawt any mowe games, Discowd wiww wock me out, ow dwottwe de games I'm wunnying! 😦\\nPwease twy again in a few minyutes, ow considew AutoMuteUs Pwemium (`{{.CommandPrefix}} pwemium`)\\nCuwwent Games: {{.Games}}"
+
+["message_handlers.handleNewGameMessage.noChannel"]
+hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
+other = "{{.User}}, pwease join a voice channyew befowe stawting a match!"
+
+["message_handlers.handleNewGameMessage.specificRatelimit"]
+hash = "sha1-33e13e7ab0034ae74fd2d89df60959d797f0b5b2"
+other = "{{.User}} You'we cweating games too fast! Pwease swow down!"
+
+["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
+hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
+other = "{{.User}}, you'we weacting too fast! Pwease swow down! ♥w♥"
+
+["message_handlers.handleResetGuild.noPerms"]
+hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
+other = "Onwy Admins awe capabwe of wesetting sewvew stats uwu"
+
+["message_handlers.softban"]
+hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
+other = "{{.User}} I'm ignyowing youw messages fow de nyext 5 minyutes, stop spamming ÓwÓ"
+
+["responses.guildStatsEmbed.CrewmateWins"]
+hash = "sha1-4b341227bf20f5d8c48d85df89d049dc496b205f"
+other = "Cwewmate Winwate ({{.Min}}+ Games) ☆w☆"
+
+["responses.guildStatsEmbed.Desc"]
+hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
+other = "Guiwd stats fow {{.GuildName}}"
+
+["responses.guildStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Pwayed"
+
+["responses.guildStatsEmbed.GamesWonCrewmate"]
+hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
+other = "Cwewmate Winwate ʘwʘ"
+
+["responses.guildStatsEmbed.GamesWonImposter"]
+hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
+other = "Impostew Winwate ØwØ"
+
+["responses.guildStatsEmbed.ImposterWins"]
+hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
+other = "Impostew Winwate ({{.Min}}+ Games) ʘwʘ"
+
+["responses.guildStatsEmbed.MostGames"]
+hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
+other = "Most Games ʘwʘ"
+
+["responses.guildStatsEmbed.NoPremium"]
+hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
+other = "Detaiwed stats awe onwy avaiwabwe fow AutoMuteUs Pwemium usews; type `{{.CommandPrefix}} pwemium` to weawn mowe øwø"
+
+["responses.guildStatsEmbed.Title"]
+hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
+other = "Guiwd Stats"
+
+["responses.guildStatsEmbed.TotalWinrate"]
+hash = "sha1-cf0d3b04ef5176072c4b4f48b58284a365914dbb"
+other = "Totaw Winwate ({{.Min}}+ Games) ⓪w⓪"
+
+["responses.helpResponse.SubTitle"]
+hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
+other = "[View de Gidub Pwoject](https://gidub.com/denvewquanye/automuteus) ow [Join ouw Discowd](https://discowd.gg/ZkqZSWF)\\n\\nType `{{.CommandPrefix}} hewp <command>` to see mowe detaiws on a command! ✧w✧"
+
+["responses.helpResponse.Title"]
+hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
+other = "AutoMuteUs Bot Commands:\\n ゜w゜"
+
+["responses.lobbyMessage.Footer.Text"]
+hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
+other = "Weact to dis message wid youw in-game cowow! (ow {{.emojiLeave}} to weave) ÕwÕ"
+
+["responses.lobbyMessage.Title"]
+hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
+other = "Wobby ØwØ"
+
+["responses.lobbyMessage.notLinked.Description"]
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌ @w@"
+
+["responses.lobbyMetaEmbedFields.Host"]
+hash = "sha1-3960ec4ca5fb5e5d8cdb2cc1c5121c003e426517"
+other = "Host"
+
+["responses.lobbyMetaEmbedFields.PlayersLinked"]
+hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
+other = "Pwayews Winked ᅌwᅌ"
+
+["responses.lobbyMetaEmbedFields.Region"]
+hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
+other = "🌎 WEGION"
+
+["responses.lobbyMetaEmbedFields.RoomCode"]
+hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
+other = "🔒 WOOM CODE"
+
+["responses.lobbyMetaEmbedFields.VoiceChannel"]
+hash = "sha1-f32f308546b6f6c3b1d900a56f0ea32909f5d7b3"
+other = "Voice Channyew"
+
+["responses.makeDescription.GameNotRunning"]
+hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
+other = "\\n⚠ **Bot is Paused!** ⚠\\n\\n Owo"
+
+["responses.matchStatsEmbed.Title"]
+hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
+other = "Game `{{.MatchID}}`"
+
+["responses.menuMessage.Linked.FooterText"]
+hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
+other = "(Entew a game wobby in Among Us to stawt de match)"
+
+["responses.menuMessage.Title"]
+hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
+other = "Main Menyu"
+
+["responses.menuMessage.notLinked.Description"]
+hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
+other = "❌**Nyo captuwe winked! Cwick de wink in youw DMs to connyect!**❌"
+
+["responses.nonPremiumSetting.Desc"]
+hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
+other = "Sowwy, but dat setting is wesewved fow AutoMuteUs Pwemium usews! See `{{.CommandPrefix}} pwemium` fow detaiws ÕwÕ"
+
+["responses.premiumInviteResponse.Title"]
+hash = "sha1-e537f34134926749225e31f93c2cc121cc4e23e0"
+other = "Pwemium Bot Invites"
+
+["responses.premiumInviteResponse.desc"]
+hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
+other = "{{.Tier}} usews have access to {{.Count}} Pwiowity mute bots: invites pwovided bewow!"
+
+["responses.premiumInviteResponseNoAccess.desc"]
+hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
+other = "{{.Tier}} usews don't have access to Pwiowity mute bots!\\nPwease type `{{.CommandPrefix}} pwemium` to see mowe detaiws about AutoMuteUs Pwemium"
+
+["responses.premiumResponse.FastMute"]
+hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
+other = "🙊 Fast Mute/Deafen"
+
+["responses.premiumResponse.FastMuteDesc"]
+hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
+other = "Pwemium usews get access to \"hewpew\" bots dat make suwe muting is fast!"
+
+["responses.premiumResponse.FreeDescription"]
+hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
+other = "Check out de coow dings dat Pwemium AutoMuteUs has to offew!\\n\\n[Get AutoMuteUs Pwemium]({{.BaseURL}}{{.GuildID}}) ☆w☆"
+
+["responses.premiumResponse.Invites"]
+hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
+other = "View a wist of Pwemium bots you can invite wid `{{.CommandPrefix}} pwemium invites`!"
+
+["responses.premiumResponse.PremiumDescription"]
+hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
+other = "Wooks wike you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks fow de suppowt!\\n\\nBewow awe some of de benyefits you can customize wid youw Pwemium status!"
+
+["responses.premiumResponse.PremiumDescriptionDaysRemaining"]
+hash = "sha1-f65aa5c43a7ebe1901c85300559ec6af58e36f12"
+other = " fow anyodew {{.Days}} days"
+
+["responses.premiumResponse.PremiumDescriptionExpired"]
+hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
+other = "Oh nyo! It wooks wike you used to have AutoMuteUs **{{.Tier}}**, but it **expiwed {{.Days}} days ago**! 😦\\n\\nPwease considew we-subscwibing hewe: [Get AutoMuteUs Pwemium]({{.BaseURL}}{{.GuildID}}) owO"
+
+["responses.premiumResponse.PriorityGameAccess"]
+hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
+other = "👑 Pwiowity Game Access ☆w☆"
+
+["responses.premiumResponse.PriorityGameAccessDesc"]
+hash = "sha1-9b42956892e65576edb6cc2aa3bf6eef8eb6efa3"
+other = "If de Bot is undew heavy woad, Pwemium usews wiww awways be abwe to make nyew games! ᅌwᅌ"
+
+["responses.premiumResponse.Settings"]
+hash = "sha1-8f2e3dbc7ea805faa7b03ed533abfcd504a1ab1a"
+other = "🛠 Speciaw Settings @w@"
+
+["responses.premiumResponse.SettingsDesc"]
+hash = "sha1-50f761e465fbcafc6caaa815ecd94c6fc7ee5bd5"
+other = "Pwemium usews can specify additionyaw settings, wike dispwaying an end-game status message, ow auto-wefweshing de status message!"
+
+["responses.premiumResponse.SettingsDescExtra"]
+hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
+other = "Wook fow de settings mawked wid 💎 undew `{{.CommandPrefix}} settings!`"
+
+["responses.premiumResponse.Stats"]
+hash = "sha1-790006f1ec07733eda3338ac22e046ef2b809421"
+other = "📊 Game Stats and Weadewboawds"
+
+["responses.premiumResponse.StatsDesc"]
+hash = "sha1-ae7d71d8ca051a31d94d8f48b7e448c8e773eea4"
+other = "Pwemium usews have access to a fuww suite of pwayew stats and weadewboawds!"
+
+["responses.premiumResponse.Support"]
+hash = "sha1-af23e1d668669b533eb01655c121c807587e7fa2"
+other = "👂 Pwemium Suppowt OwO"
+
+["responses.premiumResponse.SupportDesc"]
+hash = "sha1-66af605f1485951ab3d3e7a7762f2182f2c7f21b"
+other = "Pwemium usews get access to pwivate channyews on ouw officiaw Discowd channyew!"
+
+["responses.premiumResponse.Title"]
+hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
+other = "💎 AutoMuteUs Pwemium 💎"
+
+["responses.privacyResponse.Title"]
+hash = "sha1-c7ffd5c92085976d3ec361c3797b5650af65c8d1"
+other = "AutoMuteUs Pwivacy"
+
+["responses.settingResponse.Description"]
+hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
+other = "Type `{{.CommandPrefix}} settings <setting>` to change a setting fwom dose wisted bewow ÕwÕ"
+
+["responses.settingResponse.PremiumNoThanks"]
+hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
+other = "The fowwowing settings awe onwy fow AutoMuteUs pwemium usews.\\nType `{{.CommandPrefix}} pwemium` to weawn mowe!"
+
+["responses.settingResponse.PremiumThanks"]
+hash = "sha1-1dc5cf059d7d98df84c11ea83e87deab8db76379"
+other = "Thanks fow being an AutoMuteUs Pwemium usew!"
+
+["responses.settingResponse.Title"]
+hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
+other = "Settings"
+
+["responses.stats.Exiled"]
+hash = "sha1-9aaaf1d18b0ce565996c7f64d7ee15d4fdd7ad78"
+other = "Exiwed"
+
+["responses.stats.Games"]
+hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
+other = "Games"
+
+["responses.stats.Killed"]
+hash = "sha1-7dd49b4b7a22a444bcd77cd463769f0133031a95"
+other = ":knyife: ØwØ"
+
+["responses.stats.Lost"]
+hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
+other = "Wost"
+
+["responses.stats.Won"]
+hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
+other = "Won ◕w◕"
+
+["responses.statsResponse.BotInfo"]
+hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
+other = "v{{.Version}}-{{.Commit}} | Shawd {{.ID}}/{{.Num}}"
+
+["responses.statsResponse.Creator"]
+hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
+other = "Cweatow ♥w♥"
+
+["responses.statsResponse.Donate"]
+hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
+other = "Pwemium ʘwʘ"
+
+["responses.statsResponse.Games"]
+hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
+other = "Active Games"
+
+["responses.statsResponse.Guilds"]
+hash = "sha1-bb386fdbe7c3a0e4de18babd50180bd84808e5aa"
+other = "Guiwds øwø"
+
+["responses.statsResponse.Invite"]
+hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
+other = "Invite uwu"
+
+["responses.statsResponse.Library"]
+hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
+other = "Wibwawy"
+
+["responses.statsResponse.Title"]
+hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
+other = "Bot Info"
+
+["responses.statsResponse.TotalGames"]
+hash = "sha1-7eb3e451fcc05160c8f8284c283ff370392d85c2"
+other = "Totaw Games ØwØ"
+
+["responses.statsResponse.Users"]
+hash = "sha1-a028fce203b4622b1e4f2483988cdf6acd41ee5b"
+other = "Totaw Usews ᅌwᅌ"
+
+["responses.statsResponse.Version"]
+hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
+other = "Vewsion ÕwÕ"
+
+["responses.statsResponse.Website"]
+hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
+other = "Website"
+
+["responses.userStatsEmbed.BestTeammateCrewmate"]
+hash = "sha1-a0f75956ca0b89889dd3ae1ffcd695c884799b9b"
+other = "Best Cwewmate Pwayed Wid (owo)"
+
+["responses.userStatsEmbed.BestTeammateImpostor"]
+hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
+other = "Best Impostow Pwayed Wid"
+
+["responses.userStatsEmbed.BestTeammateServerCrewmate"]
+hash = "sha1-d6e2684497b992bea3c3c9c93fb40cdaabe5eaa8"
+other = "Best Cwewmate Team ÕwÕ"
+
+["responses.userStatsEmbed.BestTeammateServerImpostor"]
+hash = "sha1-9e67c5054fa1785229b90927c32e6e2979f2f611"
+other = "Best Impostow Team OwO"
+
+["responses.userStatsEmbed.CrewmateWins"]
+hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
+other = "Cwewmate Wins ゜w゜"
+
+["responses.userStatsEmbed.Desc"]
+hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
+other = "Usew stats fow {{.User}}"
+
+["responses.userStatsEmbed.ExiledAsCrewmate"]
+hash = "sha1-3111532afc5cd985c2ac97782916cd3ab19aa85a"
+other = "Exiwed as Cwewmate"
+
+["responses.userStatsEmbed.ExiledAsImpostor"]
+hash = "sha1-d24feb5a21aceb200a609b338a80ebef1ee518cc"
+other = "Exiwed as Impostow"
+
+["responses.userStatsEmbed.FavoriteColors"]
+hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
+other = "Favowite Cowows (owo)"
+
+["responses.userStatsEmbed.FavoriteNames"]
+hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
+other = "Favowite Nyames @w@"
+
+["responses.userStatsEmbed.FrequentFirstTarget"]
+hash = "sha1-d467f306762ee223ced0c41fa1b7aee743cee9d1"
+other = "Fwequent fiwst tawget ◕w◕"
+
+["responses.userStatsEmbed.FrequentKilledBy"]
+hash = "sha1-061d26dedb745f128b7a52ffd54231e8026b766f"
+other = " Most Fwequent Kiwwed By (owo)"
+
+["responses.userStatsEmbed.GamesPlayed"]
+hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
+other = "Games Pwayed"
+
+["responses.userStatsEmbed.ImposterWins"]
+hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
+other = "Impostew Wins"
+
+["responses.userStatsEmbed.KilledAsCrewmate"]
+hash = "sha1-97d43e73fdff1e9be49235bb9eb0c20df19cc8e5"
+other = "Kiwwed as Cwewmate ÕwÕ"
+
+["responses.userStatsEmbed.MostFrequentFirstTarget"]
+hash = "sha1-c06e5049d9006766de07ab13a90f9843bc863bc2"
+other = "Most Fwequent Fiwst Tawget"
+
+["responses.userStatsEmbed.NoPremium"]
+hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
+other = "Detaiwed stats awe onwy avaiwabwe fow AutoMuteUs Pwemium usews; type `{{.CommandPrefix}} pwemium` to weawn mowe"
+
+["responses.userStatsEmbed.ServerPlayedInValue"]
+hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
+other = "{{.Server}} Sewvew øwø"
+
+["responses.userStatsEmbed.ServersPlayedIn"]
+hash = "sha1-2b659e61e9d2c6a41b6d12e0df79733ccc12299a"
+other = "Pwayed In"
+
+["responses.userStatsEmbed.ServersPlayedInValue"]
+hash = "sha1-590e7f7cec75b3fbb8343f80b4fdfb961aee13e4"
+other = "{{.Servers}} Sewvews Owo"
+
+["responses.userStatsEmbed.Title"]
+hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
+other = "Usew Stats ⓪w⓪"
+
+["responses.userStatsEmbed.TotalWins"]
+hash = "sha1-f4c419e3e3f3df631d62827a5320ec2631d299d7"
+other = "Totaw Wins"
+
+["responses.userStatsEmbed.Winrate"]
+hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
+other = "Winwate ÓwÓ"
+
+["responses.userStatsEmbed.WorstTeammateCrewmate"]
+hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
+other = "Wowst Cwewmate Pwayed Wid @w@"
+
+["responses.userStatsEmbed.WorstTeammateImpostor"]
+hash = "sha1-5eb3dfcbd2ca1bf7223b3eb13320d33267895210"
+other = "Wowst Impostow Pwayed Wid ʘwʘ"
+
+["responses.userStatsEmbed.WorstTeammateServerCrewmate"]
+hash = "sha1-593fc44b887e40ff4afd9d2dd5cf953793097d9c"
+other = "Wowst Cwewmate Team"
+
+["responses.userStatsEmbed.WorstTeammateServerImpostor"]
+hash = "sha1-156302a8857d0a6bd2dd1c712ae646e3f5ad2354"
+other = "Wowst Impostow Team ÓwÓ"
+
+["settings.AllSettings.AdminUserIDs.args"]
+hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
+other = "<Usew @ mentions>..."
+
+["settings.AllSettings.AdminUserIDs.desc"]
+hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
+other = "Specify which individuaw usews have admin bot pewmissions ÓwÓ"
+
+["settings.AllSettings.AdminUserIDs.shortDesc"]
+hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
+other = "Bot Admins ØwØ"
+
+["settings.AllSettings.AutoRefresh.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse> ⓪w⓪"
+
+["settings.AllSettings.AutoRefresh.desc"]
+hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
+other = "Specify if de bot shouwd auto-wefwesh de status message aftew a match ends ʘwʘ"
+
+["settings.AllSettings.AutoRefresh.shortDesc"]
+hash = "sha1-688986b39f678f57ce90907ef39ab68a3a5db902"
+other = "Autowefwesh Status Message"
+
+["settings.AllSettings.Delays.args"]
+hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
+other = "<stawt phase> <end phase> <deway> uwu"
+
+["settings.AllSettings.Delays.desc"]
+hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
+other = "Specify de deways fow automute/deafen between stages of de game, wike wobby->tasks"
+
+["settings.AllSettings.Delays.shortDesc"]
+hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
+other = "Deways Between Stages ◔w◔"
+
+["settings.AllSettings.DisplayRoomCode.args"]
+hash = "sha1-6ce2a447439270836cb2f74ed22d28051be06157"
+other = "<awways/spoiwew/nyevew> ♥w♥"
+
+["settings.AllSettings.DisplayRoomCode.desc"]
+hash = "sha1-2db49213af1f37abc163e251e5ce0eab618ecf16"
+other = "Specify de visibiwity (awways, spoiwew, nyevew) fow de WOOM CODE in de message ✧w✧"
+
+["settings.AllSettings.DisplayRoomCode.shortDesc"]
+hash = "sha1-d37bb9c6bfa5430a7cc2381a6eb8daac0ba5a010"
+other = "Visibiwity fow de WOOM CODE"
+
+["settings.AllSettings.Language.args"]
+hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
+other = "<wanguage> ow wewoad ♥w♥"
+
+["settings.AllSettings.Language.desc"]
+hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
+other = "Change de bot messages wanguage uwu"
+
+["settings.AllSettings.Language.shortDesc"]
+hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
+other = "Bot Wanguage ♥w♥"
+
+["settings.AllSettings.LeaderboardMention.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse>"
+
+["settings.AllSettings.LeaderboardMention.desc"]
+hash = "sha1-d2f89611905cb78ba8f0cb93e9fca7b98c98ad15"
+other = "If pwayews shouwd be mentionyed wid @ on de weadewboawd.\\n**Disabwe dis fow wawge sewvews!** ☆w☆"
+
+["settings.AllSettings.LeaderboardMention.shortDesc"]
+hash = "sha1-905ebd9d56ed799fb55945976c45427595b043bc"
+other = "Pwayew Weadewboawd Mention Fowmat ᅌwᅌ"
+
+["settings.AllSettings.LeaderboardMin.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<nyumbew> uwu"
+
+["settings.AllSettings.LeaderboardMin.desc"]
+hash = "sha1-681c7ef0c003be2f66765eb77df38092dc55e3bd"
+other = "Minyimum amount of games befowe a pwayew is dispwayed on de weadewboawd Owo"
+
+["settings.AllSettings.LeaderboardMin.shortDesc"]
+hash = "sha1-e01ca4a2251231aef2dd7ba30640c06626c4c81c"
+other = "Minyimum Games fow Weadewboawd ☆w☆"
+
+["settings.AllSettings.LeaderboardSize.args"]
+hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
+other = "<nyumbew>"
+
+["settings.AllSettings.LeaderboardSize.desc"]
+hash = "sha1-311b5aed467bd4b697651b4d91671ab0ec821f96"
+other = "Specify de size of de pwayew weadewboawd ØwØ"
+
+["settings.AllSettings.LeaderboardSize.shortDesc"]
+hash = "sha1-5fa9ea41087103c1cae7679b9e5fce71eb4035bb"
+other = "Pwayew Weadewboawd Size ◔w◔"
+
+["settings.AllSettings.MapVersion.args"]
+hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
+other = "<vewsion>"
+
+["settings.AllSettings.MapVersion.desc"]
+hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
+other = "Specify de defauwt map vewsion (simpwe, detaiwed) used by 'map' command Owo"
+
+["settings.AllSettings.MapVersion.shortDesc"]
+hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
+other = "Map vewsion"
+
+["settings.AllSettings.MatchSummary.args"]
+hash = "sha1-e43bd32e20d628f793b8b15314ed938d74d56565"
+other = "<minyutes>"
+
+["settings.AllSettings.MatchSummary.desc"]
+hash = "sha1-bd285de3a118841b872c4b58baf24388c5384fb0"
+other = "Specify minyutes befowe de match summawy message is deweted. 0 fow instant dewetion, -1 fow nyevew dewete Owo"
+
+["settings.AllSettings.MatchSummary.shortDesc"]
+hash = "sha1-5099f472410435fb996091311c84ee8425d8bfe4"
+other = "Match Summawy Message ÕwÕ"
+
+["settings.AllSettings.MatchSummaryChannel.args"]
+hash = "sha1-59a1fd23c1b54e9c1c90e3a2fe4dda15c1f848df"
+other = "<text channyew nyame>"
+
+["settings.AllSettings.MatchSummaryChannel.desc"]
+hash = "sha1-3d54b2b30c8f33278a70c415fd52d83cdd3f25c3"
+other = "Specify de text channyew nyame whewe Match Summawies shouwd be posted owO"
+
+["settings.AllSettings.MatchSummaryChannel.shortDesc"]
+hash = "sha1-4eac650ab948a17e66a49b364aceb666a6d01da3"
+other = "Channyew fow Match Summawies owO"
+
+["settings.AllSettings.MuteSpectators.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse> ÓwÓ"
+
+["settings.AllSettings.MuteSpectators.desc"]
+hash = "sha1-6b5c5f2f2ef1b8c1326aa751aaaf5f885012c0ee"
+other = "Whedew ow nyot de bot shouwd tweat spectatows wike dead pwayews (wespecting youw voice wuwes).\\n**Nyote, dis can cause deways ow swowdowns when nyot sewf-hosting, ow using a Pwemium wowkew bot!** @w@"
+
+["settings.AllSettings.MuteSpectators.shortDesc"]
+hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
+other = "Mute Spectatows wike Dead Pwayews ゜w゜"
+
+["settings.AllSettings.Prefix.args"]
+hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
+other = "<pwefix>"
+
+["settings.AllSettings.Prefix.desc"]
+hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
+other = "Change de pwefix dat de bot uses to detect commands ◔w◔"
+
+["settings.AllSettings.Prefix.shortDesc"]
+hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
+other = "Bot Pwefix øwø"
+
+["settings.AllSettings.Reset.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye ◕w◕"
+
+["settings.AllSettings.Reset.desc"]
+hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
+other = "Weset aww bot settings to deiw defauwt vawues"
+
+["settings.AllSettings.Reset.shortDesc"]
+hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
+other = "Weset Bot Settings ᅌwᅌ"
+
+["settings.AllSettings.RoleIDs.args"]
+hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
+other = "<wowe @ mentions>..."
+
+["settings.AllSettings.RoleIDs.desc"]
+hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
+other = "Specify which wowes have pewmissions to invoke de bot"
+
+["settings.AllSettings.RoleIDs.shortDesc"]
+hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
+other = "Bot Opewatows ᅌwᅌ"
+
+["settings.AllSettings.Show.args"]
+hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
+other = "Nyonye Owo"
+
+["settings.AllSettings.Show.desc"]
+hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
+other = "Show aww de Bot settings fow dis sewvew ◔w◔"
+
+["settings.AllSettings.Show.shortDesc"]
+hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
+other = "Show Aww Settings uwu"
+
+["settings.AllSettings.UnmuteDead.args"]
+hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
+other = "<twue/fawse>"
+
+["settings.AllSettings.UnmuteDead.desc"]
+hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
+other = "Specify if de bot shouwd immediatewy unmute pwayews when dey die. **CAUTION. Weaks infowmation!** ⓪w⓪"
+
+["settings.AllSettings.UnmuteDead.shortDesc"]
+hash = "sha1-bb68a42e779c9eeabc57a5986fa31fd99414c4ae"
+other = "Bot Unmutes Deads ♥w♥"
+
+["settings.AllSettings.VoiceRules.args"]
+hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
+other = "<mute/deaf> <game phase> <dead/awive> <twue/fawse> OwO"
+
+["settings.AllSettings.VoiceRules.desc"]
+hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
+other = "Specify mute/deafen wuwes fow de game, depending on de stage and de awive/deadnyess of pwayews. Exampwe given wouwd mute dead pwayews duwing de tasks stage"
+
+["settings.AllSettings.VoiceRules.shortDesc"]
+hash = "sha1-446a8c075113693fdef53eae652e2421a379234d"
+other = "Mute/deafen Wuwes ♥w♥"
+
+["settings.CommandPrefixSetting.changes"]
+hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
+other = "Guiwd pwefix changed fwom `{{.From}}` to `{{.To}}`. Use dat fwom nyow on!"
+
+["settings.CommandPrefixSetting.tooLong"]
+hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
+other = "Sowwy, de pwefix `{{.CommandPrefix}}` is too wong ({{.Length}} chawactews, max 10). Twy someding showtew."
+
+["settings.ConstructEmbedForSetting.Fields.Aliases"]
+hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
+other = "Awiases ☆w☆"
+
+["settings.ConstructEmbedForSetting.Fields.Arguments"]
+hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
+other = "Awguments"
+
+["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
+hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
+other = "Cuwwent Vawue @w@"
+
+["settings.ConstructEmbedForSetting.Fields.Example"]
+hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
+other = "Exampwe"
+
+["settings.ConstructEmbedForSetting.StarterDesc"]
+hash = "sha1-5585eb79654b961ffbe58ffb393bfe024f6376fc"
+other = "Type `{{.CommandPrefix}} settings {{.Command}}` to change dis setting.\\n\\n"
+
+["settings.HandleSettingsCommand.default"]
+hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
+other = "Sowwy, `{{.Arg}}` is nyot a vawid setting!\\n owO"
+
+["settings.SettingAdminUserIDs.clearAdmins"]
+hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
+other = "Cweawing aww AdminUsewIDs!"
+
+["settings.SettingAdminUserIDs.newBotAdmin"]
+hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
+other = "<@{{.UserID}}> is nyow a bot admin!"
+
+["settings.SettingAdminUserIDs.noBotAdmins"]
+hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
+other = "Nyo Bot Admins ◕w◕"
+
+["settings.SettingAdminUserIDs.notFound"]
+hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
+other = "Sowwy, I don't knyow who `{{.UserName}}` is. You can pass in ID, usewnyame, usewnyame#XXXX, nyicknyame ow @mention ◕w◕"
+
+["settings.SettingAutoRefresh.False"]
+hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
+other = "Fwom nyow on, I wiww nyot AutoWefwesh de game status message"
+
+["settings.SettingAutoRefresh.True"]
+hash = "sha1-b3e5138940abfd14605d7565f2807c5957c89c18"
+other = "Fwom nyow on, I'ww AutoWefwesh de game status message OwO"
+
+["settings.SettingAutoRefresh.Unrecognized"]
+hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
+other = "{{.Arg}} is nyot a twue/fawse vawue. See `{{.CommandPrefix}} settings autowefwesh` fow usage uwu"
+
+["settings.SettingDelays.Phase.UNINITIALIZED"]
+hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
+other = "I don't knyow what `{{.PhaseName}}` is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`."
+
+["settings.SettingDelays.delayBetweenPhases"]
+hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
+other = "Cuwwentwy, de deway when passing fwom `{{.PhaseA}}` to `{{.PhaseB}}` is {{.OldDelay}}."
+
+["settings.SettingDelays.missingPhases"]
+hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
+other = "The wist of game phases awe `Wobby`, `Tasks` and `Discussion`.\\nYou nyeed to type bod phases de game is twansitionying fwom and to to change de deway."
+
+["settings.SettingDelays.setDelayBetweenPhases"]
+hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
+other = "The deway when passing fwom `{{.PhaseA}}` to `{{.PhaseB}}` changed fwom {{.OldDelay}} to {{.NewDelay}}."
+
+["settings.SettingDelays.wrongNumber"]
+hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
+other = "`{{.Number}}` is nyot a vawid nyumbew! Pwease twy again"
+
+["settings.SettingDisplayRoomCode.AlwaysOrNever"]
+hash = "sha1-7c6373972e9cb90f632f418048d7f3fc4a13c0c0"
+other = "Fwom nyow on, I wiww {{.Arg}} dispway de woom code in de message ☆w☆"
+
+["settings.SettingDisplayRoomCode.Spoiler"]
+hash = "sha1-758e6a0d7d90f080df874cb032fb7e34e71b379c"
+other = "Fwom nyow on, I wiww mawk de woom code as spoiwew in de message"
+
+["settings.SettingDisplayRoomCode.Unrecognized"]
+hash = "sha1-dba098d1b3c3c782ae8b70b903c7a316e445d5f0"
+other = "{{.Arg}} is nyot an expected vawue. See `{{.CommandPrefix}} settings dispwayWoomCode` fow usage ʘwʘ"
+
+["settings.SettingLanguage.list"]
+hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
+other = "Avaiwabwe wanguages: {{.Langs}}"
+
+["settings.SettingLanguage.notFound"]
+hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
+other = "Wanguage nyot found! Avaiwabwe wanguage codes: {{.Langs}}"
+
+["settings.SettingLanguage.notLoaded"]
+hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
+other = "Wocawization fiwes wewe nyot woaded! {{.Langs}} ʘwʘ"
+
+["settings.SettingLanguage.reloaded"]
+hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
+other = "Wocawization fiwes awe wewoaded ({{.Count}}). Avaiwabwe wanguage codes: {{.Langs}} ◔w◔"
+
+["settings.SettingLanguage.set"]
+hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
+other = "Wocawization is set to {{.LangName}}"
+
+["settings.SettingLanguage.tooShort"]
+hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
+other = "Sowwy, de wanguage code is showt. Avaiwabwe wanguage codes: {{.Langs}}. ÕwÕ"
+
+["settings.SettingLeaderboardMention.False"]
+hash = "sha1-cea40d5b3e257428c5dcaa8dcfd2f8b8f2edb51a"
+other = "Fwom nyow on, I'ww use pwayew nyicknyames/usewnyames in de weadewboawd"
+
+["settings.SettingLeaderboardMention.True"]
+hash = "sha1-5d2c8e648214566acea958c0fc6d72d17a176663"
+other = "Fwom nyow on, I'ww mention pwayews diwectwy in de weadewboawd"
+
+["settings.SettingLeaderboardMention.Unrecognized"]
+hash = "sha1-a24ce52ad5c465baf7e49a5a3434a425244de74a"
+other = "{{.Arg}} is nyot a twue/fawse vawue. See `{{.CommandPrefix}} settings weadewboawdMention` fow usage"
+
+["settings.SettingLeaderboardMin.OutOfRange"]
+hash = "sha1-b0255e0834eddd8966547ca4b179e601b367be6c"
+other = "You pwovided a nyumbew too high ow too wow. Pwease specify a nyumbew between [1-100] ÓwÓ"
+
+["settings.SettingLeaderboardMin.Success"]
+hash = "sha1-3045aeb741c8df08e58515a0c997b9724c2afc41"
+other = "Fwom nyow on, I'ww dispway onwy pwayews wid {{.Games}}+ quawifying games on de weadewboawd ◔w◔"
+
+["settings.SettingLeaderboardMin.Unrecognized"]
+hash = "sha1-10fea8556a261535f0eefb0a5496cad74913c06c"
+other = "{{.Number}} is nyot a vawid nyumbew. See `{{.CommandPrefix}} settings weadewboawdMin` fow usage"
+
+["settings.SettingLeaderboardSize.OutOfRange"]
+hash = "sha1-f3b99335a054c7b474fbfb906aeb3a104fefb646"
+other = "You pwovided a nyumbew too high ow too wow. Pwease specify a nyumbew between [1-10] @w@"
+
+["settings.SettingLeaderboardSize.Success"]
+hash = "sha1-9459023cdfd1de8eed146eee42fd5cfe32a6d3d9"
+other = "Fwom nyow on, I'ww dispway {{.Players}} pwayews on de weadewboawd"
+
+["settings.SettingLeaderboardSize.Unrecognized"]
+hash = "sha1-186699935b429b84b8988d52ccbf753070461181"
+other = "{{.Number}} is nyot a vawid nyumbew. See `{{.CommandPrefix}} settings weadewboawdSize` fow usage ᅌwᅌ"
+
+["settings.SettingMapVersion.Success"]
+hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
+other = "Fwom nyow on, I wiww dispway map images as {{.Arg}} @w@"
+
+["settings.SettingMapVersion.Unrecognized"]
+hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
+other = "{{.Arg}} is nyot an expected vawue. See `{{.CommandPrefix}} settings mapvewsion` fow usage OwO"
+
+["settings.SettingMatchSummary.OutOfRange"]
+hash = "sha1-b6996f804f1fc4e59784621e2adaea8b88ceafb9"
+other = "You pwovided a nyumbew too high ow too wow. Pwease specify a nyumbew between [0-60], ow -1 to nyevew dewete match summawies OwO"
+
+["settings.SettingMatchSummary.Success"]
+hash = "sha1-32a0eda9ca856cee12ede89ad46f35803cd0fb68"
+other = "Fwom nyow on, I'ww dewete match summawy messages aftew {{.Minutes}} minyutes."
+
+["settings.SettingMatchSummary.Success-1"]
+hash = "sha1-6d710f38a479364512a9a0787674d4e05c1a33b4"
+other = "Fwom nyow on, I'ww nyevew dewete match summawy messages. ☆w☆"
+
+["settings.SettingMatchSummary.Success0"]
+hash = "sha1-cca0192d2890122597dc6923fcdd84e03a91c057"
+other = "Fwom nyow on, I'ww dewete match summawy messages immediatewy."
+
+["settings.SettingMatchSummary.Unrecognized"]
+hash = "sha1-15dbbdff49c219e8e202ee09c8d7ceaaa4987b87"
+other = "{{.Minutes}} is nyot a vawid nyumbew. See `{{.CommandPrefix}} settings matchSummawy` fow usage"
+
+["settings.SettingMatchSummaryChannel.withChannelName"]
+hash = "sha1-0d8730f30947020deca58dce63ef8a682bd1addf"
+other = "Match Summawy text channyew changed to `{{.channelName}}`!"
+
+["settings.SettingMatchSummaryChannel.withoutChannelID"]
+hash = "sha1-e23db89c0645c4ec1ae21b5f59dbd193a68f0c6f"
+other = "Couwd nyot find de text channyew `{{.channelName}}`! Pass in de nyame ow de ID, and make suwe de bot can see it."
+
+["settings.SettingMuteSpectators.false_muteSpectators"]
+hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
+other = "I wiww nyo wongew mute spectatows wike dead pwayews"
+
+["settings.SettingMuteSpectators.true_noMuteSpectators"]
+hash = "sha1-cb62081e4c9e37177e32ad916c63ef5ff4a812fe"
+other = "I wiww nyow mute spectatows just wike dead pwayews. \\n**Nyote, dis can cause deways ow swowdowns when nyot sewf-hosting, ow using a Pwemium wowkew bot!** ✧w✧"
+
+["settings.SettingPermissionRoleIDs.clearRoles"]
+hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
+other = "Cweawing aww PewmissionWoweIDs!"
+
+["settings.SettingPermissionRoleIDs.newBotAdmins"]
+hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
+other = "<@&{{.UserID}}>s awe nyow bot admins!"
+
+["settings.SettingPermissionRoleIDs.noRoleAdmins"]
+hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
+other = "Nyo Wowe Admins ØwØ"
+
+["settings.SettingPermissionRoleIDs.notFound"]
+hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
+other = "Sowwy, I don't knyow de wowe `{{.RoleName}}` is. Pwease use @wowe"
+
+["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
+hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
+other = "It's awweady fawse!"
+
+["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
+hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
+other = "I wiww nyo wongew immediatewy unmute dead peopwe. Good choice! ♥w♥"
+
+["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "It's awweady twue!"
+
+["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
+hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
+other = "It's awweady twue! ʘwʘ"
+
+["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
+hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
+other = "Sowwy, `{{.Arg}}` is nyeidew `twue` nyow `fawse`."
+
+["settings.SettingVoiceRules.NA"]
+hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
+other = "N/A"
+
+["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
+hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
+other = "I don't knyow what {{.PhaseName}} is. The wist of game phases awe `Wobby`, `Tasks` and `Discussion`. ✧w✧"
+
+["settings.SettingVoiceRules.enoughArgs"]
+hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
+other = "You didn't pass enyough awguments! Cowwect syntax is: `voiceWuwes [mute/deaf] [game phase] [awive/dead] [twue/fawse]` owO"
+
+["settings.SettingVoiceRules.neitherAliveDead"]
+hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
+other = "`{{.Arg}}` is nyeidew `awive` ow `dead`! øwø"
+
+["settings.SettingVoiceRules.neitherMuteDeaf"]
+hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
+other = "`{{.Arg}}` is nyeidew `mute` nyow `deaf`!"
+
+["settings.SettingVoiceRules.neitherTrueFalse"]
+hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
+other = "`{{.Arg}}` is nyeidew `twue` ow `fawse`! ÕwÕ"
+
+["settings.SettingVoiceRules.queryingAlreadyUnValues"]
+hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe awweady un{{.PlayerDiscordState}}!"
+
+["settings.SettingVoiceRules.queryingAlreadyValues"]
+hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe awweady {{.PlayerDiscordState}}! owO"
+
+["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
+hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe cuwwentwy {{.PlayerDiscordState}}. ⓪w⓪"
+
+["settings.SettingVoiceRules.queryingCurrentlyValues"]
+hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
+other = "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews awe cuwwentwy NYOT {{.PlayerDiscordState}}. OwO"
+
+["settings.SettingVoiceRules.setUnValues"]
+hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
+other = "Fwom nyow on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews wiww be un{{.PlayerDiscordState}}."
+
+["settings.SettingVoiceRules.setValues"]
+hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
+other = "Fwom nyow on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} pwayews wiww be {{.PlayerDiscordState}}."
+
+["state.phase.DISCUSSION"]
+hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
+other = "DISCUSSION ØwØ"
+
+["state.phase.GAMEOVER"]
+hash = "sha1-b1de5c6aaf19873a2e5efc28b9e72fc3e6311c88"
+other = "GAME OVEW uwu"
+
+["state.phase.LOBBY"]
+hash = "sha1-658c6353d3a9cf4d298b0ecdb88b40d6eda8dbfc"
+other = "WOBBY"
+
+["state.phase.MENU"]
+hash = "sha1-c8910b26f57214f5755dc74b2ca3ca1c721de675"
+other = "MENYU"
+
+["state.phase.TASKS"]
+hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
+other = "TASKS"

@@ -2,11 +2,9 @@ module github.com/denverquane/amongusdiscord
 
 go 1.15
 
-// +heroku goVersion go1.15
-
 require (
 	github.com/automuteus/galactus v1.2.2
-	github.com/automuteus/utils v0.0.21
+	github.com/automuteus/utils v0.0.23
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.23.2
 	github.com/georgysavva/scany v0.2.7

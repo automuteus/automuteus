@@ -2,13 +2,13 @@ package discord
 
 import (
 	"context"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/denverquane/amongusdiscord/amongus"
-	"github.com/denverquane/amongusdiscord/common"
 	"github.com/denverquane/amongusdiscord/metrics"
 	"github.com/denverquane/amongusdiscord/storage"
 	"log"
@@ -252,7 +252,7 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 }
 
 func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
-	userID, err := common.ExtractUserIDFromMention(args[0])
+	userID, err := discord.ExtractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}

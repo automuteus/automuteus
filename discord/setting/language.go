@@ -9,6 +9,9 @@ import (
 )
 
 func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	if len(args) == 2 {
 		return ConstructEmbedForSetting(sett.GetLanguage(), AllSettings[Language], sett), false
 	}
