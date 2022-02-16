@@ -35,12 +35,12 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		}
 	}
 
-	var newRoleIDs []string
-	// roles the User mentioned in their message
-	var roleIDs []string
-
 	if args[2] != "clear" && args[2] != "c" {
+		var newRoleIDs []string
+		// roles the User mentioned in their message
+		var roleIDs []string
 		var sendMessages []string
+
 		for _, roleName := range args[2:] {
 			if roleName == "" || roleName == " " {
 				// User added a double space by accident, ignore it
@@ -73,10 +73,12 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 					}))
 			}
 		}
-		sett.SetPermissionRoleIDs(newRoleIDs)
-		return sendMessages, true
+		if len(newRoleIDs) > 0 {
+			sett.SetPermissionRoleIDs(newRoleIDs)
+		}
+		return sendMessages, len(newRoleIDs) > 0
 	} else {
-		sett.SetPermissionRoleIDs(newRoleIDs)
+		sett.SetPermissionRoleIDs([]string{})
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingPermissionRoleIDs.clearRoles",
 			Other: "Clearing all PermissionRoleIDs!",
