@@ -178,7 +178,13 @@ func discordMainWrapper() error {
 	}
 
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-		go psql.LoadAndExecFromFile("./storage/postgres.sql")
+		go func() {
+			err := psql.LoadAndExecFromFile("./storage/postgres.sql")
+			if err != nil {
+				log.Println("Exiting with fatal error when attempting to execute postgres.sql:")
+				log.Fatal(err)
+			}
+		}()
 	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")

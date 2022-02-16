@@ -1,19 +1,12 @@
 create table if not exists guilds
 (
-    guild_id
-    numeric
-    PRIMARY
-    KEY,
-    guild_name
-    VARCHAR
-(
-    100
-) NOT NULL,
+    guild_id numeric PRIMARY KEY,
+    guild_name VARCHAR(100) NOT NULL,
     premium smallint NOT NULL,
     tx_time_unix integer,
     transferred boolean,
-    inherits_from numeric
-    );
+    inherits_from numeric references guilds(guild_id)
+);
 
 create table if not exists games
 (
@@ -44,41 +37,15 @@ create table if not exists game_events
 
 create table if not exists users_games
 (
-    user_id
-    numeric
-    REFERENCES
-    users
-    ON
-    DELETE
-    CASCADE, --if a user gets deleted, delete their linked games
-    guild_id
-    numeric
-    REFERENCES
-    guilds
-    ON
-    DELETE
-    CASCADE, --if a guild is deleted, delete all linked games
-    game_id
-    bigint
-    REFERENCES
-    games
-    ON
-    DELETE
-    CASCADE, --if a game is deleted, delete all linked users_games
-    player_name
-    VARCHAR
-(
-    10
-) NOT NULL,
+    user_id numeric REFERENCES users ON DELETE CASCADE, --if a user gets deleted, delete their linked games
+    guild_id numeric REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked games
+    game_id bigint REFERENCES games ON DELETE CASCADE, --if a game is deleted, delete all linked users_games
+    player_name VARCHAR(10) NOT NULL,
     player_color smallint NOT NULL,
     player_role smallint NOT NULL,
     player_won bool NOT NULL,
-    PRIMARY KEY
-(
-    user_id,
-    game_id
-)
-    );
+    PRIMARY KEY (user_id, game_id)
+);
 
 create index if not exists guilds_id_index ON guilds (guild_id); --query guilds by ID
 create index if not exists guilds_premium_index ON guilds (premium); --query guilds by prem status
