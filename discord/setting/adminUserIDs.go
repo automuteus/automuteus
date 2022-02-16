@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/common"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -45,7 +45,7 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 				// User added a double space by accident, ignore it
 				continue
 			}
-			ID, err := common.ExtractUserIDFromMention(userName)
+			ID, err := discord.ExtractUserIDFromMention(userName)
 			if ID == "" || err != nil {
 				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.notFound",

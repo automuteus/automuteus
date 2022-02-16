@@ -61,9 +61,11 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		prefix = globalPrefix
 	}
 
+	// TODO regex
 	// have to check the actual mention format, not the explicit string "@AutoMuteUs"
 	mention := "<@!" + s.State.User.ID + ">"
-	if strings.HasPrefix(contents, prefix) || strings.HasPrefix(contents, mention) {
+	altMention := "<@" + s.State.User.ID + ">"
+	if strings.HasPrefix(contents, prefix) || strings.HasPrefix(contents, mention) || strings.HasPrefix(contents, altMention) {
 		if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
 			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
 			if banned {
@@ -94,13 +96,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		}
 		redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
 
-		oldLen := len(contents)
-		contents = strings.Replace(contents, prefix+" ", "", 1)
-		contents = strings.Replace(contents, mention+" ", "", 1)
-		if len(contents) == oldLen { // wasn't replaced (no space)
-			contents = strings.Replace(contents, prefix, "", 1)
-			contents = strings.Replace(contents, mention, "", 1)
-		}
+		contents = removePrefixOrMention(contents, prefix, mention, altMention)
 
 		isAdmin, isPermissioned := false, false
 
@@ -122,6 +118,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(m.Member)
 		}
 
+		deleteUserMessage := false
 		if len(contents) == 0 {
 			if len(prefix) <= 1 {
 				// prevent bot from spamming help message whenever the single character
@@ -130,8 +127,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 			}
 			embed := helpResponse(isAdmin, isPermissioned, allCommands, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-			// delete the user's message
-			deleteMessage(s, m.ChannelID, m.ID)
+			deleteUserMessage = true
 		} else {
 			args := strings.Split(contents, " ")
 
@@ -139,9 +135,27 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				args[i] = strings.ToLower(v)
 			}
 
-			bot.HandleCommand(isAdmin, isPermissioned, sett, s, g, m, args)
+			deleteUserMessage = bot.HandleCommand(isAdmin, isPermissioned, sett, s, g, m, args)
+		}
+		if deleteUserMessage {
+			deleteMessage(s, m.ChannelID, m.ID)
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 		}
 	}
+}
+
+// TODO refactor to use regex, could do the matching + removal easier
+func removePrefixOrMention(contents, prefix, mention, altMention string) string {
+	oldLen := len(contents)
+	contents = strings.Replace(contents, prefix+" ", "", 1)
+	contents = strings.Replace(contents, mention+" ", "", 1)
+	contents = strings.Replace(contents, altMention+" ", "", 1)
+	if len(contents) == oldLen { // wasn't replaced (no space)
+		contents = strings.Replace(contents, prefix, "", 1)
+		contents = strings.Replace(contents, mention, "", 1)
+		contents = strings.Replace(contents, altMention, "", 1)
+	}
+	return contents
 }
 
 func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {

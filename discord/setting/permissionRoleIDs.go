@@ -1,12 +1,15 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/common"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	oldRoleIDs := sett.GetPermissionRoleIDs()
 	if len(args) == 2 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
@@ -32,18 +35,18 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		}
 	}
 
-	var newRoleIDs []string
-	// roles the User mentioned in their message
-	var roleIDs []string
-
 	if args[2] != "clear" && args[2] != "c" {
+		var newRoleIDs []string
+		// roles the User mentioned in their message
+		var roleIDs []string
 		var sendMessages []string
+
 		for _, roleName := range args[2:] {
 			if roleName == "" || roleName == " " {
 				// User added a double space by accident, ignore it
 				continue
 			}
-			ID, err := common.ExtractRoleIDFromText(roleName)
+			ID, err := discord.ExtractRoleIDFromText(roleName)
 			if err != nil {
 				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingPermissionRoleIDs.notFound",
@@ -70,10 +73,12 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 					}))
 			}
 		}
-		sett.SetPermissionRoleIDs(newRoleIDs)
-		return sendMessages, true
+		if len(newRoleIDs) > 0 {
+			sett.SetPermissionRoleIDs(newRoleIDs)
+		}
+		return sendMessages, len(newRoleIDs) > 0
 	} else {
-		sett.SetPermissionRoleIDs(newRoleIDs)
+		sett.SetPermissionRoleIDs([]string{})
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingPermissionRoleIDs.clearRoles",
 			Other: "Clearing all PermissionRoleIDs!",

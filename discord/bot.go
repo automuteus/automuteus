@@ -3,12 +3,13 @@ package discord
 import (
 	"context"
 	"github.com/automuteus/automuteus/amongus"
-	"github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/automuteus/storage"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
+	storageutils "github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"log"
@@ -39,7 +40,7 @@ type Bot struct {
 
 	StorageInterface *storage.StorageInterface
 
-	PostgresInterface *storage.PsqlInterface
+	PostgresInterface *storageutils.PsqlInterface
 
 	logPath string
 
@@ -48,7 +49,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storage.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraTokens []string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -252,7 +253,7 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 }
 
 func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
-	userID, err := common.ExtractUserIDFromMention(args[0])
+	userID, err := discord.ExtractUserIDFromMention(args[0])
 	if userID == "" || err != nil {
 		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
 	}

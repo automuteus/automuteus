@@ -9,14 +9,13 @@ import (
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/automuteus/automuteus/storage"
 )
 
 type EndGameMessage bool

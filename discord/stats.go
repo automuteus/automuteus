@@ -5,11 +5,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/utils/pkg/storage"
 	"log"
 	"strconv"
 	"strings"
 
-	"github.com/automuteus/automuteus/storage"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/bwmarrin/discordgo"
@@ -900,7 +900,7 @@ func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *setti
 		log.Fatal(err)
 	}
 
-	events := []*storage.PostgresGameEvent{}
+	var events []*storage.PostgresGameEvent
 	if gameData != nil {
 		events, err = bot.PostgresInterface.GetGameEvents(matchID)
 		if err != nil {

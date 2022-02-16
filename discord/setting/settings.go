@@ -310,7 +310,7 @@ var AllSettings = []Setting{
 			ID:    "settings.AllSettings.LeaderboardMin.args",
 			Other: "<number>",
 		},
-		Aliases: []string{"lboardmin", "boardmin", "leadermin", "min"},
+		Aliases: []string{"leaderboardmin", "lboardmin", "boardmin", "leadermin", "min"},
 		Premium: true,
 	},
 	{

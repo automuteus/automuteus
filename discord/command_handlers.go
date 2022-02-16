@@ -2,12 +2,11 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"regexp"
 	"strings"
-
-	"github.com/automuteus/automuteus/metrics"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -79,7 +78,10 @@ func (bot *Bot) HandleCommand(
 	guild *discordgo.Guild,
 	message *discordgo.MessageCreate,
 	args []string,
-) {
+) bool {
+	if len(args) == 0 {
+		return false
+	}
 	command, exists := getCommand(args[0])
 
 	if !exists {
@@ -97,7 +99,7 @@ func (bot *Bot) HandleCommand(
 				},
 			),
 		)
-		return
+		return false
 	}
 
 	if command.IsAdmin && !isAdmin {
@@ -105,7 +107,7 @@ func (bot *Bot) HandleCommand(
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
-		return
+		return false
 	}
 
 	// admins can invoke moderator commands
@@ -114,27 +116,32 @@ func (bot *Bot) HandleCommand(
 			ID:    "message_handlers.handleMessageCreate.noPerms",
 			Other: "User does not have the required permissions to execute this command!",
 		}))
-		return
+		return false
 	}
 
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+	msgsSent := int64(0)
 	channelID, msgToSend := command.fn(bot, isAdmin, isPermissioned, sett, guild, message, args, &command)
 	switch msgToSend.(type) {
 	case string:
 		session.ChannelMessageSend(channelID, msgToSend.(string))
+		msgsSent = 1
 	case []string:
 		for _, v := range msgToSend.([]string) {
 			session.ChannelMessageSend(channelID, v)
+			msgsSent++
 		}
 	case discordgo.MessageEmbed:
 		embed := msgToSend.(discordgo.MessageEmbed)
 		session.ChannelMessageSendEmbed(channelID, &embed)
+		msgsSent = 1
 	case *discordgo.MessageEmbed:
 		session.ChannelMessageSendEmbed(channelID, msgToSend.(*discordgo.MessageEmbed))
+		msgsSent = 1
 	case nil:
 		// do nothing
 	default:
 		log.Printf("Incapable of processing sendMessage of type: %T", msgToSend)
 	}
-	deleteMessage(session, message.ChannelID, message.Message.ID)
+	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, msgsSent)
+	return true
 }

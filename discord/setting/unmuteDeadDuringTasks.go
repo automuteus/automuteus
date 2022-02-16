@@ -6,6 +6,9 @@ import (
 )
 
 func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	if sett == nil || len(args) < 2 {
+		return nil, false
+	}
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
 	if len(args) == 2 {
 		current := "false"

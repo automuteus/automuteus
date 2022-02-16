@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/utils/pkg/locale"
+	storage2 "github.com/automuteus/utils/pkg/storage"
 	"io"
 	"log"
 	"math/rand"
@@ -155,7 +156,7 @@ func discordMainWrapper() error {
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
-	psql := storage.PsqlInterface{}
+	psql := storage2.PsqlInterface{}
 	pAddr := os.Getenv("POSTGRES_ADDR")
 	if pAddr == "" {
 		return errors.New("no POSTGRES_ADDR specified; exiting")
@@ -171,7 +172,7 @@ func discordMainWrapper() error {
 		return errors.New("no POSTGRES_PASS specified; exiting")
 	}
 
-	err = psql.Init(storage.ConstructPsqlConnectURL(pAddr, pUser, pPass))
+	err = psql.Init(storage2.ConstructPsqlConnectURL(pAddr, pUser, pPass))
 	if err != nil {
 		return err
 	}
