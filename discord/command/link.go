@@ -1,6 +1,19 @@
 package command
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/automuteus/utils/pkg/settings"
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"strings"
+)
+
+type LinkStatus int
+
+const (
+	LinkSuccess LinkStatus = iota
+	LinkNoPlayer
+	LinkNoGameData
+)
 
 var Link = discordgo.ApplicationCommand{
 	Name:        "link",
@@ -19,4 +32,44 @@ var Link = discordgo.ApplicationCommand{
 			Required:    true,
 		},
 	},
+}
+
+func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string) {
+	return options[0].UserValue(s).ID, strings.ReplaceAll(strings.ToLower(options[1].StringValue()), " ", "")
+}
+
+func LinkResponse(status LinkStatus, userID, colorOrName string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	var content string
+	switch status {
+	case LinkSuccess:
+		content = sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.link.success",
+			Other: "Successfully linked {{.UserID} to an in-game player matching {{.ColorOrName}}",
+		}, map[string]interface{}{
+			"UserID":      userID,
+			"ColorOrName": colorOrName,
+		})
+	case LinkNoPlayer:
+		content = sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.link.noplayer",
+			Other: "No player in the current game was detected for {{.UserID}}",
+		}, map[string]interface{}{
+			"UserID": userID,
+		})
+	case LinkNoGameData:
+		content = sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.link.nogamedata",
+			Other: "No game data found for color/name `{{.ColorOrName}}",
+		}, map[string]interface{}{
+			"ColorOrName": colorOrName,
+		})
+	}
+
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags:   1 << 6,
+			Content: content,
+		},
+	}
 }

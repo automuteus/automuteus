@@ -508,29 +508,20 @@ func addCommand(command Command, key string) {
 
 func commandFnHelp(
 	_ *Bot,
-	isAdmin bool,
-	isPermissioned bool,
+	_ bool,
+	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
+	_ *discordgo.MessageCreate,
+	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	if len(args[1:]) == 0 {
-		embed := helpResponse(isAdmin, isPermissioned, allCommands, sett)
-		return message.ChannelID, &embed
-	}
-
-	cmd, exists := getCommand(args[1])
-	if !exists {
-		return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "commands.HandleCommand.Help.notFound",
-			Other: "I didn't recognize that command! View `help` for all available commands!",
-		})
-	}
-
-	embed := ConstructEmbedForCommand(cmd, sett)
-	return message.ChannelID, embed
+	return "", sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
+	}, map[string]interface{}{
+		"Command": "/help",
+	})
 }
 
 func commandFnNew(
@@ -815,17 +806,21 @@ func commandFnPrivacy(
 }
 
 func commandFnInfo(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	_ *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	embed := bot.infoResponse(message.GuildID, sett)
-	return message.ChannelID, embed
+	return "", sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
+	}, map[string]interface{}{
+		"Command": "/info",
+	})
 }
 
 func commandFnDebugState(

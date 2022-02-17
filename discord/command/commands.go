@@ -1,10 +1,59 @@
 package command
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"fmt"
+	"github.com/automuteus/utils/pkg/settings"
+	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+)
 
-var All = []discordgo.ApplicationCommand{
-	Help,
-	Info,
-	Link,
-	Unlink,
+const (
+	ISO8601               = "2006-01-02T15:04:05-0700"
+	BasePremiumURL        = "https://automute.us/premium?guild="
+	CaptureDownloadURL    = "https://capture.automute.us"
+	DefaultMaxActiveGames = 150
+)
+
+var All = []*discordgo.ApplicationCommand{
+	&Help,
+	&Info,
+	&Link,
+	&Unlink,
+	&New,
+}
+
+func getCommand(cmd string) *discordgo.ApplicationCommand {
+	for _, v := range All {
+		if v.Name == cmd {
+			return v
+		}
+	}
+	return nil
+}
+
+func localizeCommandDescription(cmd *discordgo.ApplicationCommand, sett *settings.GuildSettings) string {
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    fmt.Sprintf("commands.%s.description", cmd.Name),
+		Other: cmd.Description,
+	})
+}
+
+func constructEmbedForCommand(
+	cmd *discordgo.ApplicationCommand,
+	sett *settings.GuildSettings,
+) *discordgo.MessageEmbed {
+	return &discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       fmt.Sprintf("`/%s`", cmd.Name),
+		Description: localizeCommandDescription(cmd, sett),
+		Timestamp:   "",
+		Color:       15844367, // GOLD
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      nil,
+	}
 }

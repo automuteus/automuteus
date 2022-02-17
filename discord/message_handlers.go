@@ -553,16 +553,16 @@ func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Gu
 
 	sendMessageDM(bot.PrimarySession, m.Author.ID, &embed)
 
-	bot.handleGameStartMessage(m, sett, tracking, g, connectCode)
+	bot.handleGameStartMessage(m.GuildID, m.ChannelID, m.Author.ID, sett, tracking, g, connectCode)
 
 	// already sent required messages
 	return "", nil
 }
 
-func (bot *Bot) handleGameStartMessage(m *discordgo.MessageCreate, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(guildID, channelID, userID string, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-		GuildID:     m.GuildID,
-		TextChannel: m.ChannelID,
+		GuildID:     guildID,
+		TextChannel: channelID,
 		ConnectCode: connCode,
 	})
 	if lock == nil {
@@ -587,8 +587,9 @@ func (bot *Bot) handleGameStartMessage(m *discordgo.MessageCreate, sett *setting
 		}
 	}
 
-	dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), m.ChannelID, m.Author.ID)
+	dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), channelID, userID)
 
+	// release the lock
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	// log.Println("Added self game state message")

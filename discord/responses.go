@@ -2,19 +2,16 @@ package discord
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/rediskey"
-
-	"github.com/automuteus/automuteus/amongus"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -149,151 +146,6 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 				Inline: true,
 			})
 		}
-	}
-
-	embed.Fields = fields
-	return &embed
-}
-
-func (bot *Bot) infoResponse(guildID string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
-	if strings.HasPrefix(version, "6.9") {
-		version = "😎 " + version + " 😎"
-	}
-	embed := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Title",
-			Other: "Bot Info",
-		}),
-		Description: "",
-		Timestamp:   time.Now().Format(ISO8601),
-		Color:       2067276, // DARK GREEN
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.statsResponse.BotInfo",
-				Other: "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}",
-			},
-				map[string]interface{}{
-					"Version": version,
-					"Commit":  commit,
-					"ID":      fmt.Sprintf("%d", bot.PrimarySession.ShardID),
-					"Num":     fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
-				}),
-			IconURL:      "",
-			ProxyIconURL: "",
-		},
-	}
-
-	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
-	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
-
-	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-	if totalUsers == rediskey.NotFound {
-		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-	}
-
-	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-	if totalGames == rediskey.NotFound {
-		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-	}
-
-	fields := make([]*discordgo.MessageEmbedField, 12)
-	fields[0] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Version",
-			Other: "Version",
-		}),
-		Value:  version,
-		Inline: true,
-	}
-	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Library",
-			Other: "Library",
-		}),
-		Value:  "discordgo",
-		Inline: true,
-	}
-	fields[2] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Creator",
-			Other: "Creator",
-		}),
-		Value:  "Soup#4222",
-		Inline: true,
-	}
-	fields[3] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Guilds",
-			Other: "Guilds",
-		}),
-		Value:  fmt.Sprintf("%d", totalGuilds),
-		Inline: true,
-	}
-	fields[4] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Games",
-			Other: "Active Games",
-		}),
-		Value:  fmt.Sprintf("%d", activeGames),
-		Inline: true,
-	}
-	fields[5] = &discordgo.MessageEmbedField{
-		Name:   "\u200B",
-		Value:  "\u200B",
-		Inline: true,
-	}
-	fields[6] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.TotalGames",
-			Other: "Total Games",
-		}),
-		Value:  fmt.Sprintf("%d", totalGames),
-		Inline: true,
-	}
-	fields[7] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Users",
-			Other: "Total Users",
-		}),
-		Value:  fmt.Sprintf("%d", totalUsers),
-		Inline: true,
-	}
-	fields[8] = &discordgo.MessageEmbedField{
-		Name:   "\u200B",
-		Value:  "\u200B",
-		Inline: true,
-	}
-	fields[9] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Website",
-			Other: "Website",
-		}),
-		Value:  "[automute.us](https://automute.us)",
-		Inline: true,
-	}
-	fields[10] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Invite",
-			Other: "Invite",
-		}),
-		Value:  "[add.automute.us](https://add.automute.us)",
-		Inline: true,
-	}
-	fields[11] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Donate",
-			Other: "Premium",
-		}),
-		Value:  "[PayPal](" + BasePremiumURL + guildID + ")",
-		Inline: true,
 	}
 
 	embed.Fields = fields

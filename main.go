@@ -197,26 +197,35 @@ func discordMainWrapper() error {
 
 	var registeredCommands []*discordgo.ApplicationCommand
 	for _, v := range command.All {
-		// TODO remove guildID
-		id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, "141082723635691521", &v)
+		id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, os.Getenv("SLASH_COMMAND_GUILD_ID"), v)
 		if err != nil {
-			log.Panicf("Cannot create help command: %v", err)
+			log.Panicf("Cannot create command: %v", err)
 		} else {
 			registeredCommands = append(registeredCommands, id)
 		}
 	}
 
+	// TODO properly detect if commands should be overwritten or created
+	//registeredCommands, err := bot.PrimarySession.ApplicationCommandBulkOverwrite(bot.PrimarySession.State.User.ID, os.Getenv("SLASH_COMMAND_GUILD_ID"), command.All)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
 	<-sc
 	//bot.GracefulClose()
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
-	for _, v := range registeredCommands {
-		// TODO remove guildID
-		err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationID, "141082723635691521", v.ID)
-		if err != nil {
-			log.Println(err)
+
+	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
+		log.Println("Deleting slash commands")
+		for _, v := range registeredCommands {
+			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationID, os.Getenv("SLASH_COMMAND_GUILD_ID"), v.ID)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
+
 	bot.Close()
 	return nil
 }

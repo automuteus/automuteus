@@ -199,6 +199,7 @@ Just remember that you will need to do a rebuild of the docker images every time
 - `REDIS_PASS`: Your Redis database password, if necessary.
 - `AUTOMUTEUS_LISTENING`: What the bot displays it is "Listening to" in the online presence message. Recommend putting your custom command prefix here
 - `AUTOMUTEUS_GLOBAL_PREFIX`: A universal default for the bot's command prefix. The bot will respond to **both** this prefix, and any guild-specific prefixes set in settings.
+- `SLASH_COMMAND_GUILD_ID`: (Development) When registering slash commands, what guild the interactions will be registered in. Leave blank for global
 
 ### HIGHLY advanced. Probably don't ever touch these!
 

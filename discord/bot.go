@@ -2,11 +2,15 @@ package discord
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/automuteus/storage"
-	"github.com/automuteus/utils/pkg/discord"
+	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
 	"github.com/automuteus/utils/pkg/settings"
 	storageutils "github.com/automuteus/utils/pkg/storage"
@@ -15,7 +19,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -258,39 +261,6 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) linkPlayer(g *discordgo.Guild, dgs *GameState, args []string) {
-	userID, err := discord.ExtractUserIDFromMention(args[0])
-	if userID == "" || err != nil {
-		log.Printf("Sorry, I don't know who `%s` is. You can pass in ID, username, username#XXXX, nickname or @mention", args[0])
-	}
-
-	_, added := dgs.checkCacheAndAddUser(g, bot.PrimarySession, userID)
-	if !added {
-		log.Println("No users found in Discord for UserID " + userID)
-	}
-
-	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
-	var auData amongus.PlayerData
-	found := false
-	if game.IsColorString(combinedArgs) {
-		auData, found = dgs.AmongUsData.GetByColor(combinedArgs)
-	} else {
-		auData, found = dgs.AmongUsData.GetByName(combinedArgs)
-	}
-	if found {
-		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
-		if foundID != "" {
-			log.Printf("Successfully linked %s to a color\n", userID)
-			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
-			if err != nil {
-				log.Println(err)
-			}
-		} else {
-			log.Printf("No player was found with id %s\n", userID)
-		}
-	}
-}
-
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	// lock because we don't want anyone else modifying while we delete
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -339,4 +309,126 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
 		dgs.AddReaction(bot.PrimarySession, "▶️")
 	}
+}
+
+func (bot *Bot) getInfo() command.BotInfo {
+	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
+	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
+	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
+
+	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
+	if totalUsers == rediskey.NotFound {
+		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	}
+
+	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
+	if totalGames == rediskey.NotFound {
+		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	}
+	return command.BotInfo{
+		Version:     version,
+		Commit:      commit,
+		ShardID:     bot.PrimarySession.ShardID,
+		ShardCount:  bot.PrimarySession.ShardCount,
+		TotalGuilds: totalGuilds,
+		ActiveGames: activeGames,
+		TotalUsers:  totalUsers,
+		TotalGames:  totalGames,
+	}
+}
+
+func (bot *Bot) linkPlayer(dgs *GameState, userID, colorOrName string) (command.LinkStatus, error) {
+	var auData amongus.PlayerData
+	found := false
+	if game.IsColorString(colorOrName) {
+		auData, found = dgs.AmongUsData.GetByColor(colorOrName)
+	} else {
+		auData, found = dgs.AmongUsData.GetByName(colorOrName)
+	}
+	if found {
+		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
+		if foundID != "" {
+			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
+			if err != nil {
+				log.Println(err)
+			}
+			return command.LinkSuccess, nil
+		} else {
+			err := fmt.Sprintf("No player in the current game was found matching %s", mentionByUserID(userID))
+			return command.LinkNoPlayer, errors.New(err)
+		}
+	} else {
+		err := errors.New(fmt.Sprintf("No game data found for player %s and color/name %s", mentionByUserID(userID), colorOrName))
+		return command.LinkNoGameData, err
+	}
+}
+
+func (bot *Bot) unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatus, error) {
+	// if we found the player and cleared their data
+	success := dgs.ClearPlayerData(userID)
+	if success {
+		return command.UnlinkSuccess, nil
+	} else {
+		return command.UnlinkNoPlayer, nil
+	}
+}
+
+func (bot *Bot) getTrackingChannel(guild *discordgo.Guild, userID string) TrackingChannel {
+	channels, err := bot.PrimarySession.GuildChannels(guild.ID)
+	if err != nil {
+		log.Println(err)
+		return TrackingChannel{}
+	}
+	// loop over all the channels in the discord and cross-reference with the one that the .au new author is in
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice {
+			for _, v := range guild.VoiceStates {
+				// if the User who typed au new is in a voice channel
+				if v.UserID == userID {
+					// once we find the voice channel
+					if channel.ID == v.ChannelID {
+						return TrackingChannel{
+							ChannelID:   channel.ID,
+							ChannelName: channel.Name,
+						}
+					}
+				}
+			}
+		}
+	}
+	return TrackingChannel{}
+}
+
+func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (command.NewStatus, error) {
+	if tracking.ChannelID == "" {
+		return command.NewNoVoiceChannel, nil
+	}
+
+	if dgs.GameStateMsg.MessageID != "" {
+		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+			v <- true
+		}
+		delete(bot.EndGameChannels, dgs.ConnectCode)
+
+		dgs.Reset()
+	} else {
+		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premTier := premium.FreeTier
+		if !premium.IsExpired(premStatus, days) {
+			premTier = premStatus
+		}
+
+		// Premium users should always be allowed to start new games; only check the free guilds
+		if premTier == premium.FreeTier {
+			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+			if activeGames > DefaultMaxActiveGames {
+				return command.NewLockout, nil
+			}
+		}
+	}
+
+	dgs.ConnectCode = generateConnectCode(dgs.GuildID)
+	dgs.Subscribed = true
+
+	return command.NewSuccess, nil
 }
