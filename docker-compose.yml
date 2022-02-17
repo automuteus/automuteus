@@ -4,7 +4,9 @@ services:
   automuteus:
     # Either:
     # - Use a prebuilt image
-    image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
+    image: automuteus/automuteus:${AUTOMUTEUS_TAG:?err}
+    # - Use an old prebuilt image (prior to 6.16.1)
+    #image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
     # - Build image from local source
     #build: .
     # - Build image from github directly
