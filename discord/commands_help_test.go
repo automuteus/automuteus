@@ -14,7 +14,7 @@ const (
 
 func TestHelpCommand(t *testing.T) {
 	args := []string{"help"}
-	originMessage := discordgo.MessageCreate{&discordgo.Message{
+	originMessage := discordgo.MessageCreate{Message: &discordgo.Message{
 		ChannelID: TestChannelID,
 	}}
 	sett := settings.MakeGuildSettings("", false)
@@ -46,37 +46,13 @@ func TestHelpCommand(t *testing.T) {
 
 func TestHelpPrefix(t *testing.T) {
 	args := []string{"help"}
-	originMessage := discordgo.MessageCreate{&discordgo.Message{
+	originMessage := discordgo.MessageCreate{Message: &discordgo.Message{
 		ChannelID: TestChannelID,
 	}}
 
 	sett := settings.MakeGuildSettings("", false)
 	channelID, message := commandFnHelp(nil, false, false, sett, nil, &originMessage, args, nil)
-	embed := assertHelpMessageProperties(message, channelID, t)
-	if !strings.Contains(embed.Description, ".au") {
-		t.Error("Expected .au in help description when official is false and no prefix is provided")
-	}
-
-	sett = settings.MakeGuildSettings("", true)
-	channelID, message = commandFnHelp(nil, false, false, sett, nil, &originMessage, args, nil)
-	embed = assertHelpMessageProperties(message, channelID, t)
-	if !strings.Contains(embed.Description, settings.OfficialBotMention) {
-		t.Errorf("Expected %s in help description when official is true and no prefix is provided", settings.OfficialBotMention)
-	} else if strings.Contains(embed.Description, ".au") {
-		t.Error("Unexpected .au when we anticipated " + settings.OfficialBotMention)
-	}
-
-	// official arg is ignored if the prefix is provided
-	sett = settings.MakeGuildSettings(".test", true)
-	channelID, message = commandFnHelp(nil, false, false, sett, nil, &originMessage, args, nil)
-	embed = assertHelpMessageProperties(message, channelID, t)
-	if !strings.Contains(embed.Description, ".test") {
-		t.Error("Expected .test in help description when .test prefix is provided")
-	} else if strings.Contains(embed.Description, ".au") {
-		t.Error("Unexpected .au when we anticipated .test")
-	} else if strings.Contains(embed.Description, settings.OfficialBotMention) {
-		t.Errorf("Unexpected %s when we anticipated .test", settings.OfficialBotMention)
-	}
+	assertHelpMessageProperties(message, channelID, t)
 }
 
 func assertHelpMessageProperties(m interface{}, channelID string, t *testing.T) *discordgo.MessageEmbed {
