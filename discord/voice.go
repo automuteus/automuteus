@@ -67,7 +67,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 			}
 		}
 
-		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
+		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
 		_, linked := dgs.AmongUsData.GetByName(userData.InGameName)
 		// only actually tracked if we're in a tracked channel AND linked to a player
@@ -132,7 +132,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 			}
 		}
 
-		tracked := voiceState.ChannelID != "" && dgs.Tracking.ChannelID == voiceState.ChannelID
+		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
 		auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
 		// only actually tracked if we're in a tracked channel AND linked to a player

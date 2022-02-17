@@ -182,7 +182,7 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  vc,
+			Value:  "<#" + vc + ">",
 			Inline: true,
 		})
 	}
@@ -262,13 +262,13 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 			Inline: true,
 		})
 	}
-	if dgs.Tracking.ChannelName != "" {
+	if dgs.VoiceChannel != "" {
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  dgs.Tracking.ChannelName,
+			Value:  "<#" + dgs.VoiceChannel + ">",
 			Inline: true,
 		})
 	}
@@ -303,7 +303,7 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 
 func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
-	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
@@ -429,7 +429,7 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 	desc := ""
 
 	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 	listResp = append(gameInfoFields, listResp...)
 
 	var color int

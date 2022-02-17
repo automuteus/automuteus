@@ -319,7 +319,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
 	}
 
-	tracked := m.ChannelID != "" && dgs.Tracking.ChannelID == m.ChannelID
+	tracked := m.ChannelID != "" && dgs.VoiceChannel == m.ChannelID
 
 	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
 
@@ -408,10 +408,10 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 //	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
 //}
 
-func (bot *Bot) handleGameStartMessage(guildID, channelID, userID string, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
+func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, userID string, sett *settings.GuildSettings, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     guildID,
-		TextChannel: channelID,
+		TextChannel: textChannelID,
 		ConnectCode: connCode,
 	})
 	if lock == nil {
@@ -424,19 +424,16 @@ func (bot *Bot) handleGameStartMessage(guildID, channelID, userID string, sett *
 
 	dgs.Running = true
 
-	if channel.ChannelName != "" {
-		dgs.Tracking = TrackingChannel{
-			ChannelID:   channel.ChannelID,
-			ChannelName: channel.ChannelName,
-		}
+	if voiceChannelID != "" {
+		dgs.VoiceChannel = voiceChannelID
 		for _, v := range g.VoiceStates {
-			if v.ChannelID == channel.ChannelID {
+			if v.ChannelID == voiceChannelID {
 				dgs.checkCacheAndAddUser(g, bot.PrimarySession, v.UserID)
 			}
 		}
 	}
 
-	dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), channelID, userID)
+	dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), textChannelID, userID)
 
 	// release the lock
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

@@ -146,7 +146,7 @@ func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest) 
 		dgs := NewDiscordGameState(gsr.GuildID)
 		dgs.ConnectCode = gsr.ConnectCode
 		dgs.GameStateMsg.MessageChannelID = gsr.TextChannel
-		dgs.Tracking.ChannelID = gsr.VoiceChannel
+		dgs.VoiceChannel = gsr.VoiceChannel
 		redisInterface.SetDiscordGameState(dgs, nil)
 		return dgs
 	case err != nil:
@@ -182,7 +182,7 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock 
 	key := redisInterface.getDiscordGameStateKey(GameStateRequest{
 		GuildID:      data.GuildID,
 		TextChannel:  data.GameStateMsg.MessageChannelID,
-		VoiceChannel: data.Tracking.ChannelID,
+		VoiceChannel: data.VoiceChannel,
 		ConnectCode:  data.ConnectCode,
 	})
 
@@ -221,8 +221,8 @@ func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock 
 		}
 	}
 
-	if data.Tracking.ChannelID != "" {
-		err = redisInterface.client.Set(ctx, rediskey.VoiceChannelPtr(data.GuildID, data.Tracking.ChannelID), key, GameTimeoutSeconds*time.Second).Err()
+	if data.VoiceChannel != "" {
+		err = redisInterface.client.Set(ctx, rediskey.VoiceChannelPtr(data.GuildID, data.VoiceChannel), key, GameTimeoutSeconds*time.Second).Err()
 		if err != nil {
 			log.Println(err)
 		}
@@ -313,7 +313,7 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = redisInterface.client.Del(ctx, rediskey.VoiceChannelPtr(guildID, data.Tracking.ChannelID)).Err()
+	err = redisInterface.client.Del(ctx, rediskey.VoiceChannelPtr(guildID, data.VoiceChannel)).Err()
 	if err != nil {
 		log.Println(err)
 	}

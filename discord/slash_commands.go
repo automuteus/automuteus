@@ -95,9 +95,9 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 			return
 		}
 
-		tracking := bot.getTrackingChannel(g, i.Member.User.ID)
+		voiceChannelID := bot.getTrackingChannel(g, i.Member.User.ID)
 
-		status, activeGames := bot.newGame(dgs, tracking)
+		status, activeGames := bot.newGame(dgs, voiceChannelID)
 		if status == command.NewSuccess {
 			// release the lock
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -120,7 +120,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				ActiveGames: activeGames, // not actually needed for Success messages
 			}, sett)
 
-			bot.handleGameStartMessage(i.GuildID, i.ChannelID, i.Member.User.ID, sett, tracking, g, dgs.ConnectCode)
+			bot.handleGameStartMessage(i.GuildID, i.ChannelID, voiceChannelID, i.Member.User.ID, sett, g, dgs.ConnectCode)
 		} else {
 			// release the lock
 			bot.RedisInterface.SetDiscordGameState(nil, lock)

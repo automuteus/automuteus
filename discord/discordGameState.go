@@ -2,50 +2,18 @@ package discord
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/settings"
-	"log"
-	"strings"
-
 	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 )
 
 type TrackingChannel struct {
-	ChannelID   string `json:"channelID"`
+	ChannelID string `json:"channelID"`
+
+	// TODO can we entirely remove channelName? Can bots mention channels by ID in an embed?
 	ChannelName string `json:"channelName"`
-}
-
-func (tc TrackingChannel) ToStatusString(sett *settings.GuildSettings) string {
-	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
-			Other: "**No Voice Channel! Use `{{.CommandPrefix}} track`!**",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			})
-	}
-	return tc.ChannelName
-}
-
-func (tc TrackingChannel) ToDescString(sett *settings.GuildSettings) string {
-	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "discordGameState.ToDescString.anyVoiceChannel",
-			Other: "**no Voice Channel! Use `{{.CommandPrefix}} track`!**",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			})
-	}
-	return sett.LocalizeMessage(&i18n.Message{
-		ID:    "discordGameState.ToDescString.voiceChannelName",
-		Other: "the **{{.channelName}}** voice channel!",
-	},
-		map[string]interface{}{
-			"channelName": tc.ChannelName,
-		})
 }
 
 type GameState struct {
@@ -60,8 +28,8 @@ type GameState struct {
 	MatchID        int64 `json:"matchID"`
 	MatchStartUnix int64 `json:"matchStartUnix"`
 
-	UserData UserDataSet     `json:"userData"`
-	Tracking TrackingChannel `json:"tracking"`
+	UserData     UserDataSet `json:"userData"`
+	VoiceChannel string      `json:"voiceChannel"`
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
@@ -83,7 +51,7 @@ func (dgs *GameState) Reset() {
 	dgs.MatchID = -1
 	dgs.MatchStartUnix = -1
 	dgs.UserData = map[string]UserData{}
-	dgs.Tracking = TrackingChannel{}
+	dgs.VoiceChannel = ""
 	dgs.GameStateMsg = MakeGameStateMessage()
 	dgs.AmongUsData = amongus.NewAmongUsData()
 }
@@ -114,34 +82,9 @@ func (dgs *GameState) clearGameTracking(s *discordgo.Session) {
 	// clear the discord User links to underlying player data
 	dgs.ClearAllPlayerData()
 
-	// reset all the Tracking channels
-	dgs.Tracking = TrackingChannel{}
+	dgs.VoiceChannel = ""
 
 	dgs.DeleteGameStateMsg(s)
-}
-
-func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *settings.GuildSettings) string {
-	for _, c := range allChannels {
-		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
-			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
-
-			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
-			return sett.LocalizeMessage(&i18n.Message{
-				ID:    "discordGameState.trackChannel.voiceChannelSet",
-				Other: "Now Tracking \"{{.channelName}}\" Voice Channel for Automute!",
-			},
-				map[string]interface{}{
-					"channelName": c.Name,
-				})
-		}
-	}
-	return sett.LocalizeMessage(&i18n.Message{
-		ID:    "discordGameState.trackChannel.voiceChannelNotfound",
-		Other: "No channel found by the name {{.channelName}}!\n",
-	},
-		map[string]interface{}{
-			"channelName": channelName,
-		})
 }
 
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {

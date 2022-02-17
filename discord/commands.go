@@ -506,6 +506,16 @@ func addCommand(command Command, key string) {
 	commandMap[key] = command
 }
 
+func replacedCommandResponse(cmd string, sett *settings.GuildSettings) string {
+	return sett.LocalizeMessage(&i18n.Message{
+		ID: "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead\n" +
+			"If the command doesn't appear, you may need to reinvite the bot: https://add.automute.us",
+	}, map[string]interface{}{
+		"Command": cmd,
+	})
+}
+
 func commandFnHelp(
 	_ *Bot,
 	_ bool,
@@ -516,12 +526,7 @@ func commandFnHelp(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
-	}, map[string]interface{}{
-		"Command": "/help",
-	})
+	return m.ChannelID, replacedCommandResponse("/help", sett)
 }
 
 func commandFnNew(
@@ -534,12 +539,7 @@ func commandFnNew(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
-	}, map[string]interface{}{
-		"Command": "/new",
-	})
+	return m.ChannelID, replacedCommandResponse("/new", sett)
 }
 
 func commandFnEnd(
@@ -629,12 +629,7 @@ func commandFnLink(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
-	}, map[string]interface{}{
-		"Command": "/link",
-	})
+	return m.ChannelID, replacedCommandResponse("/link", sett)
 }
 
 func commandFnUnlink(
@@ -647,12 +642,7 @@ func commandFnUnlink(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
-	}, map[string]interface{}{
-		"Command": "/unlink",
-	})
+	return m.ChannelID, replacedCommandResponse("/unlink", sett)
 }
 
 func commandFnUnmuteAll(
@@ -820,12 +810,7 @@ func commandFnInfo(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return "", sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
-	}, map[string]interface{}{
-		"Command": "/info",
-	})
+	return "", replacedCommandResponse("/info", sett)
 }
 
 func commandFnDebugState(

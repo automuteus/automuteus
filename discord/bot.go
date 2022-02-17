@@ -373,34 +373,19 @@ func (bot *Bot) unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatu
 	}
 }
 
-func (bot *Bot) getTrackingChannel(guild *discordgo.Guild, userID string) TrackingChannel {
-	channels, err := bot.PrimarySession.GuildChannels(guild.ID)
-	if err != nil {
-		log.Println(err)
-		return TrackingChannel{}
-	}
+func (bot *Bot) getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	// loop over all the channels in the discord and cross-reference with the one that the .au new author is in
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			for _, v := range guild.VoiceStates {
-				// if the User who typed au new is in a voice channel
-				if v.UserID == userID {
-					// once we find the voice channel
-					if channel.ID == v.ChannelID {
-						return TrackingChannel{
-							ChannelID:   channel.ID,
-							ChannelName: channel.Name,
-						}
-					}
-				}
-			}
+	for _, v := range guild.VoiceStates {
+		// if the User who typed au new is in a voice channel
+		if v.UserID == userID {
+			return v.ChannelID
 		}
 	}
-	return TrackingChannel{}
+	return ""
 }
 
-func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (_ command.NewStatus, activeGames int64) {
-	if tracking.ChannelID == "" {
+func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewStatus, activeGames int64) {
+	if voiceChannelID == "" {
 		return command.NewNoVoiceChannel, 0
 	}
 
