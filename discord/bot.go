@@ -93,6 +93,12 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
+	// Slash commands
+	dg.AddHandler(bot.handleInteractionCreate)
+
+	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+		log.Println("Bot is now online according to discord Ready handler")
+	})
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
 

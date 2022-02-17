@@ -36,7 +36,7 @@ func helpResponse(isAdmin, isPermissioned bool, commands []Command, sett *settin
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.helpResponse.SubTitle",
-			Other: "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
+			Other: "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `/help <command>` to see more details on a command!",
 		},
 			map[string]interface{}{
 				"CommandPrefix": sett.GetCommandPrefix(),
@@ -734,17 +734,6 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 				Value: sett.LocalizeMessage(&i18n.Message{
 					ID:    "responses.premiumResponse.SettingsDesc",
 					Other: "Premium users can specify additional settings, like displaying an end-game status message, or auto-refreshing the status message!",
-				}),
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Support",
-					Other: "👂 Premium Support",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.SupportDesc",
-					Other: "Premium users get access to private channels on our official Discord channel!",
 				}),
 				Inline: false,
 			},

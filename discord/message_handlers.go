@@ -257,9 +257,8 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 					// log.Println(m.Emoji.Name)
 					if m.Emoji.Name == "❌" {
 						log.Println("Removing player " + m.UserID)
-						dgs.ClearPlayerData(m.UserID)
+						idMatched = dgs.ClearPlayerData(m.UserID)
 						go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
-						idMatched = true
 					}
 				}
 				// make sure to update any voice changes if they occurred

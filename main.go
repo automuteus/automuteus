@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/locale"
 	storage2 "github.com/automuteus/utils/pkg/storage"
+	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
 	"math/rand"
@@ -193,11 +195,28 @@ func discordMainWrapper() error {
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
+	var registeredCommands []*discordgo.ApplicationCommand
+	for _, v := range command.All {
+		// TODO remove guildID
+		id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, "141082723635691521", &v)
+		if err != nil {
+			log.Panicf("Cannot create help command: %v", err)
+		} else {
+			registeredCommands = append(registeredCommands, id)
+		}
+	}
+
 	<-sc
 	//bot.GracefulClose()
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
-
+	for _, v := range registeredCommands {
+		// TODO remove guildID
+		err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationID, "141082723635691521", v.ID)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 	bot.Close()
 	return nil
 }

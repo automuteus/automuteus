@@ -57,11 +57,13 @@ func (dgs *GameState) AttemptPairingByUserIDs(data amongus.PlayerData, userIDs m
 	return ""
 }
 
-func (dgs *GameState) ClearPlayerData(userID string) {
+func (dgs *GameState) ClearPlayerData(userID string) bool {
 	if v, ok := dgs.UserData[userID]; ok {
 		v.InGameName = amongus.UnlinkedPlayerName
 		dgs.UserData[userID] = v
+		return true
 	}
+	return false
 }
 
 func (dgs *GameState) ClearPlayerDataByPlayerName(playerName string) {

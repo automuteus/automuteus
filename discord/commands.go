@@ -27,7 +27,6 @@ const (
 	CommandEnumLink
 	CommandEnumUnlink
 	CommandEnumUnmuteAll
-	CommandEnumForce
 	CommandEnumSettings
 	CommandEnumMap
 	CommandEnumCache
@@ -200,7 +199,7 @@ func init() {
 		},
 		{
 			CommandType: CommandEnumLink,
-			Command:     "link",
+			Command:     "`/link`",
 			Example:     "link @Soup red",
 			ShortDesc: &i18n.Message{
 				ID:    "commands.AllCommands.Link.shortDesc",
@@ -224,7 +223,7 @@ func init() {
 		},
 		{
 			CommandType: CommandEnumUnlink,
-			Command:     "unlink",
+			Command:     "`/unlink`",
 			Example:     "unlink @Soup",
 			ShortDesc: &i18n.Message{
 				ID:    "commands.AllCommands.Unlink.shortDesc",
@@ -269,41 +268,6 @@ func init() {
 			IsOperator: true,
 
 			fn: commandFnUnmuteAll,
-		},
-		{
-			CommandType: CommandEnumForce,
-			Command:     "force",
-			Example:     "force task",
-			ShortDesc: &i18n.Message{
-				ID:    "commands.AllCommands.Force.shortDesc",
-				Other: "Force the bot to transition",
-			},
-			Description: &i18n.Message{
-				ID:    "commands.AllCommands.Force.desc",
-				Other: "Force the bot to transition to another game stage, if it doesn't transition properly",
-			},
-			Arguments: &i18n.Message{
-				ID:    "commands.AllCommands.Force.args",
-				Other: "<phase name> (task, discuss, or lobby / t,d, or l)",
-			},
-			Aliases:    []string{"f"},
-			IsSecret:   true, // force is broken rn, so hide it
-			Emoji:      "📢",
-			IsAdmin:    false,
-			IsOperator: true,
-
-			fn: func(
-				bot *Bot,
-				isAdmin bool,
-				isPermissioned bool,
-				sett *settings.GuildSettings,
-				guild *discordgo.Guild,
-				message *discordgo.MessageCreate,
-				args []string,
-				cmd *Command,
-			) (string, interface{}) {
-				return "", nil
-			},
 		},
 		{
 			CommandType: CommandEnumMap,
@@ -660,73 +624,39 @@ func commandFnRefresh(
 }
 
 func commandFnLink(
-	bot *Bot,
-	_ bool,
-	_ bool,
-	sett *settings.GuildSettings,
-	guild *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
-) (string, interface{}) {
-	if len(args[1:]) < 2 {
-		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-	} else {
-		gsr := GameStateRequest{
-			GuildID:     message.GuildID,
-			TextChannel: message.ChannelID,
-		}
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-		if lock == nil {
-			return message.ChannelID, NoLock
-		}
-		bot.linkPlayer(guild, dgs, args[1:])
-		bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-		// TODO refactor to return the edit, not perform it
-		dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-
-		return "", nil
-	}
-}
-
-func commandFnUnlink(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
+	_ *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
 ) (string, interface{}) {
-	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-	} else {
-		userID, err := discord.ExtractUserIDFromMention(args[1])
-		if err != nil {
-			log.Println(err)
-			return "", nil
-		} else {
-			log.Print(fmt.Sprintf("Removing player %s", userID))
-			gsr := GameStateRequest{
-				GuildID:     message.GuildID,
-				TextChannel: message.ChannelID,
-			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-			if lock == nil {
-				return message.ChannelID, NoLock
-			}
-			dgs.ClearPlayerData(userID)
+	return "", sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
+	}, map[string]interface{}{
+		"Command": "/link",
+	})
+}
 
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-			// TODO refactor to return the edit, not perform it
-			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-
-			return "", nil
-		}
-	}
+func commandFnUnlink(
+	_ *Bot,
+	_ bool,
+	_ bool,
+	sett *settings.GuildSettings,
+	_ *discordgo.Guild,
+	_ *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
+) (string, interface{}) {
+	return "", sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
+	}, map[string]interface{}{
+		"Command": "/unlink",
+	})
 }
 
 func commandFnUnmuteAll(
