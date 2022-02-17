@@ -85,6 +85,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		}
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
+			// TODO use retries like original new command
 			log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 			return
 		}
@@ -96,10 +97,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 		tracking := bot.getTrackingChannel(g, i.Member.User.ID)
 
-		status, err := bot.newGame(dgs, tracking)
-		if err != nil {
-			log.Println(err)
-		}
+		status, activeGames := bot.newGame(dgs, tracking)
 		if status == command.NewSuccess {
 			// release the lock
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -119,13 +117,16 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				Hyperlink:   hyperlink,
 				MinimalURL:  minimalURL,
 				ConnectCode: dgs.ConnectCode,
-				ActiveGames: 0,
+				ActiveGames: activeGames, // not actually needed for Success messages
 			}, sett)
 
 			bot.handleGameStartMessage(i.GuildID, i.ChannelID, i.Member.User.ID, sett, tracking, g, dgs.ConnectCode)
 		} else {
 			// release the lock
 			bot.RedisInterface.SetDiscordGameState(nil, lock)
+			response = command.NewResponse(status, command.NewInfo{
+				ActiveGames: activeGames, // only field we need for success messages
+			}, sett)
 		}
 	}
 	if response != nil {

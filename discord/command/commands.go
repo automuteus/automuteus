@@ -38,6 +38,7 @@ func localizeCommandDescription(cmd *discordgo.ApplicationCommand, sett *setting
 	})
 }
 
+// TODO supplement these embed with more detail than just the command description
 func constructEmbedForCommand(
 	cmd *discordgo.ApplicationCommand,
 	sett *settings.GuildSettings,

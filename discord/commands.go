@@ -512,11 +512,11 @@ func commandFnHelp(
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	_ *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return "", sett.LocalizeMessage(&i18n.Message{
+	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.replacedCommand",
 		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
 	}, map[string]interface{}{
@@ -525,16 +525,21 @@ func commandFnHelp(
 }
 
 func commandFnNew(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
-	guild *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	_ *discordgo.Guild,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return bot.handleNewGameMessage(message, guild, sett)
+	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+		ID:    "responses.replacedCommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
+	}, map[string]interface{}{
+		"Command": "/new",
+	})
 }
 
 func commandFnEnd(
@@ -620,11 +625,11 @@ func commandFnLink(
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	_ *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return "", sett.LocalizeMessage(&i18n.Message{
+	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.replacedCommand",
 		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
 	}, map[string]interface{}{
@@ -638,11 +643,11 @@ func commandFnUnlink(
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	_ *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return "", sett.LocalizeMessage(&i18n.Message{
+	return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.replacedCommand",
 		Other: "This command has been replaced with `{{.Command}}`, please use that instead",
 	}, map[string]interface{}{

@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"context"
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
@@ -12,7 +11,6 @@ import (
 
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
@@ -21,10 +19,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
-
-const DefaultMaxActiveGames = 150
-
-const downloadURL = "https://capture.automute.us"
 
 func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// IgnoreSpectator all messages created by the bot itself
@@ -373,191 +367,46 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Guild, sett *settings.GuildSettings) (string, interface{}) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-		GuildID:     m.GuildID,
-		TextChannel: m.ChannelID,
-	})
-	retries := 0
-	for lock == nil {
-		if retries > 10 {
-			log.Println("DEADLOCK in obtaining game state lock, upon calling new")
-			return m.ChannelID, "I wasn't able to make a new game, maybe try in a different text channel?"
-		}
-		retries++
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-			GuildID:     m.GuildID,
-			TextChannel: m.ChannelID,
-		})
-	}
-
-	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
-		defer lock.Release(context.Background())
-		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-		if banned {
-			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.softban",
-				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
-			}, map[string]interface{}{
-				"User": mentionByUserID(m.Author.ID),
-			})
-		} else {
-			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
-				Other: "{{.User}} You're creating games too fast! Please slow down!",
-			}, map[string]interface{}{
-				"User": mentionByUserID(m.Author.ID),
-			})
-		}
-	}
-
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
-
-	channels, err := bot.PrimarySession.GuildChannels(m.GuildID)
-	if err != nil {
-		log.Println(err)
-	}
-
-	tracking := TrackingChannel{}
-
-	// loop over all the channels in the discord and cross-reference with the one that the .au new author is in
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			for _, v := range g.VoiceStates {
-				// if the User who typed au new is in a voice channel
-				if v.UserID == m.Author.ID {
-					// once we find the voice channel
-					if channel.ID == v.ChannelID {
-						tracking = TrackingChannel{
-							ChannelID:   channel.ID,
-							ChannelName: channel.Name,
-						}
-						break
-					}
-				}
-			}
-		}
-	}
-	if tracking.ChannelID == "" {
-		defer lock.Release(context.Background())
-		return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleNewGameMessage.noChannel",
-			Other: "{{.User}}, please join a voice channel before starting a match!",
-		}, map[string]interface{}{
-			"User": mentionByUserID(m.Author.ID),
-		})
-	}
-
-	// allow people with a previous game going to be able to make new games
-	if dgs.GameStateMsg.MessageID != "" {
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
-		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
-
-		dgs.Reset()
-	} else {
-		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
-		premTier := premium.FreeTier
-		if !premium.IsExpired(premStatus, days) {
-			premTier = premStatus
-		}
-
-		// Premium users should always be allowed to start new games; only check the free guilds
-		if premTier == premium.FreeTier {
-			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
-			act := os.Getenv("MAX_ACTIVE_GAMES")
-			num, err := strconv.ParseInt(act, 10, 64)
-			if err != nil {
-				num = DefaultMaxActiveGames
-			}
-			if activeGames > num {
-				defer lock.Release(context.Background())
-				return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID: "message_handlers.handleNewGameMessage.lockout",
-					Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\n" +
-						"Please try again in a few minutes, or consider AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\n" +
-						"Current Games: {{.Games}}",
-				}, map[string]interface{}{
-					"CommandPrefix": sett.GetCommandPrefix(),
-					"Games":         fmt.Sprintf("%d/%d", activeGames, num),
-				})
-			}
-		}
-	}
-
-	connectCode := generateConnectCode(m.GuildID)
-
-	dgs.ConnectCode = connectCode
-
-	bot.RedisInterface.RefreshActiveGame(m.GuildID, connectCode)
-
-	killChan := make(chan EndGameMessage)
-
-	go bot.SubscribeToGameByConnectCode(m.GuildID, connectCode, killChan)
-
-	dgs.Subscribed = true
-
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	bot.ChannelsMapLock.Lock()
-	bot.EndGameChannels[connectCode] = killChan
-	bot.ChannelsMapLock.Unlock()
-
-	hyperlink, minimalURL := formCaptureURL(bot.url, connectCode)
-
-	var embed = discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "message_handlers.handleNewGameMessage.embed.Title",
-			Other: "You just started a game!",
-		}),
-		Description: sett.LocalizeMessage(&i18n.Message{
-			ID: "message_handlers.handleNewGameMessage.embed.Description",
-			Other: "Click the following link to link your capture: \n <{{.hyperlink}}>\n\n" +
-				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n\nTo link your capture manually:",
-		},
-			map[string]interface{}{
-				"hyperlink":   hyperlink,
-				"downloadURL": downloadURL,
-			}),
-		Timestamp: "",
-		Color:     3066993, // GREEN
-		Image:     nil,
-		Thumbnail: nil,
-		Video:     nil,
-		Provider:  nil,
-		Author:    nil,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "message_handlers.handleNewGameMessage.embed.Fields.URL",
-					Other: "URL",
-				}),
-				Value:  minimalURL,
-				Inline: true,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "message_handlers.handleNewGameMessage.embed.Fields.Code",
-					Other: "Code",
-				}),
-				Value:  connectCode,
-				Inline: true,
-			},
-		},
-	}
-
-	log.Println("Generated URL for connection: " + hyperlink)
-
-	sendMessageDM(bot.PrimarySession, m.Author.ID, &embed)
-
-	bot.handleGameStartMessage(m.GuildID, m.ChannelID, m.Author.ID, sett, tracking, g, connectCode)
-
-	// already sent required messages
-	return "", nil
-}
+//func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Guild, sett *settings.GuildSettings) (string, interface{}) {
+//	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+//		GuildID:     m.GuildID,
+//		TextChannel: m.ChannelID,
+//	})
+//	retries := 0
+//	for lock == nil {
+//		if retries > 10 {
+//			log.Println("DEADLOCK in obtaining game state lock, upon calling new")
+//			return m.ChannelID, "I wasn't able to make a new game, maybe try in a different text channel?"
+//		}
+//		retries++
+//		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+//			GuildID:     m.GuildID,
+//			TextChannel: m.ChannelID,
+//		})
+//	}
+//
+//	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
+//		defer lock.Release(context.Background())
+//		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
+//		if banned {
+//			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "message_handlers.softban",
+//				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
+//			}, map[string]interface{}{
+//				"User": mentionByUserID(m.Author.ID),
+//			})
+//		} else {
+//			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
+//				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
+//				Other: "{{.User}} You're creating games too fast! Please slow down!",
+//			}, map[string]interface{}{
+//				"User": mentionByUserID(m.Author.ID),
+//			})
+//		}
+//	}
+//
+//	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
+//}
 
 func (bot *Bot) handleGameStartMessage(guildID, channelID, userID string, sett *settings.GuildSettings, channel TrackingChannel, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{

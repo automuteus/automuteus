@@ -399,9 +399,9 @@ func (bot *Bot) getTrackingChannel(guild *discordgo.Guild, userID string) Tracki
 	return TrackingChannel{}
 }
 
-func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (command.NewStatus, error) {
+func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (_ command.NewStatus, activeGames int64) {
 	if tracking.ChannelID == "" {
-		return command.NewNoVoiceChannel, nil
+		return command.NewNoVoiceChannel, 0
 	}
 
 	if dgs.GameStateMsg.MessageID != "" {
@@ -420,9 +420,9 @@ func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (command.NewSt
 
 		// Premium users should always be allowed to start new games; only check the free guilds
 		if premTier == premium.FreeTier {
-			activeGames := broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
-			if activeGames > DefaultMaxActiveGames {
-				return command.NewLockout, nil
+			activeGames = broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+			if activeGames > command.DefaultMaxActiveGames {
+				return command.NewLockout, activeGames
 			}
 		}
 	}
@@ -430,5 +430,5 @@ func (bot *Bot) newGame(dgs *GameState, tracking TrackingChannel) (command.NewSt
 	dgs.ConnectCode = generateConnectCode(dgs.GuildID)
 	dgs.Subscribed = true
 
-	return command.NewSuccess, nil
+	return command.NewSuccess, activeGames
 }
