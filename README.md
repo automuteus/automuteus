@@ -122,6 +122,10 @@ As such, **we recommend that the majority of users take advantage of our Verifie
 
 If you are certain that you would prefer to self-host the bot, please follow any of the instructions on [automuteus/deploy](https://github.com/automuteus/deploy).
 
+# Developing
+
+Please refer to the instructions on [automuteus/deploy](https://github.com/automuteus/deploy).
+
 # Similar Projects
 
 - [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).
