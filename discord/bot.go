@@ -9,6 +9,7 @@ import (
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/automuteus/storage"
 	"github.com/automuteus/galactus/broker"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/rediskey"
@@ -354,11 +355,11 @@ func (bot *Bot) linkPlayer(dgs *GameState, userID, colorOrName string) (command.
 			}
 			return command.LinkSuccess, nil
 		} else {
-			err := fmt.Sprintf("No player in the current game was found matching %s", mentionByUserID(userID))
+			err := fmt.Sprintf("No player in the current game was found matching %s", discord.MentionByUserID(userID))
 			return command.LinkNoPlayer, errors.New(err)
 		}
 	} else {
-		err := errors.New(fmt.Sprintf("No game data found for player %s and color/name %s", mentionByUserID(userID), colorOrName))
+		err := errors.New(fmt.Sprintf("No game data found for player %s and color/name %s", discord.MentionByUserID(userID), colorOrName))
 		return command.LinkNoGameData, err
 	}
 }
