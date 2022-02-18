@@ -20,6 +20,8 @@ var All = []*discordgo.ApplicationCommand{
 	&Link,
 	&Unlink,
 	&New,
+	&End,
+	&Refresh,
 }
 
 func getCommand(cmd string) *discordgo.ApplicationCommand {

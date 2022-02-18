@@ -12,13 +12,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type UserPatchParameters struct {
-	GuildID  string
-	Userdata UserData
-	Deaf     bool
-	Mute     bool
-}
-
 func generateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
@@ -62,18 +55,6 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 
 func mentionByUserID(userID string) string {
 	return "<@!" + userID + ">"
-}
-
-func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	dmChannel, err := s.UserChannelCreate(userID)
-	if err != nil {
-		log.Println(err)
-	}
-	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return m
 }
 
 func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {

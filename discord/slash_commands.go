@@ -16,6 +16,11 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 	defer interactionLock.Release(ctx)
 
 	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)
+	// common gsr, but not necessarily used by all commands
+	gsr := GameStateRequest{
+		GuildID:     i.GuildID,
+		TextChannel: i.ChannelID,
+	}
 
 	var response *discordgo.InteractionResponse
 
@@ -29,10 +34,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 	case "link":
 		userID, colorOrName := command.GetLinkParams(s, i.ApplicationCommandData().Options)
-		gsr := GameStateRequest{
-			GuildID:     i.GuildID,
-			TextChannel: i.ChannelID,
-		}
+
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
@@ -55,10 +57,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 	case "unlink":
 		userID := command.GetUnlinkParams(s, i.ApplicationCommandData().Options)
-		gsr := GameStateRequest{
-			GuildID:     i.GuildID,
-			TextChannel: i.ChannelID,
-		}
+
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			log.Printf("No lock could be obtained when unlinking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
@@ -79,10 +78,6 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		response = command.UnlinkResponse(status, userID, sett)
 
 	case "new":
-		gsr := GameStateRequest{
-			GuildID:     i.GuildID,
-			TextChannel: i.ChannelID,
-		}
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			// TODO use retries like original new command
@@ -128,6 +123,23 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				ActiveGames: activeGames, // only field we need for success messages
 			}, sett)
 		}
+
+	case "end":
+		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+			v <- true
+		}
+		delete(bot.EndGameChannels, dgs.ConnectCode)
+
+		bot.applyToAll(dgs, false, false)
+
+		// TODO inform the user of how successful this command was
+		response = command.EndResponse(sett)
+
+	case "refresh":
+		bot.RefreshGameStateMessage(gsr, sett)
+		// TODO inform the user of how successful this command was
+		response = command.RefreshResponse(sett)
 	}
 	if response != nil {
 		err := s.InteractionRespond(i.Interaction, response)

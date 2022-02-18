@@ -508,8 +508,8 @@ func addCommand(command Command, key string) {
 
 func replacedCommandResponse(cmd string, sett *settings.GuildSettings) string {
 	return sett.LocalizeMessage(&i18n.Message{
-		ID: "responses.replacedCommand",
-		Other: "This command has been replaced with `{{.Command}}`, please use that instead\n" +
+		ID: "responses.replacedcommand",
+		Other: "This command has been replaced with `{{.Command}}`, please use that instead.\n" +
 			"If the command doesn't appear, you may need to reinvite the bot: https://add.automute.us",
 	}, map[string]interface{}{
 		"Command": cmd,
@@ -543,29 +543,16 @@ func commandFnNew(
 }
 
 func commandFnEnd(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
-	_ *settings.GuildSettings,
+	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	log.Println("User typed end to end the current game")
-
-	gsr := GameStateRequest{
-		GuildID:     message.GuildID,
-		TextChannel: message.ChannelID,
-	}
-	dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-	if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-		v <- true
-	}
-	delete(bot.EndGameChannels, dgs.ConnectCode)
-
-	bot.applyToAll(dgs, false, false)
-	return message.ChannelID, nil
+	return m.ChannelID, replacedCommandResponse("/end", sett)
 }
 
 func commandFnPause(
@@ -600,23 +587,16 @@ func commandFnPause(
 }
 
 func commandFnRefresh(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	gsr := GameStateRequest{
-		GuildID:     message.GuildID,
-		TextChannel: message.ChannelID,
-	}
-	// TODO refactor to pass this back
-	bot.RefreshGameStateMessage(gsr, sett)
-
-	return "", nil
+	return m.ChannelID, replacedCommandResponse("/refresh", sett)
 }
 
 func commandFnLink(
