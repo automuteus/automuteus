@@ -4,7 +4,7 @@ create table if not exists guilds
     guild_name VARCHAR(100) NOT NULL,
     premium smallint NOT NULL,
     tx_time_unix integer,
-    transferred boolean,
+    transferred_to numeric references guilds(guild_id),
     inherits_from numeric references guilds(guild_id)
 );
 
