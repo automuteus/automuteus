@@ -16,38 +16,6 @@ type TrackingChannel struct {
 	ChannelName string `json:"channelName"`
 }
 
-func (tc TrackingChannel) ToStatusString(sett *settings.GuildSettings) string {
-	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "discordGameState.ToStatusString.anyVoiceChannel",
-			Other: "**No Voice Channel! Use `{{.CommandPrefix}} track`!**",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			})
-	}
-	return tc.ChannelName
-}
-
-func (tc TrackingChannel) ToDescString(sett *settings.GuildSettings) string {
-	if tc.ChannelID == "" || tc.ChannelName == "" {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "discordGameState.ToDescString.anyVoiceChannel",
-			Other: "**no Voice Channel! Use `{{.CommandPrefix}} track`!**",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			})
-	}
-	return sett.LocalizeMessage(&i18n.Message{
-		ID:    "discordGameState.ToDescString.voiceChannelName",
-		Other: "the **{{.channelName}}** voice channel!",
-	},
-		map[string]interface{}{
-			"channelName": tc.ChannelName,
-		})
-}
-
 type GameState struct {
 	GuildID string `json:"guildID"`
 

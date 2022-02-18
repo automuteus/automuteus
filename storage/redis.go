@@ -37,17 +37,16 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
 	globalPrefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
-	isOfficial := os.Getenv("AUTOMUTEUS_OFFICIAL") != ""
 	key := rediskey.GuildSettings(string(HashGuildID(guildID)))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	switch {
 	case errors.Is(err, redis.Nil):
-		s := settings.MakeGuildSettings(globalPrefix, isOfficial)
+		s := settings.MakeGuildSettings(globalPrefix)
 		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
 			log.Println(err)
-			return settings.MakeGuildSettings(globalPrefix, isOfficial)
+			return settings.MakeGuildSettings(globalPrefix)
 		}
 		err = storageInterface.client.Set(ctx, key, jBytes, 0).Err()
 		if err != nil {
@@ -56,13 +55,13 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *sett
 		return s
 	case err != nil:
 		log.Println(err)
-		return settings.MakeGuildSettings(globalPrefix, isOfficial)
+		return settings.MakeGuildSettings(globalPrefix)
 	default:
 		s := settings.GuildSettings{}
 		err := json.Unmarshal([]byte(j), &s)
 		if err != nil {
 			log.Println(err)
-			return settings.MakeGuildSettings(globalPrefix, isOfficial)
+			return settings.MakeGuildSettings(globalPrefix)
 		}
 		return &s
 	}

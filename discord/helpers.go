@@ -60,10 +60,6 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 	return
 }
 
-func mentionByUserID(userID string) string {
-	return "<@!" + userID + ">"
-}
-
 func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
 	dmChannel, err := s.UserChannelCreate(userID)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strings"
@@ -312,7 +313,7 @@ func (bot *Bot) gameStateResponse(dgs *GameState, sett *settings.GuildSettings) 
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
-func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(room, region string, author, voiceChannelID string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 0)
 	if author != "" {
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
@@ -320,17 +321,17 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 				ID:    "responses.lobbyMetaEmbedFields.Host",
 				Other: "Host",
 			}),
-			Value:  mentionByUserID(author),
+			Value:  discord.MentionByUserID(author),
 			Inline: true,
 		})
 	}
-	if vc != "" {
+	if voiceChannelID != "" {
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  vc,
+			Value:  discord.MentionByChannelID(voiceChannelID),
 			Inline: true,
 		})
 	}
@@ -406,17 +407,17 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 				ID:    "responses.lobbyMetaEmbedFields.Host",
 				Other: "Host",
 			}),
-			Value:  mentionByUserID(author),
+			Value:  discord.MentionByUserID(author),
 			Inline: true,
 		})
 	}
-	if dgs.Tracking.ChannelName != "" {
+	if dgs.Tracking.ChannelID != "" {
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  dgs.Tracking.ChannelName,
+			Value:  discord.MentionByChannelID(dgs.Tracking.ChannelID),
 			Inline: true,
 		})
 	}
@@ -451,7 +452,7 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 
 func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
-	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelID, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
@@ -577,7 +578,7 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 	desc := ""
 
 	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelName, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelID, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 	listResp = append(gameInfoFields, listResp...)
 
 	var color int
