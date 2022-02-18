@@ -104,7 +104,7 @@ func (bot *Bot) HandleSettingsCommand(m *discordgo.MessageCreate, sett *settings
 		// TODO need to consider if the settings are too long? Is that possible?
 		return m.ChannelID, fmt.Sprintf("```JSON\n%s\n```", jBytes)
 	case setting.Reset:
-		sett = settings.MakeGuildSettings(os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX"), os.Getenv("AUTOMUTEUS_OFFICIAL") != "")
+		sett = settings.MakeGuildSettings(os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX"))
 		sendMsg = "Resetting guild settings to default values"
 		isValid = true
 	default:

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"os"
@@ -68,7 +69,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
 				},
 					map[string]interface{}{
-						"User": mentionByUserID(m.Author.ID),
+						"User": discord.MentionByUserID(m.Author.ID),
 					}))
 			} else {
 				msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
@@ -76,7 +77,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 					Other: "{{.User}}, you're issuing commands too fast! Please slow down!",
 				},
 					map[string]interface{}{
-						"User": mentionByUserID(m.Author.ID),
+						"User": discord.MentionByUserID(m.Author.ID),
 					}))
 				if err == nil {
 					go func() {
@@ -195,14 +196,14 @@ func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.Me
 						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
 					},
 						map[string]interface{}{
-							"User": mentionByUserID(m.UserID),
+							"User": discord.MentionByUserID(m.UserID),
 						}))
 				} else {
 					msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
 						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
 						Other: "{{.User}}, you're reacting too fast! Please slow down!",
 					}, map[string]interface{}{
-						"User": mentionByUserID(m.UserID),
+						"User": discord.MentionByUserID(m.UserID),
 					}))
 					if err == nil {
 						go func() {

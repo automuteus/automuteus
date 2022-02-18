@@ -53,10 +53,6 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 	return
 }
 
-func mentionByUserID(userID string) string {
-	return "<@!" + userID + ">"
-}
-
 func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
 	msg, err := s.ChannelMessageSendEmbed(channelID, message)
 	if err != nil {

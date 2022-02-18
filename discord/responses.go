@@ -3,6 +3,7 @@ package discord
 import (
 	"bytes"
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strings"
@@ -164,7 +165,7 @@ func (bot *Bot) gameStateResponse(dgs *GameState, sett *settings.GuildSettings) 
 	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
-func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
+func lobbyMetaEmbedFields(room, region string, author, voiceChannelID string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
 	gameInfoFields := make([]*discordgo.MessageEmbedField, 0)
 	if author != "" {
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
@@ -172,17 +173,17 @@ func lobbyMetaEmbedFields(room, region string, author, vc string, playerCount in
 				ID:    "responses.lobbyMetaEmbedFields.Host",
 				Other: "Host",
 			}),
-			Value:  mentionByUserID(author),
+			Value:  discord.MentionByUserID(author),
 			Inline: true,
 		})
 	}
-	if vc != "" {
+	if voiceChannelID != "" {
 		gameInfoFields = append(gameInfoFields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  "<#" + vc + ">",
+			Value:  discord.MentionByChannelID(voiceChannelID),
 			Inline: true,
 		})
 	}
@@ -258,7 +259,7 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 				ID:    "responses.lobbyMetaEmbedFields.Host",
 				Other: "Host",
 			}),
-			Value:  mentionByUserID(author),
+			Value:  discord.MentionByUserID(author),
 			Inline: true,
 		})
 	}
