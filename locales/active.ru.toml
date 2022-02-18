@@ -67,7 +67,7 @@
 "commands.HandleCommand.ShowMe.emptyCachedNames" = "❌ {{.User}} У меня нет кэшированных имён игроков!"
 "commands.HandleCommand.ShowMe.linkedID" = "❗ {{.User}} Вы выбрали **в** для сбора данных для статистики игр"
 "commands.HandleCommand.ShowMe.unlinkedID" = "❌ {{.User}} Вы **исключили** сбора данных для статистики игры, или вы еще не играли в игру"
-"commands.HandleCommand.default" = "Sorry, I didn't understand `{{.InvalidCommand}}`! Please see `{{.CommandPrefix}} help` for commands"
+"commands.HandleCommand.default" = "Извини, я не понимаю команду `{{.InvalidCommand}}`! Напиши `{{.CommandPrefix}} help`, чтобы посмотреть все доступные команды"
 "commands.HandleCommand.optin.FailDB" = "❌ {{.User}} Вы уже включили в сбор данных"
 "commands.HandleCommand.optin.SuccessDB" = "✅ {{.User}} Я успешно включил вас в сбор данных"
 "commands.HandleCommand.optout.FailDB" = "❌ {{.User}} Вы уже отказались от сбора данных"
