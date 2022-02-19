@@ -123,7 +123,7 @@
 "responses.menuMessage.Linked.FooterText" = "(Użyj lobby gry pośród nas, aby rozpocząć mecze)"
 "responses.menuMessage.Title" = "Menu główne"
 "responses.menuMessage.notLinked.Description" = "❌**Nie połączono przechwytywania! Kliknij na link w twoich magazynach, aby się połączyć!**❌"
-"responses.nonPremiumSetting.Desc" = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `{{.CommandPrefix}} premium` for details"
+"responses.nonPremiumSetting.Desc" = "Przepraszamy, ale to ustawienie jest zarezerwowane dla użytkowników AutoMuteUs premium! Wpisz `{{.CommandPrefix}} premium` aby uzyskać szczegóły"
 "responses.premiumInviteResponse.Title" = "Premium Bot Invites"
 "responses.premiumInviteResponse.desc" = "{{.Tier}} użytkowników ma dostęp do {{.Count}} wyciszonych botów: zaproszenia przedstawione poniżej!"
 "responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} użytkownicy nie mają dostępu do wyciszonych botów!\\nWpisz `{{.CommandPrefix}} premium` aby zobaczyć więcej szczegółów na temat AutoMuteUs Premium"
