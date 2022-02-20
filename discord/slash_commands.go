@@ -140,6 +140,37 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		bot.RefreshGameStateMessage(gsr, sett)
 		// TODO inform the user of how successful this command was
 		response = command.RefreshResponse(sett)
+
+	case "privacy":
+		privArg := command.GetPrivacyParam(i.ApplicationCommandData().Options)
+		switch privArg {
+		case command.PrivacyUnknown:
+			fallthrough
+		case command.PrivacyInfo:
+			response = command.PrivacyResponse(privArg, nil, nil, nil, sett)
+
+		case command.PrivacyOptOut:
+			err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
+			if err != nil {
+				// we send the cache clear type here because that's exactly what we failed to do; clear the cache
+				response = command.PrivacyResponse(command.PrivacyCacheClear, nil, nil, err, sett)
+				// don't fall-through; exit here
+				break
+			}
+			fallthrough
+		case command.PrivacyOptIn:
+			_, err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
+			response = command.PrivacyResponse(privArg, nil, nil, err, sett)
+
+		case command.PrivacyShowMe:
+			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
+			user, err := bot.PostgresInterface.GetUserByString(i.Member.User.ID)
+			response = command.PrivacyResponse(privArg, cached, user, err, sett)
+
+		case command.PrivacyCacheClear:
+			err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
+			response = command.PrivacyResponse(privArg, nil, nil, err, sett)
+		}
 	}
 	if response != nil {
 		err := s.InteractionRespond(i.Interaction, response)

@@ -22,6 +22,7 @@ var All = []*discordgo.ApplicationCommand{
 	&New,
 	&End,
 	&Refresh,
+	&Privacy,
 }
 
 func getCommand(cmd string) *discordgo.ApplicationCommand {

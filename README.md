@@ -93,7 +93,7 @@ If you want to view command usage or see the available options, type `/help` in 
 | `/unlink`      | @name       | Manually unlink a player                                                                                        | `.au u @player`                    |
 | `.au settings` |             | View and change settings for the bot, such as the command prefix or mute behavior                               |                                    |
 | `.au pause`    | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
-| `.au privacy`  |             | View privacy and data collection information about the bot                                                      |                                    |
+| `/privacy`  |             | View privacy and data collection information about the bot                                                      |                                    |
 | `/info`        | None        | View general info about the Bot                                                                                 |                                    |
 | `.au map`      | MAPNAME     | View an image of an in-game map in the text channel. Two supported versions: simple or detailed(vent, camera, etc) | `.au map skeld detailed` |
 

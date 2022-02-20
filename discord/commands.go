@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/automuteus/amongus"
@@ -703,81 +702,29 @@ func commandFnMap(
 }
 
 func commandFnCache(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
+	m *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
 ) (string, interface{}) {
-	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-	} else {
-		userID, err := discord.ExtractUserIDFromMention(args[1])
-		if err != nil {
-			log.Println(err)
-			return message.ChannelID, "I couldn't find a user by that name or ID!"
-		}
-		if len(args[2:]) == 0 {
-			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(message.GuildID, userID)
-			if len(cached) == 0 {
-				return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.Cache.emptyCachedNames",
-					Other: "I don't have any cached player names stored for that user!",
-				})
-			} else {
-				buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.Cache.cachedNames",
-					Other: "Cached in-game names:",
-				})))
-				buf.WriteString("\n```\n")
-				for n := range cached {
-					buf.WriteString(fmt.Sprintf("%s\n", n))
-				}
-				buf.WriteString("```")
-
-				return message.ChannelID, buf.String()
-			}
-		} else if strings.ToLower(args[2]) == clearArgumentString || strings.ToLower(args[2]) == "c" {
-			err := bot.RedisInterface.DeleteLinksByUserID(message.GuildID, userID)
-			if err != nil {
-				log.Println(err)
-				return message.ChannelID, err
-			} else {
-				return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.Cache.Success",
-					Other: "Successfully deleted all cached names for that user!",
-				})
-			}
-		}
-		return "", nil
-	}
+	return m.ChannelID, replacedCommandResponse("/privacy cache", sett)
 }
 
 func commandFnPrivacy(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
+	m *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
 ) (string, interface{}) {
-	if message.Author != nil {
-		var arg = ""
-		if len(args[1:]) > 0 {
-			arg = args[1]
-		}
-		if arg == "" || (arg != "showme" && arg != "optin" && arg != "optout") {
-			return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-		} else {
-			return message.ChannelID, bot.privacyResponse(message.GuildID, message.Author.ID, arg, sett)
-		}
-	}
-	return "", nil
+	return m.ChannelID, replacedCommandResponse("/privacy", sett)
 }
 
 func commandFnInfo(
