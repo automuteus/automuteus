@@ -24,6 +24,16 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 	var response *discordgo.InteractionResponse
 
+	// block commands from dm
+	if gsr.GuildID == "" {
+		response = command.DmResponse(sett)
+		err := s.InteractionRespond(i.Interaction, response)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
 	switch i.ApplicationCommandData().Name {
 	case "help":
 		response = command.HelpResponse(sett, i.ApplicationCommandData().Options)
