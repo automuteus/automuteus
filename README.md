@@ -83,19 +83,19 @@ If you want to view command usage or see the available options, type `/help` in 
 
 ## Commands
 
-| Command        | Arguments   | Description                                                                                                     | Example                            |
-|----------------| ----------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `/help`        | None        | Print help info and command usage                                                                               |                                    |
-| `/new`         | None        | Start a new game in the current text channel. Optionally accepts the room code and region                       | `.au n CODE eu`                    |
-| `/link`        | @name color | Manually link a discord user to their in-game color                                                             | `.au l @Soup cyan`                 |
-| `/refresh`     | None        | Remake the bot's status message entirely, in case it ends up too far up in the chat.                            |                                    |
-| `/end`         | None        | End the game entirely, and stop tracking players. Unmutes all and resets state                                  |                                    |
-| `/unlink`      | @name       | Manually unlink a player                                                                                        | `.au u @player`                    |
-| `.au settings` |             | View and change settings for the bot, such as the command prefix or mute behavior                               |                                    |
-| `.au pause`    | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
-| `/privacy`  |             | View privacy and data collection information about the bot                                                      |                                    |
-| `/info`        | None        | View general info about the Bot                                                                                 |                                    |
-| `.au map`      | MAPNAME     | View an image of an in-game map in the text channel. Two supported versions: simple or detailed(vent, camera, etc) | `.au map skeld detailed` |
+| Command        | Arguments   | Description                                                                                                            | Example            |
+|----------------| ----------- |------------------------------------------------------------------------------------------------------------------------|--------------------|
+| `/help`        | None        | Print help info and command usage                                                                                      |                    |
+| `/new`         | None        | Start a new game in the current text channel                                                                           |                    |
+| `/link`        | @name color | Manually link a discord user to their in-game color                                                                    | `/link @Soup cyan` |
+| `/refresh`     | None        | Remake the bot's status message entirely, in case it ends up too far up in the chat.                                   |                    |
+| `/end`         | None        | End the game entirely, and stop tracking players. Unmutes all and resets state                                         |                    |
+| `/unlink`      | @name       | Manually unlink a player                                                                                               | `./unlink @player` |
+| `.au settings` |             | View and change settings for the bot, such as the command prefix or mute behavior                                      |                    |
+| `.au pause`    | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!**        |                    |
+| `/privacy`     |             | View privacy and data collection information about the bot                                                             |                    |
+| `/info`        | None        | View general info about the Bot                                                                                        |                    |
+| `/map`         | MAPNAME     | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`  |
 
 _In addition to handful of more secretive Easter Egg commands..._
 

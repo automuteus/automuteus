@@ -3,9 +3,10 @@ package discord
 import (
 	"bytes"
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -404,18 +405,10 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *discordgo.MessageEmbedThumbnail {
 	var thumbNail *discordgo.MessageEmbedThumbnail = nil
 	if playMap != game.EMPTYMAP {
-		mapItem, err := amongus.NewMapItem(game.MapNames[playMap])
-		if err != nil {
-			log.Println(err)
-		} else {
-			if sett.MapVersion == "detailed" {
-				thumbNail = &discordgo.MessageEmbedThumbnail{
-					URL: mapItem.MapImage.Detailed,
-				}
-			} else {
-				thumbNail = &discordgo.MessageEmbedThumbnail{
-					URL: mapItem.MapImage.Simple,
-				}
+		mapType := command.PlayMapToMapType(playMap)
+		if mapType != command.NilMap {
+			thumbNail = &discordgo.MessageEmbedThumbnail{
+				URL: command.FormMapUrl(os.Getenv("BASE_MAP_URL"), mapType, sett.MapVersion == "detailed"),
 			}
 		}
 	}

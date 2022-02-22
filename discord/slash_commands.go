@@ -171,6 +171,11 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 			err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
 			response = command.PrivacyResponse(privArg, nil, nil, err, sett)
 		}
+
+	case "map":
+		mapType, detailed := command.GetMapParams(i.ApplicationCommandData().Options)
+		response = command.MapResponse(mapType, detailed, sett)
+
 	}
 	if response != nil {
 		err := s.InteractionRespond(i.Interaction, response)

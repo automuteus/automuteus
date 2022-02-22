@@ -3,7 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
@@ -664,41 +663,11 @@ func commandFnMap(
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
+	m *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
 ) (string, interface{}) {
-	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-	} else {
-		mapVersion := args[len(args)-1]
-
-		var mapName string
-		switch mapVersion {
-		case "simple", detailedMapString:
-			mapName = strings.Join(args[1:len(args)-1], " ")
-		default:
-			mapName = strings.Join(args[1:], " ")
-			mapVersion = sett.GetMapVersion()
-		}
-		mapItem, err := amongus.NewMapItem(mapName)
-		if err != nil {
-			log.Println(err)
-			return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.Map.notFound",
-				Other: "I don't have a map by that name!",
-			})
-		}
-		switch mapVersion {
-		case "simple":
-			return message.ChannelID, mapItem.MapImage.Simple
-		case detailedMapString:
-			return message.ChannelID, mapItem.MapImage.Detailed
-		default:
-			log.Println("mapVersion has unexpected value for 'map' command")
-		}
-	}
-	return "", nil
+	return m.ChannelID, replacedCommandResponse("/map", sett)
 }
 
 func commandFnCache(

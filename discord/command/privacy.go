@@ -31,6 +31,7 @@ var Privacy = discordgo.ApplicationCommand{
 			Description: "Privacy command",
 			Required:    false,
 		},
+		// TODO use subcommands here? like /privacy <cache> clear/show?
 	},
 }
 

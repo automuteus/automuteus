@@ -126,21 +126,14 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
-		prefix := os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX")
-		if prefix == "" && os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
-			prefix = ".au"
-		} else if os.Getenv("AUTOMUTEUS_OFFICIAL") != "" {
-			prefix = "@AutoMuteUs"
-		}
-
-		listeningTo = prefix + " help"
+		listeningTo = "/help"
 	}
 
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
 		Activities: []*discordgo.Activity{&discordgo.Activity{
 			Name: listeningTo,
-			Type: discordgo.ActivityTypeGame,
+			Type: discordgo.ActivityTypeListening,
 		}},
 		AFK:    false,
 		Status: "",
@@ -202,6 +195,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			emojiGuildID = m.Guild.ID
 		}
 
+		// TODO make the emoji guild ID mandatory
 		EmojiLock.Lock()
 		if AllEmojisStartup == nil {
 			allEmojis, err := s.GuildEmojis(emojiGuildID)
