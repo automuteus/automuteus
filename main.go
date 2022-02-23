@@ -32,6 +32,11 @@ var (
 
 const DefaultURL = "http://localhost:8123"
 
+type registeredCommand struct {
+	GuildID            string
+	ApplicationCommand *discordgo.ApplicationCommand
+}
+
 func main() {
 	// seed the rand generator (used for making connection codes)
 	rand.Seed(time.Now().Unix())
@@ -195,13 +200,25 @@ func discordMainWrapper() error {
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
-	var registeredCommands []*discordgo.ApplicationCommand
-	for _, v := range command.All {
-		id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, os.Getenv("SLASH_COMMAND_GUILD_ID"), v)
-		if err != nil {
-			log.Panicf("Cannot create command: %v", err)
-		} else {
-			registeredCommands = append(registeredCommands, id)
+	slashCommandGuildIds := []string{""}
+	slashCommandGuildIdStr := strings.ReplaceAll(os.Getenv("SLASH_COMMAND_GUILD_IDS"), " ", "")
+	if slashCommandGuildIdStr != "" {
+		slashCommandGuildIds = strings.Split(slashCommandGuildIdStr, ",")
+	}
+
+	var registeredCommands []registeredCommand
+	for _, guild := range slashCommandGuildIds {
+		for _, v := range command.All {
+			log.Printf("Registering command %s on guild %s\n", v.Name, guild)
+			id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
+			if err != nil {
+				log.Panicf("Cannot create command: %v", err)
+			} else {
+				registeredCommands = append(registeredCommands, registeredCommand{
+					GuildID:            guild,
+					ApplicationCommand: id,
+				})
+			}
 		}
 	}
 
@@ -218,7 +235,8 @@ func discordMainWrapper() error {
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
-			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationID, os.Getenv("SLASH_COMMAND_GUILD_ID"), v.ID)
+			log.Printf("Deleting command %s on guild %s\n", v.ApplicationCommand.Name, v.GuildID)
+			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
 			if err != nil {
 				log.Println(err)
 			}
