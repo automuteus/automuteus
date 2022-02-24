@@ -6,14 +6,19 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-func DmResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+var Pause = discordgo.ApplicationCommand{
+	Name:        "pause",
+	Description: "Pause the current game",
+}
+
+func PauseResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6,
 			Content: sett.LocalizeMessage(&i18n.Message{
-				ID: "commands.dm",
-				Other: "Sorry, I don't respond to DMs. " +
-					"Please execute the command in a text channel instead.",
+				ID:    "commands.pause",
+				Other: "I've received your request to pause/resume the game",
 			}),
 		},
 	}

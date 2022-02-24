@@ -14,15 +14,17 @@ const (
 	DefaultMaxActiveGames = 150
 )
 
+// All is all slash commands for the bot, ordered to match the README
 var All = []*discordgo.ApplicationCommand{
 	&Help,
-	&Info,
+	&New,
+	&Refresh,
+	&Pause,
+	&End,
 	&Link,
 	&Unlink,
-	&New,
-	&End,
-	&Refresh,
 	&Privacy,
+	&Info,
 	&Map,
 }
 

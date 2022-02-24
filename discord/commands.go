@@ -554,34 +554,16 @@ func commandFnEnd(
 }
 
 func commandFnPause(
-	bot *Bot,
+	_ *Bot,
 	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	gsr := GameStateRequest{
-		GuildID:     message.GuildID,
-		TextChannel: message.ChannelID,
-	}
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock == nil {
-		return message.ChannelID, NoLock
-	}
-	dgs.Running = !dgs.Running
-
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-	if !dgs.Running {
-		bot.applyToAll(dgs, false, false)
-	}
-
-	// TODO refactor to return the edit, not perform it
-	dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-
-	return "", nil
+	return m.ChannelID, replacedCommandResponse("/pause", sett)
 }
 
 func commandFnRefresh(

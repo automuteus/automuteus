@@ -24,7 +24,8 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 	var response *discordgo.InteractionResponse
 
-	// block commands from dm
+	// TODO respond properly for commands that *can* be performed in DMs. Such as minimal stats queries, help, info, etc
+	// NOTE: difference between i.Member.User (Server/Guild chat) vs i.User (DMs)
 	if gsr.GuildID == "" {
 		response = command.DmResponse(sett)
 		err := s.InteractionRespond(i.Interaction, response)
@@ -133,6 +134,29 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				ActiveGames: activeGames, // only field we need for success messages
 			}, sett)
 		}
+	case "refresh":
+		bot.RefreshGameStateMessage(gsr, sett)
+		// TODO inform the user of how successful this command was
+		response = command.RefreshResponse(sett)
+
+	case "pause":
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		if lock == nil {
+			// TODO use retries or report status
+			log.Printf("No lock could be obtained when pausing game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
+			return
+		}
+		dgs.Running = !dgs.Running
+
+		bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		// if we paused the game, unmute/undeafen all players
+		if !dgs.Running {
+			bot.applyToAll(dgs, false, false)
+		}
+
+		dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+		// TODO inform the user of how successful this command was
+		response = command.PauseResponse(sett)
 
 	case "end":
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
@@ -145,11 +169,6 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 		// TODO inform the user of how successful this command was
 		response = command.EndResponse(sett)
-
-	case "refresh":
-		bot.RefreshGameStateMessage(gsr, sett)
-		// TODO inform the user of how successful this command was
-		response = command.RefreshResponse(sett)
 
 	case "privacy":
 		privArg := command.GetPrivacyParam(i.ApplicationCommandData().Options)

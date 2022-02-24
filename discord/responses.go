@@ -247,7 +247,7 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.menuMessage.notLinked.Description",
-			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+			Other: "❌**No capture linked! Click the link above to connect!**❌",
 		})
 		footer = nil
 	}
@@ -318,7 +318,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.lobbyMessage.notLinked.Description",
-			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+			Other: "❌**No capture linked! Click the link above to connect!**❌",
 		})
 	}
 

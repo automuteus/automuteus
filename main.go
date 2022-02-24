@@ -209,7 +209,7 @@ func discordMainWrapper() error {
 	var registeredCommands []registeredCommand
 	for _, guild := range slashCommandGuildIds {
 		for _, v := range command.All {
-			log.Printf("Registering command %s on guild %s\n", v.Name, guild)
+			log.Printf("Registering command %s in guild %s\n", v.Name, guild)
 			id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
 			if err != nil {
 				log.Panicf("Cannot create command: %v", err)
