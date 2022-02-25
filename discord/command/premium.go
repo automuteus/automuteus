@@ -20,7 +20,7 @@ const basePremiumURL = "https://automute.us/premium?guild="
 var botInvites = []string{
 	"https://discord.com/api/oauth2/authorize?client_id=780323275624546304&permissions=12582912&scope=bot", // amu1
 	"https://discord.com/api/oauth2/authorize?client_id=780589033033302036&permissions=12582912&scope=bot", // amu4
-	"https://discord.com/api/oauth2/authorize?client_id=780323801173983262&permissions=12582912&scope=bot"} // amu3
+	"https://discord.com/api/oauth2/authorize?client_id=780589278195220480&permissions=12582912&scope=bot"} // amu5
 
 type PremiumArg int
 
