@@ -25,6 +25,7 @@ var Link = discordgo.ApplicationCommand{
 			Description: "User to link",
 			Required:    true,
 		},
+		// TODO use discordgo.ApplicationCommandOptionChoice instead of arbitrary string args
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "color",

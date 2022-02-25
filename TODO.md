@@ -1,0 +1,11 @@
+Slash Commands:
+- Search for unused functions/code relating to old command processing
+- Add back (or investigate) need for Redis-based user rate limiting on fast command invocation
+- Restrict premium invites viewing to admins only
+- Search for (and update) commands with higher guild permissions needed for invocation
+- Unit tests where appropriate (such as complex control flow for premium)
+- Integrate subcommands and restricted options where helpful (/link colors for starters)
+- Make commands package-private
+- Investigate interface appropriateness for command responses/other
+- Move relevant code to utils (see premium)
+- Localization and i18n keys

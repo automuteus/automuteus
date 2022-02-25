@@ -25,6 +25,7 @@ var Privacy = discordgo.ApplicationCommand{
 	Description: "View AMU privacy info",
 
 	Options: []*discordgo.ApplicationCommandOption{
+		// TODO use discordgo.ApplicationCommandOptionChoice instead of arbitrary string args
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "command",

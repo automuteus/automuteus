@@ -26,6 +26,7 @@ var All = []*discordgo.ApplicationCommand{
 	&Privacy,
 	&Info,
 	&Map,
+	&Premium,
 }
 
 func getCommand(cmd string) *discordgo.ApplicationCommand {

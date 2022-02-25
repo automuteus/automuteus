@@ -97,7 +97,7 @@ If you want to view command usage or see the available options, type `/help` in 
 | `/info`        | None           | View general info about the Bot                                                                                        |                    |
 | `/map`         | MAPNAME        | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`  |
 | `.au stats`    | guild or @name | View detailed stats about Among Us games played on the current server, or by a specific player                         | `.au stats @Soup`  |
-| `.au premium`  |                | View information about AutoMuteUs Premium, and the current premium status of your server                               |                    |
+| `/premium`     |                | View information about AutoMuteUs Premium, and the current premium status of your server                               |                    |
 
 _In addition to handful of more secretive Easter Egg commands..._
 

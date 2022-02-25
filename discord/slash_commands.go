@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/automuteus/automuteus/discord/command"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/bwmarrin/discordgo"
 	"log"
 )
@@ -203,8 +204,16 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 	case "map":
 		mapType, detailed := command.GetMapParams(i.ApplicationCommandData().Options)
-		response = command.MapResponse(mapType, detailed, sett)
+		response = command.MapResponse(mapType, detailed)
 
+	case "premium":
+		premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
+		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
+		if premium.IsExpired(premStatus, days) {
+			premStatus = premium.FreeTier
+		}
+		// TODO restrict invite viewage to Admins only
+		response = command.PremiumResponse(i.GuildID, premStatus, days, premArg, sett)
 	}
 	if response != nil {
 		err := s.InteractionRespond(i.Interaction, response)

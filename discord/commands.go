@@ -865,32 +865,14 @@ func commandFnStats(
 }
 
 func commandFnPremium(
-	bot *Bot,
-	isAdmin bool,
+	_ *Bot,
+	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
+	m *discordgo.MessageCreate,
+	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
-	if len(args[1:]) == 0 {
-		return message.ChannelID, premiumEmbedResponse(message.GuildID, premStatus, days, sett)
-	} else {
-		tier := premium.FreeTier
-		if !premium.IsExpired(premStatus, days) {
-			tier = premStatus
-		}
-		arg := strings.ToLower(args[1])
-		if isAdmin {
-			if arg == "invite" || arg == "invites" || arg == "inv" {
-				return message.ChannelID, premiumInvitesEmbed(tier, sett)
-			} else {
-				return message.ChannelID, "Sorry, I didn't recognize that premium command or argument!"
-			}
-		} else {
-			return message.ChannelID, "Viewing the premium invites is an Admin-only command"
-		}
-	}
+	return "", replacedCommandResponse("/premium", sett)
 }

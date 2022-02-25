@@ -3,42 +3,13 @@ package command
 import (
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"os"
-	"strings"
 )
 
 const (
 	DefaultBaseUrl = "https://github.com/automuteus/automuteus/blob/master/assets/maps/"
 )
-
-type MapType string
-
-// Note: these are the exact names of the png files in the Github repository. No Dleks as of now
-const (
-	Skeld   MapType = "the_skeld"
-	Mira            = "mira_hq"
-	Polus           = "polus"
-	Airship         = "airship"
-	NilMap
-)
-
-// PlayMapToMapType exists as a function mapping between in-game maps, and the ones we have asset files for on Github
-func PlayMapToMapType(mapType game.PlayMap) MapType {
-	switch mapType {
-	case game.SKELD:
-		return Skeld
-	case game.MIRA:
-		return Mira
-	case game.POLUS:
-		return Polus
-	case game.AIRSHIP:
-		return Airship
-	}
-	return NilMap
-}
 
 var Map = discordgo.ApplicationCommand{
 	Name:        "map",
@@ -48,7 +19,25 @@ var Map = discordgo.ApplicationCommand{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "map_name",
 			Description: "Map to display",
-			Required:    true,
+			Choices: []*discordgo.ApplicationCommandOptionChoice{
+				{
+					Name:  game.MapNames[game.SKELD],
+					Value: game.MapNames[game.SKELD],
+				},
+				{
+					Name:  game.MapNames[game.MIRA],
+					Value: game.MapNames[game.MIRA],
+				},
+				{
+					Name:  game.MapNames[game.POLUS],
+					Value: game.MapNames[game.POLUS],
+				},
+				{
+					Name:  game.MapNames[game.AIRSHIP],
+					Value: game.MapNames[game.AIRSHIP],
+				},
+			},
+			Required: true,
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionBoolean,
@@ -59,55 +48,21 @@ var Map = discordgo.ApplicationCommand{
 	},
 }
 
-func GetMapParams(options []*discordgo.ApplicationCommandInteractionDataOption) (_ MapType, detailed bool) {
+func GetMapParams(options []*discordgo.ApplicationCommandInteractionDataOption) (_ game.PlayMap, detailed bool) {
 	if len(options) > 1 {
 		detailed = options[1].BoolValue()
 	}
-	switch strings.ToLower(options[0].StringValue()) {
-	case "the skeld":
-		fallthrough
-	case "the_skeld":
-		fallthrough
-	case "skeld":
-		return Skeld, detailed
-
-	case "mira hq":
-		fallthrough
-	case "mira_hq":
-		fallthrough
-	case "mirahq":
-		fallthrough
-	case "mira":
-		return Mira, detailed
-
-	case "polus":
-		return Polus, detailed
-
-	case "ship":
-		fallthrough
-	case "air":
-		fallthrough
-	case "airship":
-		return Airship, detailed
-	default:
-		return NilMap, detailed
-	}
-}
-
-func MapResponse(mapType MapType, detailed bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
-	if mapType == NilMap {
-		return &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: sett.LocalizeMessage(&i18n.Message{
-					ID: "commands.map.unknown",
-					Other: "Sorry, I don't understand the map name you provided. " +
-						"Please provide `skeld`, `mira`, `polus`, or `airship`",
-				}),
-			},
+	mapV := options[0].StringValue()
+	// TODO move to utils
+	for i, v := range game.MapNames {
+		if v == mapV {
+			return i, detailed
 		}
 	}
-	// TODO is there a better interactionresponse than one that just puts the URL in the content? Seems to work fine
+	return game.EMPTYMAP, detailed
+}
+
+func MapResponse(mapType game.PlayMap, detailed bool) *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -116,12 +71,19 @@ func MapResponse(mapType MapType, detailed bool, sett *settings.GuildSettings) *
 	}
 }
 
-func FormMapUrl(baseUrl string, mapType MapType, detailed bool) string {
+func FormMapUrl(baseUrl string, mapType game.PlayMap, detailed bool) string {
 	if baseUrl == "" {
 		baseUrl = DefaultBaseUrl
 	}
-	if detailed {
-		return fmt.Sprintf("%s%s_detailed.png?raw=true", baseUrl, mapType)
+	// TODO move to utils
+	mapString := ""
+	for i, v := range game.NameToPlayMap {
+		if v == int32(mapType) {
+			mapString = i
+		}
 	}
-	return fmt.Sprintf("%s%s.png?raw=true", baseUrl, mapType)
+	if detailed {
+		return fmt.Sprintf("%s%s_detailed.png?raw=true", baseUrl, mapString)
+	}
+	return fmt.Sprintf("%s%s.png?raw=true", baseUrl, mapString)
 }
