@@ -9,13 +9,6 @@ import (
 	"log"
 )
 
-type TrackingChannel struct {
-	ChannelID string `json:"channelID"`
-
-	// TODO can we entirely remove channelName? Can bots mention channels by ID in an embed?
-	ChannelName string `json:"channelName"`
-}
-
 type GameState struct {
 	GuildID string `json:"guildID"`
 

@@ -240,7 +240,7 @@ type winnerRecord struct {
 }
 
 func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
-	winners := []winnerRecord{}
+	var winners []winnerRecord
 
 	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
 		gameOver.GameOverReason == game.ImpostorByVote ||

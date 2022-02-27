@@ -54,7 +54,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 		return
 	}
 
-	users := []task.UserModify{}
+	var users []task.UserModify
 
 	for _, voiceState := range g.VoiceStates {
 		userData, err := dgs.GetUser(voiceState.UserID)
@@ -118,7 +118,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 		return
 	}
 
-	users := []task.UserModify{}
+	var users []task.UserModify
 
 	priorityRequests := 0
 	for _, voiceState := range g.VoiceStates {

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
@@ -120,7 +121,7 @@ func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCr
 				// prefix is sent by mistake
 				return
 			}
-			embed := helpResponse(isAdmin, isPermissioned, allCommands, sett)
+			embed := command.HelpEmbedResponse(command.All, sett)
 			s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 			deleteUserMessage = true
 		} else {

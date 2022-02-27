@@ -19,60 +19,6 @@ import (
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-func helpResponse(isAdmin, isPermissioned bool, commands []Command, sett *settings.GuildSettings) discordgo.MessageEmbed {
-	embed := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.Title",
-			Other: "AutoMuteUs Bot Commands:\n",
-		}),
-		Description: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.SubTitle",
-			Other: "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `/help <command>` to see more details on a command!",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			}),
-		Timestamp: "",
-		Color:     15844367, // GOLD
-		Image:     nil,
-		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/automuteus/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
-			ProxyURL: "",
-			Width:    0,
-			Height:   0,
-		},
-		Video:    nil,
-		Provider: nil,
-		Author:   nil,
-		Footer:   nil,
-	}
-
-	fields := make([]*discordgo.MessageEmbedField, 0)
-	for _, v := range commands {
-		if !v.IsSecret && v.CommandType != CommandEnumHelp {
-			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
-				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   v.Emoji + " " + v.Command,
-					Value:  sett.LocalizeMessage(v.ShortDesc),
-					Inline: true,
-				})
-			}
-		}
-	}
-	if len(fields)%3 == 2 {
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   "\u200B",
-			Value:  "\u200B",
-			Inline: true,
-		})
-	}
-
-	embed.Fields = fields
-	return embed
-}
-
 func settingResponse(commandPrefix string, settings []setting.Setting, sett *settings.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",

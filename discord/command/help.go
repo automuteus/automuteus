@@ -44,7 +44,7 @@ func HelpResponse(sett *settings.GuildSettings, options []*discordgo.Application
 			},
 		}
 	} else {
-		m := helpEmbedResponse(All, sett)
+		m := HelpEmbedResponse(All, sett)
 		return &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -54,7 +54,7 @@ func HelpResponse(sett *settings.GuildSettings, options []*discordgo.Application
 	}
 }
 
-func helpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.GuildSettings) discordgo.MessageEmbed {
+func HelpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.GuildSettings) discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",

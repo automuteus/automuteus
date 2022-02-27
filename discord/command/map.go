@@ -16,25 +16,25 @@ var Map = discordgo.ApplicationCommand{
 	Description: "View Among Us maps. `skeld`, `mira`, `polus`, or `airship`",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Type:        discordgo.ApplicationCommandOptionString,
+			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "map_name",
 			Description: "Map to display",
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
 					Name:  game.MapNames[game.SKELD],
-					Value: game.MapNames[game.SKELD],
+					Value: game.SKELD,
 				},
 				{
 					Name:  game.MapNames[game.MIRA],
-					Value: game.MapNames[game.MIRA],
+					Value: game.MIRA,
 				},
 				{
 					Name:  game.MapNames[game.POLUS],
-					Value: game.MapNames[game.POLUS],
+					Value: game.POLUS,
 				},
 				{
 					Name:  game.MapNames[game.AIRSHIP],
-					Value: game.MapNames[game.AIRSHIP],
+					Value: game.AIRSHIP,
 				},
 			},
 			Required: true,
@@ -52,14 +52,7 @@ func GetMapParams(options []*discordgo.ApplicationCommandInteractionDataOption) 
 	if len(options) > 1 {
 		detailed = options[1].BoolValue()
 	}
-	mapV := options[0].StringValue()
-	// TODO move to utils
-	for i, v := range game.MapNames {
-		if v == mapV {
-			return i, detailed
-		}
-	}
-	return game.EMPTYMAP, detailed
+	return game.PlayMap(options[0].IntValue()), detailed
 }
 
 func MapResponse(mapType game.PlayMap, detailed bool) *discordgo.InteractionResponse {

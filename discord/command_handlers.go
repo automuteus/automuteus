@@ -14,8 +14,6 @@ import (
 
 const (
 	MaxDebugMessageSize = 1980
-	detailedMapString   = "detailed"
-	clearArgumentString = "clear"
 	trueString          = "true"
 )
 

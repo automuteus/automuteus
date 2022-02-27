@@ -6,7 +6,6 @@ import (
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/automuteus/utils/pkg/premium"
@@ -35,8 +34,6 @@ const (
 	CommandEnumStats
 	CommandEnumPremium
 )
-
-const NoLock string = "Could not obtain lock"
 
 type Command struct {
 	Aliases     []string
@@ -435,29 +432,6 @@ func init() {
 			fn: commandFnInfo,
 		},
 		{
-			CommandType: CommandEnumASCII,
-			Command:     "ascii",
-			Example:     "ascii @Soup t 10",
-			ShortDesc: &i18n.Message{
-				ID:    "commands.AllCommands.Ascii.shortDesc",
-				Other: "Print an ASCII crewmate",
-			},
-			Description: &i18n.Message{
-				ID:    "commands.AllCommands.Ascii.desc",
-				Other: "Print an ASCII crewmate",
-			},
-			Arguments: &i18n.Message{
-				ID:    "commands.AllCommands.Ascii.args",
-				Other: "<@discord user> <is imposter> (true|false) <x impostor remains> (count)",
-			},
-			Aliases:    []string{"asc"},
-			IsSecret:   true,
-			IsAdmin:    false,
-			IsOperator: false,
-
-			fn: commandFnASCII,
-		},
-		{
 			CommandType: CommandEnumDebugState,
 			Command:     "debugstate",
 			Example:     "debugstate",
@@ -727,40 +701,6 @@ func commandFnDebugState(
 	return message.ChannelID, nil
 }
 
-func commandFnASCII(
-	_ *Bot,
-	_ bool,
-	_ bool,
-	sett *settings.GuildSettings,
-	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	_ *Command,
-) (string, interface{}) {
-	if len(args[1:]) == 0 {
-		return message.ChannelID, ASCIICrewmate
-	} else {
-		id, err := discord.ExtractUserIDFromMention(args[1])
-		if id == "" || err != nil {
-			return message.ChannelID, "I couldn't find a user by that name or ID!"
-		} else {
-			imposter := false
-			count := 1
-			if len(args[2:]) > 0 {
-				if args[2] == trueString || args[2] == "t" {
-					imposter = true
-				}
-				if len(args[3:]) > 0 {
-					if itCount, err := strconv.Atoi(args[3]); err == nil {
-						count = itCount
-					}
-				}
-			}
-			return message.ChannelID, ASCIIStarfield(sett, args[1], imposter, count)
-		}
-	}
-}
-
 func commandFnStats(
 	bot *Bot,
 	isAdmin bool,
@@ -874,5 +814,5 @@ func commandFnPremium(
 	_ []string,
 	_ *Command,
 ) (string, interface{}) {
-	return "", replacedCommandResponse("/premium", sett)
+	return m.ChannelID, replacedCommandResponse("/premium", sett)
 }
