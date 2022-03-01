@@ -26,6 +26,7 @@ var All = []*discordgo.ApplicationCommand{
 	&Privacy,
 	&Info,
 	&Map,
+	&Stats,
 	&Premium,
 }
 

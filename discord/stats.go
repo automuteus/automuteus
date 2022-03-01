@@ -894,7 +894,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	gameData, err := bot.PostgresInterface.GetGame(guildID, connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)

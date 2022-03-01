@@ -16,7 +16,57 @@ var Help = discordgo.ApplicationCommand{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "command",
 			Description: "Command to view details for",
-			Required:    false,
+			Choices: []*discordgo.ApplicationCommandOptionChoice{
+				{
+					Name:  New.Name,
+					Value: New.Name,
+				},
+				{
+					Name:  Refresh.Name,
+					Value: Refresh.Name,
+				},
+				{
+					Name:  Pause.Name,
+					Value: Pause.Name,
+				},
+				{
+					Name:  End.Name,
+					Value: End.Name,
+				},
+				{
+					Name:  Link.Name,
+					Value: Link.Name,
+				},
+				{
+					Name:  Unlink.Name,
+					Value: Unlink.Name,
+				},
+				//{
+				//	Name:  Settings.Name,
+				//	Value: Settings.Name,
+				//},
+				{
+					Name:  Privacy.Name,
+					Value: Privacy.Name,
+				},
+				{
+					Name:  Info.Name,
+					Value: Info.Name,
+				},
+				{
+					Name:  Map.Name,
+					Value: Map.Name,
+				},
+				//{
+				//	Name:  Stats.Name,
+				//	Value: Stats.Name,
+				//},
+				{
+					Name:  Premium.Name,
+					Value: Premium.Name,
+				},
+			},
+			Required: false,
 		},
 	},
 }

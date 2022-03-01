@@ -3,7 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"log"
 	"strings"
@@ -702,106 +701,16 @@ func commandFnDebugState(
 }
 
 func commandFnStats(
-	bot *Bot,
-	isAdmin bool,
+	_ *Bot,
+	_ bool,
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
-	args []string,
-	cmd *Command,
+	m *discordgo.MessageCreate,
+	_ []string,
+	_ *Command,
 ) (string, interface{}) {
-	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
-	isPrem := !premium.IsExpired(premStatus, days)
-	if len(args[1:]) == 0 {
-		return message.ChannelID, ConstructEmbedForCommand(*cmd, sett)
-	} else {
-		userID, err := discord.ExtractUserIDFromMention(args[1])
-		if userID == "" || err != nil {
-			arg := strings.ReplaceAll(args[1], "\"", "")
-			if arg == "g" || arg == "guild" || arg == "server" {
-				if len(args) > 2 && args[2] == "reset" {
-					if !isAdmin {
-						return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-							ID:    "message_handlers.handleResetGuild.noPerms",
-							Other: "Only Admins are capable of resetting server stats",
-						})
-					} else {
-						if len(args) == 3 {
-							return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-								ID:    "commands.StatsCommand.Reset.NoConfirm",
-								Other: "Please type `{{.CommandPrefix}} stats guild reset confirm` if you are 100% certain that you wish to **completely reset** your guild's stats!",
-							},
-								map[string]interface{}{
-									"CommandPrefix": sett.CommandPrefix,
-								})
-						} else if args[3] == "confirm" {
-							err := bot.PostgresInterface.DeleteAllGamesForServer(message.GuildID)
-							if err != nil {
-								return message.ChannelID, "Encountered the following error when deleting the server's stats: " + err.Error()
-							} else {
-								return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-									ID:    "commands.StatsCommand.Reset.Success",
-									Other: "Successfully reset your guild's stats!",
-								})
-							}
-						}
-					}
-				} else {
-					return message.ChannelID, bot.GuildStatsEmbed(message.GuildID, sett, isPrem)
-				}
-			} else {
-				arg = strings.ToUpper(arg)
-				log.Println(arg)
-				if MatchIDRegex.MatchString(arg) {
-					strs := strings.Split(arg, ":")
-					if len(strs) < 2 {
-						return message.ChannelID, "Something very wrong with the regex for match/conn codes..."
-					} else {
-						return message.ChannelID, bot.GameStatsEmbed(message.GuildID, strs[1], strs[0], sett, isPrem)
-					}
-				} else {
-					return message.ChannelID, "I didn't recognize that user, you mistyped 'guild', or didn't provide a valid Match ID"
-				}
-			}
-		} else {
-			if len(args) > 2 && args[2] == "reset" {
-				if !isAdmin {
-					return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.handleResetGuild.noPerms",
-						Other: "Only Admins are capable of resetting server stats",
-					})
-				} else {
-					if len(args) == 3 {
-						return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.StatsCommand.ResetUser.NoConfirm",
-							Other: "Please type `{{.CommandPrefix}} stats `{{.User}}` reset confirm` if you are 100% certain that you wish to **completely reset** that user's stats!",
-						},
-							map[string]interface{}{
-								"CommandPrefix": sett.CommandPrefix,
-								"User":          args[1],
-							})
-					} else if args[3] == "confirm" {
-						err := bot.PostgresInterface.DeleteAllGamesForUser(userID)
-						if err != nil {
-							return message.ChannelID, "Encountered the following error when deleting that user's stats: " + err.Error()
-						} else {
-							return message.ChannelID, sett.LocalizeMessage(&i18n.Message{
-								ID:    "commands.StatsCommand.ResetUser.Success",
-								Other: "Successfully reset {{.User}}'s stats!",
-							},
-								map[string]interface{}{
-									"User": args[1],
-								})
-						}
-					}
-				}
-			} else {
-				return message.ChannelID, bot.UserStatsEmbed(userID, message.GuildID, sett, isPrem)
-			}
-		}
-	}
-	return message.ChannelID, nil
+	return m.ChannelID, replacedCommandResponse("/stats", sett)
 }
 
 func commandFnPremium(
