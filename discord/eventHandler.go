@@ -289,7 +289,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			// try pairing via the cached usernames
 			if userID == "" {
-				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			} else {
 				bot.applyToSingle(dgs, userID, false, false)
@@ -313,7 +313,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			log.Println("Detected a player joined, refreshing User data mappings")
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
-				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
@@ -324,8 +324,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 		case updated:
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
-				uids := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-
+				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {

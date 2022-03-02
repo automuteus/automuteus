@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/discord"
@@ -50,21 +51,20 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	switch i.ApplicationCommandData().Name {
-	case "help":
+	case command.Help.Name:
 		return command.HelpResponse(sett, i.ApplicationCommandData().Options)
 
-	case "info":
+	case command.Info.Name:
 		botInfo := bot.getInfo()
 		return command.InfoResponse(botInfo, i.GuildID, sett)
 
-	case "link":
+	case command.Link.Name:
 		userID, colorOrName := command.GetLinkParams(s, i.ApplicationCommandData().Options)
 
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 		if lock == nil {
 			log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
-			// TODO more gracefully respond
-			return nil
+			return command.DeadlockGameStateResponse(command.Link.Name, sett)
 		}
 
 		status, err := bot.linkPlayer(dgs, userID, colorOrName)
@@ -80,14 +80,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		return command.LinkResponse(status, userID, colorOrName, sett)
 
-	case "unlink":
+	case command.Unlink.Name:
 		userID := command.GetUnlinkParams(s, i.ApplicationCommandData().Options)
 
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 		if lock == nil {
 			log.Printf("No lock could be obtained when unlinking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
-			// TODO more gracefully respond
-			return nil
+			return command.DeadlockGameStateResponse(command.Unlink.Name, sett)
 		}
 
 		status, err := bot.unlinkPlayer(dgs, userID)
@@ -103,13 +102,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		return command.UnlinkResponse(status, userID, sett)
 
-	case "new":
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	case command.New.Name:
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 		if lock == nil {
-			// TODO use retries like original new command
 			log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
-			// TODO more gracefully respond
-			return nil
+			return command.DeadlockGameStateResponse(command.New.Name, sett)
 		}
 		g, err := s.State.Guild(i.GuildID)
 		if err != nil {
@@ -152,18 +149,16 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				ActiveGames: activeGames, // only field we need for success messages
 			}, sett)
 		}
-	case "refresh":
+	case command.Refresh.Name:
 		bot.RefreshGameStateMessage(gsr, sett)
 		// TODO inform the user of how successful this command was
 		return command.RefreshResponse(sett)
 
-	case "pause":
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	case command.Pause.Name:
+		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 		if lock == nil {
-			// TODO use retries or report status
 			log.Printf("No lock could be obtained when pausing game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
-			// TODO more gracefully respond
-			return nil
+			return command.DeadlockGameStateResponse(command.Pause.Name, sett)
 		}
 		dgs.Running = !dgs.Running
 
@@ -177,31 +172,31 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		// TODO inform the user of how successful this command was
 		return command.PauseResponse(sett)
 
-	case "end":
+	case command.End.Name:
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
+		if dgs != nil {
+			if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
+				v <- true
+			}
+			delete(bot.EndGameChannels, dgs.ConnectCode)
+
+			bot.applyToAll(dgs, false, false)
+
+			// TODO inform the user of how successful this command was
+			return command.EndResponse(sett)
 		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
+		return command.DeadlockGameStateResponse(command.End.Name, sett)
 
-		bot.applyToAll(dgs, false, false)
-
-		// TODO inform the user of how successful this command was
-		return command.EndResponse(sett)
-
-	case "privacy":
+	case command.Privacy.Name:
 		privArg := command.GetPrivacyParam(i.ApplicationCommandData().Options)
 		switch privArg {
-		case command.PrivacyUnknown:
-			fallthrough
 		case command.PrivacyInfo:
 			return command.PrivacyResponse(privArg, nil, nil, nil, sett)
 
 		case command.PrivacyOptOut:
 			err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
 			if err != nil {
-				// we send the cache clear type here because that's exactly what we failed to do; clear the cache
-				return command.PrivacyResponse(command.PrivacyCacheClear, nil, nil, err, sett)
+				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 			}
 			fallthrough
 		case command.PrivacyOptIn:
@@ -209,20 +204,16 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 		case command.PrivacyShowMe:
-			cached := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
+			cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
 			user, err := bot.PostgresInterface.GetUserByString(i.Member.User.ID)
 			return command.PrivacyResponse(privArg, cached, user, err, sett)
-
-		case command.PrivacyCacheClear:
-			err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
-			return command.PrivacyResponse(privArg, nil, nil, err, sett)
 		}
 
-	case "map":
+	case command.Map.Name:
 		mapType, detailed := command.GetMapParams(i.ApplicationCommandData().Options)
 		return command.MapResponse(mapType, detailed)
 
-	case "stats":
+	case command.Stats.Name:
 		statsOperation, statsType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
 		if statsOperation == command.View {
 			var embed *discordgo.MessageEmbed
@@ -252,7 +243,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 			}
 			// TODO restrict clear to admins/self-users only
-		} else {
+		} else if statsOperation == command.Clear {
 			var content string
 			switch statsType {
 			case command.UserStats:
@@ -303,7 +294,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			// TODO handle clear confirmation (message followups?)
 		}
 
-	case "premium":
+	case command.Premium.Name:
 		premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
 		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
 		if premium.IsExpired(premStatus, days) {
@@ -311,6 +302,30 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		// TODO restrict invite viewage to Admins only
 		return command.PremiumResponse(i.GuildID, premStatus, days, premArg, sett)
+
+	case command.Debug.Name:
+		debugOperation, operationType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
+		if debugOperation == command.View {
+			if operationType == command.UserCache {
+				cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
+				log.Println("View user cache")
+				return command.DebugResponse(command.View, cached, nil, id, err, sett)
+			} else if operationType == command.GameState {
+				state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+				if state != nil {
+					jBytes, err := json.MarshalIndent(state, "", "  ")
+					return command.DebugResponse(command.View, nil, jBytes, id, err, sett)
+				} else {
+					return command.DeadlockGameStateResponse(command.Debug.Name, sett)
+				}
+			}
+			// TODO restrict access to clear non-self users to only admins
+		} else if debugOperation == command.Clear {
+			if operationType == command.UserCache {
+				err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
+				return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
+			}
+		}
 	}
 	// no command matched somehow
 	return nil

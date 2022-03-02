@@ -8,8 +8,6 @@ const (
 	UserStats  = "user"
 	GuildStats = "guild"
 	MatchStats = "match"
-	View       = "view"
-	Clear      = "clear"
 )
 
 var Stats = discordgo.ApplicationCommand{

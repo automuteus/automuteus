@@ -27,7 +27,6 @@ type PremiumArg int
 const (
 	PremiumInfo PremiumArg = iota
 	PremiumInvites
-	PremiumNil
 )
 
 const (

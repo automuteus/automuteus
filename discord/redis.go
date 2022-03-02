@@ -120,6 +120,16 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 	return dgs
 }
 
+func (redisInterface RedisInterface) GetDiscordGameStateAndLockRetries(gsr GameStateRequest, retries int) (*redislock.Lock, *GameState) {
+	lock, state := redisInterface.GetDiscordGameStateAndLock(gsr)
+	var i int
+	for lock == nil && i < retries {
+		lock, state = redisInterface.GetDiscordGameStateAndLock(gsr)
+		i++
+	}
+	return lock, state
+}
+
 func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
@@ -328,25 +338,24 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 	}
 }
 
-func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key string) map[string]interface{} {
+func (redisInterface *RedisInterface) GetUsernameOrUserIDMappings(guildID, key string) (map[string]interface{}, error) {
 	cacheHash := rediskey.GuildCacheHash(guildID)
 
 	value, err := redisInterface.client.HGet(ctx, cacheHash, key).Result()
 	if err != nil {
 		if !errors.Is(err, redis.Nil) {
-			log.Println(err)
+			return map[string]interface{}{}, err
 		}
-		return map[string]interface{}{}
+		// redis.Nil (not found) is not *actually* an error, so return nil
+		return map[string]interface{}{}, nil
 	}
 	var ret map[string]interface{}
 	err = json.Unmarshal([]byte(value), &ret)
 	if err != nil {
-		log.Println(err)
-		return map[string]interface{}{}
+		return map[string]interface{}{}, err
 	}
 
-	// log.Println(ret)
-	return ret
+	return ret, nil
 }
 
 func (redisInterface *RedisInterface) AddUsernameLink(guildID, userID, userName string) error {
@@ -359,11 +368,15 @@ func (redisInterface *RedisInterface) AddUsernameLink(guildID, userID, userName 
 
 func (redisInterface *RedisInterface) DeleteLinksByUserID(guildID, userID string) error {
 	// over all the usernames associated with just this userID, delete the underlying mapping of username->userID
-	usernames := redisInterface.GetUsernameOrUserIDMappings(guildID, userID)
-	for username := range usernames {
-		err := redisInterface.deleteHashSubEntry(guildID, username, userID)
-		if err != nil {
-			log.Println(err)
+	usernames, err := redisInterface.GetUsernameOrUserIDMappings(guildID, userID)
+	if err != nil {
+		log.Println(err)
+	} else {
+		for username := range usernames {
+			err := redisInterface.deleteHashSubEntry(guildID, username, userID)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 
@@ -373,7 +386,10 @@ func (redisInterface *RedisInterface) DeleteLinksByUserID(guildID, userID string
 }
 
 func (redisInterface *RedisInterface) appendToHashedEntry(guildID, key, value string) error {
-	resp := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+	resp, err := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+	if err != nil {
+		log.Println(err)
+	}
 
 	resp[value] = struct{}{}
 
@@ -381,9 +397,13 @@ func (redisInterface *RedisInterface) appendToHashedEntry(guildID, key, value st
 }
 
 func (redisInterface *RedisInterface) deleteHashSubEntry(guildID, key, entry string) error {
-	entries := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+	entries, err := redisInterface.GetUsernameOrUserIDMappings(guildID, key)
+	if err != nil {
+		log.Println(err)
+	} else {
+		delete(entries, entry)
+	}
 
-	delete(entries, entry)
 	return redisInterface.setUsernameOrUserIDMappings(guildID, key, entries)
 }
 

@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/settings"
-	"log"
-	"regexp"
-	"strings"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
+	"regexp"
 )
 
 const (
@@ -18,55 +16,6 @@ const (
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
-
-// TODO cache/preconstruct these (no reason to make them fresh everytime help is called, except for the prefix...)
-func ConstructEmbedForCommand(
-	cmd Command,
-	sett *settings.GuildSettings,
-) *discordgo.MessageEmbed {
-	return &discordgo.MessageEmbed{
-		URL:   "",
-		Type:  "",
-		Title: cmd.Emoji + " " + strings.Title(cmd.Command),
-		Description: sett.LocalizeMessage(cmd.Description,
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			}),
-		Timestamp: "",
-		Color:     15844367, // GOLD
-		Image:     nil,
-		Thumbnail: nil,
-		Video:     nil,
-		Provider:  nil,
-		Author:    nil,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.ConstructEmbedForCommand.Fields.Example",
-					Other: "Example",
-				}),
-				Value:  "`" + fmt.Sprintf("%s %s", sett.GetCommandPrefix(), cmd.Example) + "`",
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.ConstructEmbedForCommand.Fields.Arguments",
-					Other: "Arguments",
-				}),
-				Value:  "`" + sett.LocalizeMessage(cmd.Arguments) + "`",
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.ConstructEmbedForCommand.Fields.Aliases",
-					Other: "Aliases",
-				}),
-				Value:  strings.Join(cmd.Aliases, ", "),
-				Inline: false,
-			},
-		},
-	}
-}
 
 func (bot *Bot) HandleCommand(
 	isAdmin bool,

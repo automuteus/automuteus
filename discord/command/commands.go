@@ -12,6 +12,8 @@ const (
 	BasePremiumURL        = "https://automute.us/premium?guild="
 	CaptureDownloadURL    = "https://capture.automute.us"
 	DefaultMaxActiveGames = 150
+	View                  = "view"
+	Clear                 = "clear"
 )
 
 // All is all slash commands for the bot, ordered to match the README
@@ -28,6 +30,23 @@ var All = []*discordgo.ApplicationCommand{
 	&Map,
 	&Stats,
 	&Premium,
+	&Debug,
+}
+
+func DeadlockGameStateResponse(command string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6,
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.deadlock",
+				Other: "I wasn't able to obtain the game state for your {{.Command}} command. Please try again.",
+			}, map[string]interface{}{
+				"Command": command,
+			}),
+		},
+	}
+
 }
 
 func getCommand(cmd string) *discordgo.ApplicationCommand {

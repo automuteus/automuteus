@@ -11,7 +11,6 @@ type NewStatus int
 
 const (
 	NewSuccess NewStatus = iota
-	NewDeadlock
 	NewNoVoiceChannel
 	NewLockout
 )
@@ -66,11 +65,6 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 				},
 			},
 		}
-	case NewDeadlock:
-		content = sett.LocalizeMessage(&i18n.Message{
-			ID:    "commands.new.deadlock",
-			Other: "I wasn't able to make a new game, maybe try in a different text channel?",
-		})
 	case NewNoVoiceChannel:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.new.nochannel",
