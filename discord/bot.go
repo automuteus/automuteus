@@ -130,7 +130,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 		IdleSince: nil,
 		Activities: []*discordgo.Activity{&discordgo.Activity{
 			Name: listeningTo,
-			Type: discordgo.ActivityTypeGame,
+			Type: discordgo.ActivityTypeListening,
 		}},
 		AFK:    false,
 		Status: "",
