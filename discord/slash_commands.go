@@ -9,8 +9,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
+	"regexp"
 	"strings"
 )
+
+var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	response := bot.slashCommandHandler(s, i)
@@ -38,16 +41,69 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	defer interactionLock.Release(ctx)
 
 	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)
+
+	// TODO respond properly for commands that *can* be performed in DMs. Such as minimal stats queries, help, info, etc
+	// NOTE: difference between i.Member.User (Server/Guild chat) vs i.User (DMs)
+	if i.GuildID == "" || i.Member == nil || i.Member.User == nil {
+		return command.DmResponse(sett)
+	}
+
+	if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, i.Member.User.ID) {
+		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+		if banned {
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Flags: 1 << 6, //private message
+					Content: sett.LocalizeMessage(&i18n.Message{
+						ID:    "softban.ignoring",
+						Other: "I'm ignoring you for the next 5 minutes, stop spamming",
+					}),
+				},
+			}
+		} else {
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Flags: 1 << 6, //private message
+					Content: sett.LocalizeMessage(&i18n.Message{
+						ID:    "softban.warning",
+						Other: "Please stop spamming commands",
+					}),
+				},
+			}
+		}
+	}
+	redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, "", 0)
+
+	g, err := s.State.Guild(i.GuildID)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	isAdmin, isPermissioned := false, false
+	if g.OwnerID == i.Member.User.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
+		// the guild owner should always have both permissions
+		// or if both permissions are still empty, everyone gets both
+		isAdmin = true
+		isPermissioned = true
+	} else {
+		// if we have no admins, then we MUST have mods as per the check above. So ensure this user is a mod
+		if len(sett.AdminUserIDs) == 0 {
+			isAdmin = sett.HasRolePerms(i.Member)
+		} else {
+			// we have admins; make sure user is one
+			isAdmin = sett.HasAdminPerms(i.Member.User)
+		}
+		// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
+		isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(i.Member)
+	}
+
 	// common gsr, but not necessarily used by all commands
 	gsr := GameStateRequest{
 		GuildID:     i.GuildID,
 		TextChannel: i.ChannelID,
-	}
-
-	// TODO respond properly for commands that *can* be performed in DMs. Such as minimal stats queries, help, info, etc
-	// NOTE: difference between i.Member.User (Server/Guild chat) vs i.User (DMs)
-	if gsr.GuildID == "" || i.Member == nil || i.Member.User == nil {
-		return command.DmResponse(sett)
 	}
 
 	switch i.ApplicationCommandData().Name {
@@ -59,6 +115,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.InfoResponse(botInfo, i.GuildID, sett)
 
 	case command.Link.Name:
+		if !isPermissioned {
+			return command.InsufficientPermissionsResponse(sett)
+		}
 		userID, colorOrName := command.GetLinkParams(s, i.ApplicationCommandData().Options)
 
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
@@ -81,6 +140,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.LinkResponse(status, userID, colorOrName, sett)
 
 	case command.Unlink.Name:
+		if !isPermissioned {
+			return command.InsufficientPermissionsResponse(sett)
+		}
 		userID := command.GetUnlinkParams(s, i.ApplicationCommandData().Options)
 
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
@@ -103,6 +165,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.UnlinkResponse(status, userID, sett)
 
 	case command.New.Name:
+		if !isPermissioned {
+			return command.InsufficientPermissionsResponse(sett)
+		}
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 		if lock == nil {
 			log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
@@ -155,6 +220,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.RefreshResponse(sett)
 
 	case command.Pause.Name:
+		if !isPermissioned {
+			return command.InsufficientPermissionsResponse(sett)
+		}
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 		if lock == nil {
 			log.Printf("No lock could be obtained when pausing game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
@@ -173,6 +241,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.PauseResponse(sett)
 
 	case command.End.Name:
+		if !isPermissioned {
+			return command.InsufficientPermissionsResponse(sett)
+		}
 		dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 		if dgs != nil {
 			if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
@@ -215,21 +286,23 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 	case command.Stats.Name:
 		statsOperation, statsType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
+		prem := true
+		if premium.IsExpired(bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)) {
+			prem = false
+		}
 		if statsOperation == command.View {
 			var embed *discordgo.MessageEmbed
 			switch statsType {
 			case command.UserStats:
-				// TODO substitute premium status
-				embed = bot.UserStatsEmbed(id, i.GuildID, sett, true)
+				embed = bot.UserStatsEmbed(id, i.GuildID, sett, prem)
 			case command.GuildStats:
-				// TODO substitute premium status
-				embed = bot.GuildStatsEmbed(i.GuildID, sett, true)
+				embed = bot.GuildStatsEmbed(i.GuildID, sett, prem)
 			case command.MatchStats:
-				tokens := strings.Split(id, ":")
-				if len(tokens) > 1 {
-					embed = bot.GameStatsEmbed(i.GuildID, tokens[1], tokens[0], sett)
+				if MatchIDRegex.Match([]byte(id)) {
+					tokens := strings.Split(id, ":")
+					embed = bot.GameStatsEmbed(i.GuildID, tokens[1], tokens[0], prem, sett)
 				} else {
-					// TODO report invalid match code error to user (private slash response)
+					// TODO report bad match ID code status
 				}
 			}
 			if embed != nil {
@@ -242,8 +315,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					},
 				}
 			}
-			// TODO restrict clear to admins/self-users only
 		} else if statsOperation == command.Clear {
+			// id mismatch applies to user ids AND guild ID (guildId *always* != author.id, therefore, must be admin)
+			if id != i.Member.User.ID && !isAdmin {
+				return command.InsufficientPermissionsResponse(sett)
+			}
 			var content string
 			switch statsType {
 			case command.UserStats:
@@ -300,8 +376,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		if premium.IsExpired(premStatus, days) {
 			premStatus = premium.FreeTier
 		}
-		// TODO restrict invite viewage to Admins only
-		return command.PremiumResponse(i.GuildID, premStatus, days, premArg, sett)
+		return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, sett)
 
 	case command.Debug.Name:
 		debugOperation, operationType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
@@ -319,9 +394,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.DeadlockGameStateResponse(command.Debug.Name, sett)
 				}
 			}
-			// TODO restrict access to clear non-self users to only admins
 		} else if debugOperation == command.Clear {
 			if operationType == command.UserCache {
+				if id != i.Member.User.ID {
+					if !isAdmin {
+						return command.InsufficientPermissionsResponse(sett)
+					}
+				}
 				err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
 				return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
 			}

@@ -59,9 +59,12 @@ func GetPremiumParams(options []*discordgo.ApplicationCommandInteractionDataOpti
 	return PremiumArg(options[0].IntValue())
 }
 
-func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg PremiumArg, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg PremiumArg, isAdmin bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var embed *discordgo.MessageEmbed
 	if arg == PremiumInvites {
+		if !isAdmin {
+			return InsufficientPermissionsResponse(sett)
+		}
 		embed = invitesResponse(tier, sett)
 	} else {
 		embed = premiumEmbedResponse(guildID, tier, daysRem, sett)

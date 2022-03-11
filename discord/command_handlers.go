@@ -7,15 +7,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
-	"regexp"
 )
 
 const (
 	MaxDebugMessageSize = 1980
 	trueString          = "true"
 )
-
-var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 func (bot *Bot) HandleCommand(
 	isAdmin bool,

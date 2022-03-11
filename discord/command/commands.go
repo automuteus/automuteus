@@ -46,7 +46,19 @@ func DeadlockGameStateResponse(command string, sett *settings.GuildSettings) *di
 			}),
 		},
 	}
+}
 
+func InsufficientPermissionsResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6,
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.no_permissions",
+				Other: "Sorry, you don't have the required permissions to issue that command.",
+			}),
+		},
+	}
 }
 
 func getCommand(cmd string) *discordgo.ApplicationCommand {
