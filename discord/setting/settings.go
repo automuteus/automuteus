@@ -228,11 +228,11 @@ var AllSettings = []Setting{
 		},
 		Description: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummaryChannel.desc",
-			Other: "Specify the text channel name where Match Summaries should be posted",
+			Other: "Specify the text channel name where Match Summaries should be posted. Use `#general`, for example",
 		},
 		Arguments: &i18n.Message{
 			ID:    "settings.AllSettings.MatchSummaryChannel.args",
-			Other: "<text channel name>",
+			Other: "<text channel mention>",
 		},
 		Aliases: []string{"matchsummchan", "matchsumchan", "summarychannel", "matchchannel", "summchan", "sumchan"},
 		Premium: true,

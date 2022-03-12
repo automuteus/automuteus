@@ -906,51 +906,31 @@ func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *settings.Gu
 					"User": "<@!" + authorID + ">",
 				})
 			desc += "\n"
-			didOpt, err := bot.PostgresInterface.OptUserByString(authorID, false)
+			err := bot.PostgresInterface.OptUserByString(authorID, false)
 			if err != nil {
 				log.Println(err)
 			} else {
-				if didOpt {
-					desc += sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.optout.SuccessDB",
-						Other: "✅ {{.User}} I successfully opted you out of data collection",
-					},
-						map[string]interface{}{
-							"User": "<@!" + authorID + ">",
-						})
-				} else {
-					desc += sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.HandleCommand.optout.FailDB",
-						Other: "❌ {{.User}} You are already opted out of data collection",
-					},
-						map[string]interface{}{
-							"User": "<@!" + authorID + ">",
-						})
-				}
+				desc += sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.HandleCommand.optout.SuccessDB",
+					Other: "✅ {{.User}} I successfully opted you out of data collection",
+				},
+					map[string]interface{}{
+						"User": "<@!" + authorID + ">",
+					})
 			}
 		}
 	case "optin":
-		didOpt, err := bot.PostgresInterface.OptUserByString(authorID, true)
+		err := bot.PostgresInterface.OptUserByString(authorID, true)
 		if err != nil {
 			log.Println(err)
 		} else {
-			if didOpt {
-				desc += sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.optin.SuccessDB",
-					Other: "✅ {{.User}} I successfully opted you into data collection",
-				},
-					map[string]interface{}{
-						"User": "<@!" + authorID + ">",
-					})
-			} else {
-				desc += sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.optin.FailDB",
-					Other: "❌ {{.User}} You are already opted into data collection",
-				},
-					map[string]interface{}{
-						"User": "<@!" + authorID + ">",
-					})
-			}
+			desc += sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.HandleCommand.optin.SuccessDB",
+				Other: "✅ {{.User}} I successfully opted you into data collection",
+			},
+				map[string]interface{}{
+					"User": "<@!" + authorID + ">",
+				})
 		}
 	}
 
