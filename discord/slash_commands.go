@@ -271,7 +271,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			fallthrough
 		case command.PrivacyOptIn:
-			_, err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
+			err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
 			return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 		case command.PrivacyShowMe:
