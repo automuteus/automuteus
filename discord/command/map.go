@@ -13,31 +13,14 @@ const (
 
 var Map = discordgo.ApplicationCommand{
 	Name:        "map",
-	Description: "View Among Us maps. `skeld`, `mira`, `polus`, or `airship`",
+	Description: "View Among Us game maps",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "map_name",
 			Description: "Map to display",
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{
-					Name:  game.MapNames[game.SKELD],
-					Value: game.SKELD,
-				},
-				{
-					Name:  game.MapNames[game.MIRA],
-					Value: game.MIRA,
-				},
-				{
-					Name:  game.MapNames[game.POLUS],
-					Value: game.POLUS,
-				},
-				{
-					Name:  game.MapNames[game.AIRSHIP],
-					Value: game.AIRSHIP,
-				},
-			},
-			Required: true,
+			Choices:     mapsToCommandChoices(),
+			Required:    true,
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionBoolean,

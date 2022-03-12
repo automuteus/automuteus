@@ -1,12 +1,13 @@
 Slash Commands:
-- Search for unused functions/code relating to old command processing
-- Reintegrate Redis-based user rate limiting on fast command invocation
-- Restrict premium invites viewing to admins only
-- Search for (and update) commands with higher guild permissions needed for invocation
-- Unit tests where appropriate (such as complex control flow for premium)
-- Integrate subcommands and restricted options where helpful (/link colors for starters)
-- Make commands package-private
-- Investigate interface appropriateness for command responses/other
-- Move relevant code to utils (see premium)
-- Localization and i18n keys
-- Refactor `/privacy` to use command options and subcommands
+-[ ] Search for unused functions/code relating to old command processing
+-[ ] Reintegrate Redis-based user rate limiting on fast command invocation
+-[X] Restrict premium invites viewing to admins only 
+-[X] Search for (and update) commands with higher guild permissions needed for invocation
+-[ ] Unit tests where appropriate (such as complex control flow for premium)
+-[ ] Integrate subcommands and restricted options where helpful (/link colors for starters)
+-[ ] Make commands package-private
+-[ ] Investigate interface appropriateness for command responses/other
+-[ ] Move relevant code to utils (see premium)
+-[ ] Localization and i18n keys
+-[ ] Refactor `/privacy` to use command options and subcommands
+-[ ] Add galactus endpoints to allow website to fetch current command list

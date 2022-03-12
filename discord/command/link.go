@@ -25,12 +25,12 @@ var Link = discordgo.ApplicationCommand{
 			Description: "User to link",
 			Required:    true,
 		},
-		// TODO use discordgo.ApplicationCommandOptionChoice instead of arbitrary string args
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "color",
 			Description: "In-game color",
 			Required:    true,
+			Choices:     colorsToCommandChoices(),
 		},
 	},
 }
@@ -60,7 +60,7 @@ func LinkResponse(status LinkStatus, userID, colorOrName string, sett *settings.
 	case LinkNoGameData:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.nogamedata",
-			Other: "No game data found for color/name `{{.ColorOrName}}",
+			Other: "No game data found for `{{.ColorOrName}}`",
 		}, map[string]interface{}{
 			"ColorOrName": colorOrName,
 		})

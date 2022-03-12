@@ -57,10 +57,10 @@ var Help = discordgo.ApplicationCommand{
 					Name:  Map.Name,
 					Value: Map.Name,
 				},
-				//{
-				//	Name:  Stats.Name,
-				//	Value: Stats.Name,
-				//},
+				{
+					Name:  Stats.Name,
+					Value: Stats.Name,
+				},
 				{
 					Name:  Premium.Name,
 					Value: Premium.Name,

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/locale"
 	storage2 "github.com/automuteus/utils/pkg/storage"
@@ -21,7 +20,6 @@ import (
 	"github.com/automuteus/automuteus/storage"
 
 	"github.com/automuteus/automuteus/discord"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -49,21 +47,10 @@ func main() {
 }
 
 func discordMainWrapper() error {
-	err := godotenv.Load("final.txt")
-	if err != nil {
-		err = godotenv.Load("config.txt")
-		if err != nil && os.Getenv("DISCORD_BOT_TOKEN") == "" {
-			log.Println("Can't open config file and missing DISCORD_BOT_TOKEN; creating config.txt for you to use for your config")
-			f, err := os.Create("config.txt")
-			if err != nil {
-				log.Println("Issue creating sample config.txt")
-				return err
-			}
-			_, err = f.WriteString(fmt.Sprintf("DISCORD_BOT_TOKEN=\nBOT_LANG=%s\n", locale.DefaultLang))
-			f.Close()
-		}
+	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
+	if discordToken == "" {
+		return errors.New("no DISCORD_BOT_TOKEN provided")
 	}
-
 	logPath := os.Getenv("LOG_PATH")
 	if logPath == "" {
 		logPath = "./"
@@ -83,22 +70,12 @@ func discordMainWrapper() error {
 
 	log.Println(version + "-" + commit)
 
-	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
-	if discordToken == "" {
-		return errors.New("no DISCORD_BOT_TOKEN provided")
-	}
-
 	var extraTokens []string
 	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
 	if extraTokenStr != "" {
 		extraTokens = strings.Split(extraTokenStr, ",")
 	}
 
-	discordToken2 := os.Getenv("DISCORD_BOT_TOKEN_2")
-	if discordToken2 != "" {
-		log.Println("[INFO] DISCORD_BOT_TOKEN_2 is deprecated. Please use WORKER_BOT_TOKENS in the future!")
-		extraTokens = append(extraTokens, discordToken2)
-	}
 	if len(extraTokens) > 0 {
 		log.Printf("You provided %d worker tokens so I'll be sending them to Galactus\n", len(extraTokens))
 	}

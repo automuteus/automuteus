@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -96,4 +97,26 @@ func constructEmbedForCommand(
 		Author:      nil,
 		Fields:      nil,
 	}
+}
+
+func colorsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+	var choices []*discordgo.ApplicationCommandOptionChoice
+	for color := range game.ColorStrings {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  color,
+			Value: color,
+		})
+	}
+	return choices
+}
+
+func mapsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+	var choices []*discordgo.ApplicationCommandOptionChoice
+	for mapVal, mapName := range game.MapNames {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  mapName,
+			Value: mapVal,
+		})
+	}
+	return choices
 }

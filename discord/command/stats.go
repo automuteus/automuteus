@@ -87,14 +87,25 @@ var Stats = discordgo.ApplicationCommand{
 	},
 }
 
-// TODO index checking, this would be a dumb way to cause a crash (how reliable is the Discord API conventions...)
 func GetStatsParams(s *discordgo.Session, guildID string, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string, string) {
+	if len(options) == 0 {
+		return "", "", ""
+	}
 	switch options[0].Name {
 	case UserStats:
+		if len(options[0].Options) == 0 || len(options[0].Options[0].Options) == 0 {
+			return "", "", ""
+		}
 		return options[0].Options[0].Name, UserStats, options[0].Options[0].Options[0].UserValue(s).ID
 	case GuildStats:
+		if len(options[0].Options) == 0 {
+			return "", "", ""
+		}
 		return options[0].Options[0].Name, GuildStats, guildID
 	case MatchStats:
+		if len(options[0].Options) == 0 || len(options[0].Options[0].Options) == 0 {
+			return "", "", ""
+		}
 		return options[0].Options[0].Name, MatchStats, options[0].Options[0].Options[0].StringValue()
 	}
 	return "", "", ""
