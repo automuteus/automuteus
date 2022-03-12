@@ -65,12 +65,11 @@ func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interfa
 		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), AllSettings[MatchSummaryChannel], sett), false
 	}
 
-	channelID := args[2]
-	err := discord.ValidateSnowflake(channelID)
+	channelID, err := discord.ExtractChannelIDFromMention(args[2])
 	if err != nil {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummaryChannel.invalidChannelID",
-			Other: "`{{.channelID}}` is not a valid channel ID!",
+			Other: "{{.channelID}} is not a valid text channel ID or mention!",
 		},
 			map[string]interface{}{
 				"channelID": args[2],
@@ -80,9 +79,9 @@ func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interfa
 	sett.SetMatchSummaryChannelID(channelID)
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingMatchSummaryChannel.withChannelID",
-		Other: "Match Summary text channel ID changed to `{{.channelID}}`!",
+		Other: "Match Summary text channel ID changed to {{.channelID}}!",
 	},
 		map[string]interface{}{
-			"channelName": channelID,
+			"channelID": discord.MentionByChannelID(channelID),
 		}), true
 }
