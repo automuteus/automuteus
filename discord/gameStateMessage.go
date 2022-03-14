@@ -29,25 +29,6 @@ func (dgs *GameState) Exists() bool {
 	return dgs.GameStateMsg.MessageID != ""
 }
 
-func (dgs *GameState) AddReaction(s *discordgo.Session, emoji string) {
-	if dgs.GameStateMsg.MessageID != "" {
-		addReaction(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
-	}
-}
-
-func (dgs *GameState) RemoveAllReactions(s *discordgo.Session) {
-	if dgs.GameStateMsg.MessageID != "" {
-		removeAllReactions(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-	}
-}
-
-func (dgs *GameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
-	for _, e := range emojis {
-		dgs.AddReaction(s, e.FormatForReaction())
-	}
-	dgs.AddReaction(s, "❌")
-}
-
 func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session) {
 	if dgs.GameStateMsg.MessageID != "" {
 		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
@@ -112,7 +93,18 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 
 func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
 	dgs.GameStateMsg.LeaderID = authorID
-	msg := sendMessageEmbed(s, channelID, me)
+	components := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    "select-color",
+					Placeholder: "Select your in-game color",
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], UnlinkEmoji),
+				},
+			},
+		},
+	}
+	msg := sendEmbedWithComponents(s, channelID, me, components)
 	if msg != nil {
 		dgs.GameStateMsg.MessageAuthorID = msg.Author.ID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID

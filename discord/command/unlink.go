@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -36,16 +37,16 @@ func UnlinkResponse(status UnlinkStatus, userID string, sett *settings.GuildSett
 	case UnlinkSuccess:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.unlink.success",
-			Other: "Successfully unlinked {{.UserID}",
+			Other: "Successfully unlinked {{.UserMention}}",
 		}, map[string]interface{}{
-			"UserID": userID,
+			"UserMention": discord.MentionByUserID(userID),
 		})
 	case UnlinkNoPlayer:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.unlink.noplayer",
-			Other: "No player in the current game was detected for {{.UserID}}",
+			Other: "No player in the current game was detected for {{.UserMention}}",
 		}, map[string]interface{}{
-			"UserID": userID,
+			"UserMention": discord.MentionByUserID(userID),
 		})
 	}
 

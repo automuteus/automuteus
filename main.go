@@ -177,6 +177,7 @@ func discordMainWrapper() error {
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
+	// empty string entry = global
 	slashCommandGuildIds := []string{""}
 	slashCommandGuildIdStr := strings.ReplaceAll(os.Getenv("SLASH_COMMAND_GUILD_IDS"), " ", "")
 	if slashCommandGuildIdStr != "" {
@@ -186,7 +187,12 @@ func discordMainWrapper() error {
 	var registeredCommands []registeredCommand
 	for _, guild := range slashCommandGuildIds {
 		for _, v := range command.All {
-			log.Printf("Registering command %s in guild %s\n", v.Name, guild)
+			if guild == "" {
+				log.Printf("Registering command %s GLOBALLY\n", v.Name)
+			} else {
+				log.Printf("Registering command %s in guild %s\n", v.Name, guild)
+			}
+
 			id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
 			if err != nil {
 				log.Panicf("Cannot create command: %v", err)
@@ -198,12 +204,7 @@ func discordMainWrapper() error {
 			}
 		}
 	}
-
-	// TODO properly detect if commands should be overwritten or created
-	//registeredCommands, err := bot.PrimarySession.ApplicationCommandBulkOverwrite(bot.PrimarySession.State.User.ID, os.Getenv("SLASH_COMMAND_GUILD_ID"), command.All)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	log.Println("Finishing registering all commands!")
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
@@ -212,12 +213,17 @@ func discordMainWrapper() error {
 	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
-			log.Printf("Deleting command %s on guild %s\n", v.ApplicationCommand.Name, v.GuildID)
+			if v.GuildID == "" {
+				log.Printf("Deleting command %s GLOBALLY\n", v.ApplicationCommand.Name)
+			} else {
+				log.Printf("Deleting command %s on guild %s\n", v.ApplicationCommand.Name, v.GuildID)
+			}
 			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
 			if err != nil {
 				log.Println(err)
 			}
 		}
+		log.Println("Finished deleting all commands")
 	}
 
 	bot.Close()

@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"fmt"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
@@ -152,123 +151,6 @@ func removePrefixOrMention(contents, prefix, mention, altMention string) string 
 		contents = strings.Replace(contents, altMention, "", 1)
 	}
 	return contents
-}
-
-func (bot *Bot) handleReactionGameStartAdd(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	// IgnoreSpectator all reactions created by the bot itself
-	if m.UserID == s.State.User.ID {
-		return
-	}
-
-	if redis_common.IsUserBanned(bot.RedisInterface.client, m.UserID) {
-		return
-	}
-
-	lock := bot.RedisInterface.LockSnowflake(m.MessageID + m.UserID + m.Emoji.ID)
-	// couldn't obtain lock; bail bail bail!
-	if lock == nil {
-		return
-	}
-	defer lock.Release(ctx)
-
-	g, err := s.State.Guild(m.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// TODO explicitly unmute/undeafen users that unlink. Current control flow won't do it (ala discord bots not being undeafened)
-
-	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
-
-	gsr := GameStateRequest{
-		GuildID:     m.GuildID,
-		TextChannel: m.ChannelID,
-	}
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
-	if lock != nil && dgs != nil && dgs.Exists() {
-		// verify that the User is reacting to the state/status message
-		if dgs.IsReactionTo(m) {
-			if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.UserID) {
-				banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.UserID)
-				if banned {
-					s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.softban",
-						Other: "I'm ignoring {{.User}} for the next 5 minutes, stop spamming",
-					},
-						map[string]interface{}{
-							"User": discord.MentionByUserID(m.UserID),
-						}))
-				} else {
-					msg, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-						ID:    "message_handlers.handleReactionGameStartAdd.generalRatelimit",
-						Other: "{{.User}}, you're reacting too fast! Please slow down!",
-					}, map[string]interface{}{
-						"User": discord.MentionByUserID(m.UserID),
-					}))
-					if err == nil {
-						go func() {
-							time.Sleep(time.Second * 3)
-							s.ChannelMessageDelete(m.ChannelID, msg.ID)
-						}()
-					}
-				}
-				return
-			}
-			redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.UserID, "Reaction", redis_common.ReactionRateLimitDuration)
-			idMatched := false
-			if m.Emoji.Name == "▶️" {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 14)
-				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
-				go removeReaction(bot.PrimarySession, m.ChannelID, m.MessageID, m.Emoji.Name, "@me")
-				go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
-			} else {
-				for color, e := range bot.StatusEmojis[true] {
-					if e.ID == m.Emoji.ID {
-						idMatched = true
-						log.Print(fmt.Sprintf("Player %s reacted with color %s\n", m.UserID, game.GetColorStringForInt(color)))
-						// the User doesn't exist in our userdata cache; add them
-						user, added := dgs.checkCacheAndAddUser(g, s, m.UserID)
-						if !added {
-							log.Println("No users found in Discord for UserID " + m.UserID)
-							idMatched = false
-						} else {
-							auData, found := dgs.AmongUsData.GetByColor(game.GetColorStringForInt(color))
-							if found {
-								user.Link(auData)
-								dgs.UpdateUserData(m.UserID, user)
-								go bot.RedisInterface.AddUsernameLink(m.GuildID, m.UserID, auData.Name)
-							} else {
-								log.Println("I couldn't find any player data for that color; is your capture linked?")
-								idMatched = false
-							}
-						}
-
-						// then remove the player's reaction if we matched, or if we didn't
-						go s.MessageReactionRemove(m.ChannelID, m.MessageID, e.FormatForReaction(), m.UserID)
-						break
-					}
-				}
-				if !idMatched {
-					// log.Println(m.Emoji.Name)
-					if m.Emoji.Name == "❌" {
-						log.Println("Removing player " + m.UserID)
-						idMatched = dgs.ClearPlayerData(m.UserID)
-						go s.MessageReactionRemove(m.ChannelID, m.MessageID, "❌", m.UserID)
-					}
-				}
-				// make sure to update any voice changes if they occurred
-				if idMatched {
-					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, gsr)
-					edited := dgs.Edit(s, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
-				}
-			}
-		}
-		bot.RedisInterface.SetDiscordGameState(dgs, lock)
-	}
 }
 
 // voiceStateChange handles more edge-case behavior for users moving between voice channels, and catches when
@@ -439,10 +321,4 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 
 	// release the lock
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	// log.Println("Added self game state message")
-	// +18 emojis, 1 for X
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 19)
-
-	go dgs.AddAllReactions(bot.PrimarySession, bot.StatusEmojis[true])
 }

@@ -93,7 +93,6 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	dg.AddHandler(bot.handleVoiceStateChange)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(bot.handleMessageCreate)
-	dg.AddHandler(bot.handleReactionGameStartAdd)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
@@ -104,7 +103,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildMessageReactions)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)
@@ -298,12 +297,6 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-
-	// add the emojis to the refreshed message
-	if dgs.GameStateMsg.MessageChannelID != "" && dgs.GameStateMsg.MessageID != "" {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.ReactionAdd, 1)
-		dgs.AddReaction(bot.PrimarySession, "▶️")
-	}
 }
 
 func (bot *Bot) getInfo() command.BotInfo {
@@ -341,7 +334,7 @@ func (bot *Bot) linkPlayer(dgs *GameState, userID, colorOrName string) (command.
 		auData, found = dgs.AmongUsData.GetByName(colorOrName)
 	}
 	if found {
-		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: ""})
+		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: struct{}{}})
 		if foundID != "" {
 			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {

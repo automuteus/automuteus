@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -45,17 +46,17 @@ func LinkResponse(status LinkStatus, userID, colorOrName string, sett *settings.
 	case LinkSuccess:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.success",
-			Other: "Successfully linked {{.UserID} to an in-game player matching {{.ColorOrName}}",
+			Other: "Successfully linked {{.UserMention}} to an in-game player matching: `{{.ColorOrName}}`",
 		}, map[string]interface{}{
-			"UserID":      userID,
+			"UserMention": discord.MentionByUserID(userID),
 			"ColorOrName": colorOrName,
 		})
 	case LinkNoPlayer:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.noplayer",
-			Other: "No player in the current game was detected for {{.UserID}}",
+			Other: "No player in the current game was detected for {{.UserMention}}",
 		}, map[string]interface{}{
-			"UserID": userID,
+			"UserMention": discord.MentionByUserID(userID),
 		})
 	case LinkNoGameData:
 		content = sett.LocalizeMessage(&i18n.Message{

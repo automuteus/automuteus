@@ -53,8 +53,19 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 	return
 }
 
-func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageSendEmbed(channelID, message)
+func sendEmbedWithComponents(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {
+	complexMsg := discordgo.MessageSend{
+		Content:         "",
+		Embeds:          nil,
+		TTS:             false,
+		Components:      components,
+		Files:           nil,
+		AllowedMentions: nil,
+		Reference:       nil,
+		File:            nil,
+		Embed:           message,
+	}
+	msg, err := s.ChannelMessageSendComplex(channelID, &complexMsg)
 	if err != nil {
 		log.Println(err)
 	}
@@ -62,7 +73,8 @@ func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo
 }
 
 func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
+	me := discordgo.NewMessageEdit(channelID, messageID).SetEmbed(message)
+	msg, err := s.ChannelMessageEditComplex(me)
 	if err != nil {
 		log.Println(err)
 	}
@@ -71,27 +83,6 @@ func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, 
 
 func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
 	err := s.ChannelMessageDelete(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
-	err := s.MessageReactionAdd(channelID, messageID, emojiID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
-	err := s.MessageReactionsRemoveAll(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeReaction(s *discordgo.Session, channelID, messageID, emojiNameOrID, userID string) {
-	err := s.MessageReactionRemove(channelID, messageID, emojiNameOrID, userID)
 	if err != nil {
 		log.Println(err)
 	}

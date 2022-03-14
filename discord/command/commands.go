@@ -21,17 +21,17 @@ const (
 var All = []*discordgo.ApplicationCommand{
 	&Help,
 	&New,
-	&Refresh,
-	&Pause,
-	&End,
-	&Link,
-	&Unlink,
-	&Privacy,
-	&Info,
-	&Map,
-	&Stats,
-	&Premium,
-	&Debug,
+	//&Refresh,
+	//&Pause,
+	//&End,
+	//&Link,
+	//&Unlink,
+	//&Privacy,
+	//&Info,
+	//&Map,
+	//&Stats,
+	//&Premium,
+	//&Debug,
 }
 
 func DeadlockGameStateResponse(command string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
