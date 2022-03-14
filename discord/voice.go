@@ -69,7 +69,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) {
 
 		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
-		_, linked := dgs.AmongUsData.GetByName(userData.InGameName)
+		_, linked := dgs.GameData.GetByName(userData.InGameName)
 		// only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 
@@ -134,7 +134,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 
 		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
-		auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
+		auData, found := dgs.GameData.GetByName(userData.InGameName)
 		// only actually tracked if we're in a tracked channel AND linked to a player
 		var isAlive bool
 
@@ -150,7 +150,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 				isAlive = auData.IsAlive
 			}
 		}
-		shouldMute, shouldDeaf := sett.GetVoiceState(isAlive, tracked, dgs.AmongUsData.GetPhase())
+		shouldMute, shouldDeaf := sett.GetVoiceState(isAlive, tracked, dgs.GameData.GetPhase())
 
 		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
 

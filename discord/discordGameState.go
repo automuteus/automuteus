@@ -9,6 +9,8 @@ import (
 	"log"
 )
 
+// GameState represents a full record of the entire current game's state. It is intended to be fully JSON-serializable,
+// so that any shard/worker can pick up the game state and operate upon it (using locks as necessary)
 type GameState struct {
 	GuildID string `json:"guildID"`
 
@@ -26,7 +28,7 @@ type GameState struct {
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
-	AmongUsData amongus.AmongUsData `json:"amongUsData"`
+	GameData amongus.GameData `json:"amongUsData"`
 }
 
 func NewDiscordGameState(guildID string) *GameState {
@@ -46,7 +48,7 @@ func (dgs *GameState) Reset() {
 	dgs.UserData = map[string]UserData{}
 	dgs.VoiceChannel = ""
 	dgs.GameStateMsg = MakeGameStateMessage()
-	dgs.AmongUsData = amongus.NewAmongUsData()
+	dgs.GameData = amongus.NewGameData()
 }
 
 func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
@@ -84,7 +86,7 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.
 	unsorted := make([]*discordgo.MessageEmbedField, 18)
 	num := 0
 
-	for _, player := range dgs.AmongUsData.PlayerData {
+	for _, player := range dgs.GameData.PlayerData {
 		if player.Color < 0 || player.Color > 17 {
 			break
 		}

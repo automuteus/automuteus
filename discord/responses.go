@@ -103,7 +103,7 @@ func (bot *Bot) gameStateResponse(dgs *GameState, sett *settings.GuildSettings) 
 		game.DISCUSS:  gamePlayMessage,
 		game.GAMEOVER: gamePlayMessage,
 	}
-	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
+	return messages[dgs.GameData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
 func lobbyMetaEmbedFields(room, region string, author, voiceChannelID string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
@@ -244,8 +244,8 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 }
 
 func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
-	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	room, region, playMap := dgs.GameData.GetRoomRegionMap()
+	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
@@ -295,7 +295,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 }
 
 func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings, winners string) *discordgo.MessageEmbed {
-	_, _, playMap := dgs.AmongUsData.GetRoomRegionMap()
+	_, _, playMap := dgs.GameData.GetRoomRegionMap()
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 
@@ -353,14 +353,14 @@ func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *di
 }
 
 func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	phase := dgs.AmongUsData.GetPhase()
-	playMap := dgs.AmongUsData.GetPlayMap()
+	phase := dgs.GameData.GetPhase()
+	playMap := dgs.GameData.GetPlayMap()
 	// send empty fields because we don't need to display those fields during the game...
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
 	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 	listResp = append(gameInfoFields, listResp...)
 
 	var color int

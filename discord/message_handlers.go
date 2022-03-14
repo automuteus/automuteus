@@ -205,7 +205,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	tracked := m.ChannelID != "" && dgs.VoiceChannel == m.ChannelID
 
-	auData, found := dgs.AmongUsData.GetByName(userData.InGameName)
+	auData, found := dgs.GameData.GetByName(userData.InGameName)
 
 	var isAlive bool
 
@@ -221,7 +221,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			isAlive = auData.IsAlive
 		}
 	}
-	mute, deaf := sett.GetVoiceState(isAlive, tracked, dgs.AmongUsData.GetPhase())
+	mute, deaf := sett.GetVoiceState(isAlive, tracked, dgs.GameData.GetPhase())
 	// check the userdata is linked here to not accidentally undeafen music bots, for example
 	if found && (userData.ShouldBeDeaf != deaf || userData.ShouldBeMute != mute) && (mute != m.Mute || deaf != m.Deaf) {
 		userData.SetShouldBeMuteDeaf(mute, deaf)
@@ -251,47 +251,6 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
 }
 
-//func (bot *Bot) handleNewGameMessage(m *discordgo.MessageCreate, g *discordgo.Guild, sett *settings.GuildSettings) (string, interface{}) {
-//	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-//		GuildID:     m.GuildID,
-//		TextChannel: m.ChannelID,
-//	})
-//	retries := 0
-//	for lock == nil {
-//		if retries > 10 {
-//			log.Println("DEADLOCK in obtaining game state lock, upon calling new")
-//			return m.ChannelID, "I wasn't able to make a new game, maybe try in a different text channel?"
-//		}
-//		retries++
-//		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
-//			GuildID:     m.GuildID,
-//			TextChannel: m.ChannelID,
-//		})
-//	}
-//
-//	if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, m.Author.ID, "NewGame") {
-//		defer lock.Release(context.Background())
-//		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, m.Author.ID)
-//		if banned {
-//			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "message_handlers.softban",
-//				Other: "{{.User}} I'm ignoring your messages for the next 5 minutes, stop spamming",
-//			}, map[string]interface{}{
-//				"User": mentionByUserID(m.Author.ID),
-//			})
-//		} else {
-//			return m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-//				ID:    "message_handlers.handleNewGameMessage.specificRatelimit",
-//				Other: "{{.User}} You're creating games too fast! Please slow down!",
-//			}, map[string]interface{}{
-//				"User": mentionByUserID(m.Author.ID),
-//			})
-//		}
-//	}
-//
-//	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "NewGame", redis_common.NewGameRateLimitDuration)
-//}
-
 func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, userID string, sett *settings.GuildSettings, g *discordgo.Guild, connCode string) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     guildID,
@@ -302,7 +261,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		log.Println("Couldn't obtain lock for DGS on game start...")
 		return
 	}
-	dgs.AmongUsData.SetRoomRegionMap("", "", game.EMPTYMAP)
+	dgs.GameData.SetRoomRegionMap("", "", game.EMPTYMAP)
 
 	dgs.clearGameTracking(bot.PrimarySession)
 

@@ -152,14 +152,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
 			}
-			g, err := s.State.Guild(i.GuildID)
-			if err != nil {
-				log.Println(err)
-				// TODO more gracefully respond
-				return nil
-			}
 
-			voiceChannelID := bot.getTrackingChannel(g, i.Member.User.ID)
+			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
 
 			status, activeGames := bot.newGame(dgs, voiceChannelID)
 			if status == command.NewSuccess {
@@ -410,7 +404,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, userID, testValue string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	if testValue != "" {
-		status, err := bot.linkPlayer(dgs, userID, testValue)
+		status, err := linkPlayer(bot.RedisInterface, dgs, userID, testValue)
 		if err != nil {
 			log.Println(err)
 		}
@@ -423,7 +417,7 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, use
 		}
 		return command.LinkResponse(status, userID, testValue, sett)
 	} else {
-		status, err := bot.unlinkPlayer(dgs, userID)
+		status, err := unlinkPlayer(dgs, userID)
 		if err != nil {
 			log.Println(err)
 		}

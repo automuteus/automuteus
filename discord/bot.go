@@ -325,18 +325,18 @@ func (bot *Bot) getInfo() command.BotInfo {
 	}
 }
 
-func (bot *Bot) linkPlayer(dgs *GameState, userID, colorOrName string) (command.LinkStatus, error) {
+func linkPlayer(redis *RedisInterface, dgs *GameState, userID, colorOrName string) (command.LinkStatus, error) {
 	var auData amongus.PlayerData
 	found := false
 	if game.IsColorString(colorOrName) {
-		auData, found = dgs.AmongUsData.GetByColor(colorOrName)
+		auData, found = dgs.GameData.GetByColor(colorOrName)
 	} else {
-		auData, found = dgs.AmongUsData.GetByName(colorOrName)
+		auData, found = dgs.GameData.GetByName(colorOrName)
 	}
 	if found {
 		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: struct{}{}})
 		if foundID != "" {
-			err := bot.RedisInterface.AddUsernameLink(dgs.GuildID, userID, auData.Name)
+			err := redis.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {
 				log.Println(err)
 			}
@@ -351,7 +351,7 @@ func (bot *Bot) linkPlayer(dgs *GameState, userID, colorOrName string) (command.
 	}
 }
 
-func (bot *Bot) unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatus, error) {
+func unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatus, error) {
 	// if we found the player and cleared their data
 	success := dgs.ClearPlayerData(userID)
 	if success {
@@ -361,7 +361,7 @@ func (bot *Bot) unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatu
 	}
 }
 
-func (bot *Bot) getTrackingChannel(guild *discordgo.Guild, userID string) string {
+func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	// loop over all the channels in the discord and cross-reference with the one that the .au new author is in
 	for _, v := range guild.VoiceStates {
 		// if the User who typed au new is in a voice channel

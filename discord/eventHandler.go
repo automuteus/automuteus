@@ -284,7 +284,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
-			_, _, data := dgs.AmongUsData.UpdatePlayer(player)
+			_, _, data := dgs.GameData.UpdatePlayer(player)
 
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			// try pairing via the cached usernames
@@ -295,10 +295,10 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				bot.applyToSingle(dgs, userID, false, false)
 			}
 
-			dgs.AmongUsData.ClearPlayerData(player.Name)
+			dgs.GameData.ClearPlayerData(player.Name)
 
 			// only update the message if we're not in the tasks phase (info leaks)
-			if dgs.AmongUsData.GetPhase() != game.TASKS {
+			if dgs.GameData.GetPhase() != game.TASKS {
 				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 				if edited {
 					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
@@ -307,7 +307,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 			return true, userID
 		}
-		updated, isAliveUpdated, data := dgs.AmongUsData.UpdatePlayer(player)
+		updated, isAliveUpdated, data := dgs.GameData.UpdatePlayer(player)
 		switch {
 		case player.Action == game.JOINED:
 			log.Println("Detected a player joined, refreshing User data mappings")
@@ -327,7 +327,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
-			if isAliveUpdated && dgs.AmongUsData.GetPhase() == game.TASKS {
+			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 					if edited {
@@ -360,7 +360,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
-	oldPhase := dgs.AmongUsData.UpdatePhase(phase)
+	oldPhase := dgs.GameData.UpdatePhase(phase)
 	if oldPhase == phase {
 		lock.Release(ctx)
 		return
@@ -431,7 +431,7 @@ func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgs
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
-	dgs.AmongUsData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
+	dgs.GameData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
@@ -480,7 +480,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 
 	for _, v := range dgs.UserData {
 		if v.GetPlayerName() != amongus.UnlinkedPlayerName {
-			inGameData, found := dgs.AmongUsData.GetByName(v.GetPlayerName())
+			inGameData, found := dgs.GameData.GetByName(v.GetPlayerName())
 			if !found {
 				log.Println("No game data found for that player")
 				continue
