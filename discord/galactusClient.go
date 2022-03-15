@@ -50,7 +50,7 @@ func (gc *GalactusClient) AddToken(token string) error {
 		return errors.New("this token has already been added and recorded in Galactus")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("%d response from adding token", resp.StatusCode))
+		return fmt.Errorf("%d response from adding token", resp.StatusCode)
 	}
 	return nil
 }

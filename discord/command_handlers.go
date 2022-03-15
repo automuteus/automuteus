@@ -65,26 +65,26 @@ func (bot *Bot) HandleCommand(
 
 	msgsSent := int64(0)
 	channelID, msgToSend := command.fn(bot, isAdmin, isPermissioned, sett, guild, message, args, &command)
-	switch msgToSend.(type) {
+	switch msg := msgToSend.(type) {
 	case string:
-		session.ChannelMessageSend(channelID, msgToSend.(string))
+		session.ChannelMessageSend(channelID, msg)
 		msgsSent = 1
 	case []string:
-		for _, v := range msgToSend.([]string) {
+		for _, v := range msg {
 			session.ChannelMessageSend(channelID, v)
 			msgsSent++
 		}
 	case discordgo.MessageEmbed:
-		embed := msgToSend.(discordgo.MessageEmbed)
+		embed := msg
 		session.ChannelMessageSendEmbed(channelID, &embed)
 		msgsSent = 1
 	case *discordgo.MessageEmbed:
-		session.ChannelMessageSendEmbed(channelID, msgToSend.(*discordgo.MessageEmbed))
+		session.ChannelMessageSendEmbed(channelID, msg)
 		msgsSent = 1
 	case nil:
 		// do nothing
 	default:
-		log.Printf("Incapable of processing sendMessage of type: %T", msgToSend)
+		log.Printf("Incapable of processing sendMessage of type: %T", msg)
 	}
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, msgsSent)
 	return true

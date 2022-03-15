@@ -207,7 +207,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}(correlatedUserID, gameEvent)
 				}
 			}
-			break
 
 		case <-timer.C:
 			timer.Stop()

@@ -6,6 +6,7 @@ import (
 )
 
 func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(UnmuteDead)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
@@ -15,7 +16,7 @@ func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (inter
 		if unmuteDead {
 			current = "true"
 		}
-		return ConstructEmbedForSetting(current, AllSettings[UnmuteDead], sett), false
+		return ConstructEmbedForSetting(current, s, sett), false
 	}
 	switch {
 	case args[2] == "true":

@@ -8,11 +8,12 @@ import (
 )
 
 func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(LeaderboardMin)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), AllSettings[LeaderboardMin], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), s, sett), false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
@@ -45,11 +46,12 @@ func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{},
 }
 
 func FnLeaderboardNameMention(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(LeaderboardMention)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), AllSettings[LeaderboardMention], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), s, sett), false
 	}
 
 	val := args[2]
@@ -80,11 +82,12 @@ func FnLeaderboardNameMention(sett *settings.GuildSettings, args []string) (inte
 }
 
 func FnLeaderboardSize(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(LeaderboardSize)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), AllSettings[LeaderboardSize], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), s, sett), false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)

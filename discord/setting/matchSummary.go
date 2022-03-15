@@ -9,11 +9,12 @@ import (
 )
 
 func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MatchSummary)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), AllSettings[MatchSummary], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), s, sett), false
 	}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
@@ -58,11 +59,12 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 }
 
 func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MatchSummaryChannel)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), AllSettings[MatchSummaryChannel], sett), false
+		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), s, sett), false
 	}
 
 	channelID, err := discord.ExtractChannelIDFromMention(args[2])

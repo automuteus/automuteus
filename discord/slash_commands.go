@@ -143,6 +143,17 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, "", sett)
 
+		case command.Settings.Name:
+			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
+			isPrem := !premium.IsExpired(premStatus, days)
+			setting, arg := command.GetSettingsParams(s, i.GuildID, i.ApplicationCommandData().Options)
+			var args = []string{"", string(setting)}
+			if arg != command.View {
+				args = append(args, arg)
+			}
+			msg := bot.HandleSettingsCommand(i.GuildID, sett, args, isPrem)
+			return command.SettingsResponse(msg)
+
 		case command.New.Name:
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
@@ -190,7 +201,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		case command.Refresh.Name:
 			bot.RefreshGameStateMessage(gsr, sett)
 			// TODO inform the user of how successful this command was
-			return command.RefreshResponse(sett)
+			return command.PrivateResponse(ThumbsUp)
 
 		case command.Pause.Name:
 			if !isPermissioned {
@@ -211,7 +222,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 			// TODO inform the user of how successful this command was
-			return command.PauseResponse(sett)
+			return command.PrivateResponse(ThumbsUp)
 
 		case command.End.Name:
 			if !isPermissioned {
@@ -227,7 +238,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.applyToAll(dgs, false, false)
 
 				// TODO inform the user of how successful this command was
-				return command.EndResponse(sett)
+				return command.PrivateResponse(ThumbsUp)
 			}
 			return command.DeadlockGameStateResponse(command.End.Name, sett)
 
@@ -248,7 +259,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 			case command.PrivacyShowMe:
-				cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
+				cached, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
 				user, err := bot.PostgresInterface.GetUserByString(i.Member.User.ID)
 				return command.PrivacyResponse(privArg, cached, user, err, sett)
 			}

@@ -26,6 +26,7 @@ var All = []*discordgo.ApplicationCommand{
 	&End,
 	&Link,
 	&Unlink,
+	&Settings,
 	&Privacy,
 	&Info,
 	&Map,
@@ -112,11 +113,21 @@ func colorsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
 
 func mapsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
 	var choices []*discordgo.ApplicationCommandOptionChoice
-	for mapVal, mapName := range game.MapNames {
+	for mapValue, mapName := range game.MapNames {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  mapName,
-			Value: mapVal,
+			Value: mapValue,
 		})
 	}
 	return choices
+}
+
+func PrivateResponse(content string) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags:   1 << 6,
+			Content: content,
+		},
+	}
 }

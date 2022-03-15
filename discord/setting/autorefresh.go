@@ -7,11 +7,12 @@ import (
 )
 
 func FnAutoRefresh(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(AutoRefresh)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), AllSettings[AutoRefresh], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), s, sett), false
 	}
 
 	val := args[2]

@@ -9,11 +9,12 @@ import (
 )
 
 func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(Language)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(sett.GetLanguage(), AllSettings[Language], sett), false
+		return ConstructEmbedForSetting(sett.GetLanguage(), s, sett), false
 	}
 
 	if args[2] == "reload" {

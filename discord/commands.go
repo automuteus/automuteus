@@ -29,7 +29,6 @@ const (
 	CommandEnumPrivacy
 	CommandEnumInfo
 	CommandEnumDebugState
-	CommandEnumASCII
 	CommandEnumStats
 	CommandEnumPremium
 )
@@ -603,13 +602,13 @@ func commandFnSettings(
 	_ bool,
 	sett *settings.GuildSettings,
 	_ *discordgo.Guild,
-	message *discordgo.MessageCreate,
+	m *discordgo.MessageCreate,
 	args []string,
 	_ *Command,
 ) (string, interface{}) {
-	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(message.GuildID)
+	premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
 	isPrem := !premium.IsExpired(premStatus, days)
-	return bot.HandleSettingsCommand(message, sett, args, isPrem)
+	return m.GuildID, bot.HandleSettingsCommand(m.GuildID, sett, args, isPrem)
 }
 
 func commandFnMap(

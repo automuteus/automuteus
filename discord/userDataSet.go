@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -83,5 +82,5 @@ func (dgs *GameState) GetUser(userID string) (UserData, error) {
 	if v, ok := dgs.UserData[userID]; ok {
 		return v, nil
 	}
-	return UserData{}, errors.New(fmt.Sprintf("No User found with ID %s", userID))
+	return UserData{}, fmt.Errorf("no User found with ID %s", userID)
 }

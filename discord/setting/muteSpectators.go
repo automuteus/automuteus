@@ -6,6 +6,7 @@ import (
 )
 
 func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MuteSpectators)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
@@ -15,7 +16,7 @@ func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{},
 		if muteSpec {
 			current = "true"
 		}
-		return ConstructEmbedForSetting(current, AllSettings[MuteSpectators], sett), false
+		return ConstructEmbedForSetting(current, s, sett), false
 	}
 	switch {
 	case args[2] == "true":

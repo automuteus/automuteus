@@ -10,6 +10,7 @@ import (
 
 const (
 	UserCache = "user-cache"
+	User      = "user"
 	GameState = "game-state"
 )
 
@@ -28,7 +29,7 @@ var Debug = discordgo.ApplicationCommand{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        UserCache,
+							Name:        User,
 							Description: "User whose cache you want to view",
 							Type:        discordgo.ApplicationCommandOptionUser,
 							Required:    false,
@@ -41,8 +42,8 @@ var Debug = discordgo.ApplicationCommand{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        UserCache,
-							Description: "User whose cache should be cleared",
+							Name:        User,
+							Description: "User whose cache should be cleared. Defaults to self.",
 							Type:        discordgo.ApplicationCommandOptionUser,
 							Required:    false,
 						},
@@ -59,14 +60,6 @@ var Debug = discordgo.ApplicationCommand{
 					Name:        View,
 					Description: "View Game State",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					//Options: []*discordgo.ApplicationCommandOption{
-					//	{
-					//		Name:        UserCache,
-					//		Description: "User whose cache you want to view",
-					//		Type:        discordgo.ApplicationCommandOptionUser,
-					//		Required:    false,
-					//	},
-					//},
 				},
 			},
 		},
@@ -108,8 +101,8 @@ func DebugResponse(operationType string, cached map[string]interface{}, stateByt
 					})
 				} else {
 					str := ""
-					for _, v := range cached {
-						str += v.(string) + "\n"
+					for i := range cached {
+						str += i + "\n"
 					}
 					content = sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.debug.view.user.success",

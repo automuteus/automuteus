@@ -48,7 +48,7 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 		if !v.Premium {
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   name,
+				Name:   string(name),
 				Value:  sett.LocalizeMessage(v.ShortDesc),
 				Inline: true,
 			})
@@ -83,7 +83,7 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 		if v.Premium {
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   name,
+				Name:   string(name),
 				Value:  sett.LocalizeMessage(v.ShortDesc),
 				Inline: true,
 			})

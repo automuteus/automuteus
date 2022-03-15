@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	version = "6.16.0"
+	version = "7.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -173,7 +173,7 @@ func discordMainWrapper() error {
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 

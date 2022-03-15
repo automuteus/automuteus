@@ -99,7 +99,7 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 				discordgo.SelectMenu{
 					CustomID:    "select-color",
 					Placeholder: "Select your in-game color",
-					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], UnlinkEmoji),
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X),
 				},
 			},
 		},

@@ -346,7 +346,7 @@ func linkPlayer(redis *RedisInterface, dgs *GameState, userID, colorOrName strin
 			return command.LinkNoPlayer, errors.New(err)
 		}
 	} else {
-		err := errors.New(fmt.Sprintf("No game data found for player %s and color/name %s", discord.MentionByUserID(userID), colorOrName))
+		err := fmt.Errorf("no game data found for player %s and color/name %s", discord.MentionByUserID(userID), colorOrName)
 		return command.LinkNoGameData, err
 	}
 }

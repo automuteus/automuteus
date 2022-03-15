@@ -7,6 +7,7 @@ import (
 )
 
 func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(RoleIDs)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
@@ -18,7 +19,7 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 			return ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingPermissionRoleIDs.noRoleAdmins",
 				Other: "No Role Admins",
-			}), AllSettings[RoleIDs], sett), false
+			}), s, sett), false
 		} else {
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
@@ -31,7 +32,7 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
-			return ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs], sett), false
+			return ConstructEmbedForSetting(listOfRoles, s, sett), false
 		}
 	}
 

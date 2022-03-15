@@ -21,7 +21,6 @@ var Privacy = discordgo.ApplicationCommand{
 	Description: "View AMU privacy info",
 
 	Options: []*discordgo.ApplicationCommandOption{
-		// TODO use discordgo.ApplicationCommandOptionChoice instead of arbitrary string args
 		{
 			Name:        "command",
 			Description: "Privacy command",
@@ -46,7 +45,6 @@ var Privacy = discordgo.ApplicationCommand{
 			},
 			Required: false,
 		},
-		// TODO use subcommands here? like /privacy <cache> clear/show?
 	},
 }
 
@@ -67,7 +65,7 @@ func PrivacyResponse(status string, cached map[string]interface{}, user *storage
 				"More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)",
 		})
 	case PrivacyShowMe:
-		if cached == nil || len(cached) == 0 {
+		if len(cached) == 0 {
 			content = sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.privacy.showme.nocache",
 				Other: "❌ I don't have any cached player names stored for you!",

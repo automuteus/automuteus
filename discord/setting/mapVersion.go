@@ -8,11 +8,12 @@ import (
 )
 
 func FnMapVersion(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MapVersion)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), AllSettings[MapVersion], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), s, sett), false
 	}
 
 	val := strings.ToLower(args[2])

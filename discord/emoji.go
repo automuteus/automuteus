@@ -13,7 +13,8 @@ import (
 
 const (
 	UnlinkEmojiName = "auunlink"
-	UnlinkEmoji     = "❌"
+	X               = "❌"
+	ThumbsUp        = "👍"
 )
 
 // Emoji struct for discord

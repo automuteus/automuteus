@@ -7,6 +7,7 @@ import (
 )
 
 func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(AdminUserIDs)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
@@ -18,7 +19,7 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 			return ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingAdminUserIDs.noBotAdmins",
 				Other: "No Bot Admins",
-			}), AllSettings[AdminUserIDs], sett), false
+			}), s, sett), false
 		} else {
 			listOfAdmins := ""
 			for index, ID := range adminIDs {
@@ -31,57 +32,45 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 					listOfAdmins += ", <@" + ID + ">"
 				}
 			}
-			return ConstructEmbedForSetting(listOfAdmins, AllSettings[AdminUserIDs], sett), false
+			return ConstructEmbedForSetting(listOfAdmins, s, sett), false
 		}
 	}
-	var newAdminIDs []string
-	// users the User mentioned in their message
-	var userIDs []string
 
 	if args[2] != "clear" && args[2] != "c" {
-		var sendMessages []string
-		for _, userName := range args[2:] {
-			if userName == "" || userName == " " {
-				// User added a double space by accident, ignore it
-				continue
-			}
-			ID, err := discord.ExtractUserIDFromMention(userName)
-			if ID == "" || err != nil {
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
-					ID:    "settings.SettingAdminUserIDs.notFound",
-					Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID or @mention",
-				},
-					map[string]interface{}{
-						"UserName": userName,
-					}))
-				continue
-			} else {
-				userIDs = append(userIDs, ID)
-			}
-		}
-		oldIDs := sett.GetAdminUserIDs()
-
-		for _, ID := range userIDs {
+		userName := args[2]
+		ID, err := discord.ExtractUserIDFromMention(userName)
+		if ID == "" || err != nil {
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingAdminUserIDs.notFound",
+				Other: "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID or @mention",
+			},
+				map[string]interface{}{
+					"UserName": userName,
+				}), false
+		} else {
+			oldIDs := sett.GetAdminUserIDs()
 			if ID != "" && !contains(oldIDs, ID) {
-				newAdminIDs = append(newAdminIDs, ID)
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
+				sett.SetAdminUserIDs(append(oldIDs, ID))
+				return sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.newBotAdmin",
 					Other: "<@{{.UserID}}> is now a bot admin!",
 				},
 					map[string]interface{}{
 						"UserID": ID,
-					}))
+					}), true
+			} else {
+				return sett.LocalizeMessage(&i18n.Message{
+					ID:    "settings.SettingAdminUserIDs.alreadyBotAdmin",
+					Other: "<@{{.UserID}}> was already a bot admin!",
+				},
+					map[string]interface{}{
+						"UserID": ID,
+					}), false
 			}
-		}
-		if len(newAdminIDs) > 0 {
-			sett.SetAdminUserIDs(append(oldIDs, newAdminIDs...))
-			return sendMessages, true
-		} else {
-			return sendMessages, false
 		}
 
 	} else {
-		sett.SetAdminUserIDs(newAdminIDs)
+		sett.SetAdminUserIDs([]string{})
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAdminUserIDs.clearAdmins",
 			Other: "Clearing all AdminUserIDs!",

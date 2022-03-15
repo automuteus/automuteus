@@ -8,11 +8,12 @@ import (
 )
 
 func FnDisplayRoomCode(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(DisplayRoomCode)
 	if sett == nil || len(args) < 2 {
 		return nil, false
 	}
 	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), AllSettings[DisplayRoomCode], sett), false
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), s, sett), false
 	}
 
 	val := strings.ToLower(args[2])
