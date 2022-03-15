@@ -41,10 +41,10 @@ var Help = discordgo.ApplicationCommand{
 					Name:  Unlink.Name,
 					Value: Unlink.Name,
 				},
-				//{
-				//	Name:  Settings.Name,
-				//	Value: Settings.Name,
-				//},
+				{
+					Name:  Settings.Name,
+					Value: Settings.Name,
+				},
 				{
 					Name:  Privacy.Name,
 					Value: Privacy.Name,
@@ -74,18 +74,6 @@ var Help = discordgo.ApplicationCommand{
 func HelpResponse(sett *settings.GuildSettings, options []*discordgo.ApplicationCommandInteractionDataOption) *discordgo.InteractionResponse {
 	if len(options) > 0 {
 		cmd := getCommand(options[0].StringValue())
-		if cmd == nil {
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.help.commandnotfound",
-						Other: "I didn't recognize that command! View `/help` for all available commands!",
-					}),
-				},
-			}
-		}
-
 		embed := constructEmbedForCommand(cmd, sett)
 		return &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,

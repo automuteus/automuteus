@@ -46,6 +46,9 @@ var Premium = discordgo.ApplicationCommand{
 					Name:  Invites,
 					Value: PremiumInvites,
 				},
+				// TODO transfer functionality
+				// TODO "add another gold server" functionality
+				// TODO cancel functionality? This is harder/needs Paypal hooks
 			},
 			Required: false,
 		},

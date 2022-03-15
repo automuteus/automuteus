@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	UserCache = "user-cache"
 	User      = "user"
 	GameState = "game-state"
 )
@@ -19,47 +18,40 @@ var Debug = discordgo.ApplicationCommand{
 	Description: "View and clear debug information for AutoMuteUs",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        UserCache,
-			Description: "User cache",
+			Name:        View,
+			Description: "View debug info",
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        View,
-					Description: "View User Cache",
+					Name:        User,
+					Description: "User Cache",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Name:        User,
 							Description: "User whose cache you want to view",
 							Type:        discordgo.ApplicationCommandOptionUser,
-							Required:    false,
+							Required:    true,
 						},
 					},
 				},
 				{
-					Name:        Clear,
-					Description: "Clear User Cache",
+					Name:        GameState,
+					Description: "Game State",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        User,
-							Description: "User whose cache should be cleared. Defaults to self.",
-							Type:        discordgo.ApplicationCommandOptionUser,
-							Required:    false,
-						},
-					},
 				},
 			},
 		},
 		{
-			Name:        GameState,
-			Description: "Game state",
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        Clear,
+			Description: "Clear debug info",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        View,
-					Description: "View Game State",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        User,
+					Description: "User whose cache should be cleared",
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Required:    true,
 				},
 			},
 		},
@@ -72,19 +64,22 @@ var Debug = discordgo.ApplicationCommand{
 	},
 }
 
-func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string, string) {
-	switch options[0].Name {
-	case UserCache:
+func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.ApplicationCommandInteractionDataOption) (action string, opType string, _ string) {
+	action = options[0].Name
+	if len(options[0].Options) > 0 {
+		opType = options[0].Options[0].Name
+	}
+	switch action {
+	case View:
 		if len(options[0].Options[0].Options) > 0 {
 			userID = options[0].Options[0].Options[0].UserValue(s).ID
 		}
-		return options[0].Options[0].Name, UserCache, userID
-	case GameState:
-		return options[0].Options[0].Name, GameState, ""
-	case UnmuteAll:
-		return UnmuteAll, UnmuteAll, ""
+	case Clear:
+		if len(options[0].Options[0].Options) > 0 {
+			userID = options[0].Options[0].Options[0].UserValue(s).ID
+		}
 	}
-	return "", "", ""
+	return action, opType, userID
 }
 
 func DebugResponse(operationType string, cached map[string]interface{}, stateBytes []byte, id string, err error, sett *settings.GuildSettings) *discordgo.InteractionResponse {

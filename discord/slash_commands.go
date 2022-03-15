@@ -18,14 +18,6 @@ import (
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
-func UseSlashResponse(sett *settings.GuildSettings) string {
-	return sett.LocalizeMessage(&i18n.Message{
-		ID: "responses.useslashcommand",
-		Other: "I have been updated to use Slash Commands, please see `/help` for more info!\n\n" +
-			"(If the command doesn't appear, you may need to reinvite the bot: https://add.automute.us)",
-	})
-}
-
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	response := bot.slashCommandHandler(s, i)
 	if response != nil {
@@ -282,19 +274,19 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return command.MapResponse(mapType, detailed)
 
 		case command.Stats.Name:
-			statsOperation, statsType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
+			action, opType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
 			prem := true
 			if premium.IsExpired(bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)) {
 				prem = false
 			}
-			if statsOperation == command.View {
+			if action == command.View {
 				var embed *discordgo.MessageEmbed
-				switch statsType {
-				case command.UserStats:
+				switch opType {
+				case command.User:
 					embed = bot.UserStatsEmbed(id, i.GuildID, sett, prem)
-				case command.GuildStats:
+				case command.Guild:
 					embed = bot.GuildStatsEmbed(i.GuildID, sett, prem)
-				case command.MatchStats:
+				case command.Match:
 					if MatchIDRegex.Match([]byte(id)) {
 						tokens := strings.Split(id, ":")
 						embed = bot.GameStatsEmbed(i.GuildID, tokens[1], tokens[0], prem, sett)
@@ -312,14 +304,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						},
 					}
 				}
-			} else if statsOperation == command.Clear {
+			} else if action == command.Clear {
 				// id mismatch applies to user ids AND guild ID (guildId *always* != author.id, therefore, must be admin)
 				if id != i.Member.User.ID && !isAdmin {
 					return command.InsufficientPermissionsResponse(sett)
 				}
 				var content string
-				switch statsType {
-				case command.UserStats:
+				switch opType {
+				case command.User:
 					err := bot.PostgresInterface.DeleteAllGamesForUser(id)
 					if err != nil {
 						content = sett.LocalizeMessage(&i18n.Message{
@@ -340,7 +332,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 							})
 					}
 
-				case command.GuildStats:
+				case command.Guild:
 					err := bot.PostgresInterface.DeleteAllGamesForServer(id)
 					if err != nil {
 						content = sett.LocalizeMessage(&i18n.Message{
@@ -376,13 +368,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, sett)
 
 		case command.Debug.Name:
-			debugOperation, operationType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
-			if debugOperation == command.View {
-				if operationType == command.UserCache {
+			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
+			if action == command.View {
+				if opType == command.User {
 					cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
 					log.Println("View user cache")
 					return command.DebugResponse(command.View, cached, nil, id, err, sett)
-				} else if operationType == command.GameState {
+				} else if opType == command.GameState {
 					state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 					if state != nil {
 						jBytes, err := json.MarshalIndent(state, "", "  ")
@@ -391,8 +383,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						return command.DeadlockGameStateResponse(command.Debug.Name, sett)
 					}
 				}
-			} else if debugOperation == command.Clear {
-				if operationType == command.UserCache {
+			} else if action == command.Clear {
+				if opType == command.User {
 					if id != i.Member.User.ID {
 						if !isAdmin {
 							return command.InsufficientPermissionsResponse(sett)
@@ -401,7 +393,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
 					return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
 				}
-			} else if debugOperation == command.UnmuteAll {
+			} else if action == command.UnmuteAll {
 				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 				bot.applyToAll(dgs, false, false)
 				// TODO inform the user of how successful this command was
