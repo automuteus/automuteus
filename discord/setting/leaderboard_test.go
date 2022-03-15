@@ -43,17 +43,7 @@ func TestFnLeaderboardNameMention(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "notanumber"})
-	if valid {
-		t.Error("Sending invalid args shuld never result in valid settings change")
-	}
-
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "invalid"})
-	if valid {
-		t.Error("Invalid leaderboard name mention should never result in a valid settings change")
-	}
-
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "false"})
+	_, valid := FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "false"})
 	if !valid {
 		t.Error("Valid leaderboard name mention should result in a valid settings change")
 	}
@@ -61,7 +51,7 @@ func TestFnLeaderboardNameMention(t *testing.T) {
 		t.Error("Valid leaderboard name mention (\"false\") was not set correctly")
 	}
 
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "t"})
+	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "true"})
 	if !valid {
 		t.Error("Valid leaderboard name mention should result in a valid settings change")
 	}

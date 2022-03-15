@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 	"strconv"
 )
 
@@ -18,13 +19,13 @@ func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{},
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
+		log.Println("error for parseint in LeaderboardMin: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardMin.Unrecognized",
-			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardMin` for usage",
+			Other: "{{.Number}} is not a valid number. See `/settings leaderboard-min` for usage",
 		},
 			map[string]interface{}{
-				"Number":        args[2],
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Number": args[2],
 			}), false
 	}
 	if num > 100 || num < 1 {
@@ -55,18 +56,8 @@ func FnLeaderboardNameMention(sett *settings.GuildSettings, args []string) (inte
 	}
 
 	val := args[2]
-	if val != "t" && val != "true" && val != "f" && val != "false" {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingLeaderboardMention.Unrecognized",
-			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings leaderboardMention` for usage",
-		},
-			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
-			}), false
-	}
 
-	newSet := val == "t" || val == "true"
+	newSet := val == "true"
 	sett.SetLeaderboardMention(newSet)
 	if newSet {
 		return sett.LocalizeMessage(&i18n.Message{
@@ -92,13 +83,13 @@ func FnLeaderboardSize(sett *settings.GuildSettings, args []string) (interface{}
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
+		log.Println("error for parseint in LeaderboardSize: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLeaderboardSize.Unrecognized",
-			Other: "{{.Number}} is not a valid number. See `{{.CommandPrefix}} settings leaderboardSize` for usage",
+			Other: "{{.Number}} is not a valid number. See `/settings leaderboard-size` for usage",
 		},
 			map[string]interface{}{
-				"Number":        args[2],
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Number": args[2],
 			}), false
 	}
 	if num > 10 || num < 1 {

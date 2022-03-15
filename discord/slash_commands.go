@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/settings"
@@ -16,6 +17,14 @@ import (
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
+
+func UseSlashResponse(sett *settings.GuildSettings) string {
+	return sett.LocalizeMessage(&i18n.Message{
+		ID: "responses.useslashcommand",
+		Other: "I have been updated to use Slash Commands, please see `/help` for more info!\n\n" +
+			"(If the command doesn't appear, you may need to reinvite the bot: https://add.automute.us)",
+	})
+}
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	response := bot.slashCommandHandler(s, i)
@@ -40,6 +49,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	if interactionLock == nil {
 		return nil
 	}
+	defer metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	defer interactionLock.Release(ctx)
 
 	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)
@@ -144,6 +154,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, "", sett)
 
 		case command.Settings.Name:
+			if !isAdmin {
+				return command.InsufficientPermissionsResponse(sett)
+			}
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
 			isPrem := !premium.IsExpired(premStatus, days)
 			setting, arg := command.GetSettingsParams(s, i.GuildID, i.ApplicationCommandData().Options)
@@ -255,7 +268,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				fallthrough
 			case command.PrivacyOptIn:
-				err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
+				_, err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
 				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 			case command.PrivacyShowMe:
@@ -388,6 +401,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
 					return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
 				}
+			} else if debugOperation == command.UnmuteAll {
+				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+				bot.applyToAll(dgs, false, false)
+				// TODO inform the user of how successful this command was
+				return command.PrivateResponse(ThumbsUp)
 			}
 		}
 

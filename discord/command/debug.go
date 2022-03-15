@@ -63,6 +63,12 @@ var Debug = discordgo.ApplicationCommand{
 				},
 			},
 		},
+		{
+			Name:        UnmuteAll,
+			Description: "Unmute all players",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			// TODO sub-arguments to unmute specific players?
+		},
 	},
 }
 
@@ -75,6 +81,8 @@ func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.Ap
 		return options[0].Options[0].Name, UserCache, userID
 	case GameState:
 		return options[0].Options[0].Name, GameState, ""
+	case UnmuteAll:
+		return UnmuteAll, UnmuteAll, ""
 	}
 	return "", "", ""
 }

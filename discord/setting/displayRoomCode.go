@@ -21,11 +21,10 @@ func FnDisplayRoomCode(sett *settings.GuildSettings, args []string) (interface{}
 	if !valid[val] {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.Unrecognized",
-			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings displayRoomCode` for usage",
+			Other: "{{.Arg}} is not an expected value. See `/settings display-room-code` for usage",
 		},
 			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Arg": val,
 			}), false
 	}
 

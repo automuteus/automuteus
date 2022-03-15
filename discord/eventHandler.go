@@ -71,7 +71,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					for lock == nil {
 						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 					}
-					if job.Payload == trueString {
+					if job.Payload == "true" {
 						dgs.Linked = true
 					} else {
 						dgs.Linked = false
@@ -508,7 +508,7 @@ func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver gam
 			for _, pi := range gameOver.PlayerInfos {
 				// only override for the imposters
 				if pi.IsImpostor {
-					if strings.ToLower(pi.Name) == strings.ToLower(inGameData.Name) {
+					if strings.EqualFold(pi.Name, inGameData.Name) {
 						role = game.ImposterRole
 						won = imposterWin
 						break

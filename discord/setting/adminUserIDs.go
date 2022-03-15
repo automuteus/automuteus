@@ -38,7 +38,7 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 
 	if args[2] != "clear" && args[2] != "c" {
 		userName := args[2]
-		ID, err := discord.ExtractUserIDFromMention(userName)
+		ID, err := discord.ExtractUserIDFromText(userName)
 		if ID == "" || err != nil {
 			return sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingAdminUserIDs.notFound",

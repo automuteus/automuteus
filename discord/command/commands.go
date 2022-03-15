@@ -15,6 +15,7 @@ const (
 	DefaultMaxActiveGames = 150
 	View                  = "view"
 	Clear                 = "clear"
+	UnmuteAll             = "unmute-all"
 )
 
 // All is all slash commands for the bot, ordered to match the README

@@ -60,9 +60,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSetti
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.userStatsEmbed.NoPremium",
-		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more",
 	})
 
 	if isPrem {
@@ -586,9 +584,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.guildStatsEmbed.NoPremium",
-		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more",
 	})
 
 	if isPrem {

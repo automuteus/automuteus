@@ -5,6 +5,7 @@ import (
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 	"strconv"
 )
 
@@ -19,13 +20,13 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 
 	num, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
+		log.Println("error for parseint in MatchSummary: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Unrecognized",
-			Other: "{{.Minutes}} is not a valid number. See `{{.CommandPrefix}} settings matchSummary` for usage",
+			Other: "{{.Minutes}} is not a valid number. See `/settings match-summary` for usage",
 		},
 			map[string]interface{}{
-				"Minutes":       args[2],
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Minutes": args[2],
 			}), false
 	}
 	if num > 60 || num < -1 {
@@ -67,7 +68,7 @@ func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interfa
 		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), s, sett), false
 	}
 
-	channelID, err := discord.ExtractChannelIDFromMention(args[2])
+	channelID, err := discord.ExtractChannelIDFromText(args[2])
 	if err != nil {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummaryChannel.invalidChannelID",

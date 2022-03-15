@@ -12,7 +12,7 @@ func testSettingsFn(fn func(settings *settings.GuildSettings, args []string) (in
 		return nil, errors.New("sending nil settings should never result in valid settings change")
 	}
 
-	sett := settings.MakeGuildSettings("")
+	sett := settings.MakeGuildSettings()
 	_, valid = fn(sett, []string{})
 	if valid {
 		return nil, errors.New("sending no args should never result in valid settings change")

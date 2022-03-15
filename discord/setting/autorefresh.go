@@ -19,11 +19,10 @@ func FnAutoRefresh(sett *settings.GuildSettings, args []string) (interface{}, bo
 	if val != "t" && val != "true" && val != "f" && val != "false" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAutoRefresh.Unrecognized",
-			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage",
+			Other: "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage",
 		},
 			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Arg": val,
 			}), false
 	}
 

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/settings"
-	"os"
-
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"log"
@@ -14,7 +12,7 @@ import (
 
 func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettings, args []string, prem bool) interface{} {
 	if len(args) == 1 {
-		return settingResponse(sett.GetCommandPrefix(), setting.AllSettings, sett, prem)
+		return settingResponse(setting.AllSettings, sett, prem)
 	}
 	var sendMsg interface{}
 	// if command invalid, no need to reapply changes to json file
@@ -81,7 +79,7 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 		// TODO need to consider if the settings are too long? Is that possible?
 		return fmt.Sprintf("```JSON\n%s\n```", jBytes)
 	case setting.Reset:
-		sett = settings.MakeGuildSettings(os.Getenv("AUTOMUTEUS_GLOBAL_PREFIX"))
+		sett = settings.MakeGuildSettings()
 		sendMsg = "Resetting guild settings to default values"
 		isValid = true
 	default:
@@ -94,8 +92,6 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 			})
 	}
 
-	// TODO do another check of validation for roleIDs and channelIDs here
-	// we have the bot/discord scope to allow querying discord and making sure they're valid
 	if isValid {
 		err := bot.StorageInterface.SetGuildSettings(guildID, sett)
 		if err != nil {

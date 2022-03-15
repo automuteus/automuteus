@@ -83,21 +83,21 @@ If you want to view command usage or see the available options, type `/help` in 
 
 ## Commands
 
-| Command        | Description                                                                                                            | Example                  |
-|----------------|------------------------------------------------------------------------------------------------------------------------|--------------------------|
-| `/help`        | Print help info and command usage                                                                                      |                          |
-| `/new`         | Start a new game in the current text channel                                                                           |                          |
-| `/refresh`     | Remake the bot's status message entirely, in case it ends up too far up in the chat.                                   |                          |
-| `/pause`       | Pause the bot, and don't let it automute anyone until unpaused.                                                        |                          |
-| `/end`         | End the game entirely, and stop tracking players. Unmutes all and resets state                                         |                          |
-| `/link`        | Manually link a discord user to their in-game color                                                                    | `/link @Soup cyan`       |
-| `/unlink`      | Manually unlink a player                                                                                               | `/unlink @Soup`          |
-| `.au settings` | View and change settings for the bot, such as the command prefix or mute behavior                                      |                          |
-| `/privacy`     | View privacy and data collection information about the bot                                                             |                          |
-| `/info`        | View general info about the Bot                                                                                        |                          |
-| `/map`         | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
-| `/stats`       | View detailed stats about Among Us games played on the current server, or by a specific player                         | `/stats user view @Soup` |
-| `/premium`     | View information about AutoMuteUs Premium, and the current premium status of your server                               |                          |
+| Command     | Description                                                                                                            | Example                  |
+|-------------|------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| `/help`     | Print help info and command usage                                                                                      |                          |
+| `/new`      | Start a new game in the current text channel                                                                           |                          |
+| `/refresh`  | Remake the bot's status message entirely, in case it ends up too far up in the chat.                                   |                          |
+| `/pause`    | Pause the bot, and don't let it automute anyone until unpaused.                                                        |                          |
+| `/end`      | End the game entirely, and stop tracking players. Unmutes all and resets state                                         |                          |
+| `/link`     | Manually link a discord user to their in-game color                                                                    | `/link @Soup cyan`       |
+| `/unlink`   | Manually unlink a player                                                                                               | `/unlink @Soup`          |
+| `/settings` | View and change settings for the bot, such as the command prefix or mute behavior                                      |                          |
+| `/privacy`  | View privacy and data collection information about the bot                                                             |                          |
+| `/info`     | View general info about the Bot                                                                                        |                          |
+| `/map`      | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
+| `/stats`    | View detailed stats about Among Us games played on the current server, or by a specific player                         | `/stats user view @Soup` |
+| `/premium`  | View information about AutoMuteUs Premium, and the current premium status of your server                               |                          |
 
 # Privacy
 

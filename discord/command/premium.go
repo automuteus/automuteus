@@ -166,19 +166,16 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 					Name: "Bot Invites",
 					Value: sett.LocalizeMessage(&i18n.Message{
 						ID:    "responses.premiumResponse.Invites",
-						Other: "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!",
-					}, map[string]interface{}{
-						"CommandPrefix": sett.GetCommandPrefix(),
+						Other: "View a list of Premium bots you can invite with `/premium invites`!",
 					}),
 					Inline: false,
 				},
 				{
 					Name: "Premium Settings",
 					Value: sett.LocalizeMessage(&i18n.Message{
-						ID:    "responses.premiumResponse.SettingsDescExtra",
-						Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
-					}, map[string]interface{}{
-						"CommandPrefix": sett.GetCommandPrefix(),
+						ID: "responses.premiumResponse.SettingsDescExtra",
+						// TODO update this text, not accurate
+						Other: "Look for the settings marked with 💎 under `/settings!`",
 					}),
 					Inline: false,
 				},

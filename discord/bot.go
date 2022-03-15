@@ -91,8 +91,6 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 	dg.LogLevel = discordgo.LogInformational
 
 	dg.AddHandler(bot.handleVoiceStateChange)
-	// Register the messageCreate func as a callback for MessageCreate events.
-	dg.AddHandler(bot.handleMessageCreate)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
@@ -103,7 +101,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, extraT
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuildMessages | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)

@@ -19,7 +19,7 @@ import (
 
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-func settingResponse(commandPrefix string, settings []setting.Setting, sett *settings.GuildSettings, prem bool) *discordgo.MessageEmbed {
+func settingResponse(settings []setting.Setting, sett *settings.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -29,11 +29,8 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.settingResponse.Description",
-			Other: "Type `{{.CommandPrefix}} settings <setting>` to change a setting from those listed below",
-		},
-			map[string]interface{}{
-				"CommandPrefix": commandPrefix,
-			}),
+			Other: "Type `/settings <setting>` to change a setting from those listed below",
+		}),
 		Timestamp: "",
 		Color:     15844367, // GOLD
 		Image:     nil,
@@ -63,11 +60,8 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.settingResponse.PremiumNoThanks",
-			Other: "The following settings are only for AutoMuteUs premium users.\nType `{{.CommandPrefix}} premium` to learn more!",
-		},
-			map[string]interface{}{
-				"CommandPrefix": commandPrefix,
-			})
+			Other: "The following settings are only for AutoMuteUs premium users.\nType `/premium` to learn more!",
+		})
 	}
 	fields = append(fields, &discordgo.MessageEmbedField{
 		Name:   "\u200B",
@@ -410,8 +404,6 @@ func (dgs *GameState) makeDescription(sett *settings.GuildSettings) string {
 func nonPremiumSettingResponse(sett *settings.GuildSettings) string {
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.nonPremiumSetting.Desc",
-		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `{{.CommandPrefix}} premium` for details",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details",
 	})
 }

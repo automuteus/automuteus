@@ -51,20 +51,20 @@ func (bot *Bot) refreshGameLiveness(code string) {
 	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
-func (bot *Bot) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
+func (bot *Bot) rateLimitEventCallback(_ *discordgo.Session, rl *discordgo.RateLimit) {
 	log.Println(rl.Message)
 	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.InvalidRequest, 1)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SAdd(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SAdd(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (redisInterface *RedisInterface) LeaveUniqueGuildCounter(guildID string) {
-	_, err := redisInterface.client.SRem(ctx, rediskey.TotalGuildsSet, string(storage.HashGuildID(guildID))).Result()
+	_, err := redisInterface.client.SRem(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID))).Result()
 	if err != nil {
 		log.Println(err)
 	}
