@@ -83,7 +83,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	g, err := s.State.Guild(i.GuildID)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return command.PrivateErrorResponse("get-guild", err, sett)
 	}
 
 	isAdmin, isPermissioned := false, false
@@ -222,11 +222,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 			// if we paused the game, unmute/undeafen all players
 			if !dgs.Running {
-				bot.applyToAll(dgs, false, false)
+				err = bot.applyToAll(dgs, false, false)
 			}
-
 			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-			// TODO inform the user of how successful this command was
+			if err != nil {
+				return command.PrivateErrorResponse(command.Pause.Name, err, sett)
+			}
 			return command.PrivateResponse(ThumbsUp)
 
 		case command.End.Name:
@@ -240,9 +241,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				delete(bot.EndGameChannels, dgs.ConnectCode)
 
-				bot.applyToAll(dgs, false, false)
-
-				// TODO inform the user of how successful this command was
+				err = bot.applyToAll(dgs, false, false)
+				if err != nil {
+					return command.PrivateErrorResponse(command.End.Name, err, sett)
+				}
 				return command.PrivateResponse(ThumbsUp)
 			}
 			return command.DeadlockGameStateResponse(command.End.Name, sett)
@@ -254,13 +256,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.PrivacyResponse(privArg, nil, nil, nil, sett)
 
 			case command.PrivacyOptOut:
-				err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
+				err = bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
 				if err != nil {
 					return command.PrivacyResponse(privArg, nil, nil, err, sett)
 				}
 				fallthrough
 			case command.PrivacyOptIn:
-				_, err := bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
+				err = bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
 				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 			case command.PrivacyShowMe:
@@ -395,8 +397,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 			} else if action == command.UnmuteAll {
 				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-				bot.applyToAll(dgs, false, false)
-				// TODO inform the user of how successful this command was
+				err = bot.applyToAll(dgs, false, false)
+				if err != nil {
+					return command.PrivateErrorResponse(command.UnmuteAll, err, sett)
+				}
 				return command.PrivateResponse(ThumbsUp)
 			}
 		}

@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/automuteus/metrics"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/go-redis/redis/v8"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"strconv"
 	"strings"
@@ -88,7 +90,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}
 				case task.LobbyJob:
 					var lobby game.Lobby
-					err := json.Unmarshal([]byte(job.Payload.(string)), &lobby)
+					err = json.Unmarshal([]byte(job.Payload.(string)), &lobby)
 					if err != nil {
 						log.Println(err)
 						break
@@ -106,7 +108,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					bot.processTransition(game.Phase(num), dgsRequest)
 				case task.PlayerJob:
 					var player game.Player
-					err := json.Unmarshal([]byte(job.Payload.(string)), &player)
+					err = json.Unmarshal([]byte(job.Payload.(string)), &player)
 					if err != nil {
 						log.Println(err)
 						break
@@ -116,9 +118,21 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					}
 
 					sett := bot.StorageInterface.GetGuildSettings(guildID)
-					shouldHandleTracked, userID := bot.processPlayer(sett, player, dgsRequest)
+					shouldHandleTracked, userID, readOnlyDgs, err := bot.processPlayer(sett, player, dgsRequest)
 					if shouldHandleTracked {
 						bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
+					}
+					if err != nil {
+						bot.PrimarySession.ChannelMessageSend(readOnlyDgs.GameStateMsg.MessageChannelID, sett.LocalizeMessage(&i18n.Message{
+							ID:    "processplayer.error",
+							Other: "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?",
+						},
+							map[string]interface{}{
+								"User":         discord.MentionByUserID(userID),
+								"VoiceChannel": discord.MentionByChannelID(readOnlyDgs.VoiceChannel),
+							},
+						))
+						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 					}
 					correlatedUserID = userID
 				case task.GameOverJob:
@@ -268,7 +282,8 @@ func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
 	return winners
 }
 
-func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string) {
+func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string, *GameState, error) {
+	var err error
 	if player.Name != "" {
 		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 		for lock == nil {
@@ -288,10 +303,11 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			// try pairing via the cached usernames
 			if userID == "" {
-				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				var uids map[string]interface{}
+				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			} else {
-				bot.applyToSingle(dgs, userID, false, false)
+				err = bot.applyToSingle(dgs, userID, false, false)
 			}
 
 			dgs.GameData.ClearPlayerData(player.Name)
@@ -304,7 +320,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				}
 			}
 
-			return true, userID
+			return true, userID, dgs, err
 		}
 		updated, isAliveUpdated, data := dgs.GameData.UpdatePlayer(player)
 		switch {
@@ -312,18 +328,20 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			log.Println("Detected a player joined, refreshing User data mappings")
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
-				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				var uids map[string]interface{}
+				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
-			return true, userID
+			return true, userID, dgs, err
 		case updated:
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
-				uids, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				var uids map[string]interface{}
+				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
@@ -332,24 +350,24 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 					if edited {
 						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 					}
-					return true, userID
+					return true, userID, dgs, err
 				}
 				log.Println("NOT updating the discord status message; would leak info")
-				return false, userID
+				return false, userID, dgs, err
 			}
 			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
 			if edited {
 				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 			}
 			if player.Action == game.EXILED {
-				return false, userID // don't apply a mute to this player
+				return false, userID, dgs, err // don't apply a mute to this player
 			}
-			return true, userID
+			return true, userID, dgs, err
 		default:
-			return false, ""
+			return false, "", nil, nil
 		}
 	}
-	return false, ""
+	return false, "", nil, nil
 }
 
 func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest) {
@@ -381,7 +399,10 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		if edited {
 			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
 		}
-		bot.applyToAll(dgs, false, false)
+		err := bot.applyToAll(dgs, false, false)
+		if err != nil {
+			log.Println(err)
+		}
 		// on a gameover event from the capture, it's like going to the lobby; use that delay
 	case game.GAMEOVER:
 		phase = game.LOBBY

@@ -132,3 +132,19 @@ func PrivateResponse(content string) *discordgo.InteractionResponse {
 		},
 	}
 }
+
+func PrivateErrorResponse(cmd string, err error, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6,
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.error",
+				Other: "Error executing `{{.Command}}`: `{{.Error}}`",
+			}, map[string]interface{}{
+				"Command": cmd,
+				"Error":   err.Error(),
+			}),
+		},
+	}
+}

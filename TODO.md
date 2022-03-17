@@ -1,4 +1,3 @@
-Slash Commands:
 - [ ] Search for unused functions/code relating to old command processing
 - [ ] Reintegrate Redis-based user rate limiting on fast command invocation
 - [X] Restrict premium invites viewing to admins only 

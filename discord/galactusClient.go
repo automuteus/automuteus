@@ -62,7 +62,7 @@ func RecordDiscordRequestsByCounts(client *redis.Client, counts *task.MuteDeafen
 	metrics.RecordDiscordRequests(client, metrics.InvalidRequest, counts.RateLimit)
 }
 
-func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) *task.MuteDeafenSuccessCounts {
+func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) (*task.MuteDeafenSuccessCounts, error) {
 	if lock != nil {
 		defer lock.Release(context.Background())
 	}
@@ -70,31 +70,31 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 	fullURL := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	log.Println(request)
 
 	resp, err := gc.client.Post(fullURL, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil
-	}
 
 	mds := task.MuteDeafenSuccessCounts{}
 	jBytes, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return &mds
+		return &mds, err
 	}
 	err = json.Unmarshal(jBytes, &mds)
 	if err != nil {
 		log.Println(err)
-		return &mds
+		return &mds, err
 	}
-	return &mds
+	if resp.StatusCode != http.StatusOK {
+		return &mds, errors.New("non 200 response: " + resp.Status)
+	}
+
+	return &mds, nil
 }

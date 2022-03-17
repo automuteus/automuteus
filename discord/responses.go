@@ -256,7 +256,6 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 		})
 	}
 
-	emojiLeave := "❌"
 	msg := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -269,10 +268,10 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMessage.Footer.Text",
-				Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
+				Other: "Use the select below with your in-game color! (or {{.X}} to leave)",
 			},
 				map[string]interface{}{
-					"emojiLeave": emojiLeave,
+					"X": X,
 				}),
 			IconURL:      "",
 			ProxyIconURL: "",

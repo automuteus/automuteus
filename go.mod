@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/automuteus/galactus v1.2.2
-	github.com/automuteus/utils v0.0.31
+	github.com/automuteus/utils v0.1.0
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.24.0
 	github.com/go-redis/redis/v8 v8.8.0
@@ -49,5 +49,3 @@ require (
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
-
-replace github.com/automuteus/utils v0.0.31 => ../utils
