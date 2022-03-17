@@ -3,7 +3,6 @@ module github.com/automuteus/automuteus
 go 1.17
 
 require (
-	github.com/automuteus/galactus v1.2.2
 	github.com/automuteus/utils v0.1.0
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.24.0
@@ -21,7 +20,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/georgysavva/scany v0.2.7 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/googollee/go-socket.io v1.4.4 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.8.1 // indirect

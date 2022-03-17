@@ -8,7 +8,6 @@ import (
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/automuteus/storage"
-	"github.com/automuteus/galactus/broker"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
@@ -391,7 +390,7 @@ func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewSta
 
 		// Premium users should always be allowed to start new games; only check the free guilds
 		if premTier == premium.FreeTier {
-			activeGames = broker.GetActiveGames(bot.RedisInterface.client, GameTimeoutSeconds)
+			activeGames = rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 			if activeGames > command.DefaultMaxActiveGames {
 				return command.NewLockout, activeGames
 			}
