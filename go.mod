@@ -1,6 +1,6 @@
 module github.com/automuteus/automuteus
 
-go 1.17
+go 1.18
 
 require (
 	github.com/automuteus/utils v0.1.0

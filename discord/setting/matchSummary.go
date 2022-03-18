@@ -11,14 +11,14 @@ import (
 
 func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(MatchSummary)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), s, sett), false
 	}
 
-	num, err := strconv.ParseInt(args[2], 10, 64)
+	num, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		log.Println("error for parseint in MatchSummary: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
@@ -26,7 +26,7 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 			Other: "{{.Minutes}} is not a valid number. See `/settings match-summary` for usage",
 		},
 			map[string]interface{}{
-				"Minutes": args[2],
+				"Minutes": args[0],
 			}), false
 	}
 	if num > 60 || num < -1 {
@@ -61,21 +61,21 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 
 func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(MatchSummaryChannel)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(sett.GetMatchSummaryChannelID(), s, sett), false
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(discord.MentionByChannelID(sett.GetMatchSummaryChannelID()), s, sett), false
 	}
 
-	channelID, err := discord.ExtractChannelIDFromText(args[2])
+	channelID, err := discord.ExtractChannelIDFromText(args[0])
 	if err != nil {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummaryChannel.invalidChannelID",
 			Other: "{{.channelID}} is not a valid text channel ID or mention!",
 		},
 			map[string]interface{}{
-				"channelID": args[2],
+				"channelID": args[0],
 			}), false
 	}
 

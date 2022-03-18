@@ -8,11 +8,11 @@ import (
 
 func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(AdminUserIDs)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
 	adminIDs := sett.GetAdminUserIDs()
-	if len(args) == 2 {
+	if len(args) == 0 {
 		adminCount := len(adminIDs) // caching for optimisation
 		// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
 		if adminCount == 0 {
@@ -25,19 +25,19 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 			for index, ID := range adminIDs {
 				switch {
 				case index == 0:
-					listOfAdmins += "<@" + ID + ">"
+					listOfAdmins += discord.MentionByUserID(ID)
 				case index == adminCount-1:
-					listOfAdmins += " and <@" + ID + ">"
+					listOfAdmins += " and " + discord.MentionByUserID(ID)
 				default:
-					listOfAdmins += ", <@" + ID + ">"
+					listOfAdmins += ", " + discord.MentionByUserID(ID)
 				}
 			}
 			return ConstructEmbedForSetting(listOfAdmins, s, sett), false
 		}
 	}
 
-	if args[2] != "clear" && args[2] != "c" {
-		userName := args[2]
+	if args[0] != "clear" && args[0] != "c" {
+		userName := args[0]
 		ID, err := discord.ExtractUserIDFromText(userName)
 		if ID == "" || err != nil {
 			return sett.LocalizeMessage(&i18n.Message{
@@ -53,18 +53,18 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 				sett.SetAdminUserIDs(append(oldIDs, ID))
 				return sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.newBotAdmin",
-					Other: "<@{{.UserID}}> is now a bot admin!",
+					Other: "{{.User}} is now a bot admin!",
 				},
 					map[string]interface{}{
-						"UserID": ID,
+						"User": discord.MentionByUserID(ID),
 					}), true
 			} else {
 				return sett.LocalizeMessage(&i18n.Message{
 					ID:    "settings.SettingAdminUserIDs.alreadyBotAdmin",
-					Other: "<@{{.UserID}}> was already a bot admin!",
+					Other: "{{.User}} was already a bot admin!",
 				},
 					map[string]interface{}{
-						"UserID": ID,
+						"User": discord.MentionByUserID(ID),
 					}), false
 			}
 		}

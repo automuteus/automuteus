@@ -8,11 +8,11 @@ import (
 
 func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(RoleIDs)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
 	oldRoleIDs := sett.GetPermissionRoleIDs()
-	if len(args) == 2 {
+	if len(args) == 0 {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
 		if adminRoleCount == 0 {
@@ -36,13 +36,13 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		}
 	}
 
-	if args[2] != "clear" && args[2] != "c" {
+	if args[0] != "clear" && args[0] != "c" {
 		var newRoleIDs []string
 		// roles the User mentioned in their message
 		var roleIDs []string
 		var sendMessages []string
 
-		for _, roleName := range args[2:] {
+		for _, roleName := range args[0:] {
 			if roleName == "" || roleName == " " {
 				// User added a double space by accident, ignore it
 				continue

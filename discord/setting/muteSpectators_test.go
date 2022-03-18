@@ -8,17 +8,17 @@ func TestFnMuteSpectators(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnMuteSpectators(sett, []string{"sett", "mutespec", "nottrueorfalse"})
+	_, valid := FnMuteSpectators(sett, []string{"nottrueorfalse"})
 	if valid {
 		t.Error("Invalid mute spectators arg should never result in a valid settings change")
 	}
 
-	_, valid = FnMuteSpectators(sett, []string{"sett", "mutespec", "false"})
+	_, valid = FnMuteSpectators(sett, []string{"false"})
 	if valid {
 		t.Error("Identical mute spectator arg to default should never result in a valid settings change")
 	}
 
-	_, valid = FnMuteSpectators(sett, []string{"sett", "mutespec", "true"})
+	_, valid = FnMuteSpectators(sett, []string{"true"})
 	if !valid {
 		t.Error("Valid mute spectator arg should result in a valid settings change")
 	}
@@ -26,7 +26,7 @@ func TestFnMuteSpectators(t *testing.T) {
 		t.Error("Valid match summary (\"true\") was not set correctly")
 	}
 
-	_, valid = FnMuteSpectators(sett, []string{"sett", "mutespec", "false"})
+	_, valid = FnMuteSpectators(sett, []string{"false"})
 	if !valid {
 		t.Error("Valid mute spectator arg should result in a valid settings change")
 	}

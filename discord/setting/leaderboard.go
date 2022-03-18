@@ -10,14 +10,14 @@ import (
 
 func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(LeaderboardMin)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardMin()), s, sett), false
 	}
 
-	num, err := strconv.ParseInt(args[2], 10, 64)
+	num, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		log.Println("error for parseint in LeaderboardMin: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
@@ -25,7 +25,7 @@ func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{},
 			Other: "{{.Number}} is not a valid number. See `/settings leaderboard-min` for usage",
 		},
 			map[string]interface{}{
-				"Number": args[2],
+				"Number": args[0],
 			}), false
 	}
 	if num > 100 || num < 1 {
@@ -48,14 +48,14 @@ func FnLeaderboardMin(sett *settings.GuildSettings, args []string) (interface{},
 
 func FnLeaderboardNameMention(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(LeaderboardMention)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetLeaderboardMention()), s, sett), false
 	}
 
-	val := args[2]
+	val := args[0]
 
 	newSet := val == "true"
 	sett.SetLeaderboardMention(newSet)
@@ -74,14 +74,14 @@ func FnLeaderboardNameMention(sett *settings.GuildSettings, args []string) (inte
 
 func FnLeaderboardSize(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(LeaderboardSize)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetLeaderboardSize()), s, sett), false
 	}
 
-	num, err := strconv.ParseInt(args[2], 10, 64)
+	num, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		log.Println("error for parseint in LeaderboardSize: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
@@ -89,7 +89,7 @@ func FnLeaderboardSize(sett *settings.GuildSettings, args []string) (interface{}
 			Other: "{{.Number}} is not a valid number. See `/settings leaderboard-size` for usage",
 		},
 			map[string]interface{}{
-				"Number": args[2],
+				"Number": args[0],
 			}), false
 	}
 	if num > 10 || num < 1 {

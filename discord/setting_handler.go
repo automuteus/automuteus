@@ -10,15 +10,11 @@ import (
 	"log"
 )
 
-func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettings, args []string, prem bool) interface{} {
-	if len(args) == 1 {
-		return settingResponse(setting.AllSettings, sett, prem)
-	}
+func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettings, settType string, args []string, prem bool) interface{} {
 	var sendMsg interface{}
 	// if command invalid, no need to reapply changes to json file
 	isValid := false
 
-	settType := args[1]
 	switch settType {
 	case setting.Language:
 		sendMsg, isValid = setting.FnLanguage(sett, args)
@@ -30,6 +26,10 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 		sendMsg, isValid = setting.FnUnmuteDeadDuringTasks(sett, args)
 	case setting.MapVersion:
 		sendMsg, isValid = setting.FnMapVersion(sett, args)
+	case setting.Delays:
+		sendMsg, isValid = setting.FnDelays(sett, args)
+	case setting.VoiceRules:
+		sendMsg, isValid = setting.FnVoiceRules(sett, args)
 	case setting.MatchSummary:
 		if !prem {
 			return nonPremiumSettingResponse(sett)

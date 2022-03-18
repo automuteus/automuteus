@@ -10,14 +10,14 @@ import (
 
 func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(Language)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(sett.GetLanguage(), s, sett), false
 	}
 
-	if args[2] == "reload" {
+	if args[0] == "reload" {
 		locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 		return sett.LocalizeMessage(&i18n.Message{
@@ -28,7 +28,7 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 				"Langs": locale.GetBundle().LanguageTags(),
 				"Count": len(locale.GetBundle().LanguageTags()),
 			}), false
-	} else if args[2] == "list" {
+	} else if args[0] == "list" {
 		// settings.LoadTranslations()
 
 		strLangs := ""
@@ -45,7 +45,7 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 			}), false
 	}
 
-	if len(args[2]) < 2 {
+	if len(args[0]) < 2 {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.tooShort",
 			Other: "Sorry, the language code is short. Available language codes: {{.Langs}}.",
@@ -65,7 +65,7 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 			}), false
 	}
 
-	langName := locale.GetLanguages()[args[2]]
+	langName := locale.GetLanguages()[args[0]]
 	if langName == "" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingLanguage.notFound",
@@ -76,7 +76,7 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 			}), false
 	}
 
-	sett.SetLanguage(args[2])
+	sett.SetLanguage(args[0])
 
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLanguage.set",

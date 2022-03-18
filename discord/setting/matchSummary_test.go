@@ -8,12 +8,12 @@ func TestFnMatchSummary(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnMatchSummary(sett, []string{"sett", "matchsumm", "notanumber"})
+	_, valid := FnMatchSummary(sett, []string{"notanumber"})
 	if valid {
 		t.Error("Invalid match summary should never result in a valid settings change")
 	}
 
-	_, valid = FnMatchSummary(sett, []string{"sett", "matchsumm", "-1"})
+	_, valid = FnMatchSummary(sett, []string{"-1"})
 	if !valid {
 		t.Error("Valid match summary should result in a valid settings change")
 	}
@@ -21,7 +21,7 @@ func TestFnMatchSummary(t *testing.T) {
 		t.Error("Valid match summary (\"-1\") was not set correctly")
 	}
 
-	_, valid = FnMatchSummary(sett, []string{"sett", "matchsumm", "0"})
+	_, valid = FnMatchSummary(sett, []string{"0"})
 	if !valid {
 		t.Error("Valid match summary should result in a valid settings change")
 	}
@@ -29,7 +29,7 @@ func TestFnMatchSummary(t *testing.T) {
 		t.Error("Valid match summary (\"0\") was not set correctly")
 	}
 
-	_, valid = FnMatchSummary(sett, []string{"sett", "matchsumm", "6"})
+	_, valid = FnMatchSummary(sett, []string{"6"})
 	if !valid {
 		t.Error("Valid match summary should result in a valid settings change")
 	}
@@ -44,22 +44,22 @@ func TestFnMatchSummaryChannel(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnMatchSummaryChannel(sett, []string{"sett", "matchsumchan", "notanumber"})
+	_, valid := FnMatchSummaryChannel(sett, []string{"notanumber"})
 	if valid {
 		t.Error("Invalid match summary channel should never result in a valid settings change")
 	}
 
-	_, valid = FnMatchSummaryChannel(sett, []string{"sett", "matchsumchan", "12345"})
+	_, valid = FnMatchSummaryChannel(sett, []string{"12345"})
 	if valid {
 		t.Error("Invalid match summary channel should never result in a valid settings change")
 	}
 
-	_, valid = FnMatchSummaryChannel(sett, []string{"sett", "matchsumchan", "-754788173384777943"})
+	_, valid = FnMatchSummaryChannel(sett, []string{"-754788173384777943"})
 	if valid {
 		t.Error("Invalid match summary channel should never result in a valid settings change")
 	}
 
-	_, valid = FnMatchSummaryChannel(sett, []string{"sett", "matchsumchan", "754788173384777943"})
+	_, valid = FnMatchSummaryChannel(sett, []string{"754788173384777943"})
 	if !valid {
 		t.Error("Valid match summary channel should result in a valid settings change")
 	}

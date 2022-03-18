@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fmt"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/bwmarrin/discordgo"
 	"log"
@@ -13,38 +12,14 @@ var Settings = discordgo.ApplicationCommand{
 	Options:     settingsToCommandOptions(),
 }
 
-func GetSettingsParams(s *discordgo.Session, guildID string, options []*discordgo.ApplicationCommandInteractionDataOption) (setting.Name, string) {
+func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (setting.Name, []string) {
 	sett := setting.GetSettingByName(options[0].Name)
-	switch sett.ArgumentType {
-	case discordgo.ApplicationCommandOptionString:
-		if len(options[0].Options) > 0 {
-			return sett.Name, options[0].Options[0].StringValue()
-		} else {
-			return sett.Name, View
-		}
-	case discordgo.ApplicationCommandOptionBoolean:
-		if len(options[0].Options) > 0 {
-			return sett.Name, fmt.Sprintf("%t", options[0].Options[0].BoolValue())
-		} else {
-			return sett.Name, View
-		}
-	case discordgo.ApplicationCommandOptionUser:
-		if len(options[0].Options) > 0 {
-			return sett.Name, options[0].Options[0].UserValue(s).Mention()
-		} else {
-			return sett.Name, View
-		}
-
-	case discordgo.ApplicationCommandOptionRole:
-		if len(options[0].Options) > 0 {
-			return sett.Name, options[0].Options[0].RoleValue(s, guildID).Mention()
-		} else {
-			return sett.Name, View
-		}
-	case 0:
-		return sett.Name, ""
+	args := make([]string, len(options[0].Options))
+	for i, v := range options[0].Options {
+		args[i] = sett.Arguments[i].String(v, s)
 	}
-	return "", ""
+
+	return sett.Name, args
 }
 
 func SettingsResponse(m interface{}) *discordgo.InteractionResponse {
@@ -77,14 +52,16 @@ func settingsToCommandOptions() []*discordgo.ApplicationCommandOption {
 	var choices []*discordgo.ApplicationCommandOption
 	for _, sett := range setting.AllSettings {
 		var options []*discordgo.ApplicationCommandOption
-		if sett.ArgumentType != 0 {
-			options = []*discordgo.ApplicationCommandOption{
-				{
-					Name:        sett.ArgumentName,
-					Description: "Argument for setting",
-					Type:        sett.ArgumentType,
-					Required:    false,
+		for _, opt := range sett.Arguments {
+			if opt.OptionType != 0 {
+				options = append(options, &discordgo.ApplicationCommandOption{
+					Name:        opt.Name,
+					Description: opt.Name,
+					Type:        opt.OptionType,
+					Required:    opt.Required,
+					Choices:     opt.Choices(),
 				},
+				)
 			}
 		}
 		choices = append(choices, &discordgo.ApplicationCommandOption{

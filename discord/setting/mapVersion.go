@@ -9,18 +9,18 @@ import (
 
 func FnMapVersion(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(MapVersion)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%T", sett.GetMapDetailed()), s, sett), false
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(fmt.Sprintf("%t", sett.GetMapDetailed()), s, sett), false
 	}
 
-	val := strings.ToLower(args[2])
-	sett.SetMapDetailed(val == "true")
+	val := strings.ToLower(args[0]) == "true"
+	sett.SetMapDetailed(val)
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingMapVersion.Success",
-		Other: "From now on, map-detailed is `{{.Arg}}`",
+		Other: "From now on, detailed map setting is `{{.Arg}}`",
 	},
 		map[string]interface{}{
 			"Arg": val,

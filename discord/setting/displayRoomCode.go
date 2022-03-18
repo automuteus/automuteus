@@ -9,14 +9,14 @@ import (
 
 func FnDisplayRoomCode(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 	s := GetSettingByName(DisplayRoomCode)
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
+	if len(args) == 0 {
 		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), s, sett), false
 	}
 
-	val := strings.ToLower(args[2])
+	val := strings.ToLower(args[0])
 	valid := map[string]bool{"always": true, "spoiler": true, "never": true}
 	if !valid[val] {
 		return sett.LocalizeMessage(&i18n.Message{
