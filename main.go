@@ -70,14 +70,9 @@ func discordMainWrapper() error {
 
 	log.Println(version + "-" + commit)
 
-	var extraTokens []string
-	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
-	if extraTokenStr != "" {
-		extraTokens = strings.Split(extraTokenStr, ",")
-	}
-
-	if len(extraTokens) > 0 {
-		log.Printf("You provided %d worker tokens so I'll be sending them to Galactus\n", len(extraTokens))
+	if os.Getenv("WORKER_BOT_TOKENS") != "" {
+		log.Println("WORKER_BOT_TOKENS is now a variable used by Galactus, not AutoMuteUs!")
+		log.Fatal("Move WORKER_BOT_TOKENS to Galactus' config")
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
@@ -175,7 +170,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, extraTokens, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}

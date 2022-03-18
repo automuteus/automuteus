@@ -40,21 +40,6 @@ func NewGalactusClient(address string) (*GalactusClient, error) {
 	return &gc, nil
 }
 
-func (gc *GalactusClient) AddToken(token string) error {
-	resp, err := gc.client.Post(gc.Address+"/addtoken", "application/json", bytes.NewBuffer([]byte(token)))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusAlreadyReported {
-		return errors.New("this token has already been added and recorded in Galactus")
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%d response from adding token", resp.StatusCode)
-	}
-	return nil
-}
-
 func RecordDiscordRequestsByCounts(client *redis.Client, counts *task.MuteDeafenSuccessCounts) {
 	metrics.RecordDiscordRequests(client, metrics.MuteDeafenOfficial, counts.Official)
 	metrics.RecordDiscordRequests(client, metrics.MuteDeafenWorker, counts.Worker)
