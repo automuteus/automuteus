@@ -17,23 +17,8 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 		// User didn't pass enough args
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.enoughArgs",
-			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`",
+			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [muted/deafened] [game phase] [alive/dead] [true/false]`",
 		}), false
-	}
-
-	switch {
-	case args[0] == "deaf":
-		args[0] = "deafened"
-	case args[0] == "mute":
-		args[0] = "muted"
-	default:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingVoiceRules.neitherMuteDeaf",
-			Other: "`{{.Arg}}` is neither `mute` nor `deaf`!",
-		},
-			map[string]interface{}{
-				"Arg": args[0],
-			}), false
 	}
 
 	gamePhase := amongus.GetPhaseFromString(args[1])
@@ -58,10 +43,10 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 	}
 
 	var oldValue bool
-	if args[2] == "muted" {
-		oldValue = sett.GetVoiceRule(true, gamePhase, args[2])
+	if args[0] == "muted" {
+		oldValue = sett.GetVoiceRule(true, gamePhase, args[0])
 	} else {
-		oldValue = sett.GetVoiceRule(false, gamePhase, args[2])
+		oldValue = sett.GetVoiceRule(false, gamePhase, args[0])
 	}
 
 	if len(args) == 3 {
@@ -89,21 +74,7 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 		}
 	}
 
-	var newValue bool
-	switch {
-	case args[3] == "true":
-		newValue = true
-	case args[3] == "false":
-		newValue = false
-	default:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingVoiceRules.neitherTrueFalse",
-			Other: "`{{.Arg}}` is neither `true` or `false`!",
-		},
-			map[string]interface{}{
-				"Arg": args[3],
-			}), false
-	}
+	newValue := args[3] == "true"
 
 	if newValue == oldValue {
 		if newValue {

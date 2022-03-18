@@ -12,14 +12,22 @@ var Settings = discordgo.ApplicationCommand{
 	Options:     settingsToCommandOptions(),
 }
 
-func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (setting.Name, []string) {
+func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (setting.Name, []string, error) {
 	sett := setting.GetSettingByName(options[0].Name)
 	args := make([]string, len(options[0].Options))
 	for i, v := range options[0].Options {
-		args[i] = sett.Arguments[i].String(v, s)
+		arg := sett.Arguments[i]
+		// TODO this should be more flexible, not just string arguments. But requires all the tests to change, etc
+		args[i] = arg.AsString(v, s)
+
+		// ensure that the option fulfills the constraints specified
+		err := arg.Validate(v)
+		if err != nil {
+			return sett.Name, args, err
+		}
 	}
 
-	return sett.Name, args
+	return sett.Name, args, nil
 }
 
 func SettingsResponse(m interface{}) *discordgo.InteractionResponse {

@@ -1,6 +1,7 @@
 package setting
 
 import (
+	"errors"
 	"fmt"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
@@ -74,64 +75,90 @@ type Argument struct {
 
 func (a *Argument) Choices() []*discordgo.ApplicationCommandOptionChoice {
 	var choices []*discordgo.ApplicationCommandOptionChoice
-	for _, choice := range a.optionChoices {
-		var name string
-		switch v := choice.(type) {
-		case int:
-			name = fmt.Sprintf("%d", v)
-		default:
-			name = choice.(string)
+
+	// non-string types have choices specified, but they are min/max constraints, not strict options
+	if a.OptionType == discordgo.ApplicationCommandOptionString {
+		for _, choice := range a.optionChoices {
+			choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+				Name:  choice.(string),
+				Value: choice,
+			})
 		}
-		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-			Name:  name,
-			Value: choice,
-		})
 	}
+
 	return choices
 }
 
 type IntOption int64
 
-func (i IntOption) String() string {
+func (i IntOption) AsString() string {
 	return fmt.Sprintf("%d", i)
 }
 
 type BoolOption bool
 
-func (b BoolOption) String() string {
+func (b BoolOption) AsString() string {
 	return fmt.Sprintf("%t", b)
 }
 
 type User string
 
-func (u User) String() string {
+func (u User) AsString() string {
 	return string(u)
 }
 
 type Channel string
 
-func (c Channel) String() string {
+func (c Channel) AsString() string {
 	return string(c)
 }
 
 type OptionType interface {
-	String() string
+	AsString() string
 }
 
-func (a Argument) String(option *discordgo.ApplicationCommandInteractionDataOption, s *discordgo.Session) string {
+func (a Argument) AsString(option *discordgo.ApplicationCommandInteractionDataOption, s *discordgo.Session) string {
 	switch a.OptionType {
 	case discordgo.ApplicationCommandOptionBoolean:
-		return BoolOption(option.BoolValue()).String()
+		return BoolOption(option.BoolValue()).AsString()
 	case discordgo.ApplicationCommandOptionString:
 		return option.StringValue()
 	case discordgo.ApplicationCommandOptionInteger:
-		return IntOption(option.IntValue()).String()
+		return IntOption(option.IntValue()).AsString()
 	case discordgo.ApplicationCommandOptionUser:
 		return option.UserValue(s).Mention()
 	case discordgo.ApplicationCommandOptionChannel:
 		return option.ChannelValue(s).Mention()
 	default:
 		return ""
+	}
+}
+
+func (a Argument) Validate(option *discordgo.ApplicationCommandInteractionDataOption) error {
+	switch a.OptionType {
+	case discordgo.ApplicationCommandOptionString:
+		if len(a.optionChoices) > 0 {
+			str := option.StringValue()
+			for _, v := range a.optionChoices {
+				if v.(string) == str {
+					return nil
+				}
+			}
+			return errors.New("no option found in constraints that matches the provided arg: " + str)
+		}
+		return nil
+	case discordgo.ApplicationCommandOptionInteger:
+		if len(a.optionChoices) == 2 {
+			v := int(option.IntValue())
+			if v >= a.optionChoices[0].(int) && v <= a.optionChoices[1].(int) {
+				return nil
+			} else {
+				return errors.New(fmt.Sprintf("argument %d was not in the range [%d, %d]", v, a.optionChoices[0].(int), a.optionChoices[1].(int)))
+			}
+		}
+		return nil
+	default:
+		return nil
 	}
 }
 
@@ -164,6 +191,7 @@ var AllSettings = []Setting{
 		Arguments: []Argument{
 			{"deaf-or-muted", discordgo.ApplicationCommandOptionString, []any{"deafened", "muted"}, true},
 			{"phase", discordgo.ApplicationCommandOptionString, phaseOptions, true},
+			{"alive", discordgo.ApplicationCommandOptionString, []any{"alive", "dead"}, true},
 			{"value", discordgo.ApplicationCommandOptionBoolean, []any{}, false},
 		},
 		Premium: false,

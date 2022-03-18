@@ -151,7 +151,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
 			isPrem := !premium.IsExpired(premStatus, days)
-			setting, args := command.GetSettingsParams(s, i.ApplicationCommandData().Options)
+			setting, args, err := command.GetSettingsParams(s, i.ApplicationCommandData().Options)
+			if err != nil {
+				return command.PrivateErrorResponse(command.Settings.Name+" "+string(setting), err, sett)
+			}
 			msg := bot.HandleSettingsCommand(i.GuildID, sett, string(setting), args, isPrem)
 			return command.SettingsResponse(msg)
 
