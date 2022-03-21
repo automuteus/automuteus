@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/metrics"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
@@ -82,4 +83,13 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 	}
 
 	return &mds, nil
+}
+
+func (gc *GalactusClient) VerifyPremiumMembership(guildID uint64, prem premium.Tier) error {
+	fullURL := fmt.Sprintf("%s/verify/%d/%d", gc.Address, guildID, prem)
+	_, err := gc.client.Post(fullURL, "application/json", nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

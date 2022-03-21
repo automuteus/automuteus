@@ -47,6 +47,8 @@ func main() {
 }
 
 func discordMainWrapper() error {
+	var isOfficial = os.Getenv("AUTOMUTEUS_OFFICIAL") != ""
+
 	discordToken := os.Getenv("DISCORD_BOT_TOKEN")
 	if discordToken == "" {
 		return errors.New("no DISCORD_BOT_TOKEN provided")
@@ -72,12 +74,13 @@ func discordMainWrapper() error {
 
 	if os.Getenv("WORKER_BOT_TOKENS") != "" {
 		log.Println("WORKER_BOT_TOKENS is now a variable used by Galactus, not AutoMuteUs!")
-		log.Fatal("Move WORKER_BOT_TOKENS to Galactus' config")
+		log.Fatal("Move WORKER_BOT_TOKENS to Galactus' config, then try again")
 	}
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
 	numShards, err := strconv.Atoi(numShardsStr)
 	if err != nil {
+		log.Println("No NUM_SHARDS specified; defaulting to 1")
 		numShards = 1
 	}
 
@@ -87,6 +90,7 @@ func discordMainWrapper() error {
 		return errors.New("you specified a shardID higher than or equal to the total number of shards")
 	}
 	if err != nil {
+		log.Println("No SHARD_ID specified; defaulting to 0")
 		shardID = 0
 	}
 
@@ -156,7 +160,7 @@ func discordMainWrapper() error {
 		return err
 	}
 
-	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
+	if !isOfficial {
 		go func() {
 			err := psql.LoadAndExecFromFile("./storage/postgres.sql")
 			if err != nil {
@@ -171,6 +175,9 @@ func discordMainWrapper() error {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
 	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	if bot == nil {
+		log.Fatal("bot failed to initialize; did you provide a valid Discord Bot Token?")
+	}
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
@@ -180,32 +187,34 @@ func discordMainWrapper() error {
 	}
 
 	var registeredCommands []registeredCommand
-	for _, guild := range slashCommandGuildIds {
-		for _, v := range command.All {
-			if guild == "" {
-				log.Printf("Registering command %s GLOBALLY\n", v.Name)
-			} else {
-				log.Printf("Registering command %s in guild %s\n", v.Name, guild)
-			}
+	if !isOfficial || shardID == 0 {
+		for _, guild := range slashCommandGuildIds {
+			for _, v := range command.All {
+				if guild == "" {
+					log.Printf("Registering command %s GLOBALLY\n", v.Name)
+				} else {
+					log.Printf("Registering command %s in guild %s\n", v.Name, guild)
+				}
 
-			id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
-			if err != nil {
-				log.Panicf("Cannot create command: %v", err)
-			} else {
-				registeredCommands = append(registeredCommands, registeredCommand{
-					GuildID:            guild,
-					ApplicationCommand: id,
-				})
+				id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
+				if err != nil {
+					log.Panicf("Cannot create command: %v", err)
+				} else {
+					registeredCommands = append(registeredCommands, registeredCommand{
+						GuildID:            guild,
+						ApplicationCommand: id,
+					})
+				}
 			}
 		}
+		log.Println("Finishing registering all commands!")
 	}
-	log.Println("Finishing registering all commands!")
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	if os.Getenv("AUTOMUTEUS_OFFICIAL") == "" {
+	if !isOfficial {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
 			if v.GuildID == "" {

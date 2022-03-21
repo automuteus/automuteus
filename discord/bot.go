@@ -174,7 +174,18 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		if err != nil {
 			log.Println(err)
 		}
-		go bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
+
+		go func() {
+			guild, err := bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
+			if err != nil {
+				log.Println(err)
+			} else if guild != nil {
+				err = bot.GalactusClient.VerifyPremiumMembership(guild.GuildID, premium.Tier(guild.Premium))
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}()
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
 		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID)

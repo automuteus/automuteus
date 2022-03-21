@@ -3,7 +3,7 @@ module github.com/automuteus/automuteus
 go 1.18
 
 require (
-	github.com/automuteus/utils v0.1.0
+	github.com/automuteus/utils v0.1.1
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.24.0
 	github.com/go-redis/redis/v8 v8.8.0
