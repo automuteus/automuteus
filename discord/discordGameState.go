@@ -73,15 +73,6 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 	return user, true
 }
 
-func (dgs *GameState) clearGameTracking(s *discordgo.Session) {
-	// clear the discord User links to underlying player data
-	dgs.ClearAllPlayerData()
-
-	dgs.VoiceChannel = ""
-
-	dgs.DeleteGameStateMsg(s)
-}
-
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 18)
 	num := 0

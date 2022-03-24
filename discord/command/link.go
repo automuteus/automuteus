@@ -40,16 +40,16 @@ func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommand
 	return options[0].UserValue(s).ID, strings.ReplaceAll(strings.ToLower(options[1].StringValue()), " ", "")
 }
 
-func LinkResponse(status LinkStatus, userID, colorOrName string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func LinkResponse(status LinkStatus, userID, color string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var content string
 	switch status {
 	case LinkSuccess:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.success",
-			Other: "Successfully linked {{.UserMention}} to an in-game player matching: `{{.ColorOrName}}`",
+			Other: "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`",
 		}, map[string]interface{}{
 			"UserMention": discord.MentionByUserID(userID),
-			"ColorOrName": colorOrName,
+			"Color":       color,
 		})
 	case LinkNoPlayer:
 		content = sett.LocalizeMessage(&i18n.Message{
@@ -61,9 +61,9 @@ func LinkResponse(status LinkStatus, userID, colorOrName string, sett *settings.
 	case LinkNoGameData:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.nogamedata",
-			Other: "No game data found for `{{.ColorOrName}}`",
+			Other: "No game data found for the color `{{.Color}}`",
 		}, map[string]interface{}{
-			"ColorOrName": colorOrName,
+			"Color": color,
 		})
 	}
 

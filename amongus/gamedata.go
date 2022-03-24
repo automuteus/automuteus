@@ -22,8 +22,16 @@ func NewGameData() GameData {
 		Phase:      game.MENU,
 		Room:       "",
 		Region:     "",
-		Map:        game.SKELD,
+		Map:        game.EMPTYMAP,
 	}
+}
+
+func (auData *GameData) Reset() {
+	// do NOT clear the player data
+	auData.Phase = game.MENU
+	auData.Room = ""
+	auData.Region = ""
+	auData.Map = game.EMPTYMAP
 }
 
 func (auData *GameData) SetRoomRegionMap(room, region string, playMap game.PlayMap) {
@@ -51,7 +59,7 @@ func (auData *GameData) UpdatePhase(phase game.Phase) (old game.Phase) {
 		if phase == game.LOBBY || (phase == game.TASKS && old == game.LOBBY) {
 			auData.SetAllAlive()
 		} else if phase == game.MENU {
-			auData.SetRoomRegionMap("", "", game.EMPTYMAP)
+			auData.Reset()
 		}
 	}
 	return old
@@ -84,10 +92,6 @@ func (auData *GameData) GetPlayMap() game.PlayMap {
 
 func (auData *GameData) ClearPlayerData(name string) {
 	delete(auData.PlayerData, name)
-}
-
-func (auData *GameData) ClearAllPlayerData() {
-	auData.PlayerData = map[string]PlayerData{}
 }
 
 func (auData *GameData) applyPlayerUpdate(update game.Player) (bool, bool, PlayerData) {

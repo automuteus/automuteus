@@ -81,13 +81,6 @@ func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, 
 	return msg
 }
 
-func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
-	err := s.ChannelMessageDelete(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func matchIDCode(connectCode string, matchID int64) string {
 	return fmt.Sprintf("%s:%d", connectCode, matchID)
 }

@@ -12,22 +12,20 @@ var Settings = discordgo.ApplicationCommand{
 	Options:     settingsToCommandOptions(),
 }
 
-func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (setting.Name, []string, error) {
+func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, []string) {
 	sett := setting.GetSettingByName(options[0].Name)
 	args := make([]string, len(options[0].Options))
 	for i, v := range options[0].Options {
 		arg := sett.Arguments[i]
-		// TODO this should be more flexible, not just string arguments. But requires all the tests to change, etc
-		args[i] = arg.AsString(v, s)
-
-		// ensure that the option fulfills the constraints specified
-		err := arg.Validate(v)
-		if err != nil {
-			return sett.Name, args, err
+		if arg.Type == discordgo.ApplicationCommandOptionSubCommand {
+			args[i] = setting.ToString(v.Options[0], s)
+		} else {
+			// TODO this should be more flexible, not just string arguments. But requires all the tests to change, etc
+			args[i] = setting.ToString(v, s)
 		}
 	}
 
-	return sett.Name, args, nil
+	return sett.Name, args
 }
 
 func SettingsResponse(m interface{}) *discordgo.InteractionResponse {
@@ -59,24 +57,17 @@ func SettingsResponse(m interface{}) *discordgo.InteractionResponse {
 func settingsToCommandOptions() []*discordgo.ApplicationCommandOption {
 	var choices []*discordgo.ApplicationCommandOption
 	for _, sett := range setting.AllSettings {
-		var options []*discordgo.ApplicationCommandOption
-		for _, opt := range sett.Arguments {
-			if opt.OptionType != 0 {
-				options = append(options, &discordgo.ApplicationCommandOption{
-					Name:        opt.Name,
-					Description: opt.Name,
-					Type:        opt.OptionType,
-					Required:    opt.Required,
-					Choices:     opt.Choices(),
-				},
-				)
-			}
+		optionType := discordgo.ApplicationCommandOptionSubCommand
+
+		// if arguments are subcommands, then make this one a group
+		if len(sett.Arguments) > 0 && sett.Arguments[0].Type == discordgo.ApplicationCommandOptionSubCommand {
+			optionType = discordgo.ApplicationCommandOptionSubCommandGroup
 		}
 		choices = append(choices, &discordgo.ApplicationCommandOption{
-			Name:        string(sett.Name),
+			Name:        sett.Name,
 			Description: sett.ShortDesc,
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Options:     options,
+			Type:        optionType,
+			Options:     sett.Arguments,
 		})
 	}
 	return choices

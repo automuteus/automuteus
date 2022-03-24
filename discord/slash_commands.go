@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"fmt"
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/metrics"
@@ -123,14 +124,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			userID, colorOrName := command.GetLinkParams(s, i.ApplicationCommandData().Options)
+			userID, color := command.GetLinkParams(s, i.ApplicationCommandData().Options)
 
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Link.Name, sett)
 			}
-			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, colorOrName, sett)
+			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, color, sett)
 
 		case command.Unlink.Name:
 			if !isPermissioned {
@@ -151,11 +152,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
 			isPrem := !premium.IsExpired(premStatus, days)
-			setting, args, err := command.GetSettingsParams(s, i.ApplicationCommandData().Options)
-			if err != nil {
-				return command.PrivateErrorResponse(command.Settings.Name+" "+string(setting), err, sett)
-			}
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, string(setting), args, isPrem)
+			setting, args := command.GetSettingsParams(s, i.ApplicationCommandData().Options)
+			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, isPrem)
 			return command.SettingsResponse(msg)
 
 		case command.New.Name:
@@ -203,9 +201,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}, sett)
 			}
 		case command.Refresh.Name:
-			bot.RefreshGameStateMessage(gsr, sett)
-			// TODO inform the user of how successful this command was
-			return command.PrivateResponse(ThumbsUp)
+			if bot.RefreshGameStateMessage(gsr, sett) {
+				return command.PrivateResponse(ThumbsUp)
+			} else {
+				return command.NoGameResponse(sett)
+			}
 
 		case command.Pause.Name:
 			if !isPermissioned {
@@ -216,6 +216,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Printf("No lock could be obtained when pausing game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Pause.Name, sett)
 			}
+			if !dgs.GameStateMsg.Exists() {
+				bot.RedisInterface.SetDiscordGameState(nil, lock)
+				return command.NoGameResponse(sett)
+			}
+
 			dgs.Running = !dgs.Running
 
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -235,6 +240,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 			if dgs != nil {
+				if !dgs.GameStateMsg.Exists() {
+					return command.NoGameResponse(sett)
+				}
+
 				if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 					v <- true
 				}
@@ -292,7 +301,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						tokens := strings.Split(id, ":")
 						embed = bot.GameStatsEmbed(i.GuildID, tokens[1], tokens[0], prem, sett)
 					} else {
-						// TODO report bad match ID code status
+						err := fmt.Errorf("invalid match code provided: %s, should resemble something like `1A2B3C4D:12345`", id)
+						return command.PrivateErrorResponse(command.Stats.Name+" "+command.Match, err, sett)
 					}
 				}
 				if embed != nil {
@@ -428,6 +438,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, userID, testValue string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	if testValue != "" {
+		// don't care if it's successful, just always unlink
+		unlinkPlayer(dgs, userID)
 		status, err := linkPlayer(bot.RedisInterface, dgs, userID, testValue)
 		if err != nil {
 			log.Println(err)
@@ -441,10 +453,7 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, use
 		}
 		return command.LinkResponse(status, userID, testValue, sett)
 	} else {
-		status, err := unlinkPlayer(dgs, userID)
-		if err != nil {
-			log.Println(err)
-		}
+		status := unlinkPlayer(dgs, userID)
 		if status == command.UnlinkSuccess {
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))

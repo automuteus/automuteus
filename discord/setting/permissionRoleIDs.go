@@ -37,47 +37,27 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 	}
 
 	if args[0] != "clear" && args[0] != "c" {
-		var newRoleIDs []string
-		// roles the User mentioned in their message
-		var roleIDs []string
-		var sendMessages []string
-
-		for _, roleName := range args[0:] {
-			if roleName == "" || roleName == " " {
-				// User added a double space by accident, ignore it
-				continue
-			}
-			ID, err := discord.ExtractRoleIDFromText(roleName)
-			if err != nil {
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
-					ID:    "settings.SettingPermissionRoleIDs.notFound",
-					Other: "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role or the roleID",
-				},
-					map[string]interface{}{
-						"RoleName": roleName,
-					}))
-				continue
-			} else {
-				roleIDs = append(roleIDs, ID)
-			}
+		roleName := args[0]
+		ID, err := discord.ExtractRoleIDFromText(roleName)
+		if err != nil {
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.notFound",
+				Other: "Sorry, I didn't recognize the role you provided",
+			}), false
 		}
 
-		for _, ID := range roleIDs {
-			if ID != "" {
-				newRoleIDs = append(newRoleIDs, ID)
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
-					ID:    "settings.SettingPermissionRoleIDs.newBotAdmins",
-					Other: "<@&{{.UserID}}>s are now bot admins!",
-				},
-					map[string]interface{}{
-						"UserID": ID,
-					}))
-			}
+		if ID != "" && !contains(oldRoleIDs, ID) {
+			sett.SetPermissionRoleIDs(append(oldRoleIDs, ID))
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.newBotOperator",
+				Other: "I successfully added that role as bot operators!",
+			}), true
+		} else {
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.alreadyBotOperator",
+				Other: "That role was already a bot operator!",
+			}), false
 		}
-		if len(newRoleIDs) > 0 {
-			sett.SetPermissionRoleIDs(newRoleIDs)
-		}
-		return sendMessages, len(newRoleIDs) > 0
 	} else {
 		sett.SetPermissionRoleIDs([]string{})
 		return sett.LocalizeMessage(&i18n.Message{

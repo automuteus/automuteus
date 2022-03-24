@@ -22,47 +22,36 @@ var botInvites = []string{
 	"https://discord.com/api/oauth2/authorize?client_id=780589033033302036&permissions=12582912&scope=bot", // amu4
 	"https://discord.com/api/oauth2/authorize?client_id=780589278195220480&permissions=12582912&scope=bot"} // amu5
 
-type PremiumArg int
-
 const (
-	PremiumInfo PremiumArg = iota
-	PremiumInvites
+	PremiumInfo    string = "info"
+	PremiumInvites        = "invites"
 )
 
-const (
-	Invites string = "invites"
-)
-
+// TODO transfer functionality
+// TODO "add another gold server" functionality
+// TODO cancel functionality? This is harder/needs Paypal hooks
 var Premium = discordgo.ApplicationCommand{
 	Name:        "premium",
 	Description: "View information about AutoMuteUs Premium",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        "argument",
-			Description: "Premium argument",
-			Type:        discordgo.ApplicationCommandOptionInteger,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{
-					Name:  Invites,
-					Value: PremiumInvites,
-				},
-				// TODO transfer functionality
-				// TODO "add another gold server" functionality
-				// TODO cancel functionality? This is harder/needs Paypal hooks
-			},
-			Required: false,
+			Name:        PremiumInfo,
+			Description: "View AutoMuteUs Premium information",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+		},
+		{
+			Name:        PremiumInvites,
+			Description: "Invite AutoMuteUs workers",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
 		},
 	},
 }
 
-func GetPremiumParams(options []*discordgo.ApplicationCommandInteractionDataOption) PremiumArg {
-	if len(options) == 0 {
-		return PremiumInfo
-	}
-	return PremiumArg(options[0].IntValue())
+func GetPremiumParams(options []*discordgo.ApplicationCommandInteractionDataOption) string {
+	return options[0].Name
 }
 
-func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg PremiumArg, isAdmin bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg string, isAdmin bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var embed *discordgo.MessageEmbed
 	if arg == PremiumInvites {
 		if !isAdmin {

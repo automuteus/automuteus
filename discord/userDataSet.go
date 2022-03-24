@@ -71,7 +71,7 @@ func (dgs *GameState) ClearPlayerDataByPlayerName(playerName string) {
 	}
 }
 
-func (dgs *GameState) ClearAllPlayerData() {
+func (dgs *GameState) UnlinkAllUsers() {
 	for i, v := range dgs.UserData {
 		v.InGameName = amongus.UnlinkedPlayerName
 		dgs.UserData[i] = v

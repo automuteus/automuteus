@@ -13,7 +13,6 @@ const DeferredEditSeconds = 2
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
 	MessageChannelID string `json:"messageChannelID"`
-	MessageAuthorID  string `json:"messageAuthorID"`
 	LeaderID         string `json:"leaderID"`
 }
 
@@ -25,15 +24,22 @@ func MakeGameStateMessage() GameStateMessage {
 	}
 }
 
-func (dgs *GameState) Exists() bool {
-	return dgs.GameStateMsg.MessageID != ""
+func (gsm *GameStateMessage) Exists() bool {
+	return gsm.MessageID != "" && gsm.MessageChannelID != ""
 }
 
-func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session) {
-	if dgs.GameStateMsg.MessageID != "" {
-		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-		dgs.GameStateMsg.MessageID = ""
+func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session, reset bool) bool {
+	if dgs.GameStateMsg.Exists() {
+		err := s.ChannelMessageDelete(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		if err != nil {
+			return false
+		}
+		if reset {
+			dgs.GameStateMsg = MakeGameStateMessage()
+		}
+		return true
 	}
+	return false
 }
 
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
@@ -91,8 +97,7 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	}
 }
 
-func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
-	dgs.GameStateMsg.LeaderID = authorID
+func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -106,23 +111,10 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 	}
 	msg := sendEmbedWithComponents(s, channelID, me, components)
 	if msg != nil {
-		dgs.GameStateMsg.MessageAuthorID = msg.Author.ID
+		dgs.GameStateMsg.LeaderID = authorID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
 		dgs.GameStateMsg.MessageID = msg.ID
-	}
-}
-
-func (dgs *GameState) SameChannel(channelID string) bool {
-	if dgs.GameStateMsg.MessageID != "" {
-		return dgs.GameStateMsg.MessageChannelID == channelID
+		return true
 	}
 	return false
-}
-
-func (dgs *GameState) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
-	if !dgs.Exists() {
-		return false
-	}
-
-	return m.ChannelID == dgs.GameStateMsg.MessageChannelID && m.MessageID == dgs.GameStateMsg.MessageID && m.UserID != dgs.GameStateMsg.MessageAuthorID
 }

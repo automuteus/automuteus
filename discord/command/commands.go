@@ -123,6 +123,14 @@ func mapsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
 	return choices
 }
 
+func NoGameResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	return PrivateResponse(
+		sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.error.nogame",
+			Other: "No game is currently running.",
+		}))
+}
+
 func PrivateResponse(content string) *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

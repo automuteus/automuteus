@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
@@ -122,9 +121,11 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		log.Println("Couldn't obtain lock for DGS on game start...")
 		return
 	}
-	dgs.GameData.SetRoomRegionMap("", "", game.EMPTYMAP)
+	dgs.GameData.Reset()
 
-	dgs.clearGameTracking(bot.PrimarySession)
+	dgs.UnlinkAllUsers()
+	dgs.VoiceChannel = ""
+	dgs.DeleteGameStateMsg(bot.PrimarySession, true)
 
 	dgs.Running = true
 
@@ -137,7 +138,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		}
 	}
 
-	dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), textChannelID, userID)
+	_ = dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), textChannelID, userID)
 
 	// release the lock
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

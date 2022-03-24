@@ -264,8 +264,10 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
 
-	dgs.DeleteGameStateMsg(bot.PrimarySession)
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
+	if deleted {
+		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
@@ -278,26 +280,39 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
 	log.Printf("Message worker is sleeping for %s before deleting message", waitDur.String())
 	time.Sleep(waitDur)
-	deleteMessage(s, msgChannelID, msgID)
+	err := s.ChannelMessageDelete(msgChannelID, msgID)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) {
+func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) bool {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
 	}
-	// log.Println("Refreshing game state message")
 
 	// don't try to edit this message, because we're about to delete it
 	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
-	if dgs.GameStateMsg.MessageChannelID != "" {
-		dgs.DeleteGameStateMsg(bot.PrimarySession) // delete the old message
-		dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+	// note, this checks the variables being set, not whether or not the actual Discord message still exists
+	gameExists := dgs.GameStateMsg.Exists()
+	if !gameExists {
+		return false // no-op; no active game to refresh
+	}
+
+	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, false) // delete the old message
+	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+
+	if deleted && created {
+		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+	} else if deleted || created {
+		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	// if for whatever reason the message failed to create, this would catch it
+	return dgs.GameStateMsg.Exists()
 }
 
 func (bot *Bot) getInfo() command.BotInfo {
@@ -326,13 +341,11 @@ func (bot *Bot) getInfo() command.BotInfo {
 	}
 }
 
-func linkPlayer(redis *RedisInterface, dgs *GameState, userID, colorOrName string) (command.LinkStatus, error) {
+func linkPlayer(redis *RedisInterface, dgs *GameState, userID, color string) (command.LinkStatus, error) {
 	var auData amongus.PlayerData
 	found := false
-	if game.IsColorString(colorOrName) {
-		auData, found = dgs.GameData.GetByColor(colorOrName)
-	} else {
-		auData, found = dgs.GameData.GetByName(colorOrName)
+	if game.IsColorString(color) {
+		auData, found = dgs.GameData.GetByColor(color)
 	}
 	if found {
 		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: struct{}{}})
@@ -347,18 +360,18 @@ func linkPlayer(redis *RedisInterface, dgs *GameState, userID, colorOrName strin
 			return command.LinkNoPlayer, errors.New(err)
 		}
 	} else {
-		err := fmt.Errorf("no game data found for player %s and color/name %s", discord.MentionByUserID(userID), colorOrName)
+		err := fmt.Errorf("no game data found for player %s and color %s", discord.MentionByUserID(userID), color)
 		return command.LinkNoGameData, err
 	}
 }
 
-func unlinkPlayer(dgs *GameState, userID string) (command.UnlinkStatus, error) {
+func unlinkPlayer(dgs *GameState, userID string) command.UnlinkStatus {
 	// if we found the player and cleared their data
 	success := dgs.ClearPlayerData(userID)
 	if success {
-		return command.UnlinkSuccess, nil
+		return command.UnlinkSuccess
 	} else {
-		return command.UnlinkNoPlayer, nil
+		return command.UnlinkNoPlayer
 	}
 }
 
@@ -378,7 +391,7 @@ func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewSta
 		return command.NewNoVoiceChannel, 0
 	}
 
-	if dgs.GameStateMsg.MessageID != "" {
+	if dgs.GameStateMsg.Exists() {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- true
 		}
