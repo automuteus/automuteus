@@ -17,6 +17,7 @@ const (
 
 	MaxMatchSummaryDelete float64 = 60
 
+	View  = "view"
 	Clear = "clear"
 	User  = "user"
 	Role  = "role"
@@ -54,7 +55,7 @@ const (
 
 func GetSettingByName(name string) *Setting {
 	for _, v := range AllSettings {
-		if string(v.Name) == name {
+		if v.Name == name {
 			return &v
 		}
 	}
@@ -172,6 +173,11 @@ var AllSettings = []Setting{
 		ShortDesc: "Bot Admins",
 		Arguments: []*discordgo.ApplicationCommandOption{
 			{
+				Name:        View,
+				Description: "View Admins",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+			},
+			{
 				Name:        Clear,
 				Description: "Clear Admins",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -196,6 +202,11 @@ var AllSettings = []Setting{
 		Name:      RoleIDs,
 		ShortDesc: "Bot Operators",
 		Arguments: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        View,
+				Description: "View Operators",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+			},
 			{
 				Name:        Clear,
 				Description: "Clear Operators",
@@ -404,7 +415,7 @@ func ConstructEmbedForSetting(value string, setting *Setting, sett *settings.Gui
 	if setting == nil {
 		return discordgo.MessageEmbed{}
 	}
-	title := string(setting.Name)
+	title := setting.Name
 	if setting.Premium {
 		title = "💎 " + title
 	}

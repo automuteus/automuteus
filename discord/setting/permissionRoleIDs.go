@@ -12,7 +12,7 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		return nil, false
 	}
 	oldRoleIDs := sett.GetPermissionRoleIDs()
-	if len(args) == 0 {
+	if len(args) == 0 || args[0] == View {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
 		if adminRoleCount == 0 {
@@ -36,7 +36,7 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		}
 	}
 
-	if args[0] != "clear" && args[0] != "c" {
+	if args[0] != Clear && args[0] != "c" {
 		roleName := args[0]
 		ID, err := discord.ExtractRoleIDFromText(roleName)
 		if err != nil {

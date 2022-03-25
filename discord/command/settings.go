@@ -15,11 +15,25 @@ var Settings = discordgo.ApplicationCommand{
 func GetSettingsParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, []string) {
 	sett := setting.GetSettingByName(options[0].Name)
 	args := make([]string, len(options[0].Options))
+	// iterate over the subcommands/args we received from discord
 	for i, v := range options[0].Options {
-		arg := sett.Arguments[i]
-		if arg.Type == discordgo.ApplicationCommandOptionSubCommand {
+		var arg *discordgo.ApplicationCommandOption
+		// iterate over the arguments we know we could possibly receive, and break when we find the right one
+		for _, tempArg := range sett.Arguments {
+			if tempArg.Name == v.Name {
+				arg = tempArg
+				break
+			}
+		}
+		if arg == nil {
+			return sett.Name, args
+		}
+		// convert the value we received into the format we'd expect
+		// in this case, a subcommand that has options of its own
+		if arg.Type == discordgo.ApplicationCommandOptionSubCommand && len(v.Options) > 0 {
 			args[i] = setting.ToString(v.Options[0], s)
 		} else {
+			// in this case, any sort of subcommand or option/argument that can be converted directly
 			// TODO this should be more flexible, not just string arguments. But requires all the tests to change, etc
 			args[i] = setting.ToString(v, s)
 		}

@@ -10,7 +10,12 @@ func TestFnAdminUserIDs(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnAdminUserIDs(sett, []string{"somegarbage"})
+	_, valid := FnAdminUserIDs(sett, []string{View})
+	if valid {
+		t.Error("View shouldn't result in valid settings change")
+	}
+
+	_, valid = FnAdminUserIDs(sett, []string{"somegarbage"})
 	if valid {
 		t.Error("Garbage admin IDs arg shouldn't result in valid settings change")
 	}
@@ -44,7 +49,7 @@ func TestFnAdminUserIDs(t *testing.T) {
 		t.Error("Different user ID should result in more than 1 admin ID")
 	}
 
-	_, valid = FnAdminUserIDs(sett, []string{"clear"})
+	_, valid = FnAdminUserIDs(sett, []string{Clear})
 	if !valid {
 		t.Error("Clearing the admin IDs should always be a valid settings change")
 	}

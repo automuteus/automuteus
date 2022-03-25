@@ -5,6 +5,7 @@ import (
 	"fmt"
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
+	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/premium"
@@ -289,7 +290,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if premium.IsExpired(bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)) {
 				prem = false
 			}
-			if action == command.View {
+			if action == setting.View {
 				var embed *discordgo.MessageEmbed
 				switch opType {
 				case command.User:
@@ -315,7 +316,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						},
 					}
 				}
-			} else if action == command.Clear {
+			} else if action == setting.Clear {
 				// id mismatch applies to user ids AND guild ID (guildId *always* != author.id, therefore, must be admin)
 				if id != i.Member.User.ID && !isAdmin {
 					return command.InsufficientPermissionsResponse(sett)
@@ -380,21 +381,21 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Debug.Name:
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
-			if action == command.View {
+			if action == setting.View {
 				if opType == command.User {
 					cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
 					log.Println("View user cache")
-					return command.DebugResponse(command.View, cached, nil, id, err, sett)
+					return command.DebugResponse(setting.View, cached, nil, id, err, sett)
 				} else if opType == command.GameState {
 					state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 					if state != nil {
 						jBytes, err := json.MarshalIndent(state, "", "  ")
-						return command.DebugResponse(command.View, nil, jBytes, id, err, sett)
+						return command.DebugResponse(setting.View, nil, jBytes, id, err, sett)
 					} else {
 						return command.DeadlockGameStateResponse(command.Debug.Name, sett)
 					}
 				}
-			} else if action == command.Clear {
+			} else if action == setting.Clear {
 				if opType == command.User {
 					if id != i.Member.User.ID {
 						if !isAdmin {
@@ -402,7 +403,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						}
 					}
 					err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
-					return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
+					return command.DebugResponse(setting.Clear, nil, nil, id, err, sett)
 				}
 			} else if action == command.UnmuteAll {
 				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)

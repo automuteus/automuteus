@@ -13,8 +13,6 @@ const (
 	BasePremiumURL        = "https://automute.us/premium?guild="
 	CaptureDownloadURL    = "https://capture.automute.us"
 	DefaultMaxActiveGames = 150
-	View                  = "view"
-	Clear                 = "clear"
 	UnmuteAll             = "unmute-all"
 )
 

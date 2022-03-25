@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -14,7 +15,7 @@ var Stats = discordgo.ApplicationCommand{
 	Description: "View or clear stats from games played with AutoMuteUs",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        View,
+			Name:        setting.View,
 			Description: "View stats",
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
@@ -52,7 +53,7 @@ var Stats = discordgo.ApplicationCommand{
 			},
 		},
 		{
-			Name:        Clear,
+			Name:        setting.Clear,
 			Description: "Clear stats",
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{

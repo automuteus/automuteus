@@ -8,7 +8,12 @@ func TestFnPermissionRoleIDs(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnPermissionRoleIDs(sett, []string{"notpridorclear"})
+	_, valid := FnPermissionRoleIDs(sett, []string{View})
+	if valid {
+		t.Error("Viewing should never result in a valid settings change")
+	}
+
+	_, valid = FnPermissionRoleIDs(sett, []string{"notpridorclear"})
 	if valid {
 		t.Error("Invalid prids should never result in a valid settings change")
 	}
@@ -38,7 +43,7 @@ func TestFnPermissionRoleIDs(t *testing.T) {
 		}
 	}
 
-	_, valid = FnPermissionRoleIDs(sett, []string{"clear"})
+	_, valid = FnPermissionRoleIDs(sett, []string{Clear})
 	if !valid {
 		t.Error("Valid prid clear should result in a valid settings change")
 	}

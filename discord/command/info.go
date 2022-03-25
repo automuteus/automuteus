@@ -61,12 +61,16 @@ func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *d
 	}
 
 	fields := make([]*discordgo.MessageEmbedField, 12)
+	var version = info.Version
+	if version == "" {
+		version = "Unknown"
+	}
 	fields[0] = &discordgo.MessageEmbedField{
 		Name: sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.info.version",
 			Other: "Version",
 		}),
-		Value:  info.Version,
+		Value:  version,
 		Inline: true,
 	}
 	fields[1] = &discordgo.MessageEmbedField{

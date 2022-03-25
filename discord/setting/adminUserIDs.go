@@ -12,7 +12,7 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 		return nil, false
 	}
 	adminIDs := sett.GetAdminUserIDs()
-	if len(args) == 0 {
+	if len(args) == 0 || args[0] == View {
 		adminCount := len(adminIDs) // caching for optimisation
 		// make a nicely formatted string of all the admins: "user1, user2, user3 and user4"
 		if adminCount == 0 {
@@ -36,7 +36,7 @@ func FnAdminUserIDs(sett *settings.GuildSettings, args []string) (interface{}, b
 		}
 	}
 
-	if args[0] != "clear" && args[0] != "c" {
+	if args[0] != Clear && args[0] != "c" {
 		userName := args[0]
 		ID, err := discord.ExtractUserIDFromText(userName)
 		if ID == "" || err != nil {

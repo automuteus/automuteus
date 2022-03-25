@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
@@ -18,7 +19,7 @@ var Debug = discordgo.ApplicationCommand{
 	Description: "View and clear debug information for AutoMuteUs",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        View,
+			Name:        setting.View,
 			Description: "View debug info",
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
@@ -43,7 +44,7 @@ var Debug = discordgo.ApplicationCommand{
 			},
 		},
 		{
-			Name:        Clear,
+			Name:        setting.Clear,
 			Description: "Clear debug info",
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Options: []*discordgo.ApplicationCommandOption{
@@ -70,11 +71,11 @@ func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.Ap
 		opType = options[0].Options[0].Name
 	}
 	switch action {
-	case View:
+	case setting.View:
 		if len(options[0].Options[0].Options) > 0 {
 			userID = options[0].Options[0].Options[0].UserValue(s).ID
 		}
-	case Clear:
+	case setting.Clear:
 		if len(options[0].Options[0].Options) > 0 {
 			userID = options[0].Options[0].Options[0].UserValue(s).ID
 		}
@@ -85,7 +86,7 @@ func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.Ap
 func DebugResponse(operationType string, cached map[string]interface{}, stateBytes []byte, id string, err error, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var content string
 	switch operationType {
-	case View:
+	case setting.View:
 		if err != nil {
 			content = sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.debug.view.error",
@@ -121,7 +122,7 @@ func DebugResponse(operationType string, cached map[string]interface{}, stateByt
 			}
 		}
 
-	case Clear:
+	case setting.Clear:
 		if err != nil {
 			content = sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.debug.clear.error",
