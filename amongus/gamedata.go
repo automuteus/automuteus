@@ -26,7 +26,7 @@ func NewGameData() GameData {
 	}
 }
 
-func (auData *GameData) reset() {
+func (auData *GameData) Reset() {
 	// do NOT clear the player data
 	auData.Phase = game.MENU
 	auData.Room = ""
@@ -59,7 +59,7 @@ func (auData *GameData) UpdatePhase(phase game.Phase) (old game.Phase) {
 		if phase == game.LOBBY || (phase == game.TASKS && old == game.LOBBY) {
 			auData.setAllAlive()
 		} else if phase == game.MENU {
-			auData.reset()
+			auData.Reset()
 		}
 	}
 	return old
