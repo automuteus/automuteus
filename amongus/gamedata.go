@@ -26,7 +26,7 @@ func NewGameData() GameData {
 	}
 }
 
-func (auData *GameData) Reset() {
+func (auData *GameData) reset() {
 	// do NOT clear the player data
 	auData.Phase = game.MENU
 	auData.Room = ""
@@ -44,7 +44,7 @@ func (auData *GameData) GetRoomRegionMap() (string, string, game.PlayMap) {
 	return auData.Room, auData.Region, auData.Map
 }
 
-func (auData *GameData) SetAllAlive() {
+func (auData *GameData) setAllAlive() {
 	for i, v := range auData.PlayerData {
 		v.IsAlive = true
 		auData.PlayerData[i] = v
@@ -57,9 +57,9 @@ func (auData *GameData) UpdatePhase(phase game.Phase) (old game.Phase) {
 
 	if old != phase {
 		if phase == game.LOBBY || (phase == game.TASKS && old == game.LOBBY) {
-			auData.SetAllAlive()
+			auData.setAllAlive()
 		} else if phase == game.MENU {
-			auData.Reset()
+			auData.reset()
 		}
 	}
 	return old
@@ -95,7 +95,6 @@ func (auData *GameData) ClearPlayerData(name string) {
 }
 
 func (auData *GameData) applyPlayerUpdate(update game.Player) (bool, bool, PlayerData) {
-
 	if _, ok := auData.PlayerData[update.Name]; !ok {
 		auData.PlayerData[update.Name] = PlayerData{
 			Color:   update.Color,

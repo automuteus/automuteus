@@ -1,5 +1,6 @@
-FROM golang:1.18-alpine AS builder
-
+FROM --platform=${BUILDPLATFORM} golang:1.18-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
 # Git is required for getting the dependencies.
 # hadolint ignore=DL3018
 RUN apk add --no-cache git
@@ -19,6 +20,9 @@ COPY ./ ./
 RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && \
     export COMMIT=$(git rev-parse --short HEAD) && \
     CGO_ENABLED=0 \
+    # thanks kurokobo!
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH} \
     go build -installsuffix 'static' \
     -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
     -o /app .
