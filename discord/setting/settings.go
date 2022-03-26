@@ -2,6 +2,7 @@ package setting
 
 import (
 	"fmt"
+
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
@@ -72,6 +73,8 @@ func ToString(option *discordgo.ApplicationCommandInteractionDataOption, s *disc
 		return fmt.Sprintf("%d", option.IntValue())
 	case discordgo.ApplicationCommandOptionUser:
 		return option.UserValue(s).Mention()
+	case discordgo.ApplicationCommandOptionRole:
+		return option.RoleValue(s, "").Mention()
 	case discordgo.ApplicationCommandOptionChannel:
 		return option.ChannelValue(s).Mention()
 	case discordgo.ApplicationCommandOptionSubCommand:
