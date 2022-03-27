@@ -26,7 +26,7 @@ func TestGetSettingsParams(t *testing.T) {
 			},
 		},
 	}
-	settingName, args := GetSettingsParams(nil, options)
+	settingName, args := GetSettingsParams(options)
 	if settingName != "admin-user-ids" {
 		t.Fail()
 	}
@@ -46,7 +46,7 @@ func TestGetSettingsParams(t *testing.T) {
 			},
 		},
 	}
-	settingName, args = GetSettingsParams(nil, options)
+	settingName, args = GetSettingsParams(options)
 	if settingName != "admin-user-ids" {
 		t.Fail()
 	}
