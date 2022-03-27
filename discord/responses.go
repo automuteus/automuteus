@@ -45,8 +45,8 @@ func settingResponse(settings []setting.Setting, sett *settings.GuildSettings, p
 		if !v.Premium {
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   string(name),
-				Value:  sett.LocalizeMessage(v.ShortDesc),
+				Name:   name,
+				Value:  sett.LocalizeMessage(&i18n.Message{Other: v.ShortDesc}),
 				Inline: true,
 			})
 		}
@@ -77,8 +77,8 @@ func settingResponse(settings []setting.Setting, sett *settings.GuildSettings, p
 		if v.Premium {
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   string(name),
-				Value:  sett.LocalizeMessage(v.ShortDesc),
+				Name:   name,
+				Value:  sett.LocalizeMessage(&i18n.Message{Other: v.ShortDesc}),
 				Inline: true,
 			})
 		}

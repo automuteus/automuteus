@@ -51,6 +51,7 @@ const (
 	MuteSpectators      = "mute-spectators"
 	DisplayRoomCode     = "display-room-code"
 	Show                = "show"
+	List                = "list"
 	Reset               = "reset"
 )
 
@@ -63,7 +64,7 @@ func GetSettingByName(name string) *Setting {
 	return nil
 }
 
-func ToString(option *discordgo.ApplicationCommandInteractionDataOption, s *discordgo.Session) string {
+func ToString(option *discordgo.ApplicationCommandInteractionDataOption) string {
 	switch option.Type {
 	case discordgo.ApplicationCommandOptionBoolean:
 		return fmt.Sprintf("%t", option.BoolValue())
@@ -72,11 +73,11 @@ func ToString(option *discordgo.ApplicationCommandInteractionDataOption, s *disc
 	case discordgo.ApplicationCommandOptionInteger:
 		return fmt.Sprintf("%d", option.IntValue())
 	case discordgo.ApplicationCommandOptionUser:
-		return option.UserValue(s).Mention()
+		return option.UserValue(nil).Mention()
 	case discordgo.ApplicationCommandOptionRole:
-		return option.RoleValue(s, "").Mention()
+		return option.RoleValue(nil, "").Mention()
 	case discordgo.ApplicationCommandOptionChannel:
-		return option.ChannelValue(s).Mention()
+		return option.ChannelValue(nil).Mention()
 	case discordgo.ApplicationCommandOptionSubCommand:
 		return option.Name
 	default:
@@ -108,6 +109,12 @@ var phaseChoices = []*discordgo.ApplicationCommandOptionChoice{
 
 // TODO parse these from JSON so the web UI can use the same file
 var AllSettings = []Setting{
+	{
+		Name:      List,
+		ShortDesc: "List All Settings",
+		Arguments: []*discordgo.ApplicationCommandOption{},
+		Premium:   false,
+	},
 	{
 		Name:      Language,
 		ShortDesc: "Bot Language",
@@ -402,7 +409,7 @@ var AllSettings = []Setting{
 	},
 	{
 		Name:      Show,
-		ShortDesc: "Show All Settings",
+		ShortDesc: "Show All Current Settings",
 		Arguments: []*discordgo.ApplicationCommandOption{},
 		Premium:   false,
 	},

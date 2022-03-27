@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-
 	"log"
 )
 
@@ -82,14 +80,10 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 		sett = settings.MakeGuildSettings()
 		sendMsg = "Resetting guild settings to default values"
 		isValid = true
+	case setting.List:
+		fallthrough
 	default:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.HandleSettingsCommand.default",
-			Other: "Sorry, `{{.Arg}}` is not a valid setting!\n",
-		},
-			map[string]interface{}{
-				"Arg": args[1],
-			})
+		return settingResponse(setting.AllSettings, sett, prem)
 	}
 
 	if isValid {
