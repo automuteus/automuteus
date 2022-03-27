@@ -9,6 +9,7 @@ import (
 
 // bumped for public rollout. Don't need to update the status message more than once every 2 secs prob
 const DeferredEditSeconds = 2
+const colorSelectID = "select-color"
 
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
@@ -102,7 +103,7 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    "select-color",
+					CustomID:    colorSelectID,
 					Placeholder: "Select your in-game color",
 					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X),
 				},

@@ -1,7 +1,6 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -21,7 +20,7 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 		}), false
 	}
 
-	gamePhase := amongus.GetPhaseFromString(args[1])
+	gamePhase := game.GetPhaseFromString(args[1])
 	if gamePhase == game.UNINITIALIZED {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.Phase.UNINITIALIZED",

@@ -56,31 +56,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 	if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, i.Member.User.ID) {
 		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
-		if banned {
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Flags: 1 << 6, //private message
-					Content: sett.LocalizeMessage(&i18n.Message{
-						ID:    "softban.ignoring",
-						Other: "I'm ignoring you for the next 5 minutes, stop spamming",
-					}),
-				},
-			}
-		} else {
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Flags: 1 << 6, //private message
-					Content: sett.LocalizeMessage(&i18n.Message{
-						ID:    "softban.warning",
-						Other: "Please stop spamming commands",
-					}),
-				},
-			}
-		}
+		return softbanResponse(banned, sett)
 	}
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, "", 0)
 
 	g, err := s.State.Guild(i.GuildID)
 	if err != nil {
@@ -113,6 +90,16 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	if i.Type == discordgo.InteractionApplicationCommand {
+		if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, i.Member.User.ID, i.ApplicationCommandData().Name) {
+			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+			return softbanResponse(banned, sett)
+		}
+		var cmdRatelimitTimeout = redis_common.GlobalUserRateLimitDuration
+		// /new has a longer ratelimit window than other commands (it's an expensive operation)
+		if i.ApplicationCommandData().Name == command.New.Name {
+			cmdRatelimitTimeout = redis_common.NewGameRateLimitDuration
+		}
+		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.ApplicationCommandData().Name, cmdRatelimitTimeout)
 		switch i.ApplicationCommandData().Name {
 		case command.Help.Name:
 			return command.HelpResponse(sett, i.ApplicationCommandData().Options)
@@ -416,7 +403,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 
 	} else if i.Type == discordgo.InteractionMessageComponent {
-		if i.MessageComponentData().CustomID == "select-color" {
+		if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID) {
+			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+			return softbanResponse(banned, sett)
+		}
+		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
+
+		if i.MessageComponentData().CustomID == colorSelectID {
 			if len(i.MessageComponentData().Values) > 0 {
 				value := i.MessageComponentData().Values[0]
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
@@ -463,5 +456,30 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, use
 			bot.RedisInterface.SetDiscordGameState(nil, lock)
 		}
 		return command.UnlinkResponse(status, userID, sett)
+	}
+}
+
+func softbanResponse(banned bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	if banned {
+		return &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags: 1 << 6, //private message
+				Content: sett.LocalizeMessage(&i18n.Message{
+					ID:    "softban.ignoring",
+					Other: "I'm ignoring you for the next 5 minutes, stop spamming",
+				}),
+			},
+		}
+	}
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6, //private message
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "softban.warning",
+				Other: "Please stop spamming commands",
+			}),
+		},
 	}
 }

@@ -1,7 +1,6 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -22,8 +21,8 @@ func FnDelays(sett *settings.GuildSettings, args []string) (interface{}, bool) {
 		}), false // find a better wording for this at some point
 	}
 	// now to find the actual game state from the string they passed
-	var gamePhase1 = amongus.GetPhaseFromString(args[0])
-	var gamePhase2 = amongus.GetPhaseFromString(args[1])
+	var gamePhase1 = game.GetPhaseFromString(args[0])
+	var gamePhase2 = game.GetPhaseFromString(args[1])
 	if gamePhase1 == game.UNINITIALIZED {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDelays.Phase.UNINITIALIZED",
