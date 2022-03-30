@@ -22,7 +22,8 @@ create table if not exists games
 create table if not exists users
 (
     user_id numeric PRIMARY KEY,
-    opt     boolean --opt-out to data collection
+    opt     boolean, --opt-out to data collection
+    vote_time_unix integer --if they've ever voted for the bot on top.gg
 );
 
 create table if not exists game_events

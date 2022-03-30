@@ -173,8 +173,9 @@ func discordMainWrapper() error {
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bot := discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 	if bot == nil {
 		log.Fatal("bot failed to initialize; did you provide a valid Discord Bot Token?")
 	}

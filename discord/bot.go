@@ -16,6 +16,7 @@ import (
 	storageutils "github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
+	"github.com/top-gg/go-dbl"
 	"log"
 	"os"
 	"strconv"
@@ -39,6 +40,8 @@ type Bot struct {
 
 	GalactusClient *GalactusClient
 
+	TopGGClient *dbl.Client
+
 	RedisInterface *RedisInterface
 
 	StorageInterface *storage.StorageInterface
@@ -52,7 +55,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -134,6 +137,16 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 
 	// indicate to Kubernetes that we're ready to start receiving traffic
 	metrics.GlobalReady = true
+
+	if topGGToken != "" {
+		dblClient, err := dbl.NewClient(topGGToken)
+		if err != nil {
+			log.Println("Error creating Top.gg client: ", err)
+		}
+		bot.TopGGClient = dblClient
+	} else {
+		log.Println("No TOP_GG_TOKEN provided")
+	}
 
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bot.statsRefreshWorker(rediskey.TotalUsersExpiration)
