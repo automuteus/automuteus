@@ -2,86 +2,24 @@ package discord
 
 import (
 	"bytes"
-	"context"
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"log"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/game"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/rediskey"
-
-	"github.com/automuteus/automuteus/amongus"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var EmojiNums = []string{":one:", ":two:", ":three:"}
-
 const ISO8601 = "2006-01-02T15:04:05-0700"
 
-const BasePremiumURL = "https://automute.us/premium?guild="
-
-func helpResponse(isAdmin, isPermissioned bool, commands []Command, sett *settings.GuildSettings) discordgo.MessageEmbed {
-	embed := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.Title",
-			Other: "AutoMuteUs Bot Commands:\n",
-		}),
-		Description: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.helpResponse.SubTitle",
-			Other: "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `{{.CommandPrefix}} help <command>` to see more details on a command!",
-		},
-			map[string]interface{}{
-				"CommandPrefix": sett.GetCommandPrefix(),
-			}),
-		Timestamp: "",
-		Color:     15844367, // GOLD
-		Image:     nil,
-		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/automuteus/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
-			ProxyURL: "",
-			Width:    0,
-			Height:   0,
-		},
-		Video:    nil,
-		Provider: nil,
-		Author:   nil,
-		Footer:   nil,
-	}
-
-	fields := make([]*discordgo.MessageEmbedField, 0)
-	for _, v := range commands {
-		if !v.IsSecret && v.CommandType != CommandEnumHelp {
-			if (!v.IsAdmin || isAdmin) && (!v.IsOperator || isPermissioned) {
-				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:   v.Emoji + " " + v.Command,
-					Value:  sett.LocalizeMessage(v.ShortDesc),
-					Inline: true,
-				})
-			}
-		}
-	}
-	if len(fields)%3 == 2 {
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   "\u200B",
-			Value:  "\u200B",
-			Inline: true,
-		})
-	}
-
-	embed.Fields = fields
-	return embed
-}
-
-func settingResponse(commandPrefix string, settings []setting.Setting, sett *settings.GuildSettings, prem bool) *discordgo.MessageEmbed {
+func settingResponse(settings []setting.Setting, sett *settings.GuildSettings, prem bool) *discordgo.MessageEmbed {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -91,11 +29,8 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.settingResponse.Description",
-			Other: "Type `{{.CommandPrefix}} settings <setting>` to change a setting from those listed below",
-		},
-			map[string]interface{}{
-				"CommandPrefix": commandPrefix,
-			}),
+			Other: "Type `/settings <setting>` to change a setting from those listed below",
+		}),
 		Timestamp: "",
 		Color:     15844367, // GOLD
 		Image:     nil,
@@ -111,7 +46,7 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   name,
-				Value:  sett.LocalizeMessage(v.ShortDesc),
+				Value:  sett.LocalizeMessage(&i18n.Message{Other: v.ShortDesc}),
 				Inline: true,
 			})
 		}
@@ -125,11 +60,8 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.settingResponse.PremiumNoThanks",
-			Other: "The following settings are only for AutoMuteUs premium users.\nType `{{.CommandPrefix}} premium` to learn more!",
-		},
-			map[string]interface{}{
-				"CommandPrefix": commandPrefix,
-			})
+			Other: "The following settings are only for AutoMuteUs premium users.\nType `/premium` to learn more!",
+		})
 	}
 	fields = append(fields, &discordgo.MessageEmbedField{
 		Name:   "\u200B",
@@ -146,155 +78,10 @@ func settingResponse(commandPrefix string, settings []setting.Setting, sett *set
 			name := v.Name
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   name,
-				Value:  sett.LocalizeMessage(v.ShortDesc),
+				Value:  sett.LocalizeMessage(&i18n.Message{Other: v.ShortDesc}),
 				Inline: true,
 			})
 		}
-	}
-
-	embed.Fields = fields
-	return &embed
-}
-
-func (bot *Bot) infoResponse(guildID string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
-	if strings.HasPrefix(version, "6.9") {
-		version = "😎 " + version + " 😎"
-	}
-	embed := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Title",
-			Other: "Bot Info",
-		}),
-		Description: "",
-		Timestamp:   time.Now().Format(ISO8601),
-		Color:       2067276, // DARK GREEN
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.statsResponse.BotInfo",
-				Other: "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}",
-			},
-				map[string]interface{}{
-					"Version": version,
-					"Commit":  commit,
-					"ID":      fmt.Sprintf("%d", bot.PrimarySession.ShardID),
-					"Num":     fmt.Sprintf("%d", bot.PrimarySession.ShardCount),
-				}),
-			IconURL:      "",
-			ProxyIconURL: "",
-		},
-	}
-
-	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
-	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
-
-	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-	if totalUsers == rediskey.NotFound {
-		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-	}
-
-	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-	if totalGames == rediskey.NotFound {
-		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-	}
-
-	fields := make([]*discordgo.MessageEmbedField, 12)
-	fields[0] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Version",
-			Other: "Version",
-		}),
-		Value:  version,
-		Inline: true,
-	}
-	fields[1] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Library",
-			Other: "Library",
-		}),
-		Value:  "discordgo",
-		Inline: true,
-	}
-	fields[2] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Creator",
-			Other: "Creator",
-		}),
-		Value:  "Soup#4222",
-		Inline: true,
-	}
-	fields[3] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Guilds",
-			Other: "Guilds",
-		}),
-		Value:  fmt.Sprintf("%d", totalGuilds),
-		Inline: true,
-	}
-	fields[4] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Games",
-			Other: "Active Games",
-		}),
-		Value:  fmt.Sprintf("%d", activeGames),
-		Inline: true,
-	}
-	fields[5] = &discordgo.MessageEmbedField{
-		Name:   "\u200B",
-		Value:  "\u200B",
-		Inline: true,
-	}
-	fields[6] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.TotalGames",
-			Other: "Total Games",
-		}),
-		Value:  fmt.Sprintf("%d", totalGames),
-		Inline: true,
-	}
-	fields[7] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Users",
-			Other: "Total Users",
-		}),
-		Value:  fmt.Sprintf("%d", totalUsers),
-		Inline: true,
-	}
-	fields[8] = &discordgo.MessageEmbedField{
-		Name:   "\u200B",
-		Value:  "\u200B",
-		Inline: true,
-	}
-	fields[9] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Website",
-			Other: "Website",
-		}),
-		Value:  "[automute.us](https://automute.us)",
-		Inline: true,
-	}
-	fields[10] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Invite",
-			Other: "Invite",
-		}),
-		Value:  "[add.automute.us](https://add.automute.us)",
-		Inline: true,
-	}
-	fields[11] = &discordgo.MessageEmbedField{
-		Name: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.statsResponse.Donate",
-			Other: "Premium",
-		}),
-		Value:  "[PayPal](" + BasePremiumURL + guildID + ")",
-		Inline: true,
 	}
 
 	embed.Fields = fields
@@ -310,7 +97,7 @@ func (bot *Bot) gameStateResponse(dgs *GameState, sett *settings.GuildSettings) 
 		game.DISCUSS:  gamePlayMessage,
 		game.GAMEOVER: gamePlayMessage,
 	}
-	return messages[dgs.AmongUsData.Phase](dgs, bot.StatusEmojis, sett)
+	return messages[dgs.GameData.Phase](dgs, bot.StatusEmojis, sett)
 }
 
 func lobbyMetaEmbedFields(room, region string, author, voiceChannelID string, playerCount int, linkedPlayers int, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
@@ -394,7 +181,7 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.menuMessage.notLinked.Description",
-			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+			Other: "❌**No capture linked! Click the link above to connect!**❌",
 		})
 		footer = nil
 	}
@@ -411,13 +198,13 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 			Inline: true,
 		})
 	}
-	if dgs.Tracking.ChannelID != "" {
+	if dgs.VoiceChannel != "" {
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMetaEmbedFields.VoiceChannel",
 				Other: "Voice Channel",
 			}),
-			Value:  discord.MentionByChannelID(dgs.Tracking.ChannelID),
+			Value:  "<#" + dgs.VoiceChannel + ">",
 			Inline: true,
 		})
 	}
@@ -451,8 +238,8 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 }
 
 func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	room, region, playMap := dgs.AmongUsData.GetRoomRegionMap()
-	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelID, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	room, region, playMap := dgs.GameData.GetRoomRegionMap()
+	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
@@ -465,11 +252,10 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 	} else {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.lobbyMessage.notLinked.Description",
-			Other: "❌**No capture linked! Click the link in your DMs to connect!**❌",
+			Other: "❌**No capture linked! Click the link above to connect!**❌",
 		})
 	}
 
-	emojiLeave := "❌"
 	msg := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -482,10 +268,10 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: sett.LocalizeMessage(&i18n.Message{
 				ID:    "responses.lobbyMessage.Footer.Text",
-				Other: "React to this message with your in-game color! (or {{.emojiLeave}} to leave)",
+				Other: "Use the select below with your in-game color! (or {{.X}} to leave)",
 			},
 				map[string]interface{}{
-					"emojiLeave": emojiLeave,
+					"X": X,
 				}),
 			IconURL:      "",
 			ProxyIconURL: "",
@@ -502,7 +288,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 }
 
 func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings, winners string) *discordgo.MessageEmbed {
-	_, _, playMap := dgs.AmongUsData.GetRoomRegionMap()
+	_, _, playMap := dgs.GameData.GetRoomRegionMap()
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 
@@ -551,34 +337,23 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 
 func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *discordgo.MessageEmbedThumbnail {
 	var thumbNail *discordgo.MessageEmbedThumbnail = nil
-	if playMap != game.EMPTYMAP {
-		mapItem, err := amongus.NewMapItem(game.MapNames[playMap])
-		if err != nil {
-			log.Println(err)
-		} else {
-			if sett.MapVersion == "detailed" {
-				thumbNail = &discordgo.MessageEmbedThumbnail{
-					URL: mapItem.MapImage.Detailed,
-				}
-			} else {
-				thumbNail = &discordgo.MessageEmbedThumbnail{
-					URL: mapItem.MapImage.Simple,
-				}
-			}
+	if playMap != game.EMPTYMAP && playMap != game.DLEKS {
+		thumbNail = &discordgo.MessageEmbedThumbnail{
+			URL: command.FormMapUrl(os.Getenv("BASE_MAP_URL"), playMap, sett.MapVersion == "detailed"),
 		}
 	}
 	return thumbNail
 }
 
 func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	phase := dgs.AmongUsData.GetPhase()
-	playMap := dgs.AmongUsData.GetPlayMap()
+	phase := dgs.GameData.GetPhase()
+	playMap := dgs.GameData.GetPlayMap()
 	// send empty fields because we don't need to display those fields during the game...
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	desc := ""
 
 	desc = dgs.makeDescription(sett)
-	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.Tracking.ChannelID, dgs.AmongUsData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
+	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 	listResp = append(gameInfoFields, listResp...)
 
 	var color int
@@ -625,332 +400,9 @@ func (dgs *GameState) makeDescription(sett *settings.GuildSettings) string {
 	return buf.String()
 }
 
-func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	desc := ""
-	var fields []*discordgo.MessageEmbedField
-
-	if tier != premium.FreeTier {
-		if daysRem > 0 || daysRem == premium.NoExpiryCode {
-			daysRemStr := ""
-			if daysRem > 0 {
-				daysRemStr = sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.PremiumDescriptionDaysRemaining",
-					Other: " for another {{.Days}} days",
-				},
-					map[string]interface{}{
-						"Days": daysRem,
-					})
-			}
-			desc = sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.premiumResponse.PremiumDescription",
-				Other: "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\n\nBelow are some of the benefits you can customize with your Premium status!",
-			},
-				map[string]interface{}{
-					"Tier":       premium.TierStrings[tier],
-					"DaysString": daysRemStr,
-				})
-
-			fields = []*discordgo.MessageEmbedField{
-				{
-					Name: "Bot Invites",
-					Value: sett.LocalizeMessage(&i18n.Message{
-						ID:    "responses.premiumResponse.Invites",
-						Other: "View a list of Premium bots you can invite with `{{.CommandPrefix}} premium invites`!",
-					}, map[string]interface{}{
-						"CommandPrefix": sett.GetCommandPrefix(),
-					}),
-					Inline: false,
-				},
-				{
-					Name: "Premium Settings",
-					Value: sett.LocalizeMessage(&i18n.Message{
-						ID:    "responses.premiumResponse.SettingsDescExtra",
-						Other: "Look for the settings marked with 💎 under `{{.CommandPrefix}} settings!`",
-					}, map[string]interface{}{
-						"CommandPrefix": sett.GetCommandPrefix(),
-					}),
-					Inline: false,
-				},
-			}
-		} else {
-			desc = sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.premiumResponse.PremiumDescriptionExpired",
-				Other: "Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦\n\nPlease consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
-			},
-				map[string]interface{}{
-					"Tier":    premium.TierStrings[tier],
-					"Days":    0 - daysRem,
-					"BaseURL": BasePremiumURL,
-					"GuildID": guildID,
-				})
-		}
-	} else {
-		desc = sett.LocalizeMessage(&i18n.Message{
-			ID: "responses.premiumResponse.FreeDescription",
-			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n" +
-				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
-		}, map[string]interface{}{
-			"BaseURL": BasePremiumURL,
-			"GuildID": guildID,
-		})
-		fields = []*discordgo.MessageEmbedField{
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.PriorityGameAccess",
-					Other: "👑 Priority Game Access",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.PriorityGameAccessDesc",
-					Other: "If the Bot is under heavy load, Premium users will always be able to make new games!",
-				}),
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.FastMute",
-					Other: "🙊 Fast Mute/Deafen",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.FastMuteDesc",
-					Other: "Premium users get access to \"helper\" bots that make sure muting is fast!",
-				}),
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Stats",
-					Other: "📊 Game Stats and Leaderboards",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.StatsDesc",
-					Other: "Premium users have access to a full suite of player stats and leaderboards!",
-				}),
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Settings",
-					Other: "🛠 Special Settings",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.SettingsDesc",
-					Other: "Premium users can specify additional settings, like displaying an end-game status message, or auto-refreshing the status message!",
-				}),
-				Inline: false,
-			},
-			{
-				Name: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.Support",
-					Other: "👂 Premium Support",
-				}),
-				Value: sett.LocalizeMessage(&i18n.Message{
-					ID:    "responses.premiumResponse.SupportDesc",
-					Other: "Premium users get access to private channels on our official Discord channel!",
-				}),
-				Inline: false,
-			},
-		}
-	}
-
-	msg := discordgo.MessageEmbed{
-		URL:  BasePremiumURL + guildID,
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumResponse.Title",
-			Other: "💎 AutoMuteUs Premium 💎",
-		}),
-		Description: desc,
-		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, // PURPLE
-		Footer:      nil,
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
-		Fields:      fields,
-	}
-	return &msg
-}
-
 func nonPremiumSettingResponse(sett *settings.GuildSettings) string {
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.nonPremiumSetting.Desc",
-		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `{{.CommandPrefix}} premium` for details",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details",
 	})
-}
-
-// if you're reading this, adding these bots won't help you.
-// Galactus+AutoMuteUs verify the premium status internally before using these bots ;)
-var BotInvites = []string{
-	"https://discord.com/api/oauth2/authorize?client_id=780323275624546304&permissions=12582912&scope=bot", // amu1
-	"https://discord.com/api/oauth2/authorize?client_id=780589033033302036&permissions=12582912&scope=bot", // amu4
-	"https://discord.com/api/oauth2/authorize?client_id=780323801173983262&permissions=12582912&scope=bot"} // amu3
-
-func premiumInvitesEmbed(tier premium.Tier, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	desc := ""
-	fields := []*discordgo.MessageEmbedField{}
-
-	if tier == premium.FreeTier || tier == premium.BronzeTier {
-		desc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumInviteResponseNoAccess.desc",
-			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `{{.CommandPrefix}} premium` to see more details about AutoMuteUs Premium",
-		}, map[string]interface{}{
-			"Tier":          premium.TierStrings[tier],
-			"CommandPrefix": sett.GetCommandPrefix(),
-		})
-	} else {
-		count := 0
-		if tier == premium.SilverTier {
-			count = 1
-		} else if tier == premium.GoldTier || tier == premium.PlatTier {
-			count = 3
-		}
-		// TODO account for Platinum
-		desc = sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumInviteResponse.desc",
-			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
-		}, map[string]interface{}{
-			"Tier":          premium.TierStrings[tier],
-			"Count":         count,
-			"CommandPrefix": sett.GetCommandPrefix(),
-		})
-
-		for i := 0; i < count; i++ {
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("Bot %s", EmojiNums[i]),
-				Value:  fmt.Sprintf("[Invite](%s)", BotInvites[i]),
-				Inline: false,
-			})
-		}
-	}
-
-	msg := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.premiumInviteResponse.Title",
-			Other: "Premium Bot Invites",
-		}),
-		Description: desc,
-		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, // PURPLE
-		Footer:      nil,
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
-		Fields:      fields,
-	}
-	return &msg
-}
-
-func (bot *Bot) privacyResponse(guildID, authorID, arg string, sett *settings.GuildSettings) *discordgo.MessageEmbed {
-	desc := ""
-
-	switch arg {
-	case "showme":
-		cached := bot.RedisInterface.GetUsernameOrUserIDMappings(guildID, authorID)
-		if len(cached) == 0 {
-			desc = sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.ShowMe.emptyCachedNames",
-				Other: "❌ {{.User}} I don't have any cached player names stored for you!",
-			}, map[string]interface{}{
-				"User": "<@!" + authorID + ">",
-			})
-		} else {
-			buf := bytes.NewBuffer([]byte(sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.ShowMe.cachedNames",
-				Other: "❗ {{.User}} Here's your cached in-game names:",
-			}, map[string]interface{}{
-				"User": "<@!" + authorID + ">",
-			})))
-			buf.WriteString("\n```\n")
-			for n := range cached {
-				buf.WriteString(fmt.Sprintf("%s\n", n))
-			}
-			buf.WriteString("```")
-			desc = buf.String()
-		}
-		desc += "\n"
-		user, _ := bot.PostgresInterface.GetUserByString(authorID)
-
-		if user != nil && user.Opt && user.UserID != 0 {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.ShowMe.linkedID",
-				Other: "❗ {{.User}} You are opted **in** to data collection for game statistics",
-			}, map[string]interface{}{
-				"User": "<@!" + authorID + ">",
-			})
-		} else {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.ShowMe.unlinkedID",
-				Other: "❌ {{.User}} You are opted **out** of data collection for game statistics, or you haven't played a game yet",
-			}, map[string]interface{}{
-				"User": "<@!" + authorID + ">",
-			})
-		}
-	case "optout":
-		err := bot.RedisInterface.DeleteLinksByUserID(guildID, authorID)
-		if err != nil {
-			log.Println(err)
-		} else {
-			desc = sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.ForgetMe.Success",
-				Other: "✅ {{.User}} I successfully deleted your cached player names",
-			},
-				map[string]interface{}{
-					"User": "<@!" + authorID + ">",
-				})
-			desc += "\n"
-			err := bot.PostgresInterface.OptUserByString(authorID, false)
-			if err != nil {
-				log.Println(err)
-			} else {
-				desc += sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.HandleCommand.optout.SuccessDB",
-					Other: "✅ {{.User}} I successfully opted you out of data collection",
-				},
-					map[string]interface{}{
-						"User": "<@!" + authorID + ">",
-					})
-			}
-		}
-	case "optin":
-		err := bot.PostgresInterface.OptUserByString(authorID, true)
-		if err != nil {
-			log.Println(err)
-		} else {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.HandleCommand.optin.SuccessDB",
-				Other: "✅ {{.User}} I successfully opted you into data collection",
-			},
-				map[string]interface{}{
-					"User": "<@!" + authorID + ">",
-				})
-		}
-	}
-
-	msg := discordgo.MessageEmbed{
-		URL:  "",
-		Type: "",
-		Title: sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.privacyResponse.Title",
-			Other: "AutoMuteUs Privacy",
-		}),
-		Description: desc,
-		Timestamp:   time.Now().Format(ISO8601),
-		Color:       10181046, // PURPLE
-		Footer:      nil,
-		Image:       nil,
-		Thumbnail:   nil,
-		Video:       nil,
-		Provider:    nil,
-		Author:      nil,
-		Fields:      nil,
-	}
-	return &msg
 }

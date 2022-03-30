@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/metrics"
+	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/task"
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
@@ -40,21 +41,6 @@ func NewGalactusClient(address string) (*GalactusClient, error) {
 	return &gc, nil
 }
 
-func (gc *GalactusClient) AddToken(token string) error {
-	resp, err := gc.client.Post(gc.Address+"/addtoken", "application/json", bytes.NewBuffer([]byte(token)))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusAlreadyReported {
-		return errors.New("this token has already been added and recorded in Galactus")
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("%d response from adding token", resp.StatusCode))
-	}
-	return nil
-}
-
 func RecordDiscordRequestsByCounts(client *redis.Client, counts *task.MuteDeafenSuccessCounts) {
 	metrics.RecordDiscordRequests(client, metrics.MuteDeafenOfficial, counts.Official)
 	metrics.RecordDiscordRequests(client, metrics.MuteDeafenWorker, counts.Worker)
@@ -62,7 +48,7 @@ func RecordDiscordRequestsByCounts(client *redis.Client, counts *task.MuteDeafen
 	metrics.RecordDiscordRequests(client, metrics.InvalidRequest, counts.RateLimit)
 }
 
-func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) *task.MuteDeafenSuccessCounts {
+func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, lock *redislock.Lock) (*task.MuteDeafenSuccessCounts, error) {
 	if lock != nil {
 		defer lock.Release(context.Background())
 	}
@@ -70,31 +56,40 @@ func (gc *GalactusClient) ModifyUsers(guildID, connectCode string, request task.
 	fullURL := fmt.Sprintf("%s/modify/%s/%s", gc.Address, guildID, connectCode)
 	jBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	log.Println(request)
 
 	resp, err := gc.client.Post(fullURL, "application/json", bytes.NewBuffer(jBytes))
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil
-	}
 
 	mds := task.MuteDeafenSuccessCounts{}
 	jBytes, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return &mds
+		return &mds, err
 	}
 	err = json.Unmarshal(jBytes, &mds)
 	if err != nil {
 		log.Println(err)
-		return &mds
+		return &mds, err
 	}
-	return &mds
+	if resp.StatusCode != http.StatusOK {
+		return &mds, errors.New("non 200 response: " + resp.Status)
+	}
+
+	return &mds, nil
+}
+
+func (gc *GalactusClient) VerifyPremiumMembership(guildID uint64, prem premium.Tier) error {
+	fullURL := fmt.Sprintf("%s/verify/%d/%d", gc.Address, guildID, prem)
+	_, err := gc.client.Post(fullURL, "application/json", nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

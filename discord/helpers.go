@@ -12,13 +12,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type UserPatchParameters struct {
-	GuildID  string
-	Userdata UserData
-	Deaf     bool
-	Mute     bool
-}
-
 func generateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
@@ -60,20 +53,19 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 	return
 }
 
-func sendMessageDM(s *discordgo.Session, userID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	dmChannel, err := s.UserChannelCreate(userID)
-	if err != nil {
-		log.Println(err)
+func sendEmbedWithComponents(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {
+	complexMsg := discordgo.MessageSend{
+		Content:         "",
+		Embeds:          nil,
+		TTS:             false,
+		Components:      components,
+		Files:           nil,
+		AllowedMentions: nil,
+		Reference:       nil,
+		File:            nil,
+		Embed:           message,
 	}
-	m, err := s.ChannelMessageSendEmbed(dmChannel.ID, message)
-	if err != nil {
-		log.Println(err)
-	}
-	return m
-}
-
-func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageSendEmbed(channelID, message)
+	msg, err := s.ChannelMessageSendComplex(channelID, &complexMsg)
 	if err != nil {
 		log.Println(err)
 	}
@@ -81,39 +73,12 @@ func sendMessageEmbed(s *discordgo.Session, channelID string, message *discordgo
 }
 
 func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
-	msg, err := s.ChannelMessageEditEmbed(channelID, messageID, message)
+	me := discordgo.NewMessageEdit(channelID, messageID).SetEmbed(message)
+	msg, err := s.ChannelMessageEditComplex(me)
 	if err != nil {
 		log.Println(err)
 	}
 	return msg
-}
-
-func deleteMessage(s *discordgo.Session, channelID string, messageID string) {
-	err := s.ChannelMessageDelete(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func addReaction(s *discordgo.Session, channelID, messageID, emojiID string) {
-	err := s.MessageReactionAdd(channelID, messageID, emojiID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeAllReactions(s *discordgo.Session, channelID, messageID string) {
-	err := s.MessageReactionsRemoveAll(channelID, messageID)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func removeReaction(s *discordgo.Session, channelID, messageID, emojiNameOrID, userID string) {
-	err := s.MessageReactionRemove(channelID, messageID, emojiNameOrID, userID)
-	if err != nil {
-		log.Println(err)
-	}
 }
 
 func matchIDCode(connectCode string, matchID int64) string {

@@ -10,17 +10,17 @@ func TestFnAutoRefresh(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnAutoRefresh(sett, []string{"sett", "refresh", "nontrue"})
+	_, valid := FnAutoRefresh(sett, []string{"nontrue"})
 	if valid {
 		t.Error("Sending invalid (non true/false) val should never result in valid settings change")
 	}
 
-	_, valid = FnAutoRefresh(sett, []string{"sett", "refresh", "false"})
+	_, valid = FnAutoRefresh(sett, []string{"false"})
 	if valid {
 		t.Error("Sending old val should never result in valid settings change")
 	}
 
-	_, valid = FnAutoRefresh(sett, []string{"sett", "refresh", "true"})
+	_, valid = FnAutoRefresh(sett, []string{"true"})
 	if !valid {
 		t.Error("Sending new true val should result in valid settings change")
 	}
@@ -28,7 +28,7 @@ func TestFnAutoRefresh(t *testing.T) {
 		t.Error("Autorefresh setting was not set true correctly")
 	}
 
-	_, valid = FnAutoRefresh(sett, []string{"sett", "refresh", "false"})
+	_, valid = FnAutoRefresh(sett, []string{"false"})
 	if !valid {
 		t.Error("Sending new false val should result in valid settings change")
 	}

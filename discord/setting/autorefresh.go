@@ -7,22 +7,22 @@ import (
 )
 
 func FnAutoRefresh(sett *settings.GuildSettings, args []string) (interface{}, bool) {
-	if sett == nil || len(args) < 2 {
+	s := GetSettingByName(AutoRefresh)
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), AllSettings[AutoRefresh], sett), false
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetAutoRefresh()), s, sett), false
 	}
 
-	val := args[2]
+	val := args[0]
 	if val != "t" && val != "true" && val != "f" && val != "false" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingAutoRefresh.Unrecognized",
-			Other: "{{.Arg}} is not a true/false value. See `{{.CommandPrefix}} settings autorefresh` for usage",
+			Other: "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage",
 		},
 			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Arg": val,
 			}), false
 	}
 

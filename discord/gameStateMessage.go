@@ -9,11 +9,11 @@ import (
 
 // bumped for public rollout. Don't need to update the status message more than once every 2 secs prob
 const DeferredEditSeconds = 2
+const colorSelectID = "select-color"
 
 type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
 	MessageChannelID string `json:"messageChannelID"`
-	MessageAuthorID  string `json:"messageAuthorID"`
 	LeaderID         string `json:"leaderID"`
 }
 
@@ -25,34 +25,22 @@ func MakeGameStateMessage() GameStateMessage {
 	}
 }
 
-func (dgs *GameState) Exists() bool {
-	return dgs.GameStateMsg.MessageID != ""
+func (gsm *GameStateMessage) Exists() bool {
+	return gsm.MessageID != "" && gsm.MessageChannelID != ""
 }
 
-func (dgs *GameState) AddReaction(s *discordgo.Session, emoji string) {
-	if dgs.GameStateMsg.MessageID != "" {
-		addReaction(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID, emoji)
+func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session, reset bool) bool {
+	if dgs.GameStateMsg.Exists() {
+		err := s.ChannelMessageDelete(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		if err != nil {
+			return false
+		}
+		if reset {
+			dgs.GameStateMsg = MakeGameStateMessage()
+		}
+		return true
 	}
-}
-
-func (dgs *GameState) RemoveAllReactions(s *discordgo.Session) {
-	if dgs.GameStateMsg.MessageID != "" {
-		removeAllReactions(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-	}
-}
-
-func (dgs *GameState) AddAllReactions(s *discordgo.Session, emojis []Emoji) {
-	for _, e := range emojis {
-		dgs.AddReaction(s, e.FormatForReaction())
-	}
-	dgs.AddReaction(s, "❌")
-}
-
-func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session) {
-	if dgs.GameStateMsg.MessageID != "" {
-		deleteMessage(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
-		dgs.GameStateMsg.MessageID = ""
-	}
+	return false
 }
 
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
@@ -110,27 +98,24 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	}
 }
 
-func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) {
-	dgs.GameStateMsg.LeaderID = authorID
-	msg := sendMessageEmbed(s, channelID, me)
+func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
+	components := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    colorSelectID,
+					Placeholder: "Select your in-game color",
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X),
+				},
+			},
+		},
+	}
+	msg := sendEmbedWithComponents(s, channelID, me, components)
 	if msg != nil {
-		dgs.GameStateMsg.MessageAuthorID = msg.Author.ID
+		dgs.GameStateMsg.LeaderID = authorID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
 		dgs.GameStateMsg.MessageID = msg.ID
-	}
-}
-
-func (dgs *GameState) SameChannel(channelID string) bool {
-	if dgs.GameStateMsg.MessageID != "" {
-		return dgs.GameStateMsg.MessageChannelID == channelID
+		return true
 	}
 	return false
-}
-
-func (dgs *GameState) IsReactionTo(m *discordgo.MessageReactionAdd) bool {
-	if !dgs.Exists() {
-		return false
-	}
-
-	return m.ChannelID == dgs.GameStateMsg.MessageChannelID && m.MessageID == dgs.GameStateMsg.MessageID && m.UserID != dgs.GameStateMsg.MessageAuthorID
 }

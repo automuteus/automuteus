@@ -11,48 +11,43 @@ func TestFnVoiceRules(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnVoiceRules(sett, []string{"sett", "vr", "notenough"})
+	_, valid := FnVoiceRules(sett, []string{"notenough"})
 	if valid {
 		t.Error("Insufficient VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "notenough", "notenoughstill"})
+	_, valid = FnVoiceRules(sett, []string{"notenough", "notenoughstill"})
 	if valid {
 		t.Error("Insufficient VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "invalid", "invalid2", "invalid2"})
+	_, valid = FnVoiceRules(sett, []string{"invalid", "invalid2", "invalid2"})
 	if valid {
 		t.Error("Invalid VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "invalid2", "invalid2"})
+	_, valid = FnVoiceRules(sett, []string{"deafened", "invalid2", "invalid2"})
 	if valid {
 		t.Error("Invalid VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "lobby", "invalid2"})
+	_, valid = FnVoiceRules(sett, []string{"deafened", "lobby", "invalid2"})
 	if valid {
 		t.Error("Invalid VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "lobby", "alive"})
+	_, valid = FnVoiceRules(sett, []string{"deafened", "lobby", "alive"})
 	if valid {
 		t.Error("Querying VR args should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "lobby", "alive", "notbool"})
-	if valid {
-		t.Error("Invalid VR args should never result in a valid settings change")
-	}
-
 	sett.VoiceRules.DeafRules[game.PhaseNames[game.LOBBY]]["alive"] = false
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "lobby", "alive", "false"})
+	_, valid = FnVoiceRules(sett, []string{"deafened", "lobby", "alive", "false"})
 	if valid {
 		t.Error("Setting VR rules to the existing values should never result in a valid settings change")
 	}
 
-	_, valid = FnVoiceRules(sett, []string{"sett", "vr", "deaf", "lobby", "alive", "true"})
+	_, valid = FnVoiceRules(sett, []string{"deafened", "lobby", "alive", "true"})
 	if !valid {
 		t.Error("Valid VR rules should result in a valid settings change")
 	}

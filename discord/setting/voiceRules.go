@@ -1,76 +1,54 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/amongus"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, bool) {
-	if sett == nil || len(args) < 2 {
+	if sett == nil {
 		return nil, false
-	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingVoiceRules.NA",
-			Other: "N/A",
-		}), AllSettings[VoiceRules], sett), false
 	}
 
 	// now for a bunch of input checking
-	if len(args) < 5 {
+	if len(args) < 3 {
 		// User didn't pass enough args
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.enoughArgs",
-			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`",
+			Other: "You didn't pass enough arguments! Correct syntax is: `voiceRules [muted/deafened] [game phase] [alive/dead] [true/false]`",
 		}), false
 	}
 
-	switch {
-	case args[2] == "deaf":
-		args[2] = "deafened"
-	case args[2] == "mute":
-		args[2] = "muted"
-	default:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingVoiceRules.neitherMuteDeaf",
-			Other: "`{{.Arg}}` is neither `mute` nor `deaf`!",
-		},
-			map[string]interface{}{
-				"Arg": args[2],
-			}), false
-	}
-
-	gamePhase := amongus.GetPhaseFromString(args[3])
+	gamePhase := game.GetPhaseFromString(args[1])
 	if gamePhase == game.UNINITIALIZED {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.Phase.UNINITIALIZED",
 			Other: "I don't know what {{.PhaseName}} is. The list of game phases are `Lobby`, `Tasks` and `Discussion`.",
 		},
 			map[string]interface{}{
-				"PhaseName": args[3],
+				"PhaseName": args[1],
 			}), false
 	}
 
-	if args[4] != "alive" && args[4] != "dead" {
+	if args[2] != "alive" && args[2] != "dead" {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingVoiceRules.neitherAliveDead",
 			Other: "`{{.Arg}}` is neither `alive` or `dead`!",
 		},
 			map[string]interface{}{
-				"Arg": args[4],
+				"Arg": args[2],
 			}), false
 	}
 
 	var oldValue bool
-	if args[2] == "muted" {
-		oldValue = sett.GetVoiceRule(true, gamePhase, args[4])
+	if args[0] == "muted" {
+		oldValue = sett.GetVoiceRule(true, gamePhase, args[0])
 	} else {
-		oldValue = sett.GetVoiceRule(false, gamePhase, args[4])
+		oldValue = sett.GetVoiceRule(false, gamePhase, args[0])
 	}
 
-	if len(args) == 5 {
+	if len(args) == 3 {
 		// User was only querying
 		if oldValue {
 			return sett.LocalizeMessage(&i18n.Message{
@@ -78,9 +56,9 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently {{.PlayerDiscordState}}.",
 			},
 				map[string]interface{}{
-					"PhaseName":          args[3],
-					"PlayerGameState":    args[4],
-					"PlayerDiscordState": args[2],
+					"PhaseName":          args[1],
+					"PlayerGameState":    args[2],
+					"PlayerDiscordState": args[0],
 				}), false
 		} else {
 			return sett.LocalizeMessage(&i18n.Message{
@@ -88,28 +66,14 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are currently NOT {{.PlayerDiscordState}}.",
 			},
 				map[string]interface{}{
-					"PhaseName":          args[3],
-					"PlayerGameState":    args[4],
-					"PlayerDiscordState": args[2],
+					"PhaseName":          args[1],
+					"PlayerGameState":    args[2],
+					"PlayerDiscordState": args[0],
 				}), false
 		}
 	}
 
-	var newValue bool
-	switch {
-	case args[5] == "true":
-		newValue = true
-	case args[5] == "false":
-		newValue = false
-	default:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingVoiceRules.neitherTrueFalse",
-			Other: "`{{.Arg}}` is neither `true` or `false`!",
-		},
-			map[string]interface{}{
-				"Arg": args[5],
-			}), false
-	}
+	newValue := args[3] == "true"
 
 	if newValue == oldValue {
 		if newValue {
@@ -118,9 +82,9 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already {{.PlayerDiscordState}}!",
 			},
 				map[string]interface{}{
-					"PhaseName":          args[3],
-					"PlayerGameState":    args[4],
-					"PlayerDiscordState": args[2],
+					"PhaseName":          args[1],
+					"PlayerGameState":    args[2],
+					"PlayerDiscordState": args[0],
 				}), false
 		} else {
 			return sett.LocalizeMessage(&i18n.Message{
@@ -128,17 +92,17 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 				Other: "When in `{{.PhaseName}}` phase, {{.PlayerGameState}} players are already un{{.PlayerDiscordState}}!",
 			},
 				map[string]interface{}{
-					"PhaseName":          args[3],
-					"PlayerGameState":    args[4],
-					"PlayerDiscordState": args[2],
+					"PhaseName":          args[1],
+					"PlayerGameState":    args[2],
+					"PlayerDiscordState": args[0],
 				}), false
 		}
 	}
 
-	if args[2] == "muted" {
-		sett.SetVoiceRule(true, gamePhase, args[4], newValue)
+	if args[0] == "muted" {
+		sett.SetVoiceRule(true, gamePhase, args[2], newValue)
 	} else {
-		sett.SetVoiceRule(false, gamePhase, args[4], newValue)
+		sett.SetVoiceRule(false, gamePhase, args[2], newValue)
 	}
 
 	if newValue {
@@ -147,9 +111,9 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be {{.PlayerDiscordState}}.",
 		},
 			map[string]interface{}{
-				"PhaseName":          args[3],
-				"PlayerGameState":    args[4],
-				"PlayerDiscordState": args[2],
+				"PhaseName":          args[1],
+				"PlayerGameState":    args[2],
+				"PlayerDiscordState": args[0],
 			}), true
 	} else {
 		return sett.LocalizeMessage(&i18n.Message{
@@ -157,9 +121,9 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 			Other: "From now on, when in `{{.PhaseName}}` phase, {{.PlayerGameState}} players will be un{{.PlayerDiscordState}}.",
 		},
 			map[string]interface{}{
-				"PhaseName":          args[3],
-				"PlayerGameState":    args[4],
-				"PlayerDiscordState": args[2],
+				"PhaseName":          args[1],
+				"PlayerGameState":    args[2],
+				"PlayerDiscordState": args[0],
 			}), true
 	}
 }

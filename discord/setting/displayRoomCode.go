@@ -8,23 +8,23 @@ import (
 )
 
 func FnDisplayRoomCode(sett *settings.GuildSettings, args []string) (interface{}, bool) {
-	if sett == nil || len(args) < 2 {
+	s := GetSettingByName(DisplayRoomCode)
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), AllSettings[DisplayRoomCode], sett), false
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetDisplayRoomCode()), s, sett), false
 	}
 
-	val := strings.ToLower(args[2])
+	val := strings.ToLower(args[0])
 	valid := map[string]bool{"always": true, "spoiler": true, "never": true}
 	if !valid[val] {
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingDisplayRoomCode.Unrecognized",
-			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings displayRoomCode` for usage",
+			Other: "{{.Arg}} is not an expected value. See `/settings display-room-code` for usage",
 		},
 			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Arg": val,
 			}), false
 	}
 

@@ -70,36 +70,34 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 # Usage and Commands
 
-To start a bot game in the current channel, type the following `.au` command in Discord after inviting the bot:
+To start a bot game in the current channel, type the following slash command in Discord after inviting the bot:
 
 ```
-.au new
+/new
 # Starts a game, and allows users to react to emojis to link to their in-game players
 ```
 
-The bot will send you a private message (make sure your Discord settings allow DMs from server members!) with a link that is used to sync the capture software to your game. It will also have a link to download the latest version of the capture software, if you don't have it already.
+The bot will send you a private reply with a link that is used to sync the capture software to your game. It will also have a link to download the latest version of the capture software, if you don't have it already.
 
-If you want to view command usage or see the available options, type `.au` or `.au help` in your Discord channel.
+If you want to view command usage or see the available options, type `/help` in your Discord channel.
 
 ## Commands
 
-The Discord Bot uses the `.au` prefix for any commands by default; if you change your prefix remember to replace `.au` with your custom prefix. If you forget your prefix, you can @mention the bot and it will respond with whatever it's prefix currently is.
-
-| Command        | Alias   | Arguments   | Description                                                                                                     | Example                            |
-| -------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `.au help`     | `.au h` | None        | Print help info and command usage                                                                               |                                    |
-| `.au new`      | `.au n` | None        | Start a new game in the current text channel. Optionally accepts the room code and region                       | `.au n CODE eu`                    |
-| `.au link`     | `.au l` | @name color | Manually link a discord user to their in-game color                                                             | `.au l @Soup cyan`                 |
-| `.au refresh`  | `.au r` | None        | Remake the bot's status message entirely, in case it ends up too far up in the chat.                            |                                    |
-| `.au end`      | `.au e` | None        | End the game entirely, and stop tracking players. Unmutes all and resets state                                  |                                    |
-| `.au unlink`   | `.au u` | @name       | Manually unlink a player                                                                                        | `.au u @player`                    |
-| `.au settings` | `.au s` |             | View and change settings for the bot, such as the command prefix or mute behavior                               |                                    |
-| `.au pause`    | `.au p` | None        | Pause the bot, and don't let it automute anyone until unpaused. **will not un-mute muted players, be careful!** |                                    |
-| `.au privacy`  |         |             | View privacy and data collection information about the bot                                                      |                                    |
-| `.au info`     | `.au i` | None        | View general info about the Bot                                                                                 |                                    |
-| `.au map`      |         | MAPNAME     | View an image of an in-game map in the text channel. Two supported versions: simple or detailed(vent, camera, etc) | `.au map skeld detailed` |
-
-_In addition to handful of more secretive Easter Egg commands..._
+| Command     | Description                                                                                                            | Example                  |
+|-------------|------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| `/help`     | Print help info and command usage                                                                                      |                          |
+| `/new`      | Start a new game in the current text channel                                                                           |                          |
+| `/refresh`  | Remake the bot's status message entirely, in case it ends up too far up in the chat.                                   |                          |
+| `/pause`    | Pause the bot, and don't let it automute anyone until unpaused.                                                        |                          |
+| `/end`      | End the game entirely, and stop tracking players. Unmutes all and resets state                                         |                          |
+| `/link`     | Manually link a discord user to their in-game color                                                                    | `/link @Soup cyan`       |
+| `/unlink`   | Manually unlink a player                                                                                               | `/unlink @Soup`          |
+| `/settings` | View and change settings for the bot, such as the command prefix or mute behavior                                      |                          |
+| `/privacy`  | View privacy and data collection information about the bot                                                             |                          |
+| `/info`     | View general info about the Bot                                                                                        |                          |
+| `/map`      | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
+| `/stats`    | View detailed stats about Among Us games played on the current server, or by a specific player                         | `/stats user view @Soup` |
+| `/premium`  | View information about AutoMuteUs Premium, and the current premium status of your server                               |                          |
 
 # Privacy
 
@@ -111,7 +109,6 @@ View details on Localization and Multi-Language support [here](LOCALIZATION.md).
 
 # Self-Hosting
 
-If you would prefer to self-host the bot, the steps for doing so are provided below.
 Self-hosting requires robust knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and/or any other networking and routing config specific to your hosting solution.
 
 As such, **we recommend that the majority of users take advantage of our Verified bot**. The link to invite our bot can be found here:

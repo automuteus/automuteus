@@ -11,6 +11,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const (
+	UnlinkEmojiName = "auunlink"
+	X               = "❌"
+	ThumbsUp        = "👍"
+)
+
 // Emoji struct for discord
 type Emoji struct {
 	Name string
@@ -77,6 +83,28 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 				bot.StatusEmojis[alive][i] = emoji
 			}
 		}
+	}
+}
+
+func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string) (arr []discordgo.SelectMenuOption) {
+	for i, v := range emojis {
+		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
+	}
+	arr = append(arr, discordgo.SelectMenuOption{
+		Label:   "unlink",
+		Value:   UnlinkEmojiName,
+		Emoji:   discordgo.ComponentEmoji{Name: unlinkEmoji},
+		Default: false,
+	})
+	return arr
+}
+
+func (e Emoji) toSelectMenuOption(displayName string) discordgo.SelectMenuOption {
+	return discordgo.SelectMenuOption{
+		Label:   displayName,
+		Value:   displayName, // use the Name for listen events later
+		Emoji:   discordgo.ComponentEmoji{ID: e.ID},
+		Default: false,
 	}
 }
 

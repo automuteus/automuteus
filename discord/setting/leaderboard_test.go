@@ -8,27 +8,27 @@ func TestFnLeaderboardMin(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnLeaderboardMin(sett, []string{"sett", "lboardmin", "notanumber"})
+	_, valid := FnLeaderboardMin(sett, []string{"notanumber"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnLeaderboardMin(sett, []string{"sett", "lboardmin", "-1"})
+	_, valid = FnLeaderboardMin(sett, []string{"-1"})
 	if valid {
 		t.Error("Invalid leaderboard min should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardMin(sett, []string{"sett", "lboardmin", "-1"})
+	_, valid = FnLeaderboardMin(sett, []string{"-1"})
 	if valid {
 		t.Error("Invalid leaderboard min should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardMin(sett, []string{"sett", "lboardmin", "4.5"})
+	_, valid = FnLeaderboardMin(sett, []string{"4.5"})
 	if valid {
 		t.Error("Invalid leaderboard min should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardMin(sett, []string{"sett", "lboardmin", "4"})
+	_, valid = FnLeaderboardMin(sett, []string{"4"})
 	if !valid {
 		t.Error("Valid leaderboard min should result in a valid settings change")
 	}
@@ -43,17 +43,7 @@ func TestFnLeaderboardNameMention(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "notanumber"})
-	if valid {
-		t.Error("Sending invalid args shuld never result in valid settings change")
-	}
-
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "invalid"})
-	if valid {
-		t.Error("Invalid leaderboard name mention should never result in a valid settings change")
-	}
-
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "false"})
+	_, valid := FnLeaderboardNameMention(sett, []string{"false"})
 	if !valid {
 		t.Error("Valid leaderboard name mention should result in a valid settings change")
 	}
@@ -61,7 +51,7 @@ func TestFnLeaderboardNameMention(t *testing.T) {
 		t.Error("Valid leaderboard name mention (\"false\") was not set correctly")
 	}
 
-	_, valid = FnLeaderboardNameMention(sett, []string{"sett", "lboardmention", "t"})
+	_, valid = FnLeaderboardNameMention(sett, []string{"true"})
 	if !valid {
 		t.Error("Valid leaderboard name mention should result in a valid settings change")
 	}
@@ -76,32 +66,32 @@ func TestFnLeaderboardSize(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnLeaderboardSize(sett, []string{"sett", "lboardsize", "notanumber"})
+	_, valid := FnLeaderboardSize(sett, []string{"notanumber"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnLeaderboardSize(sett, []string{"sett", "lboardsize", "invalid"})
+	_, valid = FnLeaderboardSize(sett, []string{"invalid"})
 	if valid {
 		t.Error("Invalid leaderboard size should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardSize(sett, []string{"sett", "lboardsize", "-1"})
+	_, valid = FnLeaderboardSize(sett, []string{"-1"})
 	if valid {
 		t.Error("Invalid leaderboard size should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardSize(sett, []string{"sett", "lboardsize", "2.5"})
+	_, valid = FnLeaderboardSize(sett, []string{"2.5"})
 	if valid {
 		t.Error("Invalid leaderboard size should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardSize(sett, []string{"sett", "lboardsize", "11"})
+	_, valid = FnLeaderboardSize(sett, []string{"11"})
 	if valid {
 		t.Error("Invalid leaderboard size should never result in a valid settings change")
 	}
 
-	_, valid = FnLeaderboardSize(sett, []string{"sett", "lboardsize", "2"})
+	_, valid = FnLeaderboardSize(sett, []string{"2"})
 	if !valid {
 		t.Error("Valid leaderboard size should result in a valid settings change")
 	}

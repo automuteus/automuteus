@@ -8,18 +8,18 @@ func TestFnUnmuteDeadDuringTasks(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnUnmuteDeadDuringTasks(sett, []string{"sett", "unmutedead", "nottrueorfalse"})
+	_, valid := FnUnmuteDeadDuringTasks(sett, []string{"nottrueorfalse"})
 	if valid {
 		t.Error("Invalid unmutedead should never result in a valid settings change")
 	}
 
 	sett.UnmuteDeadDuringTasks = false
-	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"sett", "unmutedead", "false"})
+	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"false"})
 	if valid {
 		t.Error("Valid unmutedead that is already set should never result in a valid settings change")
 	}
 
-	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"sett", "unmutedead", "true"})
+	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"true"})
 	if !valid {
 		t.Error("Valid unmutedead should result in a valid settings change")
 	}
@@ -27,7 +27,7 @@ func TestFnUnmuteDeadDuringTasks(t *testing.T) {
 		t.Error("Valid unmutedead (\"true\") didn't result in a valid settings change")
 	}
 
-	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"sett", "unmutedead", "false"})
+	_, valid = FnUnmuteDeadDuringTasks(sett, []string{"false"})
 	if !valid {
 		t.Error("Valid unmutedead should result in a valid settings change")
 	}

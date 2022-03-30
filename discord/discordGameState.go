@@ -2,20 +2,15 @@ package discord
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/settings"
-	"log"
-	"strings"
-
 	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 )
 
-type TrackingChannel struct {
-	ChannelID   string `json:"channelID"`
-	ChannelName string `json:"channelName"`
-}
-
+// GameState represents a full record of the entire current game's state. It is intended to be fully JSON-serializable,
+// so that any shard/worker can pick up the game state and operate upon it (using locks as necessary)
 type GameState struct {
 	GuildID string `json:"guildID"`
 
@@ -28,12 +23,12 @@ type GameState struct {
 	MatchID        int64 `json:"matchID"`
 	MatchStartUnix int64 `json:"matchStartUnix"`
 
-	UserData UserDataSet     `json:"userData"`
-	Tracking TrackingChannel `json:"tracking"`
+	UserData     UserDataSet `json:"userData"`
+	VoiceChannel string      `json:"voiceChannel"`
 
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
-	AmongUsData amongus.AmongUsData `json:"amongUsData"`
+	GameData amongus.GameData `json:"amongUsData"`
 }
 
 func NewDiscordGameState(guildID string) *GameState {
@@ -51,9 +46,9 @@ func (dgs *GameState) Reset() {
 	dgs.MatchID = -1
 	dgs.MatchStartUnix = -1
 	dgs.UserData = map[string]UserData{}
-	dgs.Tracking = TrackingChannel{}
+	dgs.VoiceChannel = ""
 	dgs.GameStateMsg = MakeGameStateMessage()
-	dgs.AmongUsData = amongus.NewAmongUsData()
+	dgs.GameData = amongus.NewGameData()
 }
 
 func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
@@ -78,45 +73,11 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 	return user, true
 }
 
-func (dgs *GameState) clearGameTracking(s *discordgo.Session) {
-	// clear the discord User links to underlying player data
-	dgs.ClearAllPlayerData()
-
-	// reset all the Tracking channels
-	dgs.Tracking = TrackingChannel{}
-
-	dgs.DeleteGameStateMsg(s)
-}
-
-func (dgs *GameState) trackChannel(channelName string, allChannels []*discordgo.Channel, sett *settings.GuildSettings) string {
-	for _, c := range allChannels {
-		if (strings.ToLower(c.Name) == strings.ToLower(channelName) || c.ID == channelName) && c.Type == 2 {
-			dgs.Tracking = TrackingChannel{ChannelName: c.Name, ChannelID: c.ID}
-
-			log.Println(fmt.Sprintf("Now Tracking \"%s\" Voice Channel for Automute!", c.Name))
-			return sett.LocalizeMessage(&i18n.Message{
-				ID:    "discordGameState.trackChannel.voiceChannelSet",
-				Other: "Now Tracking \"{{.channelName}}\" Voice Channel for Automute!",
-			},
-				map[string]interface{}{
-					"channelName": c.Name,
-				})
-		}
-	}
-	return sett.LocalizeMessage(&i18n.Message{
-		ID:    "discordGameState.trackChannel.voiceChannelNotfound",
-		Other: "No channel found by the name {{.channelName}}!\n",
-	},
-		map[string]interface{}{
-			"channelName": channelName,
-		})
-}
-
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
 	unsorted := make([]*discordgo.MessageEmbedField, 18)
 	num := 0
 
-	for _, player := range dgs.AmongUsData.PlayerData {
+	for _, player := range dgs.GameData.PlayerData {
 		if player.Color < 0 || player.Color > 17 {
 			break
 		}

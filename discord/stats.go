@@ -60,9 +60,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSetti
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.userStatsEmbed.NoPremium",
-		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more",
 	})
 
 	if isPrem {
@@ -586,9 +584,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 
 	extraDesc := sett.LocalizeMessage(&i18n.Message{
 		ID:    "responses.guildStatsEmbed.NoPremium",
-		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `{{.CommandPrefix}} premium` to learn more",
-	}, map[string]interface{}{
-		"CommandPrefix": sett.GetCommandPrefix(),
+		Other: "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more",
 	})
 
 	if isPrem {
@@ -894,7 +890,28 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 	return &embed
 }
 
-func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, sett *settings.GuildSettings, isPrem bool) *discordgo.MessageEmbed {
+func (bot *Bot) GameStatsEmbed(guildID, matchID, connectCode string, isPrem bool, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+	if !isPrem {
+		return &discordgo.MessageEmbed{
+			URL:   "",
+			Type:  "",
+			Title: "Insufficient Premium",
+			Description: sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.gameStatsEmbed.NoPremium",
+				Other: "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more",
+			}),
+			Timestamp: "",
+			Color:     10181046, // PURPLE
+			Footer:    nil,
+			Image:     nil,
+			Thumbnail: nil,
+			Video:     nil,
+			Provider:  nil,
+			Author:    nil,
+			Fields:    nil,
+		}
+	}
+
 	gameData, err := bot.PostgresInterface.GetGame(guildID, connectCode, matchID)
 	if err != nil {
 		log.Fatal(err)

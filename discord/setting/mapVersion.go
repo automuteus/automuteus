@@ -8,30 +8,19 @@ import (
 )
 
 func FnMapVersion(sett *settings.GuildSettings, args []string) (interface{}, bool) {
-	if sett == nil || len(args) < 2 {
+	s := GetSettingByName(MapVersion)
+	if sett == nil {
 		return nil, false
 	}
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%v", sett.GetMapVersion()), AllSettings[MapVersion], sett), false
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(fmt.Sprintf("%t", sett.GetMapDetailed()), s, sett), false
 	}
 
-	val := strings.ToLower(args[2])
-	valid := map[string]bool{"simple": true, "detailed": true}
-	if !valid[val] {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingMapVersion.Unrecognized",
-			Other: "{{.Arg}} is not an expected value. See `{{.CommandPrefix}} settings mapversion` for usage",
-		},
-			map[string]interface{}{
-				"Arg":           val,
-				"CommandPrefix": sett.GetCommandPrefix(),
-			}), false
-	}
-
-	sett.SetMapVersion(val)
+	val := strings.ToLower(args[0]) == "true"
+	sett.SetMapDetailed(val)
 	return sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingMapVersion.Success",
-		Other: "From now on, I will display map images as {{.Arg}}",
+		Other: "From now on, detailed map setting is `{{.Arg}}`",
 	},
 		map[string]interface{}{
 			"Arg": val,

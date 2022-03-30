@@ -12,8 +12,6 @@ const GlobalUserRateLimitDuration = 1 * time.Second
 
 const NewGameRateLimitDuration = 3000 * time.Millisecond
 
-const ReactionRateLimitDuration = 3000 * time.Millisecond
-
 // when a user exceeds the threshold, they're ignored for this long
 const SoftbanDuration = 5 * time.Minute
 

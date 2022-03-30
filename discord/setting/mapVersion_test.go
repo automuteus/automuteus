@@ -1,31 +1,26 @@
 package setting
 
-import "testing"
+import (
+	"github.com/automuteus/utils/pkg/settings"
+	"testing"
+)
 
 func TestFnMapVersion(t *testing.T) {
-	sett, err := testSettingsFn(FnMapVersion)
-	if err != nil {
-		t.Error(err)
-	}
+	sett := settings.MakeGuildSettings()
 
-	_, valid := FnMapVersion(sett, []string{"sett", "map", "invalid"})
-	if valid {
-		t.Error("Invalid map version should never result in a valid settings change")
-	}
-
-	_, valid = FnMapVersion(sett, []string{"sett", "map", "simple"})
+	_, valid := FnMapVersion(sett, []string{"true"})
 	if !valid {
 		t.Error("Valid map version should result in a valid settings change")
 	}
-	if sett.GetMapVersion() != "simple" {
-		t.Error("Valid map version (\"simple\") was not set correctly")
+	if !sett.GetMapDetailed() {
+		t.Error("Valid map version (\"true\") was not set correctly")
 	}
 
-	_, valid = FnMapVersion(sett, []string{"sett", "map", "detailed"})
+	_, valid = FnMapVersion(sett, []string{"false"})
 	if !valid {
 		t.Error("Valid map version should result in a valid settings change")
 	}
-	if sett.GetMapVersion() != "detailed" {
-		t.Error("Valid map version (\"detailed\") was not set correctly")
+	if sett.GetMapDetailed() {
+		t.Error("Valid map version (\"false\") was not set correctly")
 	}
 }
