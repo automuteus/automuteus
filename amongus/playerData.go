@@ -1,7 +1,6 @@
 package amongus
 
 import (
-	"fmt"
 	"github.com/automuteus/utils/pkg/game"
 )
 
@@ -17,11 +16,6 @@ var UnlinkedPlayer = PlayerData{
 	Color:   -1,
 	Name:    UnlinkedPlayerName,
 	IsAlive: true,
-}
-
-// ToString a user
-func (auData *PlayerData) ToString() string {
-	return fmt.Sprintf("{ Name: %s, Color: %s, Alive: %v }\n", auData.Name, game.GetColorStringForInt(auData.Color), auData.IsAlive)
 }
 
 func (auData *PlayerData) isDifferent(player game.Player) bool {

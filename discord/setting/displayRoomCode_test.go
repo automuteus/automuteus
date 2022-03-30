@@ -8,12 +8,12 @@ func TestFnDisplayRoomCode(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnDisplayRoomCode(sett, []string{"sett", "roomcode", "invalid"})
+	_, valid := FnDisplayRoomCode(sett, []string{"invalid"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnDisplayRoomCode(sett, []string{"sett", "roomcode", "always"})
+	_, valid = FnDisplayRoomCode(sett, []string{"always"})
 	if !valid {
 		t.Error("Sending a valid arg for roomcode should result in settings change")
 	}

@@ -6,16 +6,20 @@ import (
 )
 
 func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(UnmuteDead)
+	if sett == nil {
+		return nil, false
+	}
 	unmuteDead := sett.GetUnmuteDeadDuringTasks()
-	if len(args) == 2 {
+	if len(args) == 0 {
 		current := "false"
 		if unmuteDead {
 			current = "true"
 		}
-		return ConstructEmbedForSetting(current, AllSettings[UnmuteDead], sett), false
+		return ConstructEmbedForSetting(current, s, sett), false
 	}
 	switch {
-	case args[2] == "true":
+	case args[0] == "true":
 		if unmuteDead {
 			return sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_unmuteDead",
@@ -28,7 +32,7 @@ func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (inter
 				Other: "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!",
 			}), true
 		}
-	case args[2] == "false":
+	case args[0] == "false":
 		if unmuteDead {
 			sett.SetUnmuteDeadDuringTasks(false)
 			return sett.LocalizeMessage(&i18n.Message{
@@ -46,7 +50,7 @@ func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (inter
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},
 			map[string]interface{}{
-				"Arg": args[2],
+				"Arg": args[0],
 			}), false
 	}
 }

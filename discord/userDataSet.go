@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -9,10 +8,6 @@ import (
 )
 
 type UserDataSet map[string]UserData
-
-func (dgs *GameState) UserDataSize() int {
-	return len(dgs.UserData)
-}
 
 func (dgs *GameState) GetCountLinked() int {
 	LinkedPlayerCount := 0
@@ -57,11 +52,13 @@ func (dgs *GameState) AttemptPairingByUserIDs(data amongus.PlayerData, userIDs m
 	return ""
 }
 
-func (dgs *GameState) ClearPlayerData(userID string) {
+func (dgs *GameState) ClearPlayerData(userID string) bool {
 	if v, ok := dgs.UserData[userID]; ok {
 		v.InGameName = amongus.UnlinkedPlayerName
 		dgs.UserData[userID] = v
+		return true
 	}
+	return false
 }
 
 func (dgs *GameState) ClearPlayerDataByPlayerName(playerName string) {
@@ -74,7 +71,7 @@ func (dgs *GameState) ClearPlayerDataByPlayerName(playerName string) {
 	}
 }
 
-func (dgs *GameState) ClearAllPlayerData() {
+func (dgs *GameState) UnlinkAllUsers() {
 	for i, v := range dgs.UserData {
 		v.InGameName = amongus.UnlinkedPlayerName
 		dgs.UserData[i] = v
@@ -85,5 +82,5 @@ func (dgs *GameState) GetUser(userID string) (UserData, error) {
 	if v, ok := dgs.UserData[userID]; ok {
 		return v, nil
 	}
-	return UserData{}, errors.New(fmt.Sprintf("No User found with ID %s", userID))
+	return UserData{}, fmt.Errorf("no User found with ID %s", userID)
 }

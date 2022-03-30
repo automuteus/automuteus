@@ -2,25 +2,31 @@ package setting
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"log"
 	"strconv"
 )
 
 func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, bool) {
-	if len(args) == 2 {
-		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), AllSettings[MatchSummary], sett), false
+	s := GetSettingByName(MatchSummary)
+	if sett == nil {
+		return nil, false
+	}
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(fmt.Sprintf("%d", sett.GetDeleteGameSummaryMinutes()), s, sett), false
 	}
 
-	num, err := strconv.ParseInt(args[2], 10, 64)
+	num, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
+		log.Println("error for parseint in MatchSummary: ", err)
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingMatchSummary.Unrecognized",
-			Other: "{{.Minutes}} is not a valid number. See `{{.CommandPrefix}} settings matchSummary` for usage",
+			Other: "{{.Minutes}} is not a valid number. See `/settings match-summary` for usage",
 		},
 			map[string]interface{}{
-				"Minutes":       args[2],
-				"CommandPrefix": sett.GetCommandPrefix(),
+				"Minutes": args[0],
 			}), false
 	}
 	if num > 60 || num < -1 {
@@ -51,4 +57,34 @@ func FnMatchSummary(sett *settings.GuildSettings, args []string) (interface{}, b
 				"Minutes": num,
 			}), true
 	}
+}
+
+func FnMatchSummaryChannel(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MatchSummaryChannel)
+	if sett == nil {
+		return nil, false
+	}
+	if len(args) == 0 {
+		return ConstructEmbedForSetting(discord.MentionByChannelID(sett.GetMatchSummaryChannelID()), s, sett), false
+	}
+
+	channelID, err := discord.ExtractChannelIDFromText(args[0])
+	if err != nil {
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "settings.SettingMatchSummaryChannel.invalidChannelID",
+			Other: "{{.channelID}} is not a valid text channel ID or mention!",
+		},
+			map[string]interface{}{
+				"channelID": args[0],
+			}), false
+	}
+
+	sett.SetMatchSummaryChannelID(channelID)
+	return sett.LocalizeMessage(&i18n.Message{
+		ID:    "settings.SettingMatchSummaryChannel.withChannelID",
+		Other: "Match Summary text channel ID changed to {{.channelID}}!",
+	},
+		map[string]interface{}{
+			"channelID": discord.MentionByChannelID(channelID),
+		}), true
 }

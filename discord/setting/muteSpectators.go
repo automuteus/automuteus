@@ -6,16 +6,20 @@ import (
 )
 
 func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(MuteSpectators)
+	if sett == nil {
+		return nil, false
+	}
 	muteSpec := sett.GetMuteSpectator()
-	if len(args) == 2 {
+	if len(args) == 0 {
 		current := "false"
 		if muteSpec {
 			current = "true"
 		}
-		return ConstructEmbedForSetting(current, AllSettings[MuteSpectators], sett), false
+		return ConstructEmbedForSetting(current, s, sett), false
 	}
 	switch {
-	case args[2] == "true":
+	case args[0] == "true":
 		if muteSpec {
 			return sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
@@ -28,7 +32,7 @@ func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{},
 				Other: "I will now mute spectators just like dead players. \n**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**",
 			}), true
 		}
-	case args[2] == "false":
+	case args[0] == "false":
 		if muteSpec {
 			sett.SetMuteSpectator(false)
 			return sett.LocalizeMessage(&i18n.Message{
@@ -46,7 +50,7 @@ func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{},
 			Other: "Sorry, `{{.Arg}}` is neither `true` nor `false`.",
 		},
 			map[string]interface{}{
-				"Arg": args[2],
+				"Arg": args[0],
 			}), false
 	}
 }

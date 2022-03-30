@@ -1,21 +1,25 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/common"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface{}, bool) {
+	s := GetSettingByName(RoleIDs)
+	if sett == nil {
+		return nil, false
+	}
 	oldRoleIDs := sett.GetPermissionRoleIDs()
-	if len(args) == 2 {
+	if len(args) == 0 || args[0] == View {
 		adminRoleCount := len(oldRoleIDs) // caching for optimisation
 		// make a nicely formatted string of all the roles: "role1, role2, role3 and role4"
 		if adminRoleCount == 0 {
 			return ConstructEmbedForSetting(sett.LocalizeMessage(&i18n.Message{
 				ID:    "settings.SettingPermissionRoleIDs.noRoleAdmins",
 				Other: "No Role Admins",
-			}), AllSettings[RoleIDs], sett), false
+			}), s, sett), false
 		} else {
 			listOfRoles := ""
 			for index, ID := range oldRoleIDs {
@@ -28,52 +32,34 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 					listOfRoles += ", <@&" + ID + ">"
 				}
 			}
-			return ConstructEmbedForSetting(listOfRoles, AllSettings[RoleIDs], sett), false
+			return ConstructEmbedForSetting(listOfRoles, s, sett), false
 		}
 	}
 
-	var newRoleIDs []string
-	// roles the User mentioned in their message
-	var roleIDs []string
-
-	if args[2] != "clear" && args[2] != "c" {
-		var sendMessages []string
-		for _, roleName := range args[2:] {
-			if roleName == "" || roleName == " " {
-				// User added a double space by accident, ignore it
-				continue
-			}
-			ID, err := common.ExtractRoleIDFromText(roleName)
-			if err != nil {
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
-					ID:    "settings.SettingPermissionRoleIDs.notFound",
-					Other: "Sorry, I don't know the role `{{.RoleName}}` is. Please use @role or the roleID",
-				},
-					map[string]interface{}{
-						"RoleName": roleName,
-					}))
-				continue
-			} else {
-				roleIDs = append(roleIDs, ID)
-			}
+	if args[0] != Clear && args[0] != "c" {
+		roleName := args[0]
+		ID, err := discord.ExtractRoleIDFromText(roleName)
+		if err != nil {
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.notFound",
+				Other: "Sorry, I didn't recognize the role you provided",
+			}), false
 		}
 
-		for _, ID := range roleIDs {
-			if ID != "" {
-				newRoleIDs = append(newRoleIDs, ID)
-				sendMessages = append(sendMessages, sett.LocalizeMessage(&i18n.Message{
-					ID:    "settings.SettingPermissionRoleIDs.newBotAdmins",
-					Other: "<@&{{.UserID}}>s are now bot admins!",
-				},
-					map[string]interface{}{
-						"UserID": ID,
-					}))
-			}
+		if ID != "" && !contains(oldRoleIDs, ID) {
+			sett.SetPermissionRoleIDs(append(oldRoleIDs, ID))
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.newBotOperator",
+				Other: "I successfully added that role as bot operators!",
+			}), true
+		} else {
+			return sett.LocalizeMessage(&i18n.Message{
+				ID:    "settings.SettingPermissionRoleIDs.alreadyBotOperator",
+				Other: "That role was already a bot operator!",
+			}), false
 		}
-		sett.SetPermissionRoleIDs(newRoleIDs)
-		return sendMessages, true
 	} else {
-		sett.SetPermissionRoleIDs(newRoleIDs)
+		sett.SetPermissionRoleIDs([]string{})
 		return sett.LocalizeMessage(&i18n.Message{
 			ID:    "settings.SettingPermissionRoleIDs.clearRoles",
 			Other: "Clearing all PermissionRoleIDs!",

@@ -1,0 +1,12 @@
+- [ ] Search for unused functions/code relating to old command processing
+- [X] Reintegrate Redis-based user rate limiting on fast command invocation
+- [X] Restrict premium invites viewing to admins only 
+- [X] Search for (and update) commands with higher guild permissions needed for invocation
+- [ ] Unit tests where appropriate (such as complex control flow for premium)
+- [X] Integrate subcommands where helpful (/link colors for starters)
+- [ ] Make commands package-private
+- [ ] Localization and i18n keys
+- [ ] Integrate concise/minimal responses (using emojis) to minimize translation efforts and increase readability
+- [X] Refactor `/privacy` to use command options and subcommands
+- [ ] Add galactus endpoints to allow website to fetch current command list
+- [ ] Migrate link/unlink functionality to right-click User context menu actions

@@ -18,7 +18,6 @@ const (
 	MuteDeafenOfficial EventType = iota
 	MessageCreateDelete
 	MessageEdit
-	ReactionAdd
 	MuteDeafenCapture
 	MuteDeafenWorker
 	InvalidRequest
@@ -29,7 +28,6 @@ var MetricTypeStrings = []string{
 	"mute_deafen_official",
 	"message_create_delete",
 	"message_edit",
-	"reaction_add_remove",
 	"mute_deafen_capture",
 	"mute_deafen_worker",
 	"invalid_request",

@@ -1,8 +1,11 @@
-create table if not exists guilds(
-                                     guild_id     numeric PRIMARY KEY,
-                                     guild_name   VARCHAR(100) NOT NULL,
-                                     premium      smallint     NOT NULL,
-                                     tx_time_unix integer
+create table if not exists guilds
+(
+    guild_id numeric PRIMARY KEY,
+    guild_name VARCHAR(100) NOT NULL,
+    premium smallint NOT NULL,
+    tx_time_unix integer,
+    transferred_to numeric references guilds(guild_id),
+    inherits_from numeric references guilds(guild_id)
 );
 
 create table if not exists games
@@ -34,13 +37,13 @@ create table if not exists game_events
 
 create table if not exists users_games
 (
-    user_id      numeric REFERENCES users ON DELETE CASCADE,  --if a user gets deleted, delete their linked games
-    guild_id     numeric REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked games
-    game_id      bigint REFERENCES games ON DELETE CASCADE,   --if a game is deleted, delete all linked users_games
-    player_name  VARCHAR(10) NOT NULL,
-    player_color smallint    NOT NULL,
-    player_role  smallint    NOT NULL,
-    player_won   bool        NOT NULL,
+    user_id numeric REFERENCES users ON DELETE CASCADE, --if a user gets deleted, delete their linked games
+    guild_id numeric REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked games
+    game_id bigint REFERENCES games ON DELETE CASCADE, --if a game is deleted, delete all linked users_games
+    player_name VARCHAR(10) NOT NULL,
+    player_color smallint NOT NULL,
+    player_role smallint NOT NULL,
+    player_won bool NOT NULL,
     PRIMARY KEY (user_id, game_id)
 );
 

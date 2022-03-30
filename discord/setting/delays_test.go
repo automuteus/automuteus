@@ -11,27 +11,22 @@ func TestFnDelays(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, valid := FnDelays(sett, []string{"sett", "delays", "incomplete"})
-	if valid {
-		t.Error("Sending insufficient args should never result in valid settings change")
-	}
-
-	_, valid = FnDelays(sett, []string{"sett", "delays", "invalid", "lobby", "2"})
+	_, valid := FnDelays(sett, []string{"invalid", "lobby", "2"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnDelays(sett, []string{"sett", "delays", "lobby", "invalid", "2"})
+	_, valid = FnDelays(sett, []string{"lobby", "invalid", "2"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnDelays(sett, []string{"sett", "delays", "lobby", "tasks", "-2"})
+	_, valid = FnDelays(sett, []string{"lobby", "tasks", "-2"})
 	if valid {
 		t.Error("Sending invalid args should never result in valid settings change")
 	}
 
-	_, valid = FnDelays(sett, []string{"sett", "delays", "lobby", "tasks", "8"})
+	_, valid = FnDelays(sett, []string{"lobby", "tasks", "8"})
 	if !valid {
 		t.Error("Sending valid args should result in valid settings change")
 	}
