@@ -1,986 +1,196 @@
-["ascii.AsciiStarfield.isWas"]
-hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
-other = "był Impostorem."
-
-["ascii.AsciiStarfield.isWasNot"]
-hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
-other = "nie był Impostorem."
-
-["ascii.AsciiStarfield.remains"]
-few = "Impostorzy pozostali"
-hash = "sha1-d5aa7e4ca57db6752bd427d0978adbe9fa346fab"
-many = "Impostorzy pozostali"
-one = "Impostor pozostał"
-other = "Impostorzy pozostali"
-
-["commands.AllCommands.Ascii.args"]
-hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
-other = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
-
-["commands.AllCommands.Ascii.desc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Pokaż crewmate w ASCII"
-
-["commands.AllCommands.Ascii.shortDesc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Pokaż crewmate w ASCII"
-
-["commands.AllCommands.Cache.args"]
-hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
-other = "<player> (optionally, \"clear\")"
-
-["commands.AllCommands.Cache.desc"]
-hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
-other = "Pokaż zapisane nazwy gracza oraz/lub usuń je"
-
-["commands.AllCommands.Cache.shortDesc"]
-hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "Pokaż nazwę gracza"
-
-["commands.AllCommands.DebugState.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.DebugState.desc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Pokaż pełne dane serwera"
-
-["commands.AllCommands.DebugState.shortDesc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Pokaż pełne dane serwera"
-
-["commands.AllCommands.End.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.End.desc"]
-hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
-other = "Zakończ aktualną grę"
-
-["commands.AllCommands.End.shortDesc"]
-hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
-other = "Zakończ grę"
-
-["commands.AllCommands.Force.args"]
-hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<phase name> (task, discuss, or lobby / t,d, or l)"
-
-["commands.AllCommands.Force.desc"]
-hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Nakaż botu zmianę fazy gry, w momencie gdy bot nie zmienił fazy gry"
-
-["commands.AllCommands.Force.shortDesc"]
-hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
-other = "Nakaż botu zmianę fazy gry"
-
-["commands.AllCommands.Help.args"]
-hash = "sha1-98e9e7ae5c47c4681acc3258e2f28c67bbcbf221"
-other = "None, or optional Command to see info for"
-
-["commands.AllCommands.Help.desc"]
-hash = "sha1-771a9d1f94d5c8279f643ef23407a8129db88016"
-other = "Wyświetl pomoc bota lub informacje o poleceniach"
-
-["commands.AllCommands.Help.shortDesc"]
-hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
-other = "Wyświetl pomoc"
-
-["commands.AllCommands.Info.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.Info.desc"]
-hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
-other = "Pokaż dane bota, takie jak ilość członków serwera, aktywne gry, etc"
-
-["commands.AllCommands.Info.shortDesc"]
-hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
-other = "Pokaż dane bota"
-
-["commands.AllCommands.Link.args"]
-hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
-other = "<discord User> <in-game color or name>"
-
-["commands.AllCommands.Link.desc"]
-hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
-other = "Ręcznie połącz Używkownika Discorda z jego nazwą lub kolorem"
-
-["commands.AllCommands.Link.shortDesc"]
-hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
-other = "Ręcznie połącz Używkownika Discorda"
-
-["commands.AllCommands.Map.args"]
-hash = "sha1-69ef89859dc94b73d30a7a87d938542c03e348c9"
-other = "<map_name> (skeld, mira_hq, polus, airship) <version> (optional, simple or detailed)"
-
-["commands.AllCommands.Map.desc"]
-hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"
-other = "Pokaż mapę gry w kanale tekstowym. Dostępne wersje: uproszczona lub ze szczegółami"
-
-["commands.AllCommands.Map.shortDesc"]
-hash = "sha1-81772e8a5083b687b68d3c4a3d1cac45cf7171aa"
-other = "Pokaż mapę gry"
-
-["commands.AllCommands.New.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.New.desc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "Rozpocznij nową grę"
-
-["commands.AllCommands.New.shortDesc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "Rozpocznij nową grę"
-
-["commands.AllCommands.Pause.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.Pause.desc"]
-hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
-other = "Spauzuj bota, aby nie wyciszał/odciszał graczy. Spauzowanie odciszy i przywróci głos graczom!"
-
-["commands.AllCommands.Pause.shortDesc"]
-hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
-other = "Spauzuj bota"
-
-["commands.AllCommands.Premium.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.Premium.desc"]
-hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
-other = "Pokaż benefity i funkcje członkostwa Premium AutoMuteUs"
-
-["commands.AllCommands.Premium.shortDesc"]
-hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
-other = "Pokaż funkcje Premium Bota"
-
-["commands.AllCommands.Privacy.args"]
-hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
-other = "showme, optin, or optout"
-
-["commands.AllCommands.Privacy.desc"]
-hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
-other = "Informacje o zbieraniu danych poprzez AutoMuteUs.\\nWięcej szczegółów [here](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
-
-["commands.AllCommands.Privacy.shortDesc"]
-hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
-other = "Pokaż informacje o danych prywatnych AutoMuteUs"
-
-["commands.AllCommands.Refresh.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.Refresh.desc"]
-hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
-other = "Pokaż ponownie okienko statusu gry w nowej wiadomości, jeśli poprzednie okienko zostało zgubione w wiadomościach"
-
-["commands.AllCommands.Refresh.shortDesc"]
-hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
-other = "Pokaż ponownie okno statusu gry"
-
-["commands.AllCommands.Settings.args"]
-hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
-other = "<setting> <value>"
-
-["commands.AllCommands.Settings.desc"]
-hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
-other = "Dostosuj ustawienia bota. Wpisz `{{.CommandPrefix}} settings` bez dodatkowych argumentów, aby poznać więcej opcji."
-
-["commands.AllCommands.Settings.shortDesc"]
-hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Dostosuj ustawienia bota"
-
-["commands.AllCommands.Stats.args"]
-hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
-other = "<@discord user> or \"guild\""
-
-["commands.AllCommands.Stats.desc"]
-hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "Pokaż statystyki gracza i serwera"
-
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "Pokaż statystyki gracza i serwera"
-
-["commands.AllCommands.Unlink.args"]
-hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
-other = "<discord User>"
-
-["commands.AllCommands.Unlink.desc"]
-hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
-other = "Ręcznie odłącz Użytkownika Discorda od jego postaci w grze"
-
-["commands.AllCommands.Unlink.shortDesc"]
-hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
-other = "Ręcznie odłącz Użytkownika Discorda"
-
-["commands.AllCommands.UnmuteAll.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["commands.AllCommands.UnmuteAll.desc"]
-hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
-other = "Zmuś bota aby odciszył wszystkich połączonych graczy"
-
-["commands.AllCommands.UnmuteAll.shortDesc"]
-hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "Zmuś bota do odciszenia wszystkich graczy"
-
-["commands.ConstructEmbedForCommand.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Aliasy"
-
-["commands.ConstructEmbedForCommand.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "Argumenty"
-
-["commands.ConstructEmbedForCommand.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "Przykłady"
-
-["commands.HandleCommand.Cache.Success"]
-hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "Usunięto wszystkie zapisane nazwy tego gracza!"
-
-["commands.HandleCommand.Cache.cachedNames"]
-hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "Zapisane nazwy z gry:"
-
-["commands.HandleCommand.Cache.emptyCachedNames"]
-hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
-other = "Nie znaleziono zapisanych nazw dla tego gracza!"
-
-["commands.HandleCommand.ForgetMe.Success"]
-hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
-other = "✅ {{.User}} Usunięto Twoje zapisane nazwy gracza"
-
-["commands.HandleCommand.Help.notFound"]
-hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
-other = "Nie rozpoznałem tego polecenia! sprawdź `help` aby zobaczyć wszystkie polecenia!"
-
-["commands.HandleCommand.Map.notFound"]
-hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
-other = "Nie mam mapy o takiej nazwie!"
-
-["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
-other = "❗ {{.User}} Oto Twoje zapisane nazwy z gry:"
-
-["commands.HandleCommand.ShowMe.emptyCachedNames"]
-hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
-other = "❌ {{.User}} Nie mam zapisanych Twoich danych z gry!"
-
-["commands.HandleCommand.ShowMe.linkedID"]
-hash = "sha1-ca1be91310babf06d344413ec8c473a63f9382ca"
-other = "❗ {{.User}} Jesteś **zapisany** do zbierania danych w celach tworzenia  statystyk"
-
-["commands.HandleCommand.ShowMe.unlinkedID"]
-hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
-other = "❌ {{.User}} Jesteś **wypisany/wypisana** ze zbierania danych w celach tworzenia statystyk, lub jeszcze nie grałeś!"
-
-["commands.HandleCommand.optin.FailDB"]
-hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
-other = "❌ {{.User}} Zgodziłeś/łaś się już na zbieranie danych"
-
-["commands.HandleCommand.optin.SuccessDB"]
-hash = "sha1-d6b06c52ea81ebd4706188a5fa458fae87d2cfc0"
-other = "✅ {{.User}} Zapisałem Cię do zbierania danych"
-
-["commands.HandleCommand.optout.FailDB"]
-hash = "sha1-44bc33283d79d608b5f55000562cd08a951da08b"
-other = "❌ {{.User}} Wypisałeś/łaś się już ze zbierania danych z gry"
-
-["commands.HandleCommand.optout.SuccessDB"]
-hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
-other = "✅ {{.User}} Wypisałem Cię ze zbierania danych z gry"
-
-["discordGameState.ToDescString.anyVoiceChannel"]
-hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
-other = "**Brak kanału głosowego! Użyj `{{.CommandPrefix}} track`!**"
-
-["discordGameState.ToDescString.voiceChannelName"]
-hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = " **{{.channelName}}** kanał głosowy!"
-
-["discordGameState.ToEmojiEmbedFields.Unlinked"]
-hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Niepołączony"
-
-["discordGameState.ToStatusString.anyVoiceChannel"]
-hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
-other = "**Brak kanału głosowego! Użyj `{{.CommandPrefix}} track`!**"
-
-["discordGameState.trackChannel.voiceChannelNotfound"]
-hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "Nie znaleziono kanału o nazwie {{.channelName}}!\\n"
-
-["discordGameState.trackChannel.voiceChannelSet"]
-hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
-other = "Teraz obserwuję \"{{.channelName}}\" jako kanał głosowy dla Automute!"
-
-["eventHandler.gameOver.deleteMessageFooter"]
-hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
-other = "Usuwanie wiadomości za {{.Mins}} :"
-
-["eventHandler.gameOver.matchID"]
-hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
-other = "Koniec gry! Pokaż statystyki gry używając Match ID: `{{.MatchID}}`\\n{{.Winners}}"
-
-["locale.language.name"]
-hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
-other = "Polish"
-
-["message_handlers.generalRatelimit"]
-hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
-other = "{{.User}}, wpisujesz polecenia za szybko! Proszę zwolnij!"
-
-["message_handlers.handleMessageCreate.noPerms"]
-hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
-other = "Używtkownik nie ma wymaganych uprawnień, aby użyć danego polecenia!"
-
-["message_handlers.handleMessageCreate.respondPrefix"]
-hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
-other = "Odpowiadam na prefiks {{.CommandPrefix}}"
-
-["message_handlers.handleNewGameMessage.embed.Description"]
-hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "Kliknij w ten link aby połaczyć z Twoim capture: \\n <{{.hyperlink}}>\\n\\nNie masz zainstalowanego programu capture? Najnowsza wersja [here]({{.downloadURL}})\\n\\nAby połączyć ręcznie:"
-
-["message_handlers.handleNewGameMessage.embed.Fields.Code"]
-hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
-other = "Kod"
-
-["message_handlers.handleNewGameMessage.embed.Fields.URL"]
-hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
-other = "URL"
-
-["message_handlers.handleNewGameMessage.embed.Title"]
-hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "Rozpoczęliście grę!"
-
-["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
-other = "Jeśli rozpocznę więcej gier, Discord uniemożliwi mi działanie, lub spowolni gry, które obserwuję! 😦\\nProszę spróbuj ponownie za parę minut lub rozważ AutoMuteUs Premium (`{{.CommandPrefix}} premium`)\\nCurrent Games: {{.Games}}"
-
-["message_handlers.handleNewGameMessage.noChannel"]
-hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
-other = "{{.User}}, proszę dołącz do kanału głosowego przed rozpoczęciem gry!"
-
-["message_handlers.handleNewGameMessage.specificRatelimit"]
-hash = "sha1-33e13e7ab0034ae74fd2d89df60959d797f0b5b2"
-other = "{{.User}} Tworzysz gry zbyt szybko! Proszę zwolnij!"
-
-["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
-hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
-other = "{{.User}}, reagujesz zbyt szybko! Proszę zwolnij!"
-
-["message_handlers.softban"]
-hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
-other = "{{.User}} Ignoruję Twoje wiadomości przez następne 5 minut, przestań spamować!"
-
-["responses.guildStatsEmbed.Desc"]
-hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
-other = "Statystyki serwera dla {{.GuildName}}"
-
-["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Rozegrane gry"
-
-["responses.guildStatsEmbed.NoPremium"]
-hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "Dane szczegółowe są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
-
-["responses.guildStatsEmbed.Title"]
-hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
-other = "Statystyki serwera"
-
-["responses.helpResponse.SubTitle"]
-hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Pokaż stronę github projektu](https://github.com/denverquane/automuteus) lub [Dołącz nasz discord](https://discord.gg/ZkqZSWF)\\n\\nWpisz `{{.CommandPrefix}} help <command>` aby zobaczyć więcej poleceń!"
-
-["responses.helpResponse.Title"]
-hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
-other = "AutoMuteUs Bot Commands:\\n"
-
-["responses.lobbyMessage.Footer.Text"]
-hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "Zareaguj na tę wiadomość, klikając na postać z Twoim kolorem w grze! (lub {{.emojiLeave}} aby opuścić grę)"
-
-["responses.lobbyMessage.Title"]
-hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
-other = "Lobby"
-
-["responses.lobbyMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Capture nie jest połączony z grą! Kliknij w link otrzymany w PW, aby połączyć!**❌"
-
-["responses.lobbyMetaEmbedFields.PlayersLinked"]
-hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "Połączeni gracze"
-
-["responses.lobbyMetaEmbedFields.Region"]
-hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
-other = "🌎 REGION"
-
-["responses.lobbyMetaEmbedFields.RoomCode"]
-hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
-other = "🔒 Kod pokoju"
-
-["responses.makeDescription.GameNotRunning"]
-hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
-other = "\\n⚠ **Bot spauzowany!** ⚠\\n\\n"
-
-["responses.menuMessage.Linked.FooterText"]
-hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
-other = "Dołącz do lobby w Among Us aby rozpocząć grę)"
-
-["responses.menuMessage.Title"]
-hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
-other = "Menu główne"
-
-["responses.menuMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Capture nie jest połączony z grą! Kliknij w link otrzymany w PW, aby połączyć!**❌"
-
-["responses.nonPremiumSetting.Desc"]
-hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
-other = "Przepraszam, ale te ustawienia są dostępne tylko dla użytkowników AutoMuteUs Premium! Wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej na temat premium"
-
-["responses.premiumInviteResponse.Title"]
-hash = "sha1-e537f34134926749225e31f93c2cc121cc4e23e0"
-other = "Zaproszenia Premium dla bota"
-
-["responses.premiumInviteResponse.desc"]
-hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
-other = "{{.Tier}} Użytkownicy mają dostęp do {{.Count}} priorytetowych botów wyciszających: zaproszenia poniżej!"
-
-["responses.premiumInviteResponseNoAccess.desc"]
-hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
-other = "{{.Tier}} użytkownicy nie mają dostępu do priorytetowych botów wyciszających!\\nWpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej na temat AutoMuteUs Premium"
-
-["responses.premiumResponse.FastMute"]
-hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
-other = "🙊 Szybkie wyciszenie mikrofonu/dźwięku"
-
-["responses.premiumResponse.FastMuteDesc"]
-hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
-other = "Użytkownicy premium zyskują dostęp do \"helper\" bots które sprawiają, że wyciszanie jest szybsze!"
-
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
-other = "Sprawdź, jakie świetne rzeczy oferuje Premium AutoMuteUs!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
-
-["responses.premiumResponse.Invites"]
-hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
-other = "Zobacz listę botów, które możesz zaprosić poleceniem `{{.CommandPrefix}} premium invites`!"
-
-["responses.premiumResponse.PriorityGameAccess"]
-hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
-other = "👑 Priorytetowy dostęp do gier"
-
-["responses.premiumResponse.PriorityGameAccessDesc"]
-hash = "sha1-9b42956892e65576edb6cc2aa3bf6eef8eb6efa3"
-other = "Jeżeli bot jest przeciążony ilością globalnie obsługiwanych gier, użytkownicy Premium zawsze będą mogli tworzyć nowe gry!"
-
-["responses.premiumResponse.Settings"]
-hash = "sha1-8f2e3dbc7ea805faa7b03ed533abfcd504a1ab1a"
-other = "🛠 Ustawienia specjalne"
-
-["responses.premiumResponse.SettingsDesc"]
-hash = "sha1-50f761e465fbcafc6caaa815ecd94c6fc7ee5bd5"
-other = "Użytkownicy premium zyskują dostęp do ustawień specjalnych, takich jak, wyświetlanie podsumowania końca gry, lub auto-odświeżanie okna ze statusem gry!"
-
-["responses.premiumResponse.SettingsDescExtra"]
-hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
-other = "Szukaj ustawień oznaczonych 💎 w `{{.CommandPrefix}} settings!`"
-
-["responses.premiumResponse.Stats"]
-hash = "sha1-790006f1ec07733eda3338ac22e046ef2b809421"
-other = "📊 Statystyki gry oraz ranking "
-
-["responses.premiumResponse.StatsDesc"]
-hash = "sha1-ae7d71d8ca051a31d94d8f48b7e448c8e773eea4"
-other = "Użytkownicy Premium mają pełen dostęp do statystyk graczy oraz rankingów!"
-
-["responses.premiumResponse.Support"]
-hash = "sha1-af23e1d668669b533eb01655c121c807587e7fa2"
-other = "👂 Wsparcie Premium"
-
-["responses.premiumResponse.SupportDesc"]
-hash = "sha1-66af605f1485951ab3d3e7a7762f2182f2c7f21b"
-other = "Użytkownicy Premium otrzymują dostęp do specjalnych kanałów na oficjalnym Discordzie AutoMuteUs!"
-
-["responses.premiumResponse.Title"]
-hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
-other = "💎 AutoMuteUs Premium 💎"
-
-["responses.privacyResponse.Title"]
-hash = "sha1-c7ffd5c92085976d3ec361c3797b5650af65c8d1"
-other = "Ustawienia prywatności AutoMuteUs"
-
-["responses.settingResponse.Description"]
-hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Wpisz `{{.CommandPrefix}} settings <setting>` aby zmienić ustawienia wymienione niżej"
-
-["responses.settingResponse.Title"]
-hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
-other = "Ustawienia"
-
-["responses.statsResponse.BotInfo"]
-hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
-other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
-
-["responses.statsResponse.Creator"]
-hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
-other = "Twórca"
-
-["responses.statsResponse.Donate"]
-hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
-other = "Premium"
-
-["responses.statsResponse.Games"]
-hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "Aktywne gry"
-
-["responses.statsResponse.Invite"]
-hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
-other = "Zaproszenie"
-
-["responses.statsResponse.Library"]
-hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
-other = "Biblioteka"
-
-["responses.statsResponse.Title"]
-hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
-other = "Informacje o bocie"
-
-["responses.statsResponse.Version"]
-hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
-other = "Wersja"
-
-["responses.statsResponse.Website"]
-hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
-other = "Strona internetowa"
-
-["responses.userStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Wygrane jako Crewmate"
-
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
-other = "Statystyki dla {{.User}}"
-
-["responses.userStatsEmbed.FavoriteColors"]
-hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
-other = "Ulubiony kolor"
-
-["responses.userStatsEmbed.FavoriteNames"]
-hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
-other = "Ulubiona nazwa"
-
-["responses.userStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "Rozegrane gry"
-
-["responses.userStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Wygrane jako Impostor"
-
-["responses.userStatsEmbed.NoPremium"]
-hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "Szczegółowe statystyki są dostępne tylko dla użytkowników AutoMuteUs Premium; wpisz `{{.CommandPrefix}} premium` aby dowiedzieć się więcej"
-
-["responses.userStatsEmbed.ServerPlayedInValue"]
-hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
-other = "{{.Server}} Serwer"
-
-["responses.userStatsEmbed.ServersPlayedIn"]
-hash = "sha1-2b659e61e9d2c6a41b6d12e0df79733ccc12299a"
-other = "Grane na"
-
-["responses.userStatsEmbed.ServersPlayedInValue"]
-hash = "sha1-590e7f7cec75b3fbb8343f80b4fdfb961aee13e4"
-other = "{{.Servers}} Serwerach"
-
-["responses.userStatsEmbed.Title"]
-hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
-other = "Statystyki użytkownika"
-
-["responses.userStatsEmbed.TotalWins"]
-hash = "sha1-f4c419e3e3f3df631d62827a5320ec2631d299d7"
-other = "Ilość wygranych"
-
-["responses.userStatsEmbed.Winrate"]
-hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
-other = "Współczynnik zwycięstw"
-
-["settings.AllSettings.AdminUserIDs.args"]
-hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
-other = "<User @ mentions>..."
-
-["settings.AllSettings.AdminUserIDs.desc"]
-hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Sprecyzuj, którzy użytkownicy mają dostęp do administracyjnych funkcji bota"
-
-["settings.AllSettings.AdminUserIDs.shortDesc"]
-hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
-other = "Admini zarządzający botem"
-
-["settings.AllSettings.AutoRefresh.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.AutoRefresh.desc"]
-hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
-other = "Określ, czy bot powinien automatycznie odświeżać okienko ze statusem gry po zakończeniu meczu"
-
-["settings.AllSettings.AutoRefresh.shortDesc"]
-hash = "sha1-688986b39f678f57ce90907ef39ab68a3a5db902"
-other = "Automatyczne odświeżanie okna statusu"
-
-["settings.AllSettings.Delays.args"]
-hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
-other = "<start phase> <end phase> <delay>"
-
-["settings.AllSettings.Delays.desc"]
-hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "Określ opóźnienia wyciszenia mikrofonu/dźwięku pomiędzy fazami gry, np. lobby ->zadania"
-
-["settings.AllSettings.Delays.shortDesc"]
-hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
-other = "Opóźnienia między fazami"
-
-["settings.AllSettings.Language.args"]
-hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
-other = "<language> or reload"
-
-["settings.AllSettings.Language.desc"]
-hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
-other = "Zmień język bota"
-
-["settings.AllSettings.Language.shortDesc"]
-hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
-other = "Język bota"
-
-["settings.AllSettings.MapVersion.args"]
-hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
-other = "<version>"
-
-["settings.AllSettings.MapVersion.desc"]
-hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
-other = "Określ wersję mapy (simple, detailed) używanej przez polecenie 'map'"
-
-["settings.AllSettings.MapVersion.shortDesc"]
-hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
-other = "Wersja mapy"
-
-["settings.AllSettings.MatchSummary.args"]
-hash = "sha1-e43bd32e20d628f793b8b15314ed938d74d56565"
-other = "<minutes>"
-
-["settings.AllSettings.MatchSummary.desc"]
-hash = "sha1-bd285de3a118841b872c4b58baf24388c5384fb0"
-other = "Określ ilość minut po której wiadomość o końcu meczu jest usunięta. 0 aby natychmiastowo usunąć, -1 aby nie usuwać"
-
-["settings.AllSettings.MatchSummary.shortDesc"]
-hash = "sha1-5099f472410435fb996091311c84ee8425d8bfe4"
-other = "Wiadomość podsumowująca mecz"
-
-["settings.AllSettings.Prefix.args"]
-hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
-other = "<prefix>"
-
-["settings.AllSettings.Prefix.desc"]
-hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "Zmień prefiks, który używa bot, aby wykrywać polecenia"
-
-["settings.AllSettings.Prefix.shortDesc"]
-hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
-other = "Prefiks bota"
-
-["settings.AllSettings.Reset.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["settings.AllSettings.Reset.desc"]
-hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
-other = "Zresetuj wszystkie ustawienia bota do domyślnych wartości"
-
-["settings.AllSettings.Reset.shortDesc"]
-hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
-other = "Zresetuj ustawienia bota"
-
-["settings.AllSettings.RoleIDs.args"]
-hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
-other = "<role @ mentions>..."
-
-["settings.AllSettings.RoleIDs.desc"]
-hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Wymień, które role mogą wywoływać bota"
-
-["settings.AllSettings.RoleIDs.shortDesc"]
-hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
-other = "Operatorzy bota"
-
-["settings.AllSettings.Show.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "None"
-
-["settings.AllSettings.Show.desc"]
-hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
-other = "Pokaż wszystkie ustawienia bota dla tego serwera"
-
-["settings.AllSettings.Show.shortDesc"]
-hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
-other = "Pokaż wszystkie ustawienia"
-
-["settings.AllSettings.UnmuteDead.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.UnmuteDead.desc"]
-hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
-other = "Określ, czy bot powinien natychmiast odciszyć martwych graczy. **UWAGA. Może wskazać, kto nie żyje szybciej niż emergency!**"
-
-["settings.AllSettings.UnmuteDead.shortDesc"]
-hash = "sha1-bb68a42e779c9eeabc57a5986fa31fd99414c4ae"
-other = "Odciszanie zmarłych graczy"
-
-["settings.AllSettings.VoiceRules.args"]
-hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
-other = "<mute/deaf> <game phase> <dead/alive> <true/false>"
-
-["settings.AllSettings.VoiceRules.desc"]
-hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
-other = "Określ zasady wyciszania i odciszania graczy w grze, zależnie od etapu oraz życia/śmierci graczy. Przykładem może być wyciszenie martwych graczy w fazie zadań "
-
-["settings.AllSettings.VoiceRules.shortDesc"]
-hash = "sha1-446a8c075113693fdef53eae652e2421a379234d"
-other = "Zasady wyciszania/odciszania"
-
-["settings.CommandPrefixSetting.changes"]
-hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
-other = "Prefix serwera zmieniony z `{{.From}}` na `{{.To}}`. Używaj go od teraz!"
-
-["settings.CommandPrefixSetting.tooLong"]
-hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
-other = "Przepraszam, prefiks `{{.CommandPrefix}}` jest zbyt długi ({{.Length}} znaki, maks 10). Spróbuj czegoś krótszego."
-
-["settings.ConstructEmbedForSetting.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Aliasy"
-
-["settings.ConstructEmbedForSetting.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "Argumenty"
-
-["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
-hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
-other = "Obecna wartość"
-
-["settings.ConstructEmbedForSetting.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "Przykład"
-
-["settings.HandleSettingsCommand.default"]
-hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
-other = "Przepraszam, `{{.Arg}}` nie jest właściwym ustawieniem!\\n"
-
-["settings.SettingAdminUserIDs.clearAdmins"]
-hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
-other = "Czyszczę wszystkie AdminUserIDs!"
-
-["settings.SettingAdminUserIDs.newBotAdmin"]
-hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
-other = "<@{{.UserID}}> jest teraz adminem bota!"
-
-["settings.SettingAdminUserIDs.noBotAdmins"]
-hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
-other = "Brak adminów bota"
-
-["settings.SettingAdminUserIDs.notFound"]
-hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "Przepraszam, nie wiem kim jest `{{.UserName}}`. Możesz podać ID, nazwę, nazwę#XXXX, nickname lub @mention"
-
-["settings.SettingAutoRefresh.False"]
-hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
-other = "Od teraz, nie będę automatycznie odświeżać okienko gry ze statusem"
-
-["settings.SettingAutoRefresh.True"]
-hash = "sha1-b3e5138940abfd14605d7565f2807c5957c89c18"
-other = "Od teraz, będę automatycznie odświeżać okienko gry ze statusem"
-
-["settings.SettingAutoRefresh.Unrecognized"]
-hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
-other = "{{.Arg}} nie jest wartością true/false. Zobacz `{{.CommandPrefix}} settings autorefresh` aby dowiedzieć się więcej"
-
-["settings.SettingDelays.Phase.UNINITIALIZED"]
-hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
-other = "Nie wiem, czym jest `{{.PhaseName}}`. Lista faz gry to `Lobby`, `Tasks` and `Discussion`."
-
-["settings.SettingDelays.delayBetweenPhases"]
-hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
-other = "Obecnie, opóźnienie pomiędzy przejściem z `{{.PhaseA}}` do `{{.PhaseB}}` to {{.OldDelay}}."
-
-["settings.SettingDelays.missingPhases"]
-hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "Lista faz gry to `Lobby`, `Tasks` and `Discussion`.\\nMusisz wpisać obie fazy gry, pomiędzy którymi następuje przejście, aby określić jego długość"
-
-["settings.SettingDelays.setDelayBetweenPhases"]
-hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
-other = "Opóźnienie, pomiędzy przechodzeniem z `{{.PhaseA}}` do `{{.PhaseB}}` zmieniono z {{.OldDelay}} na {{.NewDelay}}."
-
-["settings.SettingDelays.wrongNumber"]
-hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
-other = "`{{.Number}}` Nie jest właściwym numerem! Proszę spróbuj ponownie"
-
-["settings.SettingLanguage.list"]
-hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
-other = "Dostępne języki: {{.Langs}}"
-
-["settings.SettingLanguage.notFound"]
-hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
-other = "Nie znaleziono języka! Dostępne kody językowe: {{.Langs}}"
-
-["settings.SettingLanguage.notLoaded"]
-hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "Pliki językowe nie załadowane! {{.Langs}}"
-
-["settings.SettingLanguage.reloaded"]
-hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
-other = "Pliki językowe są odświeżane ({{.Count}}). Dostępne kody językowe: {{.Langs}}"
-
-["settings.SettingLanguage.set"]
-hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "Język ustawiony na {{.LangName}}"
-
-["settings.SettingLanguage.tooShort"]
-hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "Przepraszam, kod językowy jest za krótki. Dostępne kody językowe: {{.Langs}}."
-
-["settings.SettingMapVersion.Success"]
-hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
-other = "Od teraz, będę wyświetlać plik mapy jako {{.Arg}}"
-
-["settings.SettingMapVersion.Unrecognized"]
-hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
-other = "{{.Arg}} nie jest przewidywaną wartością. Zobacz `{{.CommandPrefix}} settings mapversion` aby dowiedzieć się więcej"
-
-["settings.SettingMatchSummary.OutOfRange"]
-hash = "sha1-b6996f804f1fc4e59784621e2adaea8b88ceafb9"
-other = "Wprowadzono za wysoką lub za niską wartość. Proszę, wprowadź wartość pomiędzy [0-60], lub -1 aby nie usuwać podsumowań meczu"
-
-["settings.SettingMatchSummary.Success"]
-hash = "sha1-32a0eda9ca856cee12ede89ad46f35803cd0fb68"
-other = "Od teraz, będę usuwać podsumowanie meczu po {{.Minutes}} minutach."
-
-["settings.SettingMatchSummary.Success-1"]
-hash = "sha1-6d710f38a479364512a9a0787674d4e05c1a33b4"
-other = "Od teraz, nigdy nie będę usuwać podsumowania meczu."
-
-["settings.SettingMatchSummary.Success0"]
-hash = "sha1-cca0192d2890122597dc6923fcdd84e03a91c057"
-other = "Od teraz, usunę podsumowanie meczu od razu."
-
-["settings.SettingMatchSummary.Unrecognized"]
-hash = "sha1-15dbbdff49c219e8e202ee09c8d7ceaaa4987b87"
-other = "{{.Minutes}} nie jest prawidłową wartością. Zobacz `{{.CommandPrefix}} settings matchSummary` aby dowiedzieć się więcej"
-
-["settings.SettingPermissionRoleIDs.clearRoles"]
-hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
-other = "Wyczyszczenie zezwoleń dla ról!"
-
-["settings.SettingPermissionRoleIDs.newBotAdmins"]
-hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
-other = "<@&{{.UserID}}> są teraz administratorami bota!"
-
-["settings.SettingPermissionRoleIDs.noRoleAdmins"]
-hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "Brak adminów-ról"
-
-["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
-other = "Wybacz, Nie rozpoznaję roli `{{.RoleName}}` .Proszę użyj @role"
-
-["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "Jest już false!"
-
-["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
-hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "Nie będę natychmiastowo odciszać martwych graczy. Dobry wybór"
-
-["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "Jest już true!"
-
-["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Przepraszam, `{{.Arg}}` nie jest ani `true` lub `false`."
-
-["settings.SettingVoiceRules.NA"]
-hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
-other = "N/A"
-
-["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
-hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
-other = "Nie wiem, czym jest {{.PhaseName}} . Lista faz gry to `Lobby`, `Tasks` and `Discussion`."
-
-["settings.SettingVoiceRules.enoughArgs"]
-hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Nie podałeś wystarczającej liczby argumentów! Prawidłowo, syntaksy to: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
-
-["settings.SettingVoiceRules.neitherAliveDead"]
-hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
-other = "`{{.Arg}}` nie jest ani `alive` lub `dead`!"
-
-["settings.SettingVoiceRules.neitherMuteDeaf"]
-hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
-other = "`{{.Arg}}` nie jest ani `mute` lub `deaf`!"
-
-["settings.SettingVoiceRules.neitherTrueFalse"]
-hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
-other = "`{{.Arg}}` nie jest ani `true` lub `false`!"
-
-["settings.SettingVoiceRules.queryingAlreadyUnValues"]
-hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
-other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są od{{.PlayerDiscordState}}!"
-
-["settings.SettingVoiceRules.queryingAlreadyValues"]
-hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
-other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są już {{.PlayerDiscordState}}!"
-
-["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
-hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
-other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są aktualnie {{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.queryingCurrentlyValues"]
-hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
-other = "Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze są aktualnie NIE {{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.setUnValues"]
-hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
-other = "Od teraz, Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze będą be od{{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.setValues"]
-hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
-other = "Od teraz, Kiedy w `{{.PhaseName}}` fazie, {{.PlayerGameState}} gracze będą {{.PlayerDiscordState}}."
-
-["state.phase.DISCUSSION"]
-hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
-other = "DISCUSSION"
-
-["state.phase.LOBBY"]
-hash = "sha1-658c6353d3a9cf4d298b0ecdb88b40d6eda8dbfc"
-other = "LOBBY"
-
-["state.phase.MENU"]
-hash = "sha1-c8910b26f57214f5755dc74b2ca3ca1c721de675"
-other = "MENU"
-
-["state.phase.TASKS"]
-hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
-other = "TASKS"
+"commands.deadlock" = "I wasn't able to obtain the game state for your {{.Command}} command. Please try again."
+"commands.debug.clear.error" = "Encountered an error trying to clear debug information: {{.Error}}"
+"commands.debug.clear.user.success" = "Successfully cleared cached usernames for {{.User}}"
+"commands.debug.view.error" = "Encountered an error trying to view debug information: {{.Error}}"
+"commands.debug.view.user.empty" = "I don't have any saved usernames for {{.User}}"
+"commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
+"commands.dm" = "Sorry, I don't respond to DMs. Please execute the command in a text channel instead."
+"commands.error" = "Error executing `{{.Command}}`: `{{.Error}}`"
+"commands.error.nogame" = "No game is currently running."
+"commands.help.subtitle" = "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `/help <command>` to see more details on a command!"
+"commands.help.title" = "Komendy Bot AutoMuteUs:\\n"
+"commands.info.activegames" = "Aktywne gry"
+"commands.info.creator" = "Twórca"
+"commands.info.footer" = "v{{.Version}}-{{.Commit}} | Odłamek {{.ID}}/{{.Num}}"
+"commands.info.guilds" = "Gildie"
+"commands.info.invite" = "Zaproś"
+"commands.info.library" = "Biblioteka"
+"commands.info.premium" = "Premia"
+"commands.info.title" = "Bot Info"
+"commands.info.totalgames" = "Gry ogółem"
+"commands.info.totalusers" = "Wszystkich użytkowników"
+"commands.info.version" = "Wersja"
+"commands.info.website" = "Strona internetowa"
+"commands.link.nogamedata" = "No game data found for the color `{{.Color}}`"
+"commands.link.noplayer" = "No player in the current game was detected for {{.UserMention}}"
+"commands.link.success" = "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`"
+"commands.new.lockout" = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`/premium`)\\nCurrent Games: {{.Games}}"
+"commands.new.nochannel" = "Please join a voice channel before starting a match!"
+"commands.new.success" = "Kliknij poniższy link, aby połączyć swoje przechwytywanie: \\n <{{.hyperlink}}>\\n\\nNie masz zainstalowanego przechwytywania? Najnowsza wersja [here]({{.downloadURL}})\\n\\nAby połączyć przechwytywanie ręcznie:"
+"commands.new.success.code" = "Kod"
+"commands.new.success.url" = "Adres URL"
+"commands.no_permissions" = "Sorry, you don't have the required permissions to issue that command."
+"commands.privacy.info" = "AutoMuteUs dane prywatności i gromadzenia danych.\\nWięcej szczegółów [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
+"commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
+"commands.privacy.opt.success" = "✅ I successfully changed your opt in/out status"
+"commands.privacy.showme.cache" = "❗ Here's your cached in-game names:"
+"commands.privacy.showme.nocache" = "❌ I don't have any cached player names stored for you!"
+"commands.privacy.showme.optin" = "❗ You are opted **in** to data collection for game statistics"
+"commands.privacy.showme.optout" = "❌ You are opted **out** of data collection for game statistics, or you haven't played a game yet"
+"commands.stats.guild.reset.error" = "Encountered an error resetting the stats for this guild: {{.Error}}"
+"commands.stats.guild.reset.success" = "Successfully reset this guild's stats!"
+"commands.stats.user.reset.error" = "Encountered an error resetting the stats for {{.User}}: {{.Error}}"
+"commands.stats.user.reset.success" = "Successfully reset the stats for {{.User}}!"
+"commands.unlink.noplayer" = "No player in the current game was detected for {{.UserMention}}"
+"commands.unlink.success" = "Successfully unlinked {{.UserMention}}"
+"discordGameState.ToEmojiEmbedFields.Unlinked" = "Niepołączone"
+"eventHandler.gameOver.deleteMessageFooter" = "Usuwanie wiadomości {{.Mins}} min z:"
+"eventHandler.gameOver.matchID" = "Zakończono grę! Zobacz statystyki meczu używając ID meczu: `{{.MatchID}}`\\n{{.Winners}}"
+"processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
+"responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.guildStatsEmbed.CrewmateWins" = "Współczynnik zwycięstw Crewmate ({{.Min}}+ Gry)"
+"responses.guildStatsEmbed.Desc" = "Statystyki gildii dla {{.GuildName}}"
+"responses.guildStatsEmbed.GamesPlayed" = "Grane gry"
+"responses.guildStatsEmbed.GamesWonCrewmate" = "Współczynnik zwycięstw Crewmate"
+"responses.guildStatsEmbed.GamesWonImposter" = "Wskaźnik zwycięstw Impostera"
+"responses.guildStatsEmbed.ImposterWins" = "Współczynnik zwycięstw Impostera ({{.Min}}+ Gry)"
+"responses.guildStatsEmbed.MostGames" = "Najwięcej gier"
+"responses.guildStatsEmbed.NoPremium" = "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.guildStatsEmbed.Title" = "Statystyki Gildii"
+"responses.guildStatsEmbed.TotalWinrate" = "Całkowity wskaźnik zwycięstw ({{.Min}}+ Grach)"
+"responses.lobbyMessage.Footer.Text" = "Use the select below with your in-game color! (or {{.X}} to leave)"
+"responses.lobbyMessage.Title" = "Lobby"
+"responses.lobbyMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
+"responses.lobbyMetaEmbedFields.Host" = "Host"
+"responses.lobbyMetaEmbedFields.PlayersLinked" = "Gracze połączeni"
+"responses.lobbyMetaEmbedFields.Region" = "🌎 REGION"
+"responses.lobbyMetaEmbedFields.RoomCode" = "🔒 KOD ROOM"
+"responses.lobbyMetaEmbedFields.VoiceChannel" = "Kanał głosowy"
+"responses.makeDescription.GameNotRunning" = "\\n⚠ **Bot jest wstrzymany!** ⚠\\n\\n"
+"responses.menuMessage.Linked.FooterText" = "(Użyj lobby gry pośród nas, aby rozpocząć mecze)"
+"responses.menuMessage.Title" = "Menu główne"
+"responses.menuMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
+"responses.nonPremiumSetting.Desc" = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details"
+"responses.premiumInviteResponse.Title" = "Premium Bot Invites"
+"responses.premiumInviteResponse.desc" = "{{.Tier}} użytkowników ma dostęp do {{.Count}} wyciszonych botów: zaproszenia przedstawione poniżej!"
+"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
+"responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
+"responses.premiumResponse.FastMuteDesc" = 'Użytkownicy premium uzyskują dostęp do "pomocników" botów, które upewniają się, że wyciszenie jest szybkie!'
+"responses.premiumResponse.FreeDescription" = "Sprawdź fajne rzeczy, które oferuje AutoMuteU!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
+"responses.premiumResponse.PremiumDescription" = "Wygląda na to, że masz AutoMuteUs **{{.Tier}}**{{.DaysString}}! Dziękujemy za wsparcie!\\n\\nPoniżej znajdują się niektóre z korzyści, które możesz dostosować do swojego statusu Premium!"
+"responses.premiumResponse.PremiumDescriptionDaysRemaining" = " na kolejne {{.Days}} dni"
+"responses.premiumResponse.PremiumDescriptionExpired" = "O nie! Wygląda na to, że używałeś AutoMuteUs **{{.Tier}}**, ale **wygasło {{.Days}} dni temu**! 😦\\n\\nRozważ ponowną subskrypcję tutaj: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.PriorityGameAccess" = "👑 Priorytetowy dostęp do gry"
+"responses.premiumResponse.PriorityGameAccessDesc" = "Jeśli bot jest poważnie załadowany, użytkownicy Premium zawsze będą mogli tworzyć nowe gry!"
+"responses.premiumResponse.Settings" = "🛠 Ustawienia specjalne"
+"responses.premiumResponse.SettingsDesc" = "Użytkownicy premium mogą określić dodatkowe ustawienia, takie jak wyświetlanie komunikatu o statusie gry lub automatyczne odświeżanie komunikatu o statusie!"
+"responses.premiumResponse.SettingsDescExtra" = "Look for the settings marked with 💎 under `/settings!`"
+"responses.premiumResponse.Stats" = "📊 Statystyki gry i tablice wyników"
+"responses.premiumResponse.StatsDesc" = "Użytkownicy premium mają dostęp do pełnego zestawu statystyk graczy i tablic wyników!"
+"responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
+"responses.settingResponse.Description" = "Type `/settings <setting>` to change a setting from those listed below"
+"responses.settingResponse.PremiumNoThanks" = "The following settings are only for AutoMuteUs premium users.\\nType `/premium` to learn more!"
+"responses.settingResponse.PremiumThanks" = "Dziękujemy za bycie użytkownikiem AutoMuteUs Premium!"
+"responses.settingResponse.Title" = "Ustawienia"
+"responses.stats.Exiled" = "Wygnany"
+"responses.stats.Games" = "Gry"
+"responses.stats.Killed" = ":knife:"
+"responses.stats.Lost" = "Stracone"
+"responses.stats.Won" = "Wygrana"
+"responses.userStatsEmbed.BestTeammateCrewmate" = "Najlepszy Crewmate Grany z"
+"responses.userStatsEmbed.BestTeammateImpostor" = "Najlepszy Impostor grany z"
+"responses.userStatsEmbed.BestTeammateServerCrewmate" = "Najlepsza drużyna Crewmate"
+"responses.userStatsEmbed.BestTeammateServerImpostor" = "Najlepszy Zespół Impostora"
+"responses.userStatsEmbed.CrewmateWins" = "Zwycięstwa Crewmate"
+"responses.userStatsEmbed.Desc" = "Statystyki użytkownika dla {{.User}}"
+"responses.userStatsEmbed.ExiledAsCrewmate" = "Wyeksponowane jako założyciel"
+"responses.userStatsEmbed.ExiledAsImpostor" = "Wyekstrahowane jako Impostor"
+"responses.userStatsEmbed.FavoriteColors" = "Ulubione kolory"
+"responses.userStatsEmbed.FavoriteNames" = "Ulubione Nazwy"
+"responses.userStatsEmbed.FrequentFirstTarget" = "Często pierwszy cel"
+"responses.userStatsEmbed.FrequentKilledBy" = " Najczęściej zabijane przez"
+"responses.userStatsEmbed.GamesPlayed" = "Grane gry"
+"responses.userStatsEmbed.ImposterWins" = "Wygrane Imposter"
+"responses.userStatsEmbed.KilledAsCrewmate" = "Zabito jako założyciel"
+"responses.userStatsEmbed.MostFrequentFirstTarget" = "Najczęstszy pierwszy cel"
+"responses.userStatsEmbed.NoPremium" = "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.userStatsEmbed.ServerPlayedInValue" = "{{.Server}} Serwer"
+"responses.userStatsEmbed.ServersPlayedIn" = "Rozegrane"
+"responses.userStatsEmbed.ServersPlayedInValue" = "{{.Servers}} serwerów"
+"responses.userStatsEmbed.Title" = "Statystyki użytkownika"
+"responses.userStatsEmbed.TotalWins" = "Wygrane razem"
+"responses.userStatsEmbed.Winrate" = "Współczynnik zwycięstw"
+"responses.userStatsEmbed.WorstTeammateCrewmate" = "Najgorszy Crewmate Grany z"
+"responses.userStatsEmbed.WorstTeammateImpostor" = "Najgorszy Impostor Grany z"
+"responses.userStatsEmbed.WorstTeammateServerCrewmate" = "Najgorszy Crewmate Drużyna"
+"responses.userStatsEmbed.WorstTeammateServerImpostor" = "Najgorszy Zespół Impostora"
+"settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Aktualna wartość"
+"settings.ConstructEmbedForSetting.StarterDesc" = "Type `/settings {{.Command}}` to view or change this setting.\\n\\n"
+"settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} was already a bot admin!"
+"settings.SettingAdminUserIDs.clearAdmins" = "Czyszczenie wszystkich AdminUserID!"
+"settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} is now a bot admin!"
+"settings.SettingAdminUserIDs.noBotAdmins" = "No Bot Admins"
+"settings.SettingAdminUserIDs.notFound" = "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID or @mention"
+"settings.SettingAutoRefresh.False" = "Od teraz nie będę automatycznie odświeżać komunikatu o statusie gry"
+"settings.SettingAutoRefresh.Noop" = "AutoRefresh was already set to `{{.Value}}`; not doing anything"
+"settings.SettingAutoRefresh.True" = "Od teraz będę automatycznie odświeżać komunikat o statusie gry"
+"settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage"
+"settings.SettingDelays.Phase.UNINITIALIZED" = "Nie wiem, co jest `{{.PhaseName}}`. Lista faz gry to `Lobby`, `Tasks` i `Discussion`."
+"settings.SettingDelays.delayBetweenPhases" = "Obecnie opóźnienie przy przechodzeniu z `{{.PhaseA}}` do `{{.PhaseB}}` wynosi {{.OldDelay}}."
+"settings.SettingDelays.missingPhases" = "Lista faz gry to `Lobby`, `Tasks` i `Discussion`.\\nMusisz wpisać obie fazy, z których gra przechodzi i zmienić opóźnienie."
+"settings.SettingDelays.setDelayBetweenPhases" = "Opóźnienie podczas przejścia z `{{.PhaseA}}` na `{{.PhaseB}}` zmieniło się z {{.OldDelay}} na {{.NewDelay}}."
+"settings.SettingDelays.wrongNumber" = "`{{.Number}}` nie jest prawidłową liczbą! Spróbuj ponownie"
+"settings.SettingDisplayRoomCode.AlwaysOrNever" = "Od teraz {{.Arg}} wyświetli kod pokoju w wiadomości"
+"settings.SettingDisplayRoomCode.Spoiler" = "Od teraz oznaczę kod pokoju jako spoiler w wiadomości"
+"settings.SettingDisplayRoomCode.Unrecognized" = "{{.Arg}} is not an expected value. See `/settings display-room-code` for usage"
+"settings.SettingLanguage.list" = "Dostępne języki: {{.Langs}}"
+"settings.SettingLanguage.notFound" = "Język nie znaleziony! Dostępne kody języka: {{.Langs}}"
+"settings.SettingLanguage.notLoaded" = "Pliki lokalizacji nie zostały załadowane! {{.Langs}}"
+"settings.SettingLanguage.reloaded" = "Pliki lokalizacji są przeładowane ({{.Count}}). Dostępne kody językowe: {{.Langs}}"
+"settings.SettingLanguage.set" = "Lokalizacja jest ustawiona na {{.LangName}}"
+"settings.SettingLanguage.tooShort" = "Przepraszamy, kod języka jest krótki. Dostępne kody języka: {{.Langs}}."
+"settings.SettingLeaderboardMention.False" = "Od teraz będę używać pseudonimów gracza/nazw użytkowników w tablicy wyników"
+"settings.SettingLeaderboardMention.True" = "Od teraz wspomnę graczy bezpośrednio w rankingu"
+"settings.SettingLeaderboardMin.OutOfRange" = "Podałeś liczbę za wysoką lub za niską. Proszę podać liczbę pomiędzy [1-100]"
+"settings.SettingLeaderboardMin.Success" = "Od teraz wyświetlę tylko graczy z {{.Games}}+ kwalifikującymi się grami na tablicy wyników"
+"settings.SettingLeaderboardMin.Unrecognized" = "{{.Number}} is not a valid number. See `/settings leaderboard-min` for usage"
+"settings.SettingLeaderboardSize.OutOfRange" = "Podałeś liczbę za wysoką lub za niską. Proszę podać liczbę pomiędzy [1-10]"
+"settings.SettingLeaderboardSize.Success" = "Od teraz będę wyświetlał {{.Players}} graczy na tablicy wyników"
+"settings.SettingLeaderboardSize.Unrecognized" = "{{.Number}} is not a valid number. See `/settings leaderboard-size` for usage"
+"settings.SettingMapVersion.Success" = "From now on, detailed map setting is `{{.Arg}}`"
+"settings.SettingMatchSummary.OutOfRange" = "Podałeś numer zbyt wysoki lub zbyt niski. Proszę podać liczbę pomiędzy [0-60], lub -1, aby nigdy nie usuwać podsumowań"
+"settings.SettingMatchSummary.Success" = "Od teraz będę usuwał dopasowane wiadomości podsumowujące po {{.Minutes}} minutach."
+"settings.SettingMatchSummary.Success-1" = "Od tej pory nigdy nie będę usuwać pasujących wiadomości podsumowania."
+"settings.SettingMatchSummary.Success0" = "Od teraz natychmiast usunę podsumowanie od razu."
+"settings.SettingMatchSummary.Unrecognized" = "{{.Minutes}} is not a valid number. See `/settings match-summary` for usage"
+"settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} is not a valid text channel ID or mention!"
+"settings.SettingMatchSummaryChannel.withChannelID" = "Match Summary text channel ID changed to {{.channelID}}!"
+"settings.SettingMuteSpectators.false_muteSpectators" = "Nie będę już wyciszać obserwatorów jak martwi gracze"
+"settings.SettingMuteSpectators.true_noMuteSpectators" = "Teraz wyciszę obserwatorów tak samo jak martwych graczy. \\n**Uwaga, może to spowodować opóźnienia lub spowolnienie w przypadku niesamodzielnego hostingu lub użycia robotnika Premium!**"
+"settings.SettingPermissionRoleIDs.alreadyBotOperator" = "That role was already a bot operator!"
+"settings.SettingPermissionRoleIDs.clearRoles" = "Usuwanie wszystkich uprawnieńRoleID!"
+"settings.SettingPermissionRoleIDs.newBotOperator" = "I successfully added that role as bot operators!"
+"settings.SettingPermissionRoleIDs.noRoleAdmins" = "Brak administratorów ról"
+"settings.SettingPermissionRoleIDs.notFound" = "Sorry, I didn't recognize the role you provided"
+"settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead" = "Już jest fałszywe!"
+"settings.SettingUnmuteDeadDuringTasks.false_unmuteDead" = "Nie będę już od razu wyciszać martwych ludzi. Dobry wybór!"
+"settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead" = "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!"
+"settings.SettingUnmuteDeadDuringTasks.true_unmuteDead" = "To już prawda!"
+"settings.SettingUnmuteDeadDuringTasks.wrongArg" = "Przepraszamy, `{{.Arg}}` nie jest `true` ani `false`."
+"settings.SettingVoiceRules.Phase.UNINITIALIZED" = "Nie wiem, co jest {{.PhaseName}} . Lista faz gry to: `Lobby`, `Tasks` i `Discussion`."
+"settings.SettingVoiceRules.enoughArgs" = "You didn't pass enough arguments! Correct syntax is: `voiceRules [muted/deafened] [game phase] [alive/dead] [true/false]`"
+"settings.SettingVoiceRules.neitherAliveDead" = "`{{.Arg}}` nie jest ani `alive` ani `martwe`!"
+"settings.SettingVoiceRules.queryingAlreadyUnValues" = "Gdy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy jest już w fazie{{.PlayerDiscordState}}!"
+"settings.SettingVoiceRules.queryingAlreadyValues" = "Gdy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy to już {{.PlayerDiscordState}}!"
+"settings.SettingVoiceRules.queryingCurrentlyOldValues" = "Gdy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy to obecnie {{.PlayerDiscordState}}."
+"settings.SettingVoiceRules.queryingCurrentlyValues" = "Gdy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy nie jest obecnie {{.PlayerDiscordState}}."
+"settings.SettingVoiceRules.setUnValues" = "Od teraz, kiedy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy zostanie uruchomionych{{.PlayerDiscordState}}."
+"settings.SettingVoiceRules.setValues" = "Od teraz kiedy w fazie `{{.PhaseName}}` {{.PlayerGameState}} graczy będzie {{.PlayerDiscordState}}."
+"softban.ignoring" = "I'm ignoring you for the next 5 minutes, stop spamming"
+"softban.warning" = "Please stop spamming commands"
+"state.phase.DISCUSSION" = "DYSKUSJA"
+"state.phase.GAMEOVER" = "GRA MIĘDZY"
+"state.phase.LOBBY" = "LOBBY"
+"state.phase.MENU" = "MENU"
+"state.phase.TASKS" = "ZADANIA"

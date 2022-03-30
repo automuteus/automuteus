@@ -1,539 +1,196 @@
-["ascii.AsciiStarfield.isWas"]
-hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
-other = "was An Impostor."
-
-["ascii.AsciiStarfield.isWasNot"]
-hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
-other = "was not An Impostor."
-
-["commands.AllCommands.Ascii.args"]
-hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
-other = "<@discord user> <is imposter> (true|false) <x impostor remains> (count)"
-
-["commands.AllCommands.Ascii.desc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Print een ASCII bemanningslid"
-
-["commands.AllCommands.Ascii.shortDesc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "Print een ASCII bemanningslid"
-
-["commands.AllCommands.Cache.args"]
-hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
-other = "<Speler> (optioneel, \"clear\")"
-
-["commands.AllCommands.Cache.desc"]
-hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
-other = "Bekijk de gecachte namen van een speler en/of verwijder deze"
-
-["commands.AllCommands.Cache.shortDesc"]
-hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "Bekijk gecachte namen"
-
-["commands.AllCommands.DebugState.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.DebugState.desc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Bekijk de volledige status van de Discord Guild Data"
-
-["commands.AllCommands.DebugState.shortDesc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "Bekijk de volledige status van de Discord Guild Data"
-
-["commands.AllCommands.End.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.End.desc"]
-hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
-other = "Beëindig het huidige spel"
-
-["commands.AllCommands.End.shortDesc"]
-hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
-other = "Beëindig het spel"
-
-["commands.AllCommands.Force.args"]
-hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<Naam van de fase> (task, discuss, of lobby / t,d, of l)"
-
-["commands.AllCommands.Force.desc"]
-hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Forceer de bot om naar een andere spelfase te gaan, als hij niet correct overschakelt"
-
-["commands.AllCommands.Force.shortDesc"]
-hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
-other = "Forceer de bot om over te schakelen"
-
-["commands.AllCommands.Help.shortDesc"]
-hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
-other = "Toon hulpbericht"
-
-["commands.AllCommands.Link.args"]
-hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
-other = "<Discord Gebruiker> <In-game kleur of naam>"
-
-["commands.AllCommands.Link.desc"]
-hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
-other = "Verbind handmatig een Discord Gebruiker met hun in-game kleur of naam"
-
-["commands.AllCommands.Link.shortDesc"]
-hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
-other = "Verbind een Discord Gebruiker"
-
-["commands.AllCommands.New.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.New.desc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "Start een nieuw spel"
-
-["commands.AllCommands.New.shortDesc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "Start een nieuw spel"
-
-["commands.AllCommands.Pause.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.Pause.desc"]
-hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
-other = "Pauzeert de bot, zodat deze niet automatisch het geluid dempt/dooft. Will unmute/undeafen all players!"
-
-["commands.AllCommands.Pause.shortDesc"]
-hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
-other = "Pauzeert de bot"
-
-["commands.AllCommands.Refresh.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.Refresh.desc"]
-hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
-other = "Herstelt het statusbericht van de bot als deze te ver weg in de chat beland"
-
-["commands.AllCommands.Refresh.shortDesc"]
-hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
-other = "Herstelt het statusbericht van de bot"
-
-["commands.AllCommands.Settings.args"]
-hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
-other = "<Instelling> <Waarde>"
-
-["commands.AllCommands.Settings.desc"]
-hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
-other = "Past de instellingen van de bot aan. Typ `{{.CommandPrefix}} settings` zonder iets er achter om meer te zien."
-
-["commands.AllCommands.Settings.shortDesc"]
-hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Instellingen van de bot aanpassen"
-
-["commands.AllCommands.Unlink.args"]
-hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
-other = "<Discord Gebruiker>"
-
-["commands.AllCommands.Unlink.desc"]
-hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
-other = "Ontkoppel handmatig een Discord Gebruiker van hun in-game speler"
-
-["commands.AllCommands.Unlink.shortDesc"]
-hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
-other = "Ontkoppel een Discord Gebruiker"
-
-["commands.AllCommands.UnmuteAll.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["commands.AllCommands.UnmuteAll.desc"]
-hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
-other = "Forceer de bot om de demping van alle verbonden spelers op te heffen"
-
-["commands.AllCommands.UnmuteAll.shortDesc"]
-hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "Forceer de bot om de elke demping op te heffen"
-
-["commands.ConstructEmbedForCommand.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Aliassen"
-
-["commands.ConstructEmbedForCommand.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "Parameter"
-
-["commands.ConstructEmbedForCommand.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "Voorbeeld"
-
-["commands.HandleCommand.Cache.Success"]
-hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "Alle gecachte namen succesvol verwijderd voor deze gebruiker!"
-
-["commands.HandleCommand.Cache.cachedNames"]
-hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "Gecachte in-game namen:"
-
-["commands.HandleCommand.Cache.emptyCachedNames"]
-hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
-other = "Ik heb geen gecachte spelernamen voor die gebruiker!"
-
-["commands.HandleCommand.Help.notFound"]
-hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
-other = "Ik herkende dat commando niet! Typ `help` voor alle beschikbare commando's!"
-
-["discordGameState.ToDescString.anyVoiceChannel"]
-hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
-other = "**Geen spraakkanaal! Gebruik `{{.CommandPrefix}} track`!**"
-
-["discordGameState.ToDescString.voiceChannelName"]
-hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "Het spraakkanaal **{{.channelName}}**!"
-
-["discordGameState.ToEmojiEmbedFields.Unlinked"]
-hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "Niet verbonden"
-
-["discordGameState.ToStatusString.anyVoiceChannel"]
-hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
-other = "**Geen spraakkanaal! Gebruik `{{.CommandPrefix}} track`!**"
-
-["discordGameState.trackChannel.voiceChannelNotfound"]
-hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "Geen kanaal gevonden met de naam {{.channelName}} !\\n"
-
-["discordGameState.trackChannel.voiceChannelSet"]
-hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
-other = "Nu het spraakkanaal \"{{.channelName}}\" aan het volgen voor Automute!"
-
-["locale.language.name"]
-hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
-other = "Nederlands"
-
-["message_handlers.handleMessageCreate.noPerms"]
-hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
-other = "Gebruiker heeft niet de benodigde rechten om dit commando uit te voeren!"
-
-["message_handlers.handleMessageCreate.respondPrefix"]
-hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
-other = "Ik reageer op het voorvoegsel {{.CommandPrefix}}"
-
-["message_handlers.handleNewGameMessage.embed.Description"]
-hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "Klik op de volgende link om je Capture programma te verbinden: \\n <{{.hyperlink}}>\\n\\nHeb je het Capture programma niet geïnstalleerd? Nieuwste versie [hier]({{.downloadURL}})\\n\\nOm je Capture programma handmatig te verbinden:"
-
-["message_handlers.handleNewGameMessage.embed.Fields.Code"]
-hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
-other = "Code"
-
-["message_handlers.handleNewGameMessage.embed.Fields.URL"]
-hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
-other = "URL"
-
-["message_handlers.handleNewGameMessage.embed.Title"]
-hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "Je hebt een spel gestart!"
-
-["responses.helpResponse.SubTitle"]
-hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[Het Github project bekijken](https://github.com/denverquane/automuteus) of [Sluit je aan bij onze discord](https://discord.gg/ZkqZSWF)\\n\\nTyp `{{.CommandPrefix}} help <Commando>`, voor meer informatie over een commando!"
-
-["responses.helpResponse.Title"]
-hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
-other = "AutoMuteUs Bot commando's:\\n"
-
-["responses.lobbyMessage.Footer.Text"]
-hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "Reageer op dit bericht met je in-game kleur! (of {{.emojiLeave}} om te verlaten)"
-
-["responses.lobbyMessage.Title"]
-hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
-other = "Lobby"
-
-["responses.lobbyMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**Geen Capture programma verbonden! Klik op de link in je DMs om te verbinden!**❌"
-
-["responses.lobbyMetaEmbedFields.PlayersLinked"]
-hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "Verbonden spelers"
-
-["responses.menuMessage.Linked.FooterText"]
-hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
-other = "(Betreed een spellobby in Among Us om het spel te starten)"
-
-["responses.menuMessage.Title"]
-hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
-other = "Hoofdmenu"
-
-["responses.settingResponse.Description"]
-hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "Typ `{{.CommandPrefix}} settings <Instelling>`, om een van de volgende instellingen die hieronder staan aan te passen"
-
-["responses.settingResponse.Title"]
-hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
-other = "Instellingen"
-
-["responses.statsResponse.Games"]
-hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "Actieve spellen"
-
-["responses.statsResponse.Version"]
-hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
-other = "Versie"
-
-["settings.AllSettings.AdminUserIDs.args"]
-hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
-other = "<Gebruiker @ noemen>..."
-
-["settings.AllSettings.AdminUserIDs.desc"]
-hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Specificeer welke individuele gebruikers administrator rechten voor de bot hebben"
-
-["settings.AllSettings.AdminUserIDs.shortDesc"]
-hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
-other = "Bot Administrators"
-
-["settings.AllSettings.Delays.args"]
-hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
-other = "<Startfase> <Eindfase> <Vertraging>"
-
-["settings.AllSettings.Delays.desc"]
-hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "Specificeer de vertraging voor het automatisch dempen/doven tussen de fases van het spel, bijvoorbeeld lobby->taken"
-
-["settings.AllSettings.Language.args"]
-hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
-other = "<Taal> of herladen"
-
-["settings.AllSettings.Language.desc"]
-hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
-other = "Verander de taal van de bot"
-
-["settings.AllSettings.Prefix.args"]
-hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
-other = "<Voorvoegsel>"
-
-["settings.AllSettings.Prefix.desc"]
-hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "Verander het voorvoegsel dat de bot gebruikt om commando's te detecteren"
-
-["settings.AllSettings.RoleIDs.args"]
-hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
-other = "<Rol @ noemen>..."
-
-["settings.AllSettings.RoleIDs.desc"]
-hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Specificeer welke rollen rechten hebben om de bot te gebruiken"
-
-["settings.AllSettings.RoleIDs.shortDesc"]
-hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
-other = "Bot Operators"
-
-["settings.AllSettings.Show.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "Geen"
-
-["settings.AllSettings.Show.desc"]
-hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
-other = "Alle bot instellingen voor deze server laten zien"
-
-["settings.AllSettings.Show.shortDesc"]
-hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
-other = "Alle instellingen laten zien"
-
-["settings.AllSettings.UnmuteDead.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.UnmuteDead.desc"]
-hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
-other = "Specificeer of de bot gelijk spelers moet ontdempen als ze doodgaan. **LET OP. Dit kan informatie lekken!**"
-
-["settings.AllSettings.VoiceRules.args"]
-hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
-other = "<mute/deaf> <spelfase> <dead/alive> <true/false>"
-
-["settings.AllSettings.VoiceRules.desc"]
-hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
-other = "Specificeer de demp/doof regels van het spel, afhankelijk van de spelfase en of de spelers nog leven. In het voorbeeld zouden dode spelers gedempt zijn tijdens de fase van de taken"
-
-["settings.CommandPrefixSetting.changes"]
-hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
-other = "Servervoorvoegsel veranderd van `{{.From}}` naar `{{.To}}`. Gebruik die vanaf nu!"
-
-["settings.CommandPrefixSetting.tooLong"]
-hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
-other = "Sorry, de prefix `{{.CommandPrefix}}` is te lang ({{.Length}} tekens, maximaal 10). Probeer iets korters."
-
-["settings.ConstructEmbedForSetting.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "Aliassen"
-
-["settings.ConstructEmbedForSetting.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "Parameter"
-
-["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
-hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
-other = "Huidige waarde"
-
-["settings.ConstructEmbedForSetting.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "Voorbeeld"
-
-["settings.HandleSettingsCommand.default"]
-hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
-other = "Sorry, `{{.Arg}}` is geen geldige instelling!\\n"
-
-["settings.SettingAdminUserIDs.clearAdmins"]
-hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
-other = "Alle AdminUserIDs verwijderd!"
-
-["settings.SettingAdminUserIDs.newBotAdmin"]
-hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
-other = "<@{{.UserID}}> is nu een bot administrator!"
-
-["settings.SettingAdminUserIDs.noBotAdmins"]
-hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
-other = "Geen bot administrators"
-
-["settings.SettingAdminUserIDs.notFound"]
-hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "Sorry, ik weet niet wie `{{.UserName}}` is. Je kan het proberen met ID, gebruikersnaam, gebruikersnaam#XXXX, bijnaam of @noemen"
-
-["settings.SettingDelays.Phase.UNINITIALIZED"]
-hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
-other = "Ik snap niet wat je met `{{.PhaseName}}` bedoelt. De mogelijke spelfases zijn `Lobby`, `Tasks` en `Discussion`."
-
-["settings.SettingDelays.delayBetweenPhases"]
-hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
-other = "De huidige vertraging tussen `{{.PhaseA}}` en `{{.PhaseB}}` is {{.OldDelay}}."
-
-["settings.SettingDelays.missingPhases"]
-hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "De mogelijke spelfases zijn `Lobby`, `Tasks` en `Discussion`.\\nJe moet beide spelfases typen waar je vandaan komt en naar toe gaat om de vertraging aan te passen."
-
-["settings.SettingDelays.setDelayBetweenPhases"]
-hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
-other = "De vertraging van `{{.PhaseA}}` naar `{{.PhaseB}}` is van {{.OldDelay}} naar {{.NewDelay}} veranderd."
-
-["settings.SettingDelays.wrongNumber"]
-hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
-other = "`{{.Number}}` is geen geldig getal! Probeer het nogmaals!"
-
-["settings.SettingLanguage.list"]
-hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
-other = "Beschikbare talen: {{.Langs}}"
-
-["settings.SettingLanguage.notFound"]
-hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
-other = "Taal niet gevonden! Beschikbare taalcodes: {{.Langs}}"
-
-["settings.SettingLanguage.notLoaded"]
-hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "Lokalisatiebestanden zijn niet geladen! {{.Langs}}"
-
-["settings.SettingLanguage.reloaded"]
-hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
-other = "Lokalisatiebestanden zijn herladen ({{.Count}}). Beschikbare taalcodes: {{.Langs}}"
-
-["settings.SettingLanguage.set"]
-hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "De lokalisatie is ingesteld op {{.LangName}}"
-
-["settings.SettingLanguage.tooShort"]
-hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "Sorry, de taalcode is te kort. Beschikbare taalcodes: {{.Langs}}."
-
-["settings.SettingPermissionRoleIDs.clearRoles"]
-hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
-other = "Alle PermissionRoleIDs verwijderd!"
-
-["settings.SettingPermissionRoleIDs.newBotAdmins"]
-hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
-other = "<@&{{.UserID}}>s zijn nu bot administrators!"
-
-["settings.SettingPermissionRoleIDs.noRoleAdmins"]
-hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "Geen rol administrators"
-
-["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "Is al gedeactiveerd!"
-
-["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
-hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "Ik zal niet langer dode mensen gelijk ontdempen. Goede keuze!"
-
-["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "Is al geactiveerd!"
-
-["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "Sorry, `{{.Arg}}` is niet `true` en ook niet `false`."
-
-["settings.SettingVoiceRules.NA"]
-hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
-other = "Niet beschikbaar"
-
-["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
-hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
-other = "Ik weet niet wat {{.PhaseName}} is. De mogelijke spelfases zijn `Lobby`, `Tasks` en `Discussion`."
-
-["settings.SettingVoiceRules.enoughArgs"]
-hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "Je hebt niet genoeg parameters opgegeven! De goede zinsopbouw is: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
-
-["settings.SettingVoiceRules.neitherAliveDead"]
-hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
-other = "`{{.Arg}}` is niet `alive` en ook niet `dead`."
-
-["settings.SettingVoiceRules.neitherMuteDeaf"]
-hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
-other = "`{{.Arg}}` is niet `mute` en ook niet `deaf`!"
-
-["settings.SettingVoiceRules.neitherTrueFalse"]
-hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
-other = "`{{.Arg}}` is niet `true` en ook niet `false`!"
-
-["settings.SettingVoiceRules.queryingAlreadyUnValues"]
-hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
-other = "In fase `{{.PhaseName}}`, zijn de {{.PlayerGameState}} spelers al un{{.PlayerDiscordState}}!"
-
-["settings.SettingVoiceRules.queryingAlreadyValues"]
-hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
-other = "In fase `{{.PhaseName}}`, zijn de {{.PlayerGameState}} spelers al {{.PlayerDiscordState}}!"
-
-["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
-hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
-other = "In fase `{{.PhaseName}}`,zijn de {{.PlayerGameState}} spelers nu {{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.queryingCurrentlyValues"]
-hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
-other = "In fase `{{.PhaseName}}`, zijn de {{.PlayerGameState}} spelers nu NIET {{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.setUnValues"]
-hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
-other = "Vanaf nu worden in fase `{{.PhaseName}}`, de {{.PlayerGameState}} spelers un{{.PlayerDiscordState}}."
-
-["settings.SettingVoiceRules.setValues"]
-hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
-other = "Vanaf nu worden in fase `{{.PhaseName}}`, de {{.PlayerGameState}} spelers {{.PlayerDiscordState}}."
-
-["state.phase.DISCUSSION"]
-hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
-other = "DISCUSSIE"
-
-["state.phase.LOBBY"]
-hash = "sha1-658c6353d3a9cf4d298b0ecdb88b40d6eda8dbfc"
-other = "LOBBY"
-
-["state.phase.MENU"]
-hash = "sha1-c8910b26f57214f5755dc74b2ca3ca1c721de675"
-other = "HOOFDMENU"
-
-["state.phase.TASKS"]
-hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
-other = "TAKEN"
+"commands.deadlock" = "I wasn't able to obtain the game state for your {{.Command}} command. Please try again."
+"commands.debug.clear.error" = "Encountered an error trying to clear debug information: {{.Error}}"
+"commands.debug.clear.user.success" = "Successfully cleared cached usernames for {{.User}}"
+"commands.debug.view.error" = "Encountered an error trying to view debug information: {{.Error}}"
+"commands.debug.view.user.empty" = "I don't have any saved usernames for {{.User}}"
+"commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
+"commands.dm" = "Sorry, I don't respond to DMs. Please execute the command in a text channel instead."
+"commands.error" = "Error executing `{{.Command}}`: `{{.Error}}`"
+"commands.error.nogame" = "No game is currently running."
+"commands.help.subtitle" = "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `/help <command>` to see more details on a command!"
+"commands.help.title" = "AutoMuteUs Bot Commando's:\\n"
+"commands.info.activegames" = "Actieve Spellen"
+"commands.info.creator" = "Schepper"
+"commands.info.footer" = "{{.Version}}v{{.Commit}} - Elf {{.ID}}/{{.Num}}"
+"commands.info.guilds" = "Gildes"
+"commands.info.invite" = "Uitnodigen"
+"commands.info.library" = "Bibliotheek"
+"commands.info.premium" = "Premium"
+"commands.info.title" = "Bot Info"
+"commands.info.totalgames" = "Totaal aantal partijen"
+"commands.info.totalusers" = "Totaal aantal gebruikers"
+"commands.info.version" = "Versie"
+"commands.info.website" = "website"
+"commands.link.nogamedata" = "No game data found for the color `{{.Color}}`"
+"commands.link.noplayer" = "No player in the current game was detected for {{.UserMention}}"
+"commands.link.success" = "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`"
+"commands.new.lockout" = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`/premium`)\\nCurrent Games: {{.Games}}"
+"commands.new.nochannel" = "Please join a voice channel before starting a match!"
+"commands.new.success" = "Klik op de volgende link om je opname te koppelen: \\n <{{.hyperlink}}>\\n\\nHeb je de opname niet geïnstalleerd? Laatste versie [here]({{.downloadURL}})\\n\\nOm uw opname handmatig te koppelen:"
+"commands.new.success.code" = "Code"
+"commands.new.success.url" = "URL"
+"commands.no_permissions" = "Sorry, you don't have the required permissions to issue that command."
+"commands.privacy.info" = "AutoMuteUs privacy en data collectie.\\nmeer details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
+"commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
+"commands.privacy.opt.success" = "✅ I successfully changed your opt in/out status"
+"commands.privacy.showme.cache" = "❗ Here's your cached in-game names:"
+"commands.privacy.showme.nocache" = "❌ I don't have any cached player names stored for you!"
+"commands.privacy.showme.optin" = "❗ You are opted **in** to data collection for game statistics"
+"commands.privacy.showme.optout" = "❌ You are opted **out** of data collection for game statistics, or you haven't played a game yet"
+"commands.stats.guild.reset.error" = "Encountered an error resetting the stats for this guild: {{.Error}}"
+"commands.stats.guild.reset.success" = "Successfully reset this guild's stats!"
+"commands.stats.user.reset.error" = "Encountered an error resetting the stats for {{.User}}: {{.Error}}"
+"commands.stats.user.reset.success" = "Successfully reset the stats for {{.User}}!"
+"commands.unlink.noplayer" = "No player in the current game was detected for {{.UserMention}}"
+"commands.unlink.success" = "Successfully unlinked {{.UserMention}}"
+"discordGameState.ToEmojiEmbedFields.Unlinked" = "Niet-gekoppeld"
+"eventHandler.gameOver.deleteMessageFooter" = "Bericht {{.Mins}} minuten verwijderen van:"
+"eventHandler.gameOver.matchID" = "Game over! Bekijk de wedstrijden statistieken met Match ID: `{{.MatchID}}\\n{{.Winners}}"
+"processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
+"responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.guildStatsEmbed.CrewmateWins" = "Winrate van Crewmate ({{.Min}}+ Spelen)"
+"responses.guildStatsEmbed.Desc" = "Gilde statistieken voor {{.GuildName}}"
+"responses.guildStatsEmbed.GamesPlayed" = "Gespeelde wedstrijden"
+"responses.guildStatsEmbed.GamesWonCrewmate" = "Crewmate Winrate"
+"responses.guildStatsEmbed.GamesWonImposter" = "Winst poster"
+"responses.guildStatsEmbed.ImposterWins" = "Imposter Winrate ({{.Min}}+ Spelen)"
+"responses.guildStatsEmbed.MostGames" = "Meeste spellen"
+"responses.guildStatsEmbed.NoPremium" = "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.guildStatsEmbed.Title" = "Gilde Statistieken"
+"responses.guildStatsEmbed.TotalWinrate" = "Totale winrate ({{.Min}}+ Spelen)"
+"responses.lobbyMessage.Footer.Text" = "Use the select below with your in-game color! (or {{.X}} to leave)"
+"responses.lobbyMessage.Title" = "Lobby"
+"responses.lobbyMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
+"responses.lobbyMetaEmbedFields.Host" = "Hostnaam"
+"responses.lobbyMetaEmbedFields.PlayersLinked" = "Spelers gekoppeld"
+"responses.lobbyMetaEmbedFields.Region" = ":globe_showing_Amerikas: REGION"
+"responses.lobbyMetaEmbedFields.RoomCode" = "🔒 ROOM CODE"
+"responses.lobbyMetaEmbedFields.VoiceChannel" = "Stem kanaal"
+"responses.makeDescription.GameNotRunning" = "\\n⚠ **Bot is gepauzeerd!** ⚠\\n\\n"
+"responses.menuMessage.Linked.FooterText" = "(Treed een spel lobby in om de wedstrijd te starten)"
+"responses.menuMessage.Title" = "Hoofd Menu"
+"responses.menuMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
+"responses.nonPremiumSetting.Desc" = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details"
+"responses.premiumInviteResponse.Title" = "Premium Bot Invites"
+"responses.premiumInviteResponse.desc" = "{{.Tier}} gebruikers hebben toegang tot {{.Count}} Prioriteit mute botten: uitnodigingen hieronder aangeboden!"
+"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
+"responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
+"responses.premiumResponse.FastMuteDesc" = 'Premium gebruikers krijgen toegang tot "helper" bots die ervoor zorgen dat het muteren snel is!'
+"responses.premiumResponse.FreeDescription" = "Bekijk de leuke dingen die Premium AutoMuteUs te bieden heeft!\\n\\n[Krijg AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
+"responses.premiumResponse.PremiumDescription" = "Het lijkt erop dat je AutoMuteUs **{{.Tier}}{{.DaysString}}hebt! Bedankt voor de steun!\\n\\nHieronder zijn enkele van de voordelen die je kunt aanpassen met je Premium status!"
+"responses.premiumResponse.PremiumDescriptionDaysRemaining" = " voor nog {{.Days}} dagen"
+"responses.premiumResponse.PremiumDescriptionExpired" = "Oh nee! Het lijkt erop dat je altijd AutoMuteUs **{{.Tier}}** hebt gehad, maar het **is {{.Days}} dagen geleden verlopen **! 😦\\n\\nOverweeg je hier opnieuw aan te melden: [Krijg AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.PriorityGameAccess" = "👑 Prioriteit Spel Toegang"
+"responses.premiumResponse.PriorityGameAccessDesc" = "Als de Bot onder zware druk staat, zullen Premium-gebruikers altijd nieuwe spellen kunnen maken!"
+"responses.premiumResponse.Settings" = "🛠 Speciale Instellingen"
+"responses.premiumResponse.SettingsDesc" = "Premium gebruikers kunnen extra instellingen opgeven, zoals het weergeven van een end-game statusbericht, of het automatisch vernieuwen van het statusbericht!"
+"responses.premiumResponse.SettingsDescExtra" = "Look for the settings marked with 💎 under `/settings!`"
+"responses.premiumResponse.Stats" = "📊 Spel Statistieken en Scoreborden"
+"responses.premiumResponse.StatsDesc" = "Premium gebruikers hebben toegang tot een volledig pakket van spelers statistieken en leaderboarden!"
+"responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
+"responses.settingResponse.Description" = "Type `/settings <setting>` to change a setting from those listed below"
+"responses.settingResponse.PremiumNoThanks" = "The following settings are only for AutoMuteUs premium users.\\nType `/premium` to learn more!"
+"responses.settingResponse.PremiumThanks" = "Bedankt dat je een AutoMuteUs Premium gebruiker bent!"
+"responses.settingResponse.Title" = "Instellingen"
+"responses.stats.Exiled" = "Verbannen"
+"responses.stats.Games" = "Spellen"
+"responses.stats.Killed" = ":knife:"
+"responses.stats.Lost" = "Verloren"
+"responses.stats.Won" = "Gewonnen"
+"responses.userStatsEmbed.BestTeammateCrewmate" = "Beste bemanningslid gespeeld met"
+"responses.userStatsEmbed.BestTeammateImpostor" = "Beste Impoor gespeeld met"
+"responses.userStatsEmbed.BestTeammateServerCrewmate" = "Beste bemanningsteam"
+"responses.userStatsEmbed.BestTeammateServerImpostor" = "Beste Impostor Team"
+"responses.userStatsEmbed.CrewmateWins" = "Bemanning Gewonnen"
+"responses.userStatsEmbed.Desc" = "Gebruikersstatistieken voor {{.User}}"
+"responses.userStatsEmbed.ExiledAsCrewmate" = "Verbannen als bemanningslid"
+"responses.userStatsEmbed.ExiledAsImpostor" = "Verbannen als Impostor"
+"responses.userStatsEmbed.FavoriteColors" = "Favoriete kleuren"
+"responses.userStatsEmbed.FavoriteNames" = "Favoriete namen"
+"responses.userStatsEmbed.FrequentFirstTarget" = "Frequent eerste doelwit"
+"responses.userStatsEmbed.FrequentKilledBy" = " Meest voorkomende gedood door"
+"responses.userStatsEmbed.GamesPlayed" = "Gespeelde wedstrijden"
+"responses.userStatsEmbed.ImposterWins" = "Imposter Gewonnen"
+"responses.userStatsEmbed.KilledAsCrewmate" = "Gedood als bemanningslid"
+"responses.userStatsEmbed.MostFrequentFirstTarget" = "Meest frequente eerste doelwit"
+"responses.userStatsEmbed.NoPremium" = "Detailed stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
+"responses.userStatsEmbed.ServerPlayedInValue" = "{{.Server}} Server"
+"responses.userStatsEmbed.ServersPlayedIn" = "Gespeeld In"
+"responses.userStatsEmbed.ServersPlayedInValue" = "{{.Servers}} servers"
+"responses.userStatsEmbed.Title" = "Gebruiker statistieken"
+"responses.userStatsEmbed.TotalWins" = "Totaal Gewonnen"
+"responses.userStatsEmbed.Winrate" = "Winrate"
+"responses.userStatsEmbed.WorstTeammateCrewmate" = "Slechtste bemanning gespeeld met"
+"responses.userStatsEmbed.WorstTeammateImpostor" = "Slechtste Impostor gespeeld met"
+"responses.userStatsEmbed.WorstTeammateServerCrewmate" = "Slechtste bemanning Team"
+"responses.userStatsEmbed.WorstTeammateServerImpostor" = "Slechtste Impostor Team"
+"settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Huidige waarde"
+"settings.ConstructEmbedForSetting.StarterDesc" = "Type `/settings {{.Command}}` to view or change this setting.\\n\\n"
+"settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} was already a bot admin!"
+"settings.SettingAdminUserIDs.clearAdmins" = "Alle AdminUserID's wissen!"
+"settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} is now a bot admin!"
+"settings.SettingAdminUserIDs.noBotAdmins" = "No Bot Admins"
+"settings.SettingAdminUserIDs.notFound" = "Sorry, I don't know who `{{.UserName}}` is. You can pass in ID or @mention"
+"settings.SettingAutoRefresh.False" = "Vanaf nu zal ik het spelstatusbericht niet automatisch vernieuwen"
+"settings.SettingAutoRefresh.Noop" = "AutoRefresh was already set to `{{.Value}}`; not doing anything"
+"settings.SettingAutoRefresh.True" = "Van nu af aan, zal ik automatisch het spelstatusbericht vernieuwen"
+"settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage"
+"settings.SettingDelays.Phase.UNINITIALIZED" = "Ik weet niet wat `{{.PhaseName}}` is. De lijst van spelfasen is `Lobby`, `Tasks` en `Discussie`."
+"settings.SettingDelays.delayBetweenPhases" = "Momenteel is de vertraging bij het passeren van `{{.PhaseA}}` naar `{{.PhaseB}}` {{.OldDelay}}."
+"settings.SettingDelays.missingPhases" = "De lijst met spelfasen is `Lobby`, `Tasks` en `Discussion`.\\nJe moet beide fasen van het spel invoeren om de vertraging te veranderen."
+"settings.SettingDelays.setDelayBetweenPhases" = "De vertraging bij het passeren van{{.PhaseA}}` naar{{.PhaseB}}is veranderd van {{.OldDelay}} naar {{.NewDelay}}."
+"settings.SettingDelays.wrongNumber" = "`{{.Number}}` is geen geldig nummer! Probeer het opnieuw"
+"settings.SettingDisplayRoomCode.AlwaysOrNever" = "Vanaf nu zal ik {{.Arg}} de kamercode in het bericht weergeven"
+"settings.SettingDisplayRoomCode.Spoiler" = "Vanaf nu markeer ik de kamercode als spoiler in het bericht"
+"settings.SettingDisplayRoomCode.Unrecognized" = "{{.Arg}} is not an expected value. See `/settings display-room-code` for usage"
+"settings.SettingLanguage.list" = "Beschikbare talen: {{.Langs}}"
+"settings.SettingLanguage.notFound" = "Taal niet gevonden! Beschikbare taalcodes: {{.Langs}}"
+"settings.SettingLanguage.notLoaded" = "Lokalisatiebestanden zijn niet geladen! {{.Langs}}"
+"settings.SettingLanguage.reloaded" = "Lokalisatiebestanden worden opnieuw geladen ({{.Count}}). Beschikbare taalcodes: {{.Langs}}"
+"settings.SettingLanguage.set" = "Lokalisatie is ingesteld op {{.LangName}}"
+"settings.SettingLanguage.tooShort" = "Sorry, de taalcode is kort. Beschikbare taalcodes: {{.Langs}}."
+"settings.SettingLeaderboardMention.False" = "Voortaan zal ik speler nicknames/gebruikersnamen gebruiken in het leaderboard"
+"settings.SettingLeaderboardMention.True" = "Van nu af aan, zal ik spelers direct op de ranglijst vermelden"
+"settings.SettingLeaderboardMin.OutOfRange" = "U gaf een getal te hoog of te laag. Geef een getal tussen [1-100] op"
+"settings.SettingLeaderboardMin.Success" = "Vanaf nu zal ik alleen spelers weergeven met {{.Games}}+ spellen kwalificeren op het scorebord"
+"settings.SettingLeaderboardMin.Unrecognized" = "{{.Number}} is not a valid number. See `/settings leaderboard-min` for usage"
+"settings.SettingLeaderboardSize.OutOfRange" = "U gaf een getal te hoog of te laag. Geef een getal tussen [1-10] op"
+"settings.SettingLeaderboardSize.Success" = "Van nu af aan, zal ik {{.Players}} spelers op het scorebord weergeven"
+"settings.SettingLeaderboardSize.Unrecognized" = "{{.Number}} is not a valid number. See `/settings leaderboard-size` for usage"
+"settings.SettingMapVersion.Success" = "From now on, detailed map setting is `{{.Arg}}`"
+"settings.SettingMatchSummary.OutOfRange" = "U gaf een getal te hoog of te laag. Geef een nummer tussen [0-60], of -1 om nooit match samenvattingen te verwijderen"
+"settings.SettingMatchSummary.Success" = "Vanaf nu zal ik match samenvatting berichten verwijderen na {{.Minutes}} minuten."
+"settings.SettingMatchSummary.Success-1" = "Voortaan zal ik nooit match samenvatting berichten verwijderen."
+"settings.SettingMatchSummary.Success0" = "Vanaf nu zal ik gelijk samenvattingsberichten direct verwijderen."
+"settings.SettingMatchSummary.Unrecognized" = "{{.Minutes}} is not a valid number. See `/settings match-summary` for usage"
+"settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} is not a valid text channel ID or mention!"
+"settings.SettingMatchSummaryChannel.withChannelID" = "Match Summary text channel ID changed to {{.channelID}}!"
+"settings.SettingMuteSpectators.false_muteSpectators" = "Ik zal geen toeschouwers meer dempen zoals dode spelers"
+"settings.SettingMuteSpectators.true_noMuteSpectators" = "Ik zal nu toeschouwers dempen, net als dode spelers. \\n**Let op, dit kan vertragingen of vertraging veroorzaken wanneer je niet zelf hostt of als je een Premium worker bot** gebruikt"
+"settings.SettingPermissionRoleIDs.alreadyBotOperator" = "That role was already a bot operator!"
+"settings.SettingPermissionRoleIDs.clearRoles" = "Wis alle RemissionRoleIDs!"
+"settings.SettingPermissionRoleIDs.newBotOperator" = "I successfully added that role as bot operators!"
+"settings.SettingPermissionRoleIDs.noRoleAdmins" = "Geen Role Admins"
+"settings.SettingPermissionRoleIDs.notFound" = "Sorry, I didn't recognize the role you provided"
+"settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead" = "Het is al onwaar!"
+"settings.SettingUnmuteDeadDuringTasks.false_unmuteDead" = "Ik zal dode mensen niet meer onmiddellijk ontdempen. Goede keuze!"
+"settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead" = "I will now unmute the dead people immediately after they die. Careful, this reveals who died during the match!"
+"settings.SettingUnmuteDeadDuringTasks.true_unmuteDead" = "Het is al waar!"
+"settings.SettingUnmuteDeadDuringTasks.wrongArg" = "Sorry, `{{.Arg}}` is niet `true` of `false`."
+"settings.SettingVoiceRules.Phase.UNINITIALIZED" = "Ik weet niet wat {{.PhaseName}} is. De lijst van spelfasen is `Lobby`, `Tasks` en `Discussie`."
+"settings.SettingVoiceRules.enoughArgs" = "You didn't pass enough arguments! Correct syntax is: `voiceRules [muted/deafened] [game phase] [alive/dead] [true/false]`"
+"settings.SettingVoiceRules.neitherAliveDead" = "`{{.Arg}}` is niet `alive` of `dead`!"
+"settings.SettingVoiceRules.queryingAlreadyUnValues" = "Wanneer in `{{.PhaseName}}` fase, {{.PlayerGameState}} spelers zijn al een{{.PlayerDiscordState}}!"
+"settings.SettingVoiceRules.queryingAlreadyValues" = "Wanneer in `{{.PhaseName}}` fase, {{.PlayerGameState}} spelers zijn al {{.PlayerDiscordState}}!"
+"settings.SettingVoiceRules.queryingCurrentlyOldValues" = "Wanneer in `{{.PhaseName}}` fase, {{.PlayerGameState}} spelers zijn momenteel {{.PlayerDiscordState}}."
+"settings.SettingVoiceRules.queryingCurrentlyValues" = "Wanneer in `{{.PhaseName}}` fase, {{.PlayerGameState}} spelers zijn momenteel NIET {{.PlayerDiscordState}}."
+"settings.SettingVoiceRules.setUnValues" = "Van nu af aan, wanneer in `{{.PhaseName}}` fase zullen {{.PlayerGameState}} spelers een{{.PlayerDiscordState}} zijn."
+"settings.SettingVoiceRules.setValues" = "Van nu af aan, wanneer in `{{.PhaseName}}` fase zullen {{.PlayerGameState}} spelers {{.PlayerDiscordState}} zijn."
+"softban.ignoring" = "I'm ignoring you for the next 5 minutes, stop spamming"
+"softban.warning" = "Please stop spamming commands"
+"state.phase.DISCUSSION" = "DISCUSSIE"
+"state.phase.GAMEOVER" = "SPEL VOOR"
+"state.phase.LOBBY" = "LOBBY"
+"state.phase.MENU" = "MENU"
+"state.phase.TASKS" = "TASKE"
