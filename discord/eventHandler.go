@@ -66,6 +66,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					Payload:   job.Payload.(string),
 				}
 				correlatedUserID := ""
+				sett := bot.StorageInterface.GetGuildSettings(guildID)
 
 				switch job.JobType {
 				case task.ConnectionJob:
@@ -81,13 +82,9 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					dgs.ConnectCode = connectCode
 					bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
+					bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
-					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
 				case task.LobbyJob:
 					var lobby game.Lobby
 					err = json.Unmarshal([]byte(job.Payload.(string)), &lobby)
@@ -96,7 +93,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					bot.processLobby(sett, lobby, dgsRequest)
 				case task.StateJob:
 					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
@@ -117,7 +113,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
 					shouldHandleTracked, userID, readOnlyDgs, err := bot.processPlayer(sett, player, dgsRequest)
 					if shouldHandleTracked {
 						bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
@@ -144,8 +139,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						log.Println(err)
 						break
 					}
-
-					sett := bot.StorageInterface.GetGuildSettings(guildID)
 
 					// we only need a read-only state for making the game summary message
 					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
@@ -314,10 +307,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 			// only update the message if we're not in the tasks phase (info leaks)
 			if dgs.GameData.GetPhase() != game.TASKS {
-				edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-				if edited {
-					metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-				}
+				bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 			}
 
 			return true, userID, dgs, err
@@ -332,10 +322,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 			return true, userID, dgs, err
 		case updated:
 			userID := dgs.AttemptPairingByMatchingNames(data)
@@ -346,19 +333,13 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			}
 			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
-					edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-					if edited {
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-					}
+					bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 					return true, userID, dgs, err
 				}
 				log.Println("NOT updating the discord status message; would leak info")
 				return false, userID, dgs, err
 			}
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 			if player.Action == game.EXILED {
 				return false, userID, dgs, err // don't apply a mute to this player
 			}
@@ -395,10 +376,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 		err := bot.applyToAll(dgs, false, false)
 		if err != nil {
 			log.Println("Error in unmuting all users when returning to menu ", err)
@@ -411,10 +389,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		delay := sett.Delays.GetDelay(oldPhase, phase)
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
 
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
 	case game.TASKS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
@@ -425,10 +400,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		}
 
 		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, priority, dgsRequest)
-		edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-		}
+		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
@@ -437,10 +409,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		if sett.AutoRefresh {
 			bot.RefreshGameStateMessage(dgsRequest, sett)
 		} else {
-			edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-			if edited {
-				metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-			}
+			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 		}
 	}
 }
@@ -454,10 +423,7 @@ func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgs
 	dgs.GameData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
-	edited := dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-	if edited {
-		metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
-	}
+	bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 }
 
 func startGameInPostgres(dgs GameState, psql *storage.PsqlInterface) uint64 {

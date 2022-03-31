@@ -7,7 +7,7 @@
 "commands.dm" = "Sorry, I don't respond to DMs. Please execute the command in a text channel instead."
 "commands.error" = "Error executing `{{.Command}}`: `{{.Error}}`"
 "commands.error.nogame" = "No game is currently running."
-"commands.error.reinvite" = "I'm missing the required permissions to function properly in this server or channel!\\n\\nYou may need to reinvite me [here](https://add.automute.us)"
+"commands.error.reinvite" = "I'm missing the following required permissions to function properly in this server or channel:\\n```\\n{{.Perm}}```\\nCheck the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"
 "commands.help.subtitle" = "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `/help <command>` to see more details on a command!"
 "commands.help.title" = "AutoMuteUs Bot Commands:\\n"
 "commands.info.activegames" = "Active Games"
