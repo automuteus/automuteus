@@ -20,6 +20,13 @@ import (
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
+const RequiredPermissions int64 = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages |
+	discordgo.PermissionManageMessages | discordgo.PermissionUseSlashCommands |
+	discordgo.PermissionUseExternalEmojis | discordgo.PermissionEmbedLinks |
+	discordgo.PermissionReadMessageHistory | discordgo.PermissionAddReactions
+
+const VoicePermissions int64 = discordgo.PermissionVoiceMuteMembers | discordgo.PermissionVoiceDeafenMembers
+
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	response := bot.slashCommandHandler(s, i)
 	if response != nil {
@@ -63,6 +70,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	if err != nil {
 		log.Println(err)
 		return command.PrivateErrorResponse("get-guild", err, sett)
+	}
+	perm, err := bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, i.ChannelID)
+	if err != nil {
+		log.Println(err)
+		return command.PrivateErrorResponse("get-permissions", err, sett)
+	}
+	if perm&RequiredPermissions != RequiredPermissions {
+		return command.ReinviteMeResponse(sett)
 	}
 
 	isAdmin, isPermissioned := false, false
@@ -148,13 +163,18 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
+
+			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
+			perm, err = bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, voiceChannelID)
+			if perm&VoicePermissions != VoicePermissions {
+				return command.ReinviteMeResponse(sett)
+			}
+
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
 			}
-
-			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
 
 			status, activeGames := bot.newGame(dgs, voiceChannelID)
 			if status == command.NewSuccess {

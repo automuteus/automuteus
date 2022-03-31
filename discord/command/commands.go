@@ -154,3 +154,15 @@ func PrivateErrorResponse(cmd string, err error, sett *settings.GuildSettings) *
 		},
 	}
 }
+
+func ReinviteMeResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.error.reinvite",
+				Other: "I'm missing the required permissions to function properly in this server or channel!\n\nYou may need to reinvite me [here](https://add.automute.us)",
+			}),
+		},
+	}
+}

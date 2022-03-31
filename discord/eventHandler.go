@@ -401,7 +401,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		}
 		err := bot.applyToAll(dgs, false, false)
 		if err != nil {
-			log.Println(err)
+			log.Println("Error in unmuting all users when returning to menu ", err)
 		}
 		// on a gameover event from the capture, it's like going to the lobby; use that delay
 	case game.GAMEOVER:

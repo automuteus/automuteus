@@ -165,9 +165,8 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 				{
 					Name: "Premium Settings",
 					Value: sett.LocalizeMessage(&i18n.Message{
-						ID: "responses.premiumResponse.SettingsDescExtra",
-						// TODO update this text, not accurate
-						Other: "Look for the settings marked with 💎 under `/settings!`",
+						ID:    "responses.premiumResponse.SettingsDescExtra",
+						Other: "Look for the settings marked with 💎 under `/settings list`!",
 					}),
 					Inline: false,
 				},
