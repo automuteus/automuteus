@@ -21,9 +21,8 @@ import (
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 const RequiredPermissions int64 = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages |
-	discordgo.PermissionManageMessages | discordgo.PermissionUseSlashCommands |
-	discordgo.PermissionUseExternalEmojis | discordgo.PermissionEmbedLinks |
-	discordgo.PermissionReadMessageHistory | discordgo.PermissionAddReactions
+	discordgo.PermissionManageMessages | discordgo.PermissionEmbedLinks |
+	discordgo.PermissionUseExternalEmojis | discordgo.PermissionUseSlashCommands
 
 const VoicePermissions int64 = discordgo.PermissionVoiceMuteMembers | discordgo.PermissionVoiceDeafenMembers
 

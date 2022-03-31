@@ -23,11 +23,6 @@ type Emoji struct {
 	ID   string
 }
 
-// FormatForReaction does what it sounds like
-func (e *Emoji) FormatForReaction() string {
-	return "<:" + e.Name + ":" + e.ID
-}
-
 // FormatForInline does what it sounds like
 func (e *Emoji) FormatForInline() string {
 	return "<:" + e.Name + ":" + e.ID + ">"
