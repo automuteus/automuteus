@@ -35,7 +35,12 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		err := s.InteractionRespond(i.Interaction, response)
 		if err != nil {
 			log.Println("error issuing interaction response: ", err)
-			log.Println(i.Interaction)
+			iBytes, err := json.Marshal(i.Interaction)
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Println(iBytes)
+			}
 		}
 	}
 }
@@ -185,6 +190,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 
 			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
+			if voiceChannelID == "" {
+				return command.NewResponse(command.NewNoVoiceChannel, command.NewInfo{}, sett)
+			}
+
 			perm, err = bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, voiceChannelID)
 			missingPerms = checkPermissions(perm, VoicePermissions)
 			if missingPerms > 0 {
@@ -197,7 +206,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
 			}
 
-			status, activeGames := bot.newGame(dgs, voiceChannelID)
+			status, activeGames := bot.newGame(dgs)
 			if status == command.NewSuccess {
 				// release the lock
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)

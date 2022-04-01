@@ -386,11 +386,7 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	return ""
 }
 
-func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewStatus, activeGames int64) {
-	if voiceChannelID == "" {
-		return command.NewNoVoiceChannel, 0
-	}
-
+func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- true
