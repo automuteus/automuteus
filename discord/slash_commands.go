@@ -77,7 +77,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 					//TODO if this shows up in logs regularly, print more context
 					log.Println("received a nil response, or resp.data was nil")
 				}
-			} else {
+			} else if resp != nil {
 				err = s.InteractionRespond(i.Interaction, resp)
 				if err != nil {
 					log.Println("error issuing interaction response: ", err)
