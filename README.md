@@ -117,6 +117,12 @@ To extract strings for translation to `locales/en.toml`:
 goi18n extract -outdir locales
 ```
 
+To translate the Slash Commands and Descriptions, see the files here:
+
+[automuteus/discord/command](https://github.com/automuteus/automuteus/tree/master/discord/command)
+
+For example, for `/new`: https://github.com/automuteus/automuteus/blob/master/discord/command/new.go#L25
+
 # Self-Hosting
 
 Self-hosting requires robust knowledge and troubleshooting capability for Docker/Docker-compose, unRAID, Heroku, and/or any other networking and routing config specific to your hosting solution.

@@ -19,47 +19,103 @@ var Debug = discordgo.ApplicationCommand{
 	Description: "View and clear debug information for AutoMuteUs",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        setting.View,
-			Description: "View debug info",
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:              setting.View,
+			NameLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Description:              "View debug info",
+			DescriptionLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        User,
-					Description: "User Cache",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:              User,
+					NameLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Description:              "User Cache",
+					DescriptionLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        User,
-							Description: "User whose cache you want to view",
-							Type:        discordgo.ApplicationCommandOptionUser,
-							Required:    true,
+							Name:              User,
+							NameLocalizations: map[discordgo.Locale]string{
+								// TODO
+								// discordgo.Japanese: "",
+							},
+							Description:              "User whose cache you want to view",
+							DescriptionLocalizations: map[discordgo.Locale]string{
+								// TODO
+								// discordgo.Japanese: "",
+							},
+							Type:     discordgo.ApplicationCommandOptionUser,
+							Required: true,
 						},
 					},
 				},
 				{
-					Name:        GameState,
-					Description: "Game State",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:              GameState,
+					NameLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Description:              "Game State",
+					DescriptionLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
 			},
 		},
 		{
-			Name:        setting.Clear,
-			Description: "Clear debug info",
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:              setting.Clear,
+			NameLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Description:              "Clear debug info",
+			DescriptionLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Type: discordgo.ApplicationCommandOptionSubCommand,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        User,
-					Description: "User whose cache should be cleared",
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Required:    true,
+					Name:              User,
+					NameLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Description:              "User whose cache should be cleared",
+					DescriptionLocalizations: map[discordgo.Locale]string{
+						// TODO
+						// discordgo.Japanese: "",
+					},
+					Type:     discordgo.ApplicationCommandOptionUser,
+					Required: true,
 				},
 			},
 		},
 		{
-			Name:        UnmuteAll,
-			Description: "Unmute all players",
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:              UnmuteAll,
+			NameLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Description:              "Unmute all players",
+			DescriptionLocalizations: map[discordgo.Locale]string{
+				// TODO
+				// discordgo.Japanese: "",
+			},
+			Type: discordgo.ApplicationCommandOptionSubCommand,
 			// TODO sub-arguments to unmute specific players?
 		},
 	},
