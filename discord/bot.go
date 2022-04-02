@@ -86,6 +86,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
+	dg.AddHandler(bot.handleMessageCreate)
 	// Slash commands
 	dg.AddHandler(bot.handleInteractionCreate)
 
@@ -93,7 +94,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds | discordgo.IntentsGuildMessages)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)
