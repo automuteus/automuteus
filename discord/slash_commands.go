@@ -15,6 +15,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
@@ -30,17 +31,67 @@ var VoicePermissions = []int64{
 }
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	response := bot.slashCommandHandler(s, i)
-	if response != nil {
-		err := s.InteractionRespond(i.Interaction, response)
-		if err != nil {
-			log.Println("error issuing interaction response: ", err)
-			iBytes, err := json.Marshal(i.Interaction)
-			if err != nil {
-				log.Println(err)
-			} else {
-				log.Println(iBytes)
+	respondChan := make(chan *discordgo.InteractionResponse)
+	ticker := time.NewTicker(time.Second * 2)
+	var followUpMsg *discordgo.Message
+	var err error
+
+	// get the result in the background
+	go func() {
+		respondChan <- bot.slashCommandHandler(s, i)
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			// only followup the first time
+			if followUpMsg == nil {
+				err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Flags:   1 << 6,
+						Content: "Give me just a little bit to make a proper response :)",
+					},
+				})
+				if err != nil {
+					log.Println("err issuing wait response ", err)
+				}
+				followUpMsg, err = s.FollowupMessageCreate(s.State.User.ID, i.Interaction, true, &discordgo.WebhookParams{
+					Content: Hourglass,
+				})
+				if err != nil {
+					log.Println("Error creating followup message: ", err)
+				}
 			}
+			// don't return here
+
+		case resp := <-respondChan:
+			if followUpMsg != nil {
+				if resp != nil && resp.Data != nil {
+					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
+						Content:    resp.Data.Content,
+						Components: resp.Data.Components,
+						Embeds:     resp.Data.Embeds,
+					})
+				} else {
+					//TODO if this shows up in logs regularly, print more context
+					log.Println("received a nil response, or resp.data was nil")
+				}
+			} else {
+				err = s.InteractionRespond(i.Interaction, resp)
+				if err != nil {
+					log.Println("error issuing interaction response: ", err)
+					iBytes, err := json.Marshal(i.Interaction)
+					if err != nil {
+						log.Println(err)
+					} else {
+						log.Println(string(iBytes))
+					}
+				}
+			}
+			ticker.Stop()
+			// no matter what we get back, return
+			return
 		}
 	}
 }
