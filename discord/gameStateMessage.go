@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"github.com/automuteus/automuteus/metrics"
+	"github.com/automuteus/utils/pkg/settings"
 	"sync"
 	"time"
 
@@ -15,6 +17,7 @@ type GameStateMessage struct {
 	MessageID        string `json:"messageID"`
 	MessageChannelID string `json:"messageChannelID"`
 	LeaderID         string `json:"leaderID"`
+	CreationTimeUnix int64  `json:"creationTimeUnix"`
 }
 
 func MakeGameStateMessage() GameStateMessage {
@@ -22,6 +25,7 @@ func MakeGameStateMessage() GameStateMessage {
 		MessageID:        "",
 		MessageChannelID: "",
 		LeaderID:         "",
+		CreationTimeUnix: 0,
 	}
 }
 
@@ -47,9 +51,7 @@ var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool {
-	newEdit := false
-
+func (dgs GameState) dispatchEdit(s *discordgo.Session, me *discordgo.MessageEmbed) (newEdit bool) {
 	if !ValidFields(me) {
 		return false
 	}
@@ -65,6 +67,11 @@ func (dgs GameState) Edit(s *discordgo.Session, me *discordgo.MessageEmbed) bool
 	DeferredEdits[dgs.GameStateMsg.MessageID] = me
 	DeferredEditsLock.Unlock()
 	return newEdit
+}
+
+func (dgs GameState) shouldRefresh() bool {
+	// discord dictates that we can't edit messages that are older than 1 hour
+	return (time.Now().Sub(time.Unix(dgs.GameStateMsg.CreationTimeUnix, 0))) > time.Hour
 }
 
 func ValidFields(me *discordgo.MessageEmbed) bool {
@@ -115,7 +122,19 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 		dgs.GameStateMsg.LeaderID = authorID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
 		dgs.GameStateMsg.MessageID = msg.ID
+		dgs.GameStateMsg.CreationTimeUnix = time.Now().Unix()
 		return true
 	}
 	return false
+}
+
+func (bot *Bot) DispatchRefreshOrEdit(readOnlyDgs *GameState, dgsRequest GameStateRequest, sett *settings.GuildSettings) {
+	if readOnlyDgs.shouldRefresh() {
+		bot.RefreshGameStateMessage(dgsRequest, sett)
+	} else {
+		edited := readOnlyDgs.dispatchEdit(bot.PrimarySession, bot.gameStateResponse(readOnlyDgs, sett))
+		if edited {
+			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+		}
+	}
 }

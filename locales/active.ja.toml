@@ -1,1275 +1,196 @@
-["ascii.AsciiStarfield.isWas"]
-hash = "sha1-74d0bc511dd1fde8c7a0c78f51ea8b83de3eed87"
-other = "はImpostorでした。"
-
-["ascii.AsciiStarfield.isWasNot"]
-hash = "sha1-6823c6180a8f71204e53dfdf2a66c1c4fde0eb77"
-other = "はImpostorではありませんでした。"
-
-["ascii.AsciiStarfield.remains"]
-hash = "sha1-d5aa7e4ca57db6752bd427d0978adbe9fa346fab"
-other = "Impostors remain"
-
-["commands.AllCommands.Ascii.args"]
-hash = "sha1-6aed154ab2628dd6227c03dd2e74735e5c88b65d"
-other = "<@Discord ユーザー名> <Imposterかどうか> (true|false) <残りのimpostor> (人数)"
-
-["commands.AllCommands.Ascii.desc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "アスキーアートのCrewmateを送信"
-
-["commands.AllCommands.Ascii.shortDesc"]
-hash = "sha1-4d75cb979125b4a9e66a63fbeaa204bc67cf24b3"
-other = "AAのCrewmateを送信"
-
-["commands.AllCommands.Cache.args"]
-hash = "sha1-ddfc429c8717faf15af4951e38aa95d54af5c3d8"
-other = "<プレイヤー> (削除する場合、\"clear\")"
-
-["commands.AllCommands.Cache.desc"]
-hash = "sha1-0840521aae02c5248c15b5360e1ab7b29a8f98c4"
-other = "キャッシュされたゲーム内の名前を表示、または削除"
-
-["commands.AllCommands.Cache.shortDesc"]
-hash = "sha1-ddf0bc9ec8914e85d702cf1ff8b83397c1a1d15b"
-other = "キャッシュされたユーザー名を表示"
-
-["commands.AllCommands.DebugState.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.DebugState.desc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "このサーバーの情報を表示"
-
-["commands.AllCommands.DebugState.shortDesc"]
-hash = "sha1-2eb6aae31be46c6e50d1d87436982802e0604c69"
-other = "このサーバーの情報を表示"
-
-["commands.AllCommands.End.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.End.desc"]
-hash = "sha1-fcec6d668ae3a822d30c0d49f5eb1fc22c31e82f"
-other = "現在のゲームを終了する"
-
-["commands.AllCommands.End.shortDesc"]
-hash = "sha1-27e5e4c2c6a9bbbb3522ded6a73d2abb9a4d9d44"
-other = "ゲームを終了"
-
-["commands.AllCommands.Force.args"]
-hash = "sha1-c034b13994851564c101dc2c1d89cfb58ec06bc2"
-other = "<フェーズ名> (task, discuss, lobby / t, d, l)"
-
-["commands.AllCommands.Force.desc"]
-hash = "sha1-fc3189b1795ece1cf0d29410ff9c8aca32f9c4b8"
-other = "Botが正常に動作しない場合、強制的に選択されたフェーズに移行させる"
-
-["commands.AllCommands.Force.shortDesc"]
-hash = "sha1-b277c3791ed61233b782b6859b1ac28b2e87309d"
-other = "フェーズの強制変更"
-
-["commands.AllCommands.Help.args"]
-hash = "sha1-98e9e7ae5c47c4681acc3258e2f28c67bbcbf221"
-other = "無し、または情報を見たいコマンドの名前"
-
-["commands.AllCommands.Help.desc"]
-hash = "sha1-771a9d1f94d5c8279f643ef23407a8129db88016"
-other = "ボットのヘルプメッセージ、またはコマンドに関する情報を表示"
-
-["commands.AllCommands.Help.shortDesc"]
-hash = "sha1-87a01a2d90029f7ec813289df19d8e72278f7de2"
-other = "ヘルプを表示"
-
-["commands.AllCommands.Info.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.Info.desc"]
-hash = "sha1-05b96db008031966286d724908a3098fd254bab6"
-other = "BOTの参加サーバー数、アクティブなゲーム数等を表示"
-
-["commands.AllCommands.Info.shortDesc"]
-hash = "sha1-b52e4d72e511b7b452a3945204ea46d22178d486"
-other = "BOTの詳細表示"
-
-["commands.AllCommands.Link.args"]
-hash = "sha1-e4ed57e47e1a66dfa9f26eeabc738188ddd77ef2"
-other = "<Discord ユーザー名> <ゲーム内の色か名前>"
-
-["commands.AllCommands.Link.desc"]
-hash = "sha1-b838f07dd923a8726c14321d8611f558264d7da2"
-other = "Discordのユーザー名とゲーム内の色か名前を連携させる"
-
-["commands.AllCommands.Link.shortDesc"]
-hash = "sha1-8df24d59ba1ea8879d426ead0542f45e3bcd73ef"
-other = "Discord ユーザーとの連携"
-
-["commands.AllCommands.Map.args"]
-hash = "sha1-69ef89859dc94b73d30a7a87d938542c03e348c9"
-other = "<マップ名> (skeld, mira_hq, polus, airship) <マップバージョン> (オプション、simple または detailed)"
-
-["commands.AllCommands.Map.desc"]
-hash = "sha1-0b5f877ff7509b561f9b8a5cdd9b8f0156040b3b"
-other = "テキストチャンネルにゲーム内マップを表示 (simple と detailed の2種類のバージョンがあります)"
-
-["commands.AllCommands.Map.shortDesc"]
-hash = "sha1-81772e8a5083b687b68d3c4a3d1cac45cf7171aa"
-other = "ゲーム内マップを表示"
-
-["commands.AllCommands.New.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.New.desc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "新しいゲームを開始"
-
-["commands.AllCommands.New.shortDesc"]
-hash = "sha1-2d97aab2ed5df0c8bc35f713a9066db70aed62d6"
-other = "新しいゲームを開始"
-
-["commands.AllCommands.Pause.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.Pause.desc"]
-hash = "sha1-ae58f0429dac6f12bc70adf9fbe3323272e4606d"
-other = "Botを一時停止し、全ユーザーのミュートを解除"
-
-["commands.AllCommands.Pause.shortDesc"]
-hash = "sha1-70a87c6a9fbd6de14cb9604eb249e2df22205d8d"
-other = "Botを一時停止"
-
-["commands.AllCommands.Premium.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.Premium.desc"]
-hash = "sha1-6110a2524a3a2964c1a4f8d01250a155b2dee1c7"
-other = "AuteMuteUs Premium メンバーシップの特典等を表示"
-
-["commands.AllCommands.Premium.shortDesc"]
-hash = "sha1-6c15595dd95cadace98f70f0a165a256bccfae0d"
-other = "Premium BOTの詳細表示"
-
-["commands.AllCommands.Privacy.args"]
-hash = "sha1-0bd27203aba0be05fe3a83017c48de01c2b24a24"
-other = "showme, optin, optout"
-
-["commands.AllCommands.Privacy.desc"]
-hash = "sha1-f44e75d848ceeb300efda3ba1a2da816728a8e82"
-other = "AuteMuteUsのプライバシーとデータ収集の詳細情報\n詳細は [こちら](https://github.com/denverquane/automuteus/blob/master/PRIVACY.md)"
-
-["commands.AllCommands.Privacy.shortDesc"]
-hash = "sha1-46db3811abfe61871836b8774b94ef652726d30e"
-other = "AuteMuteUsのプライバシー情報を表示"
-
-["commands.AllCommands.Refresh.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.Refresh.desc"]
-hash = "sha1-20c44de646784f319e9af634fb7687b1a764c1d3"
-other = "チャットで流れてしまったステータスメッセージを再作成"
-
-["commands.AllCommands.Refresh.shortDesc"]
-hash = "sha1-fa9b00faea91b6699723dd456b82508ed534e220"
-other = "ステータスを再作成"
-
-["commands.AllCommands.Settings.args"]
-hash = "sha1-41c83ba364b92579bc52cc3dcfb9ae8fb0f24c5c"
-other = "<設定名> <設定値>"
-
-["commands.AllCommands.Settings.desc"]
-hash = "sha1-f68791ca3b8926ffc954106df2a45ce242008422"
-other = "Botの設定を変更。引数無しで`{{.CommandPrefix}} settings`と打つことで、全設定を確認。"
-
-["commands.AllCommands.Settings.shortDesc"]
-hash = "sha1-007910dfed4a5a824f612029a2a44c9402b0cee8"
-other = "Botの設定を変更"
-
-["commands.AllCommands.Stats.args"]
-hash = "sha1-c8da5d0dae86a55f407c4036f181eb9a0eff1beb"
-other = "<@Discord ユーザー名> または \"guild\""
-
-["commands.AllCommands.Stats.desc"]
-hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "プレイヤーとサーバーの戦績表示"
-
-["commands.AllCommands.Stats.shortDesc"]
-hash = "sha1-3c4dd254d2c051646f075c9bd3b61d2c0df27048"
-other = "戦績表示"
-
-["commands.AllCommands.Unlink.args"]
-hash = "sha1-dee1a262ea06e005b8860cece14c82b9f7513094"
-other = "<Discord ユーザー名>"
-
-["commands.AllCommands.Unlink.desc"]
-hash = "sha1-243c52a7116d54d4081355f196f9d4a1f434dd97"
-other = "Discordのユーザー名との連携を解除する"
-
-["commands.AllCommands.Unlink.shortDesc"]
-hash = "sha1-9e139c4aa1e3c56fcad668f74e0af0232e17f470"
-other = "Discord ユーザーとの連携解除"
-
-["commands.AllCommands.UnmuteAll.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["commands.AllCommands.UnmuteAll.desc"]
-hash = "sha1-b4b11a5550eb87ff1d2eee6097c20d76a61f4e71"
-other = "強制的に全員のミュートを解除"
-
-["commands.AllCommands.UnmuteAll.shortDesc"]
-hash = "sha1-73da5c6f48a7acf54733269d6a09c0307e890a6a"
-other = "強制ミュート解除"
-
-["commands.ConstructEmbedForCommand.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "エイリアス"
-
-["commands.ConstructEmbedForCommand.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "引数"
-
-["commands.ConstructEmbedForCommand.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "例"
-
-["commands.HandleCommand.Cache.Success"]
-hash = "sha1-e17ed848f044a1cf7fbc48ab1fe252735f198b36"
-other = "キャッシュされたユーザー名の削除に成功しました！"
-
-["commands.HandleCommand.Cache.cachedNames"]
-hash = "sha1-127a8250dbd4b80ae42e80e10ade9478cfe69d2f"
-other = "キャッシュされたユーザー名:"
-
-["commands.HandleCommand.Cache.emptyCachedNames"]
-hash = "sha1-8d26b655715f3baba98a4dfe6f35d96224cc3724"
-other = "誰のユーザー名もキャッシュされてません！"
-
-["commands.HandleCommand.ForgetMe.Success"]
-hash = "sha1-973fe17392bff7eb025bfbe8739e99aedb94ef4f"
-other = "<@{{.AuthorID}}>のプレイヤーデータの削除に成功しました！"
-
-["commands.HandleCommand.Help.notFound"]
-hash = "sha1-aa81cf9ae0bd438656d0b3b5b433229f2f33af5c"
-other = "そのコマンドは存在しません！ `help` で使用可能なコマンドを表示できます！"
-
-["commands.HandleCommand.Map.notFound"]
-hash = "sha1-c540a5d3878884956dd75bc776920d8b4d9b1604"
-other = "そのマップは存在しません！"
-
-["commands.HandleCommand.ShowMe.cachedNames"]
-hash = "sha1-f5b8e29ea4ae0ae0af88c041a380755846fc6007"
-other = "あなたのキャッシュされたユーザー名:"
-
-["commands.HandleCommand.ShowMe.emptyCachedNames"]
-hash = "sha1-13626f5164d3744fd12b4d01c26f3994dbde11c8"
-other = "あなたのユーザー名はキャッシュされてません！"
-
-["commands.HandleCommand.ShowMe.linkedID"]
-hash = "sha1-ca1be91310babf06d344413ec8c473a63f9382ca"
-other = "❗ {{.User}}、あなたのDiscord IDと統計用の匿名化されたIDを保存しています。"
-
-["commands.HandleCommand.ShowMe.unlinkedID"]
-hash = "sha1-041b6cc3a664875f7f43783b0ba6304a71d972f4"
-other = "❌ {{.User}}、あなたのDiscordIDは保存されていません。"
-
-["commands.HandleCommand.default"]
-hash = "sha1-b4f45bce2b6d42b61760ca87da4f6e3f81bf3ef4"
-other = "申し訳ございませんが、 `{{.InvalidCommand}}` というコマンドは存在しません！ `{{.CommandPrefix}} help` でコマンドを表示できます！"
-
-["commands.HandleCommand.optin.FailDB"]
-hash = "sha1-3e65e8634cb6e156c3d4e3d449334814be024d3e"
-other = "❌ {{.User}}、あなたは既にデータ収集にオプトインしています。"
-
-["commands.HandleCommand.optin.SuccessDB"]
-hash = "sha1-d6b06c52ea81ebd4706188a5fa458fae87d2cfc0"
-other = "✅ {{.User}}、データ収集にオプトインしました。"
-
-["commands.HandleCommand.optout.FailDB"]
-hash = "sha1-44bc33283d79d608b5f55000562cd08a951da08b"
-other = "❌ {{.User}}、あなたは既にデータ収集からオプトアウトしています。"
-
-["commands.HandleCommand.optout.SuccessDB"]
-hash = "sha1-64d6ba7099ee38690ecaf4c25bb233ad930309ff"
-other = "✅ {{.User}}、データ収集からオプトアウトされました。"
-
-["commands.StatsCommand.Reset.NoConfirm"]
-hash = "sha1-02f29c22d1485fc7d56721ccb23503baa527dc7c"
-other = "本当にギルドの戦績を**完全にリセット**したい場合は、 `{{.CommandPrefix}} stats guild reset confirm` と入力してください！"
-
-["commands.StatsCommand.Reset.Success"]
-hash = "sha1-766274dbca3b0ccc8a31e542dd03396a8c1cd8a8"
-other = "ギルドの戦績をリセットしました！"
-
-["commands.StatsCommand.ResetUser.NoConfirm"]
-hash = "sha1-385cd382e629cdb8afb8b489e86da579f0a049c4"
-other = "本当にユーザーの戦績を**完全にリセット**したい場合は、 `{{.CommandPrefix}} stats `{{.User}}` reset confirm` と入力してください！"
-
-["commands.StatsCommand.ResetUser.Success"]
-hash = "sha1-9a052ddbfb18077bfbf8a2f6d95223e1d604ef37"
-other = "{{.User}}の戦績をリセットしました！"
-
-["discordGameState.ToDescString.anyVoiceChannel"]
-hash = "sha1-c79bc3197cd0afb7cbb10a75f2d3ef137bbe896a"
-other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
-
-["discordGameState.ToDescString.voiceChannelName"]
-hash = "sha1-415c5a75851c66b2467bb0721ce8d825b4834b0d"
-other = "VCは **{{.channelName}}** です！"
-
-["discordGameState.ToEmojiEmbedFields.Unlinked"]
-hash = "sha1-86998aceb93f9016ca618a2e4f61c1a70b7b5059"
-other = "未連携"
-
-["discordGameState.ToStatusString.anyVoiceChannel"]
-hash = "sha1-ffbc8a478797aabcc78d008a28b77fc3512ab748"
-other = "**VCがありません！ `{{.CommandPrefix}} track` を使ってください！**"
-
-["discordGameState.trackChannel.voiceChannelNotfound"]
-hash = "sha1-9ec272f057e880f3e1b93b4804494950dd4d2cd0"
-other = "{{.channelName}} という名前のVCは見つかりませんでした。\n"
-
-["discordGameState.trackChannel.voiceChannelSet"]
-hash = "sha1-616157789cf45f206c2cd6bcb460d26ecad157e2"
-other = "現在 \"{{.channelName}}\" というVCをトラッキングし、自動ミュートしています！"
-
-["eventHandler.gameOver.deleteMessageFooter"]
-hash = "sha1-a4714074d7cee0a630717dffdc0c6f3a5a383ed1"
-other = "{{.Mins}} 分後にメッセージを削除します。"
-
-["eventHandler.gameOver.matchID"]
-hash = "sha1-27adf253cd1756676780d428c765f9a2549a8810"
-other = "ゲーム終了！ マッチIDを使用してマッチの統計情報を表示します: `{{.MatchID}}`\n{{.Winners}}"
-
-["locale.language.name"]
-hash = "sha1-649df08a448ee3fa90f3746baaf6b0907df42c91"
-other = "日本語"
-
-["message_handlers.generalRatelimit"]
-hash = "sha1-6d8d6f8d7c2345e2e4c266f7b6d3abbaaea88015"
-other = "{{.User}}、コマンドを打つのが速すぎます！もう少し遅くしてください！"
-
-["message_handlers.handleMessageCreate.noPerms"]
-hash = "sha1-c4a4b717e2381476ca51c76aed1bbc1373d38b1d"
-other = "あなたにはこのコマンドを実行可能な権限がありません！"
-
-["message_handlers.handleMessageCreate.respondPrefix"]
-hash = "sha1-3f3459bf86d30b4e6648487c93afc2915e0f2a0e"
-other = "{{.CommandPrefix}} で返事をします"
-
-["message_handlers.handleNewGameMessage.embed.Description"]
-hash = "sha1-98daf41c5f3a13f4d68da4f057b30edba04d8a8e"
-other = "このリンクをクリックしてキャプチャ: \n <{{.hyperlink}}>\n\nキャプチャソフトを入れてない? 最新版は [ここ！]({{.downloadURL}})\n\n手動でキャプチャするなら:"
-
-["message_handlers.handleNewGameMessage.embed.Fields.Code"]
-hash = "sha1-adac69379a626c2436948a4ef1792c7d719ef929"
-other = "コード"
-
-["message_handlers.handleNewGameMessage.embed.Fields.URL"]
-hash = "sha1-0e2d9b0777a485c1276de0803c12a7d76fbc5c39"
-other = "URL"
-
-["message_handlers.handleNewGameMessage.embed.Title"]
-hash = "sha1-e48b15c3a0d35222115f14abddee1b3188c5755d"
-other = "ゲームを開始しました！"
-
-["message_handlers.handleNewGameMessage.lockout"]
-hash = "sha1-d4a7ec017a8aaee0e13d867508bc4dd6498f49d8"
-other = "これ以上ゲームを開始すると、Discordの制限に引っかかるか、現在実行中のゲームを抑制しなくてはいけません！😦\n数分後にもう一度お試しいただくか、AutoMuteUs Premium (`{{.CommandPrefix}} premium`) への加入をお考えください。\n現在のゲーム数: {{.Games}}"
-
-["message_handlers.handleNewGameMessage.noChannel"]
-hash = "sha1-256e3c1f813a7a2a9eedf3e634a45067bd1553b2"
-other = "{{.User}}、VCに参加してからゲームを開始してください！"
-
-["message_handlers.handleNewGameMessage.specificRatelimit"]
-hash = "sha1-33e13e7ab0034ae74fd2d89df60959d797f0b5b2"
-other = "ゲームを作るのが早すぎます！もう少し遅くしてください！"
-
-["message_handlers.handleReactionGameStartAdd.generalRatelimit"]
-hash = "sha1-3f703d89d4f7298a007aaefcc63df34b630ac65e"
-other = "{{.User}}、リアクションを付けるのが早すぎます！もう少し遅くしてください！"
-
-["message_handlers.handleResetGuild.noPerms"]
-hash = "sha1-b1085e826017a6222c9e7632d79712d5683a995a"
-other = "管理者のみがサーバー戦績をリセットできます"
-
-["message_handlers.softban"]
-hash = "sha1-da5db8ea3e2b4086df4c0ba4e5496dff4bcff83d"
-other = "現在、{{.User}}を5分間無視しています。スパムを辞めてください。"
-
-["responses.guildStatsEmbed.CrewmateWins"]
-hash = "sha1-4b341227bf20f5d8c48d85df89d049dc496b205f"
-other = "Crewmate勝率 ({{.Min}}ゲーム以上)"
-
-["responses.guildStatsEmbed.Desc"]
-hash = "sha1-37ca45912b817dd95bd592ae4e571a59e5b7a21e"
-other = "{{.GuildName}}のギルド戦績"
-
-["responses.guildStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "ゲームのプレイ回数"
-
-["responses.guildStatsEmbed.GamesWonCrewmate"]
-hash = "sha1-ad1fccaba473e22ee14f56884dd6f74871f6248c"
-other = "Crewmateの勝率"
-
-["responses.guildStatsEmbed.GamesWonImposter"]
-hash = "sha1-3348526e29d2c7109ada17d2197940d3649205f6"
-other = "Imposterの勝率"
-
-["responses.guildStatsEmbed.ImposterWins"]
-hash = "sha1-87f5dbb7117a715ca858bf57ed3ccbde9ef1a17f"
-other = "Imposter勝率 ({{.Min}}ゲーム以上)"
-
-["responses.guildStatsEmbed.MostGames"]
-hash = "sha1-3ab443c23d4b5534c246b3e6098d5c75bdf46db3"
-other = "最多ゲーム数"
-
-["responses.guildStatsEmbed.NoPremium"]
-hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "AuteMuteUs Premium しか詳細情報は見れません！; `{{.CommandPrefix}} premium` で Premium について知ろう"
-
-["responses.guildStatsEmbed.Title"]
-hash = "sha1-eaa4f97e2b22d56cf4894b696cb15c27ba4bd449"
-other = "ギルド戦績"
-
-["responses.guildStatsEmbed.TotalWinrate"]
-hash = "sha1-cf0d3b04ef5176072c4b4f48b58284a365914dbb"
-other = "総合勝率 ({{.Min}}ゲーム以上)"
-
-["responses.helpResponse.SubTitle"]
-hash = "sha1-ca3fe9c1c1f7355172362669cf869db0aefee71a"
-other = "[GitHubプロジェクトを見る](https://github.com/denverquane/automuteus) か [私たちのDiscordに参加！](https://discord.gg/ZkqZSWF)\n\n`{{.CommandPrefix}} help <command>` でコマンドの詳細を表示！"
-
-["responses.helpResponse.Title"]
-hash = "sha1-a7893729be854467be1a5fef06cba4a8aee34695"
-other = "AutoMuteUs Bot コマンド一覧:\n"
-
-["responses.lobbyMessage.Footer.Text"]
-hash = "sha1-9450e3605a9a1b4d1b8bd5fa398e6931a96c69ed"
-other = "ゲーム内の色に合ったリアクションを押してね！ (それか {{.emojiLeave}} で退出)"
-
-["responses.lobbyMessage.Title"]
-hash = "sha1-fdb6d91a8e9a94a11080e7f1957fe30be1573771"
-other = "ロビー"
-
-["responses.lobbyMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
-
-["responses.lobbyMetaEmbedFields.Host"]
-hash = "sha1-3960ec4ca5fb5e5d8cdb2cc1c5121c003e426517"
-other = "ホスト"
-
-["responses.lobbyMetaEmbedFields.PlayersLinked"]
-hash = "sha1-f720f8ab85c654a071c55c272e5638125119378f"
-other = "連携されたプレイヤー"
-
-["responses.lobbyMetaEmbedFields.Region"]
-hash = "sha1-91c96b8b641be05056ab744d886859d01110c4bd"
-other = "🌎 リージョン"
-
-["responses.lobbyMetaEmbedFields.RoomCode"]
-hash = "sha1-4e15f9f3a5ba1dfd822f17f8680216d840edd52c"
-other = "🔒 部屋コード"
-
-["responses.lobbyMetaEmbedFields.VoiceChannel"]
-hash = "sha1-f32f308546b6f6c3b1d900a56f0ea32909f5d7b3"
-other = "ボイスチャンネル"
-
-["responses.makeDescription.GameNotRunning"]
-hash = "sha1-0a15d94ea1a3e7ff8fedb8b0a094d6807f2babc0"
-other = "\n⚠**中断されました！**⚠\n\n"
-
-["responses.matchStatsEmbed.Title"]
-hash = "sha1-018d94e33bc8b99cfada8f423b9ca1ab1fd66c97"
-other = "ゲーム `{{.MatchID}}`"
-
-["responses.menuMessage.Linked.FooterText"]
-hash = "sha1-c49c60b584892f36888a2a9fc0421e894ae03bc9"
-other = "(ゲームを開始するには、ロビーに参加してください)"
-
-["responses.menuMessage.Title"]
-hash = "sha1-758da7453531e2e02d91f2c47d4b1f99518c5eab"
-other = "メインメニュー"
-
-["responses.menuMessage.notLinked.Description"]
-hash = "sha1-c793feaae6edd89d8959e0c7dda58b5746f4e9e6"
-other = "❌**キャプチャされてません！ DMに送られたリンクをクリックしてください！**❌"
-
-["responses.nonPremiumSetting.Desc"]
-hash = "sha1-ecd2fe1c39d6db2da5e6aab2782d62302efdb0e1"
-other = "申し訳ありませんが、この設定は AuteMuteUs Premium 専用です！ `{{.CommandPrefix}} premium` で詳細を確認しましょう！"
-
-["responses.premiumInviteResponse.Title"]
-hash = "sha1-e537f34134926749225e31f93c2cc121cc4e23e0"
-other = "Premium BOTの招待"
-
-["responses.premiumInviteResponse.desc"]
-hash = "sha1-c9cbb8127c0c77dc6d0f457def92e46f83fc81c8"
-other = "{{.Tier}} ユーザーは {{.Count}}回 優先的なミュートBOTへのアクセスを受けられます！\n下記にご招待状を用意しました！"
-
-["responses.premiumInviteResponseNoAccess.desc"]
-hash = "sha1-33665cdc66b502fb7fd65259f99c314cfd8180e5"
-other = "{{.Tier}} ユーザーは優先的なミュートを受けられません！\n`{{.CommandPrefix}} premium` でAuteMuteUsのことをもっと知ろう"
-
-["responses.premiumResponse.FastMute"]
-hash = "sha1-ad0994ccd6d1a15e9ef4d3d26ef26f7c7f2be005"
-other = "🙊 高速ミュート/スピーカーミュート"
-
-["responses.premiumResponse.FastMuteDesc"]
-hash = "sha1-400c1b3cdd80556b1307921b57e567fd9c004d09"
-other = "Premium ユーザーはミュートを高速にできる \"helper\" ボットをお使いいただけます！"
-
-["responses.premiumResponse.FreeDescription"]
-hash = "sha1-2b17059d78e7444fcf43dc25b236a278cef7f91a"
-other = "プレミアムなAutoMuteUsがお届けするクールなサービスを是非チェックしてください！\n\n[AutoMuteUs Premiumに加入する]({{.BaseURL}}{{.GuildID}})"
-
-["responses.premiumResponse.Invites"]
-hash = "sha1-bbf29e5bbfdd6dbf877a08de926cc652a2987963"
-other = "`{{.CommandPrefix}} premium invites` で招待できるPremium BOTの一覧を見よう！"
-
-["responses.premiumResponse.PremiumDescription"]
-hash = "sha1-037f56c51f323fce233f3862423f98da97314466"
-other = "AutoMuteUs **{{.Tier}}**{{.DaysString}}をご利用のようです！サポートいただきありがとうございます！\n\nAutoMuteUs **{{.Tier}}**で使える特典は以下の通りです！"
-
-["responses.premiumResponse.PremiumDescriptionDaysRemaining"]
-hash = "sha1-f65aa5c43a7ebe1901c85300559ec6af58e36f12"
-other = " (残り{{.Days}}日)"
-
-["responses.premiumResponse.PremiumDescriptionExpired"]
-hash = "sha1-1e7db7ad1dbb32c8225d7245340255e6cdca45d3"
-other = "おおっと！AutoMuteUs **{{.Tier}}**をご利用いただいていましたが、*{{.Days}}日前に期限切れ**になってしまいました！\n\n再加入をご検討ください: [AutoMuteUs Premiumに加入する]({{.BaseURL}}{{.GuildID}})"
-
-["responses.premiumResponse.PriorityGameAccess"]
-hash = "sha1-67af9560e85df8432430f2434093910e58f41b28"
-other = "👑 優先的なゲームアクセス"
-
-["responses.premiumResponse.PriorityGameAccessDesc"]
-hash = "sha1-9b42956892e65576edb6cc2aa3bf6eef8eb6efa3"
-other = "BOTが高負荷になっても、Premium ユーザーはいつでも新しいゲームを開始できます！"
-
-["responses.premiumResponse.Settings"]
-hash = "sha1-8f2e3dbc7ea805faa7b03ed533abfcd504a1ab1a"
-other = "🛠 特別な設定"
-
-["responses.premiumResponse.SettingsDesc"]
-hash = "sha1-50f761e465fbcafc6caaa815ecd94c6fc7ee5bd5"
-other = "Premium ユーザーはゲーム終了時のステータスメッセージの表示やステータスメッセージの自動更新などの追加設定が可能になります！"
-
-["responses.premiumResponse.SettingsDescExtra"]
-hash = "sha1-1dd64197fb3f8cf44ea741afaea7dba308fd5b0a"
-other = "`{{.CommandPrefix}} settings`の中にある💎のついた設定を見てください！"
-
-["responses.premiumResponse.Stats"]
-hash = "sha1-790006f1ec07733eda3338ac22e046ef2b809421"
-other = "📊 ゲーム情報とリーダーボード"
-
-["responses.premiumResponse.StatsDesc"]
-hash = "sha1-ae7d71d8ca051a31d94d8f48b7e448c8e773eea4"
-other = "Premium ユーザーはプレイヤーやサーバーの全情報を見ることができます！"
-
-["responses.premiumResponse.Support"]
-hash = "sha1-af23e1d668669b533eb01655c121c807587e7fa2"
-other = "👂 Premium サポート"
-
-["responses.premiumResponse.SupportDesc"]
-hash = "sha1-66af605f1485951ab3d3e7a7762f2182f2c7f21b"
-other = "Premium ユーザーは公式Discordサーバーにて、プライベートチャンネルを見ることが可能になります！"
-
-["responses.premiumResponse.Title"]
-hash = "sha1-6d37fae74f6ac6d4f84b20e7457324b3d53d458b"
-other = "💎 AutoMuteUs Premium 💎"
-
-["responses.privacyResponse.Title"]
-hash = "sha1-c7ffd5c92085976d3ec361c3797b5650af65c8d1"
-other = "AutoMuteUs プライバシー"
-
-["responses.settingResponse.Description"]
-hash = "sha1-b1500b5f0777589709ee5d23d6c54800c4290ecc"
-other = "`{{.CommandPrefix}} settings <setting>` で、表示されている設定を変更することができます"
-
-["responses.settingResponse.PremiumNoThanks"]
-hash = "sha1-cf09261e1ecafab516c00d0084e0fd44be4b6695"
-other = "以下の設定は AutoMuteUs Premium 専用です。\n`{{.CommandPrefix}} premium` で詳細を確認しましょう！"
-
-["responses.settingResponse.PremiumThanks"]
-hash = "sha1-1dc5cf059d7d98df84c11ea83e87deab8db76379"
-other = "AutoMuteUs Premium に加入いただきありがとうございます！"
-
-["responses.settingResponse.Title"]
-hash = "sha1-c7f73bb54d928922c3838bb789ee9fb8a5b1eb37"
-other = "設定"
-
-["responses.stats.Exiled"]
-hash = "sha1-9aaaf1d18b0ce565996c7f64d7ee15d4fdd7ad78"
-other = "追放"
-
-["responses.stats.Games"]
-hash = "sha1-398ed329814977519b9f899253338884a2ba941f"
-other = "ゲーム"
-
-["responses.stats.Killed"]
-hash = "sha1-7dd49b4b7a22a444bcd77cd463769f0133031a95"
-other = ":knife:"
-
-["responses.stats.Lost"]
-hash = "sha1-75a7bf994e9ac1b9d14062213673cc0a85729869"
-other = "敗北"
-
-["responses.stats.Won"]
-hash = "sha1-b273fb28770817940a8c1ea6a33b69274996a898"
-other = "勝利"
-
-["responses.statsResponse.BotInfo"]
-hash = "sha1-2893c9505cbd88d912251acc98011b3876d99212"
-other = "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}"
-
-["responses.statsResponse.Creator"]
-hash = "sha1-817b79b0af2db11da9523bd5738397ebf823132b"
-other = "制作者"
-
-["responses.statsResponse.Donate"]
-hash = "sha1-6c2f2888c561e02a5e6f8c02b41144b531092c57"
-other = "Premium"
-
-["responses.statsResponse.Games"]
-hash = "sha1-3f726590fc019357b9e3f58755173e8012222cf7"
-other = "アクティブなゲーム数"
-
-["responses.statsResponse.Guilds"]
-hash = "sha1-bb386fdbe7c3a0e4de18babd50180bd84808e5aa"
-other = "ギルド"
-
-["responses.statsResponse.Invite"]
-hash = "sha1-b136609f068403340f94e46a0174da273bfbce30"
-other = "招待"
-
-["responses.statsResponse.Library"]
-hash = "sha1-b8100f5ba8bd048a7cf11d116fbbd73130c3c6f5"
-other = "ライブラリ"
-
-["responses.statsResponse.Title"]
-hash = "sha1-c15ed5bfc6743bab910a566808be2736508529a4"
-other = "Botの詳細"
-
-["responses.statsResponse.TotalGames"]
-hash = "sha1-7eb3e451fcc05160c8f8284c283ff370392d85c2"
-other = "総ゲーム回数"
-
-["responses.statsResponse.Users"]
-hash = "sha1-a028fce203b4622b1e4f2483988cdf6acd41ee5b"
-other = "総ユーザー数"
-
-["responses.statsResponse.Version"]
-hash = "sha1-2da600bf9404843107a9531694f654e5662959e0"
-other = "バージョン"
-
-["responses.statsResponse.Website"]
-hash = "sha1-2e8a57cc5c472f4ac3b071979a38e80db7e59e87"
-other = "ウェブサイト"
-
-["responses.userStatsEmbed.BestTeammateCrewmate"]
-hash = "sha1-a0f75956ca0b89889dd3ae1ffcd695c884799b9b"
-other = "一緒にCrewmateになると勝率が高いプレイヤー"
-
-["responses.userStatsEmbed.BestTeammateImpostor"]
-hash = "sha1-a626137727dac0d92a16dc42476bb69a56900d54"
-other = "一緒にImpostorになると勝率が高いプレイヤー"
-
-["responses.userStatsEmbed.BestTeammateServerCrewmate"]
-hash = "sha1-d6e2684497b992bea3c3c9c93fb40cdaabe5eaa8"
-other = "勝率が高いCrewmateのチーム"
-
-["responses.userStatsEmbed.BestTeammateServerImpostor"]
-hash = "sha1-9e67c5054fa1785229b90927c32e6e2979f2f611"
-other = "勝率が高いImpostorのチーム"
-
-["responses.userStatsEmbed.CrewmateWins"]
-hash = "sha1-c1eeee64d072481299c68fb865944c33b2486f9c"
-other = "Crewmateでの勝利数"
-
-["responses.userStatsEmbed.Desc"]
-hash = "sha1-fb93d4279964493f590ab9f5a7801d0f5e511b8e"
-other = "{{.User}}のユーザー戦績"
-
-["responses.userStatsEmbed.ExiledAsCrewmate"]
-hash = "sha1-3111532afc5cd985c2ac97782916cd3ab19aa85a"
-other = "Crewmateのときに追放された回数"
-
-["responses.userStatsEmbed.ExiledAsImpostor"]
-hash = "sha1-d24feb5a21aceb200a609b338a80ebef1ee518cc"
-other = "Impostorのときに追放された回数"
-
-["responses.userStatsEmbed.FavoriteColors"]
-hash = "sha1-f757b723272ad25cb44fe093b6acfa24d2d84d74"
-other = "好きな色"
-
-["responses.userStatsEmbed.FavoriteNames"]
-hash = "sha1-7c19b94819736be45f87577ee4d868b3179004a7"
-other = "好きな名前"
-
-["responses.userStatsEmbed.FrequentFirstTarget"]
-hash = "sha1-d467f306762ee223ced0c41fa1b7aee743cee9d1"
-other = "最初に殺された回数"
-
-["responses.userStatsEmbed.FrequentKilledBy"]
-hash = "sha1-061d26dedb745f128b7a52ffd54231e8026b766f"
-other = "Imposterが頻繁に殺すCrewmate"
-
-["responses.userStatsEmbed.GamesPlayed"]
-hash = "sha1-4df8057b71a1c4e40f1ec686270d597231315b0d"
-other = "プレイ回数"
-
-["responses.userStatsEmbed.ImposterWins"]
-hash = "sha1-3fed0f4bdf4ada1c2e4f71ffe03ceffcddca1a9b"
-other = "Impostorでの勝利数"
-
-["responses.userStatsEmbed.KilledAsCrewmate"]
-hash = "sha1-97d43e73fdff1e9be49235bb9eb0c20df19cc8e5"
-other = "Crewmateのときに殺された回数"
-
-["responses.userStatsEmbed.MostFrequentFirstTarget"]
-hash = "sha1-c06e5049d9006766de07ab13a90f9843bc863bc2"
-other = "最初によく殺されるCrewmate"
-
-["responses.userStatsEmbed.NoPremium"]
-hash = "sha1-d8ce22508bdbbf712905ef69e623e61f99556cfe"
-other = "AuteMuteUs Premium しか詳細情報は見れません！ `{{.CommandPrefix}} premium` で Premium について知ろう"
-
-["responses.userStatsEmbed.ServerPlayedInValue"]
-hash = "sha1-a96ffa3c21fe63478578d863ce886e89d2ade51e"
-other = "{{.Server}} サーバー"
-
-["responses.userStatsEmbed.ServersPlayedIn"]
-hash = "sha1-2b659e61e9d2c6a41b6d12e0df79733ccc12299a"
-other = "プレイしたサーバー数"
-
-["responses.userStatsEmbed.ServersPlayedInValue"]
-hash = "sha1-590e7f7cec75b3fbb8343f80b4fdfb961aee13e4"
-other = "{{.Servers}} サーバー"
-
-["responses.userStatsEmbed.Title"]
-hash = "sha1-9badffb5189f54876f3b1d8ce90305eb130e239c"
-other = "ユーザー戦績"
-
-["responses.userStatsEmbed.TotalWins"]
-hash = "sha1-f4c419e3e3f3df631d62827a5320ec2631d299d7"
-other = "勝利回数"
-
-["responses.userStatsEmbed.Winrate"]
-hash = "sha1-fcc546ffda0c19fe3a6ad6c52e8d2b15a050faf0"
-other = "勝率"
-
-["responses.userStatsEmbed.WorstTeammateCrewmate"]
-hash = "sha1-d8006597f81b2de25fd4098d4a7a4105c6a88c7a"
-other = "一緒にCrewmateになると勝率が低いプレイヤー"
-
-["responses.userStatsEmbed.WorstTeammateImpostor"]
-hash = "sha1-5eb3dfcbd2ca1bf7223b3eb13320d33267895210"
-other = "一緒にImpostorになると勝率が低いプレイヤー"
-
-["responses.userStatsEmbed.WorstTeammateServerCrewmate"]
-hash = "sha1-593fc44b887e40ff4afd9d2dd5cf953793097d9c"
-other = "勝率が低いCrewmateのチーム"
-
-["responses.userStatsEmbed.WorstTeammateServerImpostor"]
-hash = "sha1-156302a8857d0a6bd2dd1c712ae646e3f5ad2354"
-other = "勝率が低いImpostorのチーム"
-
-["settings.AllSettings.AdminUserIDs.args"]
-hash = "sha1-dffe28d46018eb2c886049040d92cf64b9dcbcfa"
-other = "<@Discord ユーザー>..."
-
-["settings.AllSettings.AdminUserIDs.desc"]
-hash = "sha1-05b24254d814b8ca5b9481ff8ff7b8032fe41a71"
-other = "Botを管理できるユーザーを指定"
-
-["settings.AllSettings.AdminUserIDs.shortDesc"]
-hash = "sha1-ac9313f3b7f02de3c75b1e5cd094814198ab82fa"
-other = "Botの管理者"
-
-["settings.AllSettings.AutoRefresh.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.AutoRefresh.desc"]
-hash = "sha1-28a8c20fe3e9909f72c3ec22ce79d40d90f8f8a4"
-other = "マッチ終了後、ステータスメッセージを自動更新するかどうかを指定します。"
-
-["settings.AllSettings.AutoRefresh.shortDesc"]
-hash = "sha1-688986b39f678f57ce90907ef39ab68a3a5db902"
-other = "自動更新されるステータスメッセージ"
-
-["settings.AllSettings.Delays.args"]
-hash = "sha1-8397196b66970d6d4e1679c985e75f158567ab74"
-other = "<移行前フェーズ> <移行後フェーズ> <遅延 [秒]>"
-
-["settings.AllSettings.Delays.desc"]
-hash = "sha1-f9f4ed748429472a2a80a093d708f64eee3d8fb8"
-other = "ロビー → タスク のような、ゲームのフェーズ間の自動ミュートの遅延を指定"
-
-["settings.AllSettings.Delays.shortDesc"]
-hash = "sha1-d33f38df156fa7676ba17c9ff1bae29ae55a8d88"
-other = "ステージ間の遅延調整"
-
-["settings.AllSettings.Language.args"]
-hash = "sha1-0f5997b334b60073b1f0ccb7b837cb1adc132e22"
-other = "<language> または reload"
-
-["settings.AllSettings.Language.desc"]
-hash = "sha1-db4ce94dbd9cd9463a64e6db844104df52991cab"
-other = "Botの言語を変更"
-
-["settings.AllSettings.Language.shortDesc"]
-hash = "sha1-8ffaa3277328d40e81ebf1b36b6c09d1cf716bb6"
-other = "Botの言語設定"
-
-["settings.AllSettings.LeaderboardMention.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false>"
-
-["settings.AllSettings.LeaderboardMention.desc"]
-hash = "sha1-d2f89611905cb78ba8f0cb93e9fca7b98c98ad15"
-other = "戦績表示でプレイヤー名をメンション付きで表示する。\n**大人数サーバーでは無効にしてください！**"
-
-["settings.AllSettings.LeaderboardMention.shortDesc"]
-hash = "sha1-905ebd9d56ed799fb55945976c45427595b043bc"
-other = "プレイヤー戦績表示でのメンション形式"
-
-["settings.AllSettings.LeaderboardMin.args"]
-hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
-other = "<回数>"
-
-["settings.AllSettings.LeaderboardMin.desc"]
-hash = "sha1-681c7ef0c003be2f66765eb77df38092dc55e3bd"
-other = "戦績に表示されるまでに必要な最少ゲーム回数"
-
-["settings.AllSettings.LeaderboardMin.shortDesc"]
-hash = "sha1-e01ca4a2251231aef2dd7ba30640c06626c4c81c"
-other = "戦績表示に必要な最小ゲーム回数"
-
-["settings.AllSettings.LeaderboardSize.args"]
-hash = "sha1-9f185784e519a91583063123893f4a215ade46e2"
-other = "<個数>"
-
-["settings.AllSettings.LeaderboardSize.desc"]
-hash = "sha1-311b5aed467bd4b697651b4d91671ab0ec821f96"
-other = "プレイヤー戦績表示の大きさを指定"
-
-["settings.AllSettings.LeaderboardSize.shortDesc"]
-hash = "sha1-5fa9ea41087103c1cae7679b9e5fce71eb4035bb"
-other = "プレイヤー戦績表示サイズ"
-
-["settings.AllSettings.MapVersion.args"]
-hash = "sha1-8ea52326f2448feb330c2ab9df601d4ddda13685"
-other = "<マップバージョン>"
-
-["settings.AllSettings.MapVersion.desc"]
-hash = "sha1-bfa12c4489320b2b7cadd355db7285bd926790c3"
-other = "'map' コマンドでデフォルトで使われるマップバージョン (simple, detailed) を指定"
-
-["settings.AllSettings.MapVersion.shortDesc"]
-hash = "sha1-b770af09f18798426fc81ad10e39cf14ac9090ad"
-other = "マップバージョン"
-
-["settings.AllSettings.MatchSummary.args"]
-hash = "sha1-e43bd32e20d628f793b8b15314ed938d74d56565"
-other = "<削除までの時間 [分]>"
-
-["settings.AllSettings.MatchSummary.desc"]
-hash = "sha1-bd285de3a118841b872c4b58baf24388c5384fb0"
-other = "マッチ終了後のメッセージが削除されるまでの時間を指定します。0で即削除され、-1で消えなくなります。"
-
-["settings.AllSettings.MatchSummary.shortDesc"]
-hash = "sha1-5099f472410435fb996091311c84ee8425d8bfe4"
-other = "マッチ終了後のメッセージ"
-
-["settings.AllSettings.MatchSummaryChannel.args"]
-hash = "sha1-59a1fd23c1b54e9c1c90e3a2fe4dda15c1f848df"
-other = "<テキストチャンネル>"
-
-["settings.AllSettings.MatchSummaryChannel.desc"]
-hash = "sha1-3d54b2b30c8f33278a70c415fd52d83cdd3f25c3"
-other = "マッチ終了後のメッセージを投稿するテキストチャンネルを指定"
-
-["settings.AllSettings.MatchSummaryChannel.shortDesc"]
-hash = "sha1-4eac650ab948a17e66a49b364aceb666a6d01da3"
-other = "マッチ終了後のメッセージ用のチャンネル"
-
-["settings.AllSettings.MuteSpectators.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false (有効/無効)>"
-
-["settings.AllSettings.MuteSpectators.desc"]
-hash = "sha1-6b5c5f2f2ef1b8c1326aa751aaaf5f885012c0ee"
-other = "観客を死んだプレイヤーと同じように扱うべきかどうか (音声ルールに従わせます)。\n**注: セルフホストしていない、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
-
-["settings.AllSettings.MuteSpectators.shortDesc"]
-hash = "sha1-96035c1d433b5f7b27abaf51353aac1a8e7ce7d2"
-other = "観客を死んだプレイヤーと同じようにミュートする"
-
-["settings.AllSettings.Prefix.args"]
-hash = "sha1-006d0b8335cfe8ce638598b913d9838b61523f5d"
-other = "<プレフィクス>"
-
-["settings.AllSettings.Prefix.desc"]
-hash = "sha1-1907c2d4f284e380724b482ca9e66cbc1c3ee48a"
-other = "Botが使用するプレフィクスを変更"
-
-["settings.AllSettings.Prefix.shortDesc"]
-hash = "sha1-169dfab53186565767d019f40c70e40c76c926f7"
-other = "Botのプレフィクス"
-
-["settings.AllSettings.Reset.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["settings.AllSettings.Reset.desc"]
-hash = "sha1-b0858b7e67c28b32ee3df5e4cfdd11ac10ae9f08"
-other = "BOTのすべての設定を初期値に戻します。"
-
-["settings.AllSettings.Reset.shortDesc"]
-hash = "sha1-e23a2187c16a55478b6b149e2a257eed7d1a4f5a"
-other = "BOTの設定をリセット"
-
-["settings.AllSettings.RoleIDs.args"]
-hash = "sha1-bdcd81e95b54a6233a9bf9508eed0295033b9883"
-other = "<@Discord ロール>..."
-
-["settings.AllSettings.RoleIDs.desc"]
-hash = "sha1-2b06d44e96e40b7a21499581148d9d173ee7b09a"
-other = "Botを呼び出す権限を持つ役職を設定"
-
-["settings.AllSettings.RoleIDs.shortDesc"]
-hash = "sha1-4eda3a9e37f5ac57e06648a4a532f357910c3bb0"
-other = "Botのオペレーター"
-
-["settings.AllSettings.Show.args"]
-hash = "sha1-6eef6648406c333a4035cd5e60d0bf2ecf2606d7"
-other = "無し"
-
-["settings.AllSettings.Show.desc"]
-hash = "sha1-3b12d7a707db17fbeb6909b5247f3241b3adb47b"
-other = "このサーバーの全部のBot設定を表示"
-
-["settings.AllSettings.Show.shortDesc"]
-hash = "sha1-73140f35573cf0de0a749935408825e3b9723ace"
-other = "全設定を表示"
-
-["settings.AllSettings.UnmuteDead.args"]
-hash = "sha1-33216b66ff7cd33ff9c82ece012055bdefd291ba"
-other = "<true/false (有効/無効)>"
-
-["settings.AllSettings.UnmuteDead.desc"]
-hash = "sha1-8fc14c07d4c566d59d230d15d2b2ae1e51f5dad1"
-other = "死亡したユーザーをミュートするかどうかを設定。**警告！ 死者から情報が漏れる可能性があります！**"
-
-["settings.AllSettings.UnmuteDead.shortDesc"]
-hash = "sha1-bb68a42e779c9eeabc57a5986fa31fd99414c4ae"
-other = "死者のミュート設定"
-
-["settings.AllSettings.VoiceRules.args"]
-hash = "sha1-9df9cceced36c997456e78c823167696f276e3f9"
-other = "<mute/deaf (ミュート/スピーカーミュート)> <ゲームフェーズ> <dead/alive (死者/生存者)> <true/false (有効/無効)>"
-
-["settings.AllSettings.VoiceRules.desc"]
-hash = "sha1-e563aab1c0f2943021f69e5ddfcc4394260ad34e"
-other = "ゲーム内フェーズに応じて、自動ミュートするかどうかを設定。例えば、タスクフェーズでは死者はミュートされる。"
-
-["settings.AllSettings.VoiceRules.shortDesc"]
-hash = "sha1-446a8c075113693fdef53eae652e2421a379234d"
-other = "自動ミュートのルール"
-
-["settings.CommandPrefixSetting.changes"]
-hash = "sha1-977f1b1a705d2ca4be58c6926525a5ac20149d7f"
-other = "Botのプレフィクスが `{{.From}}` から `{{.To}}` に変更されました。今後はそっちを使ってね！"
-
-["settings.CommandPrefixSetting.tooLong"]
-hash = "sha1-1d1c28ce80f6b0f6e78a80fb855e6f7169ee76bb"
-other = "申し訳ありませんが、`{{.CommandPrefix}}` は ({{.Length}} 文字です。(最高は 10 文字です) 短くしてください。"
-
-["settings.ConstructEmbedForSetting.Fields.Aliases"]
-hash = "sha1-6a8b49f23c0c2e66b347773e3a4bb453ff1fb91c"
-other = "エイリアス"
-
-["settings.ConstructEmbedForSetting.Fields.Arguments"]
-hash = "sha1-cbb9fa252e60809efa55a7ad83aea5438ef56753"
-other = "引数"
-
-["settings.ConstructEmbedForSetting.Fields.CurrentValue"]
-hash = "sha1-4f993153012bcfd6ad8c1c5076b9f0cdf207b16b"
-other = "現在の値"
-
-["settings.ConstructEmbedForSetting.Fields.Example"]
-hash = "sha1-0f01ed56a1e32a05e5ef96e4d779f34784af9a96"
-other = "例"
-
-["settings.ConstructEmbedForSetting.StarterDesc"]
-hash = "sha1-5585eb79654b961ffbe58ffb393bfe024f6376fc"
-other = "この設定を変更するには `{{.CommandPrefix}} settings {{.Command}}` と入力してください。\n\n"
-
-["settings.HandleSettingsCommand.default"]
-hash = "sha1-58916820550615810842b6f2a2cf4fc877a1d6c2"
-other = "申し訳ありませんが、`{{.Arg}}` は有効な設定ではありません！\n"
-
-["settings.SettingAdminUserIDs.clearAdmins"]
-hash = "sha1-6210b42a4b6f5798c4e383055151b9939da1c9be"
-other = "全ての AdminUserID を削除しました！"
-
-["settings.SettingAdminUserIDs.newBotAdmin"]
-hash = "sha1-17bf1e6f6d98ddd86ece1764a8efc634228fd274"
-other = "<@{{.UserID}}> がBotの管理者になりました！"
-
-["settings.SettingAdminUserIDs.noBotAdmins"]
-hash = "sha1-4757d4ca8e712a55d117301ee2aabd62662fef56"
-other = "Botの管理者はいません。"
-
-["settings.SettingAdminUserIDs.notFound"]
-hash = "sha1-0b1d109ceb615a68d9abf36a788a6224663d88b8"
-other = "申し訳ありませんが、`{{.UserName}}`が誰だかわかりません...\n ID、ユーザー名、`ユーザー名#XXXX`、ニックネーム、@メンション が使用可能です。"
-
-["settings.SettingAutoRefresh.False"]
-hash = "sha1-c4f661f7176ac5bcbc9f2eb7ef47af2575801328"
-other = "今後、ゲームのステータスメッセージを自動更新しないようにします。"
-
-["settings.SettingAutoRefresh.True"]
-hash = "sha1-b3e5138940abfd14605d7565f2807c5957c89c18"
-other = "今後、ゲームのステータスメッセージを自動更新するようにします。"
-
-["settings.SettingAutoRefresh.Unrecognized"]
-hash = "sha1-88baa5e8d65f55e54633affa7ce9348adf9e3bb6"
-other = "{{.Arg}} は true/false ではありません。 `{{.CommandPrefix}} settings autorefresh` で使い方を見よう"
-
-["settings.SettingDelays.Phase.UNINITIALIZED"]
-hash = "sha1-2a5224a34b3551a5c2f82aed65960a19206538d8"
-other = "申し訳ありませんが、 `{{.PhaseName}}` がわかりません。フェーズ名は `Lobby`、`Tasks`、`Discussion`である必要があります。"
-
-["settings.SettingDelays.delayBetweenPhases"]
-hash = "sha1-f781da1cb7b99fb8863e60549f8f2c7ffb67845f"
-other = "現在の `{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延は {{.OldDelay}} です。"
-
-["settings.SettingDelays.missingPhases"]
-hash = "sha1-c9df03d24906ca22e6e7c4bf3992e33558e0278f"
-other = "フェーズ一覧は `Lobby`、`Tasks`、`Discussion` です。\n遅延を変更するには、移行するフェーズと遅延を変更するフェーズの両方を入力する必要があります。"
-
-["settings.SettingDelays.setDelayBetweenPhases"]
-hash = "sha1-33523423751d6d31cd600cd93f80f551f408fbf3"
-other = "`{{.PhaseA}}` から `{{.PhaseB}}` への移行時の遅延が {{.OldDelay}} から {{.NewDelay}} に変更されました。"
-
-["settings.SettingDelays.wrongNumber"]
-hash = "sha1-6174db57aea459bfbe8f2b49296ca0a82c537f8f"
-other = "`{{.Number}}` は有効な数字ではありません！"
-
-["settings.SettingLanguage.list"]
-hash = "sha1-fec70cb2358769e4664af314c0a2d03260d4f466"
-other = "使用可能な言語: {{.Langs}}"
-
-["settings.SettingLanguage.notFound"]
-hash = "sha1-466f207f56c7b52ebd2291ef1c608e316a7e6305"
-other = "その言語は存在しません！ 有効な言語コードは: {{.Langs}}"
-
-["settings.SettingLanguage.notLoaded"]
-hash = "sha1-608c6bc909565031f35785ad29f01485d61dc371"
-other = "言語ファイルが読み込まれていません！ {{.Langs}}"
-
-["settings.SettingLanguage.reloaded"]
-hash = "sha1-83f9a2e46c32135d2189617361e8ef1b550283e4"
-other = "言語ファイルが再読み込みされました ({{.Count}})。 有効な言語コードは: {{.Langs}}"
-
-["settings.SettingLanguage.set"]
-hash = "sha1-2c0449452485e0066a21ab6f723f08820c2f1347"
-other = "言語が {{.LangName}} に設定されました。"
-
-["settings.SettingLanguage.tooShort"]
-hash = "sha1-5641e18d66138ce1009c74829c601c7d3ea81e00"
-other = "申し訳ありませんが、その言語コードは短すぎます。 有効な言語コードは: {{.Langs}}."
-
-["settings.SettingLeaderboardMention.False"]
-hash = "sha1-cea40d5b3e257428c5dcaa8dcfd2f8b8f2edb51a"
-other = "以降、戦績表示でプレイヤーのニックネーム/ユーザー名を使用します"
-
-["settings.SettingLeaderboardMention.True"]
-hash = "sha1-5d2c8e648214566acea958c0fc6d72d17a176663"
-other = "以降、戦績表示でプレイヤーのメンションを使用します"
-
-["settings.SettingLeaderboardMention.Unrecognized"]
-hash = "sha1-a24ce52ad5c465baf7e49a5a3434a425244de74a"
-other = "{{.Arg}} は true/false ではありません。 `{{.CommandPrefix}} settings leaderboardMention` で使い方を見よう"
-
-["settings.SettingLeaderboardMin.OutOfRange"]
-hash = "sha1-b0255e0834eddd8966547ca4b179e601b367be6c"
-other = "指定された数値は高すぎるか、低すぎます。[1-100]の間の数値を指定してください。"
-
-["settings.SettingLeaderboardMin.Success"]
-hash = "sha1-3045aeb741c8df08e58515a0c997b9724c2afc41"
-other = "以降、戦績表示には {{.Games}}ゲーム 以上の対象ゲームのあるプレイヤーのみを表示します"
-
-["settings.SettingLeaderboardMin.Unrecognized"]
-hash = "sha1-10fea8556a261535f0eefb0a5496cad74913c06c"
-other = "{{.Number}} は正しい数値ではありません。 `{{.CommandPrefix}} settings leaderboardMin` で使い方を見よう"
-
-["settings.SettingLeaderboardSize.OutOfRange"]
-hash = "sha1-f3b99335a054c7b474fbfb906aeb3a104fefb646"
-other = "指定された数値は高すぎるか、低すぎます。[1-10]の間の数値を指定してください。"
-
-["settings.SettingLeaderboardSize.Success"]
-hash = "sha1-9459023cdfd1de8eed146eee42fd5cfe32a6d3d9"
-other = "以降、戦績表示に {{.Players}}プレイヤー を表示します"
-
-["settings.SettingLeaderboardSize.Unrecognized"]
-hash = "sha1-186699935b429b84b8988d52ccbf753070461181"
-other = "{{.Number}} は正しい数値ではありません。 `{{.CommandPrefix}} settings leaderboardSize` で使い方を見よう"
-
-["settings.SettingMapVersion.Success"]
-hash = "sha1-1996ff9cfcb05cf54ea75d31a28182dd861cdb27"
-other = "以降、{{.Arg}} なマップを表示します"
-
-["settings.SettingMapVersion.Unrecognized"]
-hash = "sha1-6fa0d8105f1fd37052b01c912f70d18f1cb7f731"
-other = "マップバージョンに {{.Arg}} は存在しません。`{{.CommandPrefix}} settings mapversion` で使い方を確認してください"
-
-["settings.SettingMatchSummary.OutOfRange"]
-hash = "sha1-b6996f804f1fc4e59784621e2adaea8b88ceafb9"
-other = "指定された数値は高すぎるか、低すぎます。[0-60]の間の数値を指定するか、-1で削除されないようにしてください。"
-
-["settings.SettingMatchSummary.Success"]
-hash = "sha1-32a0eda9ca856cee12ede89ad46f35803cd0fb68"
-other = "今後は、{{.Minutes}} 分後にマッチ終了後のメッセージを削除するようにします。"
-
-["settings.SettingMatchSummary.Success-1"]
-hash = "sha1-6d710f38a479364512a9a0787674d4e05c1a33b4"
-other = "今後は、マッチ終了後のメッセージは絶対に削除しません。"
-
-["settings.SettingMatchSummary.Success0"]
-hash = "sha1-cca0192d2890122597dc6923fcdd84e03a91c057"
-other = "今後は、マッチ終了後のメッセージはすぐに削除するようにします。"
-
-["settings.SettingMatchSummary.Unrecognized"]
-hash = "sha1-15dbbdff49c219e8e202ee09c8d7ceaaa4987b87"
-other = "{{.Minutes}} は不正な数値です。`{{.CommandPrefix}} settings matchSummary`で使い方を見よう"
-
-["settings.SettingMatchSummaryChannel.withChannelName"]
-hash = "sha1-0d8730f30947020deca58dce63ef8a682bd1addf"
-other = "マッチ終了後のメッセージを投稿するチャンネルを `{{.channelName}}` に変更しました！"
-
-["settings.SettingMatchSummaryChannel.withoutChannelID"]
-hash = "sha1-e23db89c0645c4ec1ae21b5f59dbd193a68f0c6f"
-other = "`{{.channelName}}` というテキストチャンネルは見つかりませんでした！ チャンネル名、チャンネルIDが使用可能です。"
-
-["settings.SettingMuteSpectators.false_muteSpectators"]
-hash = "sha1-9c659ccece4b459f6c91514f2191d49d6181b95b"
-other = "観客を死んだプレイヤーと同じようにミュートしなくなります"
-
-["settings.SettingMuteSpectators.true_noMuteSpectators"]
-hash = "sha1-cb62081e4c9e37177e32ad916c63ef5ff4a812fe"
-other = "観客を死んだプレイヤーと同じようにミュートします。\n\n**注: セルフホストしていない、または Premium worker ボットを使用している場合、遅延や速度低下が発生する可能性があります！**"
-
-["settings.SettingPermissionRoleIDs.clearRoles"]
-hash = "sha1-8b572693dd1235a71fe16d7aa1d5069ab2cd54dd"
-other = "全ての PermissionRoleIDs を削除しました！"
-
-["settings.SettingPermissionRoleIDs.newBotAdmins"]
-hash = "sha1-f0f17309f39763ced0395da2f3795306f4212b50"
-other = "<@&{{.UserID}}> 等がBotの管理者になりました！"
-
-["settings.SettingPermissionRoleIDs.noRoleAdmins"]
-hash = "sha1-3cbcdd20fcb165e5c912a9b2bd968ba6e689f665"
-other = "Botの管理役職はありません。"
-
-["settings.SettingPermissionRoleIDs.notFound"]
-hash = "sha1-43146b232d32f670078e2906a99631b4c630b305"
-other = "申し訳ありませんが、`{{.RoleName}}` が何の役職なのか分かりません...。 役職ID、役職名、@役職メンション が使用可能です。"
-
-["settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead"]
-hash = "sha1-f0363ccb05ba9bca0bba9c06c13ae06c72c16fe3"
-other = "既に false です！"
-
-["settings.SettingUnmuteDeadDuringTasks.false_unmuteDead"]
-hash = "sha1-9dae9b60fb3768cc33ae910484e9d93a269fb270"
-other = "死者のミュートをすぐには解除しないようにします。**いいセンスだ！**"
-
-["settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "既に true です！"
-
-["settings.SettingUnmuteDeadDuringTasks.true_unmuteDead"]
-hash = "sha1-5f2abe2b58a6c46f786cfaa5e2b60aed19edfb6d"
-other = "既に true です！"
-
-["settings.SettingUnmuteDeadDuringTasks.wrongArg"]
-hash = "sha1-6044b6f4ad0f06ce07b388deb0f6923284230ead"
-other = "申し訳ありませんが、 `{{.Arg}}` は `true` でも `false` でもありません。"
-
-["settings.SettingVoiceRules.NA"]
-hash = "sha1-08d2e98e6754af941484848930ccbaddfefe13d6"
-other = "N/A"
-
-["settings.SettingVoiceRules.Phase.UNINITIALIZED"]
-hash = "sha1-9518ab8f6582f9b3b12dd809b555799bf27dda39"
-other = "{{.PhaseName}} がわかりません。 フェーズ名は `Lobby`、`Tasks`、`Discussion`です。"
-
-["settings.SettingVoiceRules.enoughArgs"]
-hash = "sha1-6ba35611a017e667fbbcff76abf1a0bb05986024"
-other = "十分な引数を渡していません！正しい引数はこちらです: `voiceRules [mute/deaf] [game phase] [alive/dead] [true/false]`"
-
-["settings.SettingVoiceRules.neitherAliveDead"]
-hash = "sha1-1a72109ec34d9845c700219846732b1d6c6abc55"
-other = "`{{.Arg}}` は `alive` か `dead` のどちらかである必要があります！"
-
-["settings.SettingVoiceRules.neitherMuteDeaf"]
-hash = "sha1-9367048cd4a237b946a645d26abd7622f76c7ac4"
-other = "`{{.Arg}}` は `mute` でも `deaf` のどちらでもありません！"
-
-["settings.SettingVoiceRules.neitherTrueFalse"]
-hash = "sha1-395bb8b4bcac41f794967ad78c03f5d66fbcffdf"
-other = "`{{.Arg}}` は `true` でも `false` のどちらでもありません！"
-
-["settings.SettingVoiceRules.queryingAlreadyUnValues"]
-hash = "sha1-97c44532b1c4aa7f0e891f8de533b27dd704b13a"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは既に {{.PlayerDiscordState}} を解除しています！"
-
-["settings.SettingVoiceRules.queryingAlreadyValues"]
-hash = "sha1-f6c4a62c73b7fadcf718e6e44a1bff82c2bd2c6e"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは既に {{.PlayerDiscordState}} になっています！"
-
-["settings.SettingVoiceRules.queryingCurrentlyOldValues"]
-hash = "sha1-c40d8588b565a03cc83d0b65dbfdd1b62580a419"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは現在 {{.PlayerDiscordState}} になっています。"
-
-["settings.SettingVoiceRules.queryingCurrentlyValues"]
-hash = "sha1-82e10cfb7c7611a53522fc983f0f908833624b0b"
-other = "`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} ではありません。"
-
-["settings.SettingVoiceRules.setUnValues"]
-hash = "sha1-56ebcc3a892c983330d7aedd1a5724bc0a851785"
-other = "今後、`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} ではならなくなります。"
-
-["settings.SettingVoiceRules.setValues"]
-hash = "sha1-3bef2ba77799f9ce23dc695aed08adea253bd971"
-other = "今後、`{{.PhaseName}}` フェーズの際、 {{.PlayerGameState}} のプレイヤーは {{.PlayerDiscordState}} になります。"
-
-["state.phase.DISCUSSION"]
-hash = "sha1-8826972f7b0130b0c080cd63df86ffadab681dc2"
-other = "DISCUSSION"
-
-["state.phase.GAMEOVER"]
-hash = "sha1-b1de5c6aaf19873a2e5efc28b9e72fc3e6311c88"
-other = "GAME OVER"
-
-["state.phase.LOBBY"]
-hash = "sha1-658c6353d3a9cf4d298b0ecdb88b40d6eda8dbfc"
-other = "LOBBY"
-
-["state.phase.MENU"]
-hash = "sha1-c8910b26f57214f5755dc74b2ca3ca1c721de675"
-other = "MENU"
-
-["state.phase.TASKS"]
-hash = "sha1-48138eaada0db4248f7c6b4281cd45d0c1fa4c15"
-other = "TASKS"
+"commands.deadlock" = "コマンド {{.Command}} に必要なゲームの状態を取得できませんでした。もう一度やり直してください。"
+"commands.debug.clear.error" = "デバッグ情報の消去中にエラーが発生しました： {{.Error}}"
+"commands.debug.clear.user.success" = "{{.User}} のキャッシュ済みユーザー名を消去しました"
+"commands.debug.view.error" = "デバッグ情報の表示中にエラーが発生しました： {{.Error}}"
+"commands.debug.view.user.empty" = "{{.User}} のキャッシュ済みユーザー名はありません"
+"commands.debug.view.user.success" = "{{.User}} のキャッシュ済みユーザー名は以下の通りです：\\n```\\n{{.Cached}}\\n```"
+"commands.dm" = "ごめんなさい、DM には応答していません。コマンドはテキストチャンネルで実行してください。"
+"commands.error" = "コマンド `{{.Command}}` の実行中にエラーが発生しました： `{{.Error}}`"
+"commands.error.nogame" = "現在実行されているゲームはありません"
+"commands.error.reinvite" = "このサーバーかチャンネルに必要な権限が不足しています：\\n```\\n{{.Perm}}```\\nテキスト / ボイスチャンネル {{.Channel}} の権限を確認してください。または、ボットを [こちら](https://add.automute.us) から再招待してください。"
+"commands.help.subtitle" = "[GitHub のプロジェクトを開く](https://github.com/automuteus/automuteus) / [AutoMuteUs の Discord に参加する](https://discord.gg/ZkqZSWF)\\n\\n`/help <コマンド名>` で各コマンドの詳細を確認できます！"
+"commands.help.title" = "AutoMuteUs Botコマンド:\\n"
+"commands.info.activegames" = "アクティブなゲーム"
+"commands.info.creator" = "作成者"
+"commands.info.footer" = "v{{.Version}}-{{.Commit}} | シャード {{.ID}}/{{.Num}}"
+"commands.info.guilds" = "Guild"
+"commands.info.invite" = "招待"
+"commands.info.library" = "ライブラリ"
+"commands.info.premium" = "プレミアム"
+"commands.info.title" = "Bot Info"
+"commands.info.totalgames" = "ゲームの合計"
+"commands.info.totalusers" = "合計ユーザー"
+"commands.info.version" = "バージョン"
+"commands.info.website" = "ウェブサイト"
+"commands.link.nogamedata" = "色が `{{.Color}}` のプレイヤーが見つかりませんでした。"
+"commands.link.noplayer" = "現在のゲームに {{.UserMention}} に該当するプレイヤーはいませんでした。"
+"commands.link.success" = "{{.UserMention}} を色が `{{.Color}} のプレイヤーにリンクしました"
+"commands.new.lockout" = "これ以上ゲームを始めると、Discord にロックアウトされたり、実行中のゲームが制限されてしまいます！ 😦\\n数分後にもう一度試すか、AutoMuteUs プレミアム（`/premium`）を検討してください。\\n現在のゲーム数： {{.Games}}"
+"commands.new.nochannel" = "ゲームを開始する前に、ボイスチャンネルに参加してください！"
+"commands.new.success" = "このリンクをクリックしてキャプチャ開始：\\n <{{.hyperlink}}>\\n\\nキャプチャソフトを入れてない？ 最新版は [こちら！]({{.downloadURL}})\\n\\n手動でキャプチャするなら："
+"commands.new.success.code" = "コード"
+"commands.new.success.url" = "URL"
+"commands.no_permissions" = "ごめんなさい、あなたはそのコマンドを実行する権限を持っていないようです。"
+"commands.privacy.info" = "AutoMuteUsプライバシーとデータ収集の詳細情報\\n詳細情報 [here](https://github.com/automatuteus/automatuteus/blob/master/PRIVACY.md)"
+"commands.privacy.opt.error" = "❌オプトイン / アウトの設定を変更する際にエラーが発生しました：\\n`{{.Error}}"
+"commands.privacy.opt.success" = "✅オプトイン / アウトの設定を変更しました"
+"commands.privacy.showme.cache" = "❗あなたのキャッシュ済みユーザ名は次のとおりです。"
+"commands.privacy.showme.nocache" = "❌あなたのプレーヤー名はキャッシュされていません！"
+"commands.privacy.showme.optin" = "❗あなたはゲーム統計のためのデータ収集にオプト **イン** しています。"
+"commands.privacy.showme.optout" = "❌ あなたはゲーム統計のためのデータ収集をオプト **アウト** している、またはまだゲームをプレイしていません。"
+"commands.stats.guild.reset.error" = "このギルドの統計情報をリセット中にエラーが発生しました： {{.Error}}"
+"commands.stats.guild.reset.success" = "ギルドの統計をリセットしました！"
+"commands.stats.user.reset.error" = "{{.User}} の統計をリセット中にエラーが発生しました： {{.Error}}"
+"commands.stats.user.reset.success" = "{{.User}} の統計をリセットしました！"
+"commands.unlink.noplayer" = "現在のゲームに {{.UserMention}} に該当するプレイヤーはいませんでした。"
+"commands.unlink.success" = "{{.UserMention}} のリンクを解除しました"
+"discordGameState.ToEmojiEmbedFields.Unlinked" = "未リンク"
+"eventHandler.gameOver.deleteMessageFooter" = "このメッセージは {{.Mins}} 分後に削除されます。"
+"eventHandler.gameOver.matchID" = "ゲーム終了！ 次のマッチ ID を使用してこの試合の統計情報を表示できます： `{{.MatchID}}`\\n{{.Winners}}"
+"processplayer.error" = "{{.User}} のミュートまたはスピーカーミュート中にエラーが発生しました。{{.VoiceChannel}} でミュート / スピーカーミュートの権限がボットにあることを確認してください。"
+"responses.gameStatsEmbed.NoPremium" = "試合ごとの詳細な統計は AutoMuteUs プレミアムのユーザーのみ利用できます。詳細は `/premium` を入力してください。"
+"responses.guildStatsEmbed.CrewmateWins" = "クルーメイト勝率（{{.Min}} ゲーム以上）"
+"responses.guildStatsEmbed.Desc" = "{{.GuildName}} のギルド統計"
+"responses.guildStatsEmbed.GamesPlayed" = "ゲームのプレイ回数"
+"responses.guildStatsEmbed.GamesWonCrewmate" = "クルーメイト勝率"
+"responses.guildStatsEmbed.GamesWonImposter" = "インポスター勝率"
+"responses.guildStatsEmbed.ImposterWins" = "インポスター勝率（{{.Min}} ゲーム以上）"
+"responses.guildStatsEmbed.MostGames" = "プレイ回数"
+"responses.guildStatsEmbed.NoPremium" = "詳細な統計は AutoMuteUs プレミアムのユーザーのみ利用できます。詳細は `/premium` を入力してください。"
+"responses.guildStatsEmbed.Title" = "ギルド統計"
+"responses.guildStatsEmbed.TotalWinrate" = "合計勝率（{{.Min}} ゲーム以上）"
+"responses.lobbyMessage.Footer.Text" = "ゲームで使用する色を以下から選択してください！（または {{.X}} を選択して解除）"
+"responses.lobbyMessage.Title" = "ロビー"
+"responses.lobbyMessage.notLinked.Description" = "❌**キャプチャがリンクされていません！ 上のメッセージ中のリンクをクリックしてキャプチャを開始してください！**❌"
+"responses.lobbyMetaEmbedFields.Host" = "ホスト"
+"responses.lobbyMetaEmbedFields.PlayersLinked" = "リンク済みプレイヤー"
+"responses.lobbyMetaEmbedFields.Region" = "🌎 エリア"
+"responses.lobbyMetaEmbedFields.RoomCode" = "🔒 ルームコード"
+"responses.lobbyMetaEmbedFields.VoiceChannel" = "ボイスチャンネル"
+"responses.makeDescription.GameNotRunning" = "\\n⚠ **ボットは一時停止中！** ⚠\\n\\n"
+"responses.menuMessage.Linked.FooterText" = "（ゲームを開始するには、ロビーに参加してください）"
+"responses.menuMessage.Title" = "メインメニュー"
+"responses.menuMessage.notLinked.Description" = "❌**キャプチャがリンクされていません！ 上のメッセージ中のリンクをクリックしてキャプチャを開始してください！**❌"
+"responses.nonPremiumSetting.Desc" = "ごめんなさい、この設定は AutoMuteUs プレミアムのユーザー専用です！詳細は `/premium` を参照してください。"
+"responses.premiumInviteResponse.Title" = "プレミアムボットの招待"
+"responses.premiumInviteResponse.desc" = "{{.Tier}} のユーザーは {{.Count}} 個の優先ミュートボットを利用できます！ 招待用リンクは以下です！"
+"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} のユーザーは優先ミュートボットにアクセスできません！\\nAutoMuteUs プレミアムの詳細を確認するには、`/premium` と入力してください。"
+"responses.premiumResponse.FastMute" = "🙊 高速なミュート / スピーカーミュート"
+"responses.premiumResponse.FastMuteDesc" = "プレミアムのユーザーは、ミュートを高速化するヘルパーボットを利用できます！"
+"responses.premiumResponse.FreeDescription" = "AutoMuteUs プレミアムでは次のすばらしい機能が使えます！\\n\\n[AutoMuteUs プレミアムに加入する]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.Invites" = "`/premium invites` で招待できるプレミアムボットのリストを表示します。"
+"responses.premiumResponse.PremiumDescription" = "AutoMuteUs の **{{.Tier}}** を利用しているようです！ {{.DaysString}}ご利用ありがとうございます！\\n\\nプレミアムユーザーは以下の特典が利用できます！"
+"responses.premiumResponse.PremiumDescriptionDaysRemaining" = "残り日数は {{.Days}} 日です。"
+"responses.premiumResponse.PremiumDescriptionExpired" = "AutoMuteUs **{{.Tier}}** を利用いただいていましたが、残念ながら **{{.Days}} 日前に期限切れ** になってしまいました！😦\\n\\n次のリンクから再度加入できます： [AutoMuteUs プレミアムに加入]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.PriorityGameAccess" = "👑 優先ゲームアクセス"
+"responses.premiumResponse.PriorityGameAccessDesc" = "ボットの負荷が高くても、プレミアムユーザーはいつでも新しいゲームを開始できます！"
+"responses.premiumResponse.Settings" = "🛠 特別な設定"
+"responses.premiumResponse.SettingsDesc" = "プレミアムユーザーは、ゲーム終了時のメッセージやステータスメッセージの自動更新など、追加の設定を利用できます。"
+"responses.premiumResponse.SettingsDescExtra" = "`/settings list` 配下にある💎マークの設定を確認してください！"
+"responses.premiumResponse.Stats" = "📊 ゲームの統計とリーダーボード"
+"responses.premiumResponse.StatsDesc" = "プレミアムユーザーは、フル機能のゲームの統計とリーダーボードを利用できます！"
+"responses.premiumResponse.Title" = "💎 AutoMuteUs プレミアム 💎"
+"responses.settingResponse.Description" = "以下の設定を変更するには、`/settings <設定名>` を入力してください。"
+"responses.settingResponse.PremiumNoThanks" = "以下の設定は、AutoMuteUs プレミアムのユーザー専用です。\\n詳しくは `/premium` と入力してください。"
+"responses.settingResponse.PremiumThanks" = "AutoMuteUs プレミアムをご利用いただきありがとうございます！"
+"responses.settingResponse.Title" = "設定"
+"responses.stats.Exiled" = "追放されました"
+"responses.stats.Games" = "ゲーム"
+"responses.stats.Killed" = ":knife:"
+"responses.stats.Lost" = "敗"
+"responses.stats.Won" = "勝"
+"responses.userStatsEmbed.BestTeammateCrewmate" = "一緒に組むと勝率の高いクルーメイト"
+"responses.userStatsEmbed.BestTeammateImpostor" = "一緒に組むと勝率の高いインポスター"
+"responses.userStatsEmbed.BestTeammateServerCrewmate" = "勝率の高いクルーメイトチーム"
+"responses.userStatsEmbed.BestTeammateServerImpostor" = "勝率の高いインポスターチーム"
+"responses.userStatsEmbed.CrewmateWins" = "クルーメイト勝利数"
+"responses.userStatsEmbed.Desc" = "{{.User}} のユーザー統計"
+"responses.userStatsEmbed.ExiledAsCrewmate" = "クルーメイトの時に追放された回数"
+"responses.userStatsEmbed.ExiledAsImpostor" = "インポスターの時に追放された回数"
+"responses.userStatsEmbed.FavoriteColors" = "好きな色"
+"responses.userStatsEmbed.FavoriteNames" = "好きな名前"
+"responses.userStatsEmbed.FrequentFirstTarget" = "よく最初に狙うターゲット"
+"responses.userStatsEmbed.FrequentKilledBy" = "よくキルされる相手"
+"responses.userStatsEmbed.GamesPlayed" = "ゲームのプレイ回数"
+"responses.userStatsEmbed.ImposterWins" = "インポスター勝率"
+"responses.userStatsEmbed.KilledAsCrewmate" = "クルーメイトの時にキルされた回数"
+"responses.userStatsEmbed.MostFrequentFirstTarget" = "よく最初に狙うターゲット"
+"responses.userStatsEmbed.NoPremium" = "詳細な統計は AutoMuteUs プレミアムのユーザーのみ利用できます。詳細は `/premium` を入力してください。"
+"responses.userStatsEmbed.ServerPlayedInValue" = "{{.Server}} サーバー"
+"responses.userStatsEmbed.ServersPlayedIn" = "プレイしたサーバーの数"
+"responses.userStatsEmbed.ServersPlayedInValue" = "{{.Servers}} サーバー"
+"responses.userStatsEmbed.Title" = "ユーザー統計"
+"responses.userStatsEmbed.TotalWins" = "合計勝利数"
+"responses.userStatsEmbed.Winrate" = "勝率"
+"responses.userStatsEmbed.WorstTeammateCrewmate" = "一緒に組むと勝率の低いクルーメイト"
+"responses.userStatsEmbed.WorstTeammateImpostor" = "一緒に組むと勝率の低いインポスター"
+"responses.userStatsEmbed.WorstTeammateServerCrewmate" = "勝率の低いクルーメイトチーム"
+"responses.userStatsEmbed.WorstTeammateServerImpostor" = "勝率の低いインポスターチーム"
+"settings.ConstructEmbedForSetting.Fields.CurrentValue" = "現在の値"
+"settings.ConstructEmbedForSetting.StarterDesc" = "この設定を表示または変更するには、`/settings {{.Command}}` と入力してください。\\n\\n"
+"settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} はすでにボットの管理者です！"
+"settings.SettingAdminUserIDs.clearAdmins" = "管理者の設定をリセットしました！"
+"settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} はボットの管理者になりました！"
+"settings.SettingAdminUserIDs.noBotAdmins" = "ボットの管理者は設定されていません"
+"settings.SettingAdminUserIDs.notFound" = "ごめんなさい、`{{.UserName}}`を特定できません。ユーザー ID か @<ユーザー名> で指定できます。"
+"settings.SettingAutoRefresh.False" = "以降、ステータスメッセージは自動更新されません。"
+"settings.SettingAutoRefresh.Noop" = "ステータスメッセージの自動更新はすでに `{{.Value}}` に設定されています。"
+"settings.SettingAutoRefresh.True" = "以降、ステータスメッセージは自動更新されます。"
+"settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} は True または False ではありません。使用方法は `/settings auto-refresh` を参照してください。"
+"settings.SettingDelays.Phase.UNINITIALIZED" = "フェーズ名 `{{.PhaseName}}` が正しくありません。フェーズは `LOBBY`、`TASKS`、`DISCUSSION` のいずれかです。"
+"settings.SettingDelays.delayBetweenPhases" = "`{{.PhaseA}}` から `{{.PhaseB}}` に遷移するときの遅延は、現在 {{.OldDelay}} 秒です。"
+"settings.SettingDelays.missingPhases" = "フェーズは、`LOBBY`、`TASKS`、`DISCUSSION` のいずれかです。\\n遅延を変更するには、遷移前と遷移後の両方のフェーズを入力する必要があります。"
+"settings.SettingDelays.setDelayBetweenPhases" = "`{{.PhaseA}}` から `{{.PhaseB}}` に遷移するときの遅延を、{{.OldDelay}} 秒から {{.NewDelay}} 秒に変更しました。"
+"settings.SettingDelays.wrongNumber" = "`{{.Number}}` は有効な数字ではありません！ もう一度やり直してください"
+"settings.SettingDisplayRoomCode.AlwaysOrNever" = "以降、ステータスメッセージ中のルームコードの表示モードは {{.Arg}} です。"
+"settings.SettingDisplayRoomCode.Spoiler" = " 以降、ステータスメッセージ中のルームコードはネタバレ防止でマスクされます。"
+"settings.SettingDisplayRoomCode.Unrecognized" = "{{.Arg}} は期待される値ではありません。使用方法は `/settings display-room-code` を参照してください。"
+"settings.SettingLanguage.notFound" = "言語が見つかりません！ 利用可能な言語コード： {{.Langs}}"
+"settings.SettingLanguage.notLoaded" = "言語ファイルが読み込まれませんでした！ {{.Langs}}"
+"settings.SettingLanguage.set" = "言語が `{{.LangCode}} ` に設定されました"
+"settings.SettingLanguage.set.needsTranslations" = "言語が `{{.LangCode}}` に設定されましたが、翻訳が充分ではないようです！\\n\\nボットの翻訳に [こちら](https://automateus.crowdin.com/) からご協力ください ！"
+"settings.SettingLanguage.tooShort" = "言語コードが短すぎるようです。利用できる言語コード： {{.Langs}}"
+"settings.SettingLeaderboardMention.False" = "以降、リーダーボードにはプレイヤーのニックネームを利用します。"
+"settings.SettingLeaderboardMention.True" = "以降、リーダーボードにはユーザーへのメンションを利用します。"
+"settings.SettingLeaderboardMin.OutOfRange" = "数値が大きすぎるか小さすぎます。[1-100] の間の数値を指定してください。"
+"settings.SettingLeaderboardMin.Success" = "以降、{{.Games}} 試合以上の結果を持つプレイヤーだけがリーダーボードに表示されます"
+"settings.SettingLeaderboardMin.Unrecognized" = "{{.Number}} は有効な数値ではありません。使用方法は `/settings leadboard-min` を参照してください。"
+"settings.SettingLeaderboardSize.OutOfRange" = "数値が大きすぎるか小さすぎます。[1-10] の間の数値を指定してください。"
+"settings.SettingLeaderboardSize.Success" = "以降、リーダーボードには上位 {{.Players}} 人の情報を表示します。"
+"settings.SettingLeaderboardSize.Unrecognized" = "{{.Number}} は有効な数値ではありません。使用方法は `/settings leaderboard-size` を参照してください。"
+"settings.SettingMapVersion.Success" = "以降、マップの詳細表示モードは `{{.Arg}}` です。"
+"settings.SettingMatchSummary.OutOfRange" = "数値が大きすぎるか小さすぎます。[0-60] の間の数値か、または試合結果を消されなくするには -1 を指定してください。"
+"settings.SettingMatchSummary.Success" = "以降、試合結果は表示後 {{.Minutes}} 分で削除されます。"
+"settings.SettingMatchSummary.Success-1" = "以降、試合結果は削除されずに残ります。"
+"settings.SettingMatchSummary.Success0" = "以降、試合結果はすぐに削除されます。"
+"settings.SettingMatchSummary.Unrecognized" = "{{.Minutes}} は有効な数値ではありません。使用方法は `/settings match-summary` を参照してください。"
+"settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} は有効なテキストチャンネルの ID またはメンションではありません！"
+"settings.SettingMatchSummaryChannel.withChannelID" = "試合結果を投稿するテキストチャンネル ID を {{.channelID}} に変更しました！"
+"settings.SettingMuteSpectators.false_muteSpectators" = "以降、観戦者は自動ではミュートされません。"
+"settings.SettingMuteSpectators.true_noMuteSpectators" = "以降、観戦者は死者と同様に自動でミュートされます。\\n**セルフホスティングやプレミアムワーカーボットを使用していない場合、自動ミュートの遅延を引き起こす可能性がありますのでご注意ください！**"
+"settings.SettingPermissionRoleIDs.alreadyBotOperator" = "指定されたロールはすでにボットのオペレータに設定されています！"
+"settings.SettingPermissionRoleIDs.clearRoles" = "オペレータの設定をリセットしました！"
+"settings.SettingPermissionRoleIDs.newBotOperator" = "指定されたロールをボットオペレーターとして追加しました！"
+"settings.SettingPermissionRoleIDs.noRoleAdmins" = "ボットのオペレータは設定されていません。"
+"settings.SettingPermissionRoleIDs.notFound" = "ごめんなさい、指定されたロールを特定できませんでした。"
+"settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead" = "すでに `False` に設定されています！"
+"settings.SettingUnmuteDeadDuringTasks.false_unmuteDead" = "以降、キルされたプレイヤーを直ちにアンミュートする機能は無効化されます。よい判断ですね！"
+"settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead" = "以降、キルされたプレイヤーはキル直後にアンミュートされます。ゲーム中に死亡した人がすぐわかってしまうので注意してください。"
+"settings.SettingUnmuteDeadDuringTasks.true_unmuteDead" = "すでに `True` に設定されています！"
+"settings.SettingUnmuteDeadDuringTasks.wrongArg" = "`{{.Arg}}` は `True` でも `False` でもありません。"
+"settings.SettingVoiceRules.Phase.UNINITIALIZED" = "フェーズ名 `{{.PhaseName}}` が正しくありません。フェーズは `LOBBY`、`TASKS`、`DISCUSSION` のいずれかです。"
+"settings.SettingVoiceRules.enoughArgs" = "パラメータが不足しています！ 正しい指定方法：`/settings voice-rules deaf-or-muted:[muted/deafened] phase:[フェーズ名] alive:[alive/dead] value:[True/False]`"
+"settings.SettingVoiceRules.neitherAliveDead" = "`{{.Arg}}` は `alive` でも `dead` でもないようです！"
+"settings.SettingVoiceRules.queryingAlreadyUnValues" = "フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーの設定は、すでに un{{.PlayerDiscordState}} です！"
+"settings.SettingVoiceRules.queryingAlreadyValues" = "フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーの設定は、すでに {{.PlayerDiscordState}} です！"
+"settings.SettingVoiceRules.queryingCurrentlyOldValues" = "フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーの設定は、現在は {{.PlayerDiscordState}} です。"
+"settings.SettingVoiceRules.queryingCurrentlyValues" = "フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーの設定は、現在は un{{.PlayerDiscordState}} です。"
+"settings.SettingVoiceRules.setUnValues" = "以降、フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーは、un{{.PlayerDiscordState}} に設定されます。"
+"settings.SettingVoiceRules.setValues" = "以降、フェーズ `{{.PhaseName}}` で状態が {{.PlayerGameState}} のプレイヤーは、{{.PlayerDiscordState}} に設定されます。"
+"softban.ignoring" = "5 分間、あなたからの操作は受け付けません。連投をやめてください。"
+"softban.warning" = "コマンド連打はお控えください。"
+"state.phase.DISCUSSION" = "緊急会議"
+"state.phase.GAMEOVER" = "ゲーム終了"
+"state.phase.LOBBY" = "ロビー"
+"state.phase.MENU" = "メニュー"
+"state.phase.TASKS" = "タスク"

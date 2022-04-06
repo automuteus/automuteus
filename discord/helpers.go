@@ -76,7 +76,7 @@ func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, 
 	me := discordgo.NewMessageEdit(channelID, messageID).SetEmbed(message)
 	msg, err := s.ChannelMessageEditComplex(me)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error when attempting to edit complex message", err)
 	}
 	return msg
 }

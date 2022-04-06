@@ -47,7 +47,6 @@
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "Unlinked"
 "eventHandler.gameOver.deleteMessageFooter" = "Deleting message {{.Mins}} mins from:"
 "eventHandler.gameOver.matchID" = "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\\n{{.Winners}}"
-"message_handlers.useslashcommands" = "Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!\\n\\nFor example, try `/help`, `/new`, etc.\\n\\nIf you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"
 "processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
 "responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
 "responses.guildStatsEmbed.CrewmateWins" = "Crewmate Winrate ({{.Min}}+ Games)"
@@ -77,7 +76,7 @@
 "responses.premiumInviteResponse.desc" = "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!"
 "responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
 "responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
-"responses.premiumResponse.FastMuteDesc" = "Premium users get access to \"helper\" bots that make sure muting is fast!"
+"responses.premiumResponse.FastMuteDesc" = 'Premium users get access to "helper" bots that make sure muting is fast!'
 "responses.premiumResponse.FreeDescription" = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 "responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
 "responses.premiumResponse.PremiumDescription" = "Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!\\n\\nBelow are some of the benefits you can customize with your Premium status!"

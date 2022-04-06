@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
@@ -150,6 +151,38 @@ func PrivateErrorResponse(cmd string, err error, sett *settings.GuildSettings) *
 			}, map[string]interface{}{
 				"Command": cmd,
 				"Error":   err.Error(),
+			}),
+		},
+	}
+}
+
+var PermissionStrings = map[int64]string{
+	discordgo.PermissionViewChannel:        "View Channel",
+	discordgo.PermissionSendMessages:       "Send Messages",
+	discordgo.PermissionManageMessages:     "Manage Messages",
+	discordgo.PermissionEmbedLinks:         "Embed Links",
+	discordgo.PermissionUseExternalEmojis:  "Use External Emojis",
+	discordgo.PermissionVoiceMuteMembers:   "Mute Members",
+	discordgo.PermissionVoiceDeafenMembers: "Deafen Members",
+}
+
+func ReinviteMeResponse(missingPerms int64, channelID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	missingPermsText := ""
+	for v, str := range PermissionStrings {
+		if v&missingPerms == v {
+			missingPermsText += fmt.Sprintf("%s\n", str)
+		}
+	}
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID: "commands.error.reinvite",
+				Other: "I'm missing the following required permissions to function properly in this server or channel:\n```\n{{.Perm}}```\n" +
+					"Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)",
+			}, map[string]interface{}{
+				"Perm":    missingPermsText,
+				"Channel": discord.MentionByChannelID(channelID),
 			}),
 		},
 	}

@@ -89,6 +89,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
+	dg.AddHandler(bot.handleMessageCreate)
 	// Slash commands
 	dg.AddHandler(bot.handleInteractionCreate)
 
@@ -96,7 +97,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds | discordgo.IntentsGuildMessages)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)
@@ -399,11 +400,7 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	return ""
 }
 
-func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewStatus, activeGames int64) {
-	if voiceChannelID == "" {
-		return command.NewNoVoiceChannel, 0
-	}
-
+func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- true

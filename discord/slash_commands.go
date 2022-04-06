@@ -10,22 +10,88 @@ import (
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/premium"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
+var RequiredPermissions = []int64{
+	discordgo.PermissionViewChannel, discordgo.PermissionSendMessages,
+	discordgo.PermissionManageMessages, discordgo.PermissionEmbedLinks,
+	discordgo.PermissionUseExternalEmojis,
+}
+
+var VoicePermissions = []int64{
+	discordgo.PermissionVoiceMuteMembers, discordgo.PermissionVoiceDeafenMembers,
+}
+
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	response := bot.slashCommandHandler(s, i)
-	if response != nil {
-		err := s.InteractionRespond(i.Interaction, response)
-		if err != nil {
-			log.Println(err)
+	respondChan := make(chan *discordgo.InteractionResponse)
+	ticker := time.NewTicker(time.Second * 2)
+	var followUpMsg *discordgo.Message
+	var err error
+
+	// get the result in the background
+	go func() {
+		respondChan <- bot.slashCommandHandler(s, i)
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			// only followup the first time
+			if followUpMsg == nil {
+				err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Flags:   1 << 6,
+						Content: "Give me just a little bit to make a proper response :)",
+					},
+				})
+				if err != nil {
+					log.Println("err issuing wait response ", err)
+				}
+				followUpMsg, err = s.FollowupMessageCreate(s.State.User.ID, i.Interaction, true, &discordgo.WebhookParams{
+					Content: Hourglass,
+				})
+				if err != nil {
+					log.Println("Error creating followup message: ", err)
+				}
+			}
+			// don't return here
+
+		case resp := <-respondChan:
+			if followUpMsg != nil {
+				if resp != nil && resp.Data != nil {
+					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
+						Content:    resp.Data.Content,
+						Components: resp.Data.Components,
+						Embeds:     resp.Data.Embeds,
+					})
+				} else {
+					//TODO if this shows up in logs regularly, print more context
+					log.Println("received a nil response, or resp.data was nil")
+				}
+			} else if resp != nil {
+				err = s.InteractionRespond(i.Interaction, resp)
+				if err != nil {
+					log.Println("error issuing interaction response: ", err)
+					iBytes, err := json.Marshal(i.Interaction)
+					if err != nil {
+						log.Println(err)
+					} else {
+						log.Println(string(iBytes))
+					}
+				}
+			}
+			ticker.Stop()
+			// no matter what we get back, return
+			return
 		}
 	}
 }
@@ -63,6 +129,15 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	if err != nil {
 		log.Println(err)
 		return command.PrivateErrorResponse("get-guild", err, sett)
+	}
+	perm, err := bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, i.ChannelID)
+	if err != nil {
+		log.Println(err)
+		return command.PrivateErrorResponse("get-permissions", err, sett)
+	}
+	missingPerms := checkPermissions(perm, RequiredPermissions)
+	if missingPerms > 0 {
+		return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
 	}
 
 	isAdmin, isPermissioned := false, false
@@ -119,7 +194,15 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Link.Name, sett)
 			}
-			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, color, sett)
+			resp, success := bot.linkOrUnlinkAndRespond(dgs, userID, color, sett)
+			if success {
+				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.DispatchRefreshOrEdit(dgs, gsr, sett)
+			} else {
+				// release the lock
+				bot.RedisInterface.SetDiscordGameState(nil, lock)
+			}
+			return resp
 
 		case command.Unlink.Name:
 			if !isPermissioned {
@@ -132,7 +215,15 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Printf("No lock could be obtained when unlinking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Unlink.Name, sett)
 			}
-			return bot.linkOrUnlinkAndRespond(dgs, lock, userID, "", sett)
+			resp, success := bot.linkOrUnlinkAndRespond(dgs, userID, "", sett)
+			if success {
+				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.DispatchRefreshOrEdit(dgs, gsr, sett)
+			} else {
+				// release the lock
+				bot.RedisInterface.SetDiscordGameState(nil, lock)
+			}
+			return resp
 
 		case command.Settings.Name:
 			if !isAdmin {
@@ -148,15 +239,25 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
+
+			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
+			if voiceChannelID == "" {
+				return command.NewResponse(command.NewNoVoiceChannel, command.NewInfo{}, sett)
+			}
+
+			perm, err = bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, voiceChannelID)
+			missingPerms = checkPermissions(perm, VoicePermissions)
+			if missingPerms > 0 {
+				return command.ReinviteMeResponse(missingPerms, voiceChannelID, sett)
+			}
+
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
 			}
 
-			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
-
-			status, activeGames := bot.newGame(dgs, voiceChannelID)
+			status, activeGames := bot.newGame(dgs)
 			if status == command.NewSuccess {
 				// release the lock
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -216,7 +317,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !dgs.Running {
 				err = bot.applyToAll(dgs, false, false)
 			}
-			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
+			bot.DispatchRefreshOrEdit(dgs, gsr, sett)
 			if err != nil {
 				return command.PrivateErrorResponse(command.Pause.Name, err, sett)
 			}
@@ -418,10 +519,17 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.DeadlockGameStateResponse(command.Link.Name, sett)
 				}
 				if value == UnlinkEmojiName {
-					return bot.linkOrUnlinkAndRespond(dgs, lock, i.Member.User.ID, "", sett)
-				} else {
-					return bot.linkOrUnlinkAndRespond(dgs, lock, i.Member.User.ID, value, sett)
+					value = ""
 				}
+				resp, success := bot.linkOrUnlinkAndRespond(dgs, i.Member.User.ID, value, sett)
+				if success {
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					bot.DispatchRefreshOrEdit(dgs, gsr, sett)
+				} else {
+					// only release the lock; no changes
+					bot.RedisInterface.SetDiscordGameState(nil, lock)
+				}
+				return resp
 			}
 		}
 	}
@@ -430,32 +538,18 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	return nil
 }
 
-func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, lock *redislock.Lock, userID, testValue string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string, sett *settings.GuildSettings) (*discordgo.InteractionResponse, bool) {
 	if testValue != "" {
-		// don't care if it's successful, just always unlink
+		// don't care if it's successful, just always unlink before linking
 		unlinkPlayer(dgs, userID)
 		status, err := linkPlayer(bot.RedisInterface, dgs, userID, testValue)
 		if err != nil {
 			log.Println(err)
 		}
-		if status == command.LinkSuccess {
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		} else {
-			// release the lock
-			bot.RedisInterface.SetDiscordGameState(nil, lock)
-		}
-		return command.LinkResponse(status, userID, testValue, sett)
+		return command.LinkResponse(status, userID, testValue, sett), status == command.LinkSuccess
 	} else {
 		status := unlinkPlayer(dgs, userID)
-		if status == command.UnlinkSuccess {
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
-			dgs.Edit(bot.PrimarySession, bot.gameStateResponse(dgs, sett))
-		} else {
-			// release the lock
-			bot.RedisInterface.SetDiscordGameState(nil, lock)
-		}
-		return command.UnlinkResponse(status, userID, sett)
+		return command.UnlinkResponse(status, userID, sett), status == command.UnlinkSuccess
 	}
 }
 
@@ -482,4 +576,13 @@ func softbanResponse(banned bool, sett *settings.GuildSettings) *discordgo.Inter
 			}),
 		},
 	}
+}
+
+func checkPermissions(perm int64, perms []int64) (a int64) {
+	for _, v := range perms {
+		if v&perm != v {
+			a |= v
+		}
+	}
+	return
 }

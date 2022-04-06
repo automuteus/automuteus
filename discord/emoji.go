@@ -15,17 +15,13 @@ const (
 	UnlinkEmojiName = "auunlink"
 	X               = "❌"
 	ThumbsUp        = "👍"
+	Hourglass       = "⌛"
 )
 
 // Emoji struct for discord
 type Emoji struct {
 	Name string
 	ID   string
-}
-
-// FormatForReaction does what it sounds like
-func (e *Emoji) FormatForReaction() string {
-	return "<:" + e.Name + ":" + e.ID
 }
 
 // FormatForInline does what it sounds like
