@@ -31,6 +31,13 @@ var VoicePermissions = []int64{
 	discordgo.PermissionVoiceMuteMembers, discordgo.PermissionVoiceDeafenMembers,
 }
 
+const (
+	resetUserConfirmedID  = "reset-user-confirmed"
+	resetUserCanceledID   = "reset-user-canceled"
+	resetGuildConfirmedID = "reset-guild-confirmed"
+	resetGuildCanceledID  = "reset-guild-canceled"
+)
+
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	respondChan := make(chan *discordgo.InteractionResponse)
 	ticker := time.NewTicker(time.Second * 2)
@@ -415,53 +422,35 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.InsufficientPermissionsResponse(sett)
 				}
 				var content string
+				var components []discordgo.MessageComponent
 				switch opType {
 				case command.User:
-					err := bot.PostgresInterface.DeleteAllGamesForUser(id)
-					if err != nil {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.user.reset.error",
-							Other: "Encountered an error resetting the stats for {{.User}}: {{.Error}}",
-						},
-							map[string]interface{}{
-								"User":  discord.MentionByUserID(id),
-								"Error": err.Error(),
-							})
-					} else {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.user.reset.success",
-							Other: "Successfully reset the stats for {{.User}}!",
-						},
-							map[string]interface{}{
-								"User": discord.MentionByUserID(id),
-							})
-					}
-
-				case command.Guild:
-					err := bot.PostgresInterface.DeleteAllGamesForServer(id)
-					if err != nil {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.guild.reset.error",
-							Other: "Encountered an error resetting the stats for this guild: {{.Error}}",
-						},
-							map[string]interface{}{
-								"Error": err.Error(),
-							})
-					} else {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.guild.reset.success",
-							Other: "Successfully reset this guild's stats!",
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.confirmation",
+						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for {{.User}}?\nThis process cannot be undone!",
+					},
+						map[string]interface{}{
+							"User": discord.MentionByUserID(id),
 						})
-					}
+					components = confirmationComponents(resetUserConfirmedID, resetUserCanceledID, sett)
+				case command.Guild:
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.guild.reset.confirmation",
+						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for **{{.Guild}}**?\nThis process cannot be undone!",
+					},
+						map[string]interface{}{
+							"Guild": g.Name,
+						})
+					components = confirmationComponents(resetGuildConfirmedID, resetGuildCanceledID, sett)
 				}
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Flags:   1 << 6, //private message
-						Content: content,
+						Flags:      1 << 6, //private message
+						Content:    content,
+						Components: components,
 					},
 				}
-				// TODO handle clear confirmation (message followups?)
 			}
 
 		case command.Premium.Name:
@@ -515,7 +504,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
 
-		if i.MessageComponentData().CustomID == colorSelectID {
+		switch i.MessageComponentData().CustomID {
+		case colorSelectID:
 			if len(i.MessageComponentData().Values) > 0 {
 				value := i.MessageComponentData().Values[0]
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
@@ -536,6 +526,95 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return resp
 			}
+
+		case resetUserConfirmedID:
+			var content string
+			// i.Message.Mentions is the list of the mentions in the original message.
+			// in this case we can gather target user since the original message contains only one mention,
+			// like "Do you really want to reset the stats for @kurokobo?".
+			// a bit dirty way but works :P
+			if len(i.Message.Mentions) == 1 {
+				id := i.Message.Mentions[0].ID
+				err := bot.PostgresInterface.DeleteAllGamesForUser(id)
+				if err != nil {
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.error",
+						Other: "Encountered an error resetting the stats for {{.User}}: {{.Error}}",
+					},
+						map[string]interface{}{
+							"User":  discord.MentionByUserID(id),
+							"Error": err.Error(),
+						})
+				} else {
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.success",
+						Other: "Successfully reset the stats for {{.User}}!",
+					},
+						map[string]interface{}{
+							"User": discord.MentionByUserID(id),
+						})
+				}
+			} else {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.user.reset.notfound",
+					Other: "Failed to gather user from message!",
+				})
+			}
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    content,
+					Components: []discordgo.MessageComponent{},
+				},
+			}
+
+		case resetGuildConfirmedID:
+			var content string
+			err := bot.PostgresInterface.DeleteAllGamesForServer(i.GuildID)
+			if err != nil {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.guild.reset.error",
+					Other: "Encountered an error resetting the stats for this guild: {{.Error}}",
+				},
+					map[string]interface{}{
+						"Error": err.Error(),
+					})
+			} else {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.guild.reset.success",
+					Other: "Successfully reset the stats for **{{.Guild}}**!",
+				},
+					map[string]interface{}{
+						"Guild": g.Name,
+					})
+			}
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    content,
+					Components: []discordgo.MessageComponent{},
+				},
+			}
+
+		case resetUserCanceledID:
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return resetCancelResponse(sett)
+
+		case resetGuildCanceledID:
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return resetCancelResponse(sett)
 		}
 	}
 
@@ -555,6 +634,58 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string,
 	} else {
 		status := unlinkPlayer(dgs, userID)
 		return command.UnlinkResponse(status, userID, sett), status == command.UnlinkSuccess
+	}
+}
+
+// deleteComponentInParentMessage deletes any components from parent messages.
+// this is required for safety. if the resetting process takes over 2 seconds,
+// since RESET/Cancel buttons remain forever once the button has been clicked.
+func (bot *Bot) deleteComponentInParentMessage(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	me := discordgo.NewMessageEdit(i.ChannelID, i.Message.ID)
+	me.Components = []discordgo.MessageComponent{}
+	_, err := s.ChannelMessageEditComplex(me)
+	if err != nil {
+		log.Println("Error when attempting to edit complex message", err)
+	}
+}
+
+func confirmationComponents(confirmedID string, canceledID string, sett *settings.GuildSettings) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					CustomID: confirmedID,
+					Style:    discordgo.DangerButton,
+					Label: sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.reset.button.proceed",
+						Other: "RESET",
+					}),
+				},
+				discordgo.Button{
+					CustomID: canceledID,
+					Style:    discordgo.SecondaryButton,
+					Label: sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.reset.button.cancel",
+						Other: "Cancel",
+					}),
+				},
+			},
+		},
+	}
+}
+
+func resetCancelResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	content := sett.LocalizeMessage(&i18n.Message{
+		ID:    "commands.stats.reset.canceled",
+		Other: "Operation has been canceled",
+	})
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Flags:      1 << 6, //private message
+			Content:    content,
+			Components: []discordgo.MessageComponent{},
+		},
 	}
 }
 
