@@ -47,6 +47,7 @@
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "未连接"
 "eventHandler.gameOver.deleteMessageFooter" = "正在删除消息 {{.Mins}} 分钟："
 "eventHandler.gameOver.matchID" = "游戏结束！使用比赛ID：{{.MatchID}}\\n{{.Winners}} 查看比赛数据"
+"message_handlers.useslashcommands" = "Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!\\n\\nFor example, try `/help`, `/new`, etc.\\n\\nIf you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"
 "processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
 "responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
 "responses.guildStatsEmbed.CrewmateWins" = "组员胜率 ({{.Min}}+ 游戏)"
