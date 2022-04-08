@@ -3,6 +3,11 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"regexp"
+	"strings"
+	"time"
+
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/discord/setting"
@@ -12,10 +17,6 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
-	"regexp"
-	"strings"
-	"time"
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
@@ -68,8 +69,12 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		case resp := <-respondChan:
 			if followUpMsg != nil {
 				if resp != nil && resp.Data != nil {
+					content := resp.Data.Content
+					if content == "" {
+						content = "\u200b"
+					}
 					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
-						Content:    resp.Data.Content,
+						Content:    content,
 						Components: resp.Data.Components,
 						Embeds:     resp.Data.Embeds,
 					})
