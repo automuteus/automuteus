@@ -76,7 +76,7 @@ func invitesResponse(tier premium.Tier, sett *settings.GuildSettings) *discordgo
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier == premium.FreeTier || tier == premium.BronzeTier {
+	if tier == premium.FreeTier || tier == premium.BronzeTier || tier == premium.TrialTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `/premium` to see more details about AutoMuteUs Premium",
@@ -87,10 +87,9 @@ func invitesResponse(tier premium.Tier, sett *settings.GuildSettings) *discordgo
 		count := 0
 		if tier == premium.SilverTier {
 			count = 1
-		} else if tier == premium.GoldTier || tier == premium.PlatTier {
+		} else if tier == premium.GoldTier {
 			count = 3
 		}
-		// TODO account for Platinum
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
@@ -102,7 +101,7 @@ func invitesResponse(tier premium.Tier, sett *settings.GuildSettings) *discordgo
 		for i := 0; i < count; i++ {
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("Bot %s", emojiNums[i]),
-				Value:  fmt.Sprintf("[Invite](%s)", botInvites[i]),
+				Value:  fmt.Sprintf("[Invite Me](%s)", botInvites[i]),
 				Inline: false,
 			})
 		}
@@ -132,7 +131,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier != premium.FreeTier {
+	if tier != premium.FreeTier && tier != premium.TrialTier {
 		if daysRem > 0 || daysRem == premium.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
@@ -187,7 +186,9 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID: "responses.premiumResponse.FreeDescription",
 			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n" +
-				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})",
+				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\nor\n" +
+				"[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\n" +
+				"(One time per user)\n",
 		}, map[string]interface{}{
 			"BaseURL": BasePremiumURL,
 			"GuildID": guildID,

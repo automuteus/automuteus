@@ -28,7 +28,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	}
 	defer snowFlakeLock.Release(ctx)
 
-	prem, days := bot.PostgresInterface.GetGuildPremiumStatus(m.GuildID)
+	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(nil, m.GuildID, "")
 	premTier := premium.FreeTier
 	if !premium.IsExpired(prem, days) {
 		premTier = prem

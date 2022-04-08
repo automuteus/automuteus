@@ -409,7 +409,10 @@ func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64)
 
 		dgs.Reset()
 	} else {
-		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, dgs.GuildID, dgs.GameStateMsg.LeaderID)
+		if err != nil {
+			log.Println("Error in /newgame get premium:", err)
+		}
 		premTier := premium.FreeTier
 		if !premium.IsExpired(premStatus, days) {
 			premTier = premStatus
