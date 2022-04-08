@@ -22,7 +22,7 @@ func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{},
 	case args[0] == "true":
 		if muteSpec {
 			return sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingUnmuteDeadDuringTasks.true_noUnmuteDead",
+				ID:    "settings.already_true",
 				Other: "It's already true!",
 			}), false
 		} else {
@@ -41,7 +41,7 @@ func FnMuteSpectators(sett *settings.GuildSettings, args []string) (interface{},
 			}), true
 		}
 		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
+			ID:    "settings.already_false",
 			Other: "It's already false!",
 		}), false
 	default:
