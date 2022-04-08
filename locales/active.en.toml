@@ -201,3 +201,5 @@
 "state.phase.LOBBY" = "LOBBY"
 "state.phase.MENU" = "MENU"
 "state.phase.TASKS" = "TASKS"
+"locale.language.name" = "English"
+"responses.matchStatsEmbed.Title" = "Game `{{.MatchID}}`"
