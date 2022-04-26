@@ -22,8 +22,8 @@ github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hC
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6lCRdSC2Tm3DSWRPvIPr6xNKyeHdqDQSQT+A=
-github.com/automuteus/utils v0.2.0 h1:u5AodRIGZMb9UmQIqvd7Uo4bx+4blcxq6PTMW/+jDX0=
-github.com/automuteus/utils v0.2.0/go.mod h1:OFpagsFW5O6MGERko+aYQVnNO0eSmM6ziFGhmjobzZ0=
+github.com/automuteus/utils v0.2.1 h1:SQXTNiO2vcMqjNRJwzTS6UfHW70Ve5KtcdOL4wu8V4c=
+github.com/automuteus/utils v0.2.1/go.mod h1:OFpagsFW5O6MGERko+aYQVnNO0eSmM6ziFGhmjobzZ0=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
