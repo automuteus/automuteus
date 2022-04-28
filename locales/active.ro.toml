@@ -3,13 +3,26 @@
 "commands.debug.clear.user.success" = "Successfully cleared cached usernames for {{.User}}"
 "commands.debug.view.error" = "Encountered an error trying to view debug information: {{.Error}}"
 "commands.debug.view.user.empty" = "I don't have any saved usernames for {{.User}}"
-"commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
+"commands.debug.view.user.success" = """
+I have the following cached usernames for {{.User}}:
+```
+{{.Cached}}
+```"""
 "commands.dm" = "Sorry, I don't respond to DMs. Please execute the command in a text channel instead."
 "commands.error" = "Error executing `{{.Command}}`: `{{.Error}}`"
 "commands.error.nogame" = "No game is currently running."
-"commands.error.reinvite" = "I'm missing the following required permissions to function properly in this server or channel:\\n```\\n{{.Perm}}```\\nCheck the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"
-"commands.help.subtitle" = "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `/help <command>` to see more details on a command!"
-"commands.help.title" = "Comenzi Bot AutoMuteUs:\\n"
+"commands.error.reinvite" = """
+I'm missing the following required permissions to function properly in this server or channel:
+```
+{{.Perm}}```
+Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"""
+"commands.help.subtitle" = """
+[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)
+
+Type `/help <command>` to see more details on a command!"""
+"commands.help.title" = """
+AutoMuteUs Bot Commands:
+"""
 "commands.info.activegames" = "Jocuri active"
 "commands.info.creator" = "Creator"
 "commands.info.footer" = "v{{.Version}}-{{.Commit}} <unk> Shard {{.ID}}/{{.Num}}"
@@ -25,26 +38,45 @@
 "commands.link.nogamedata" = "No game data found for the color `{{.Color}}`"
 "commands.link.noplayer" = "No player in the current game was detected for {{.UserMention}}"
 "commands.link.success" = "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`"
-"commands.new.lockout" = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`/premium`)\\nCurrent Games: {{.Games}}"
+"commands.new.lockout" = """
+If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦
+Please try again in a few minutes, or consider AutoMuteUs Premium (`/premium info`)
+Current Games: {{.Games}}"""
 "commands.new.nochannel" = "Please join a voice channel before starting a match!"
-"commands.new.success" = "Faceți clic pe următorul link pentru a vă conecta la captură: \\n <{{.hyperlink}}>\\n\\nNu aveți captura instalată? Ultima versiune [here]({{.downloadURL}})\\n\\nPentru a lega captura manual:"
+"commands.new.success" = """
+Click the following link to link your capture: 
+ <{{.hyperlink}}>
+
+Don't have the capture installed? Latest version [here]({{.downloadURL}})
+
+To link your capture manually:"""
 "commands.new.success.code" = "Cod"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "Sorry, you don't have the required permissions to issue that command."
-"commands.privacy.info" = "AutoMuteUs confidenţialitate şi detalii de colectare a datelor.\\nMai multe detalii [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
-"commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
+"commands.privacy.info" = """
+AutoMuteUs privacy and data collection details.
+More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"""
+"commands.privacy.opt.error" = """
+❌ I encountered an error changing your opt in/out status:
+`{{.Error}}`"""
 "commands.privacy.opt.success" = "✅ I successfully changed your opt in/out status"
 "commands.privacy.showme.cache" = "❗ Here's your cached in-game names:"
 "commands.privacy.showme.nocache" = "❌ I don't have any cached player names stored for you!"
 "commands.privacy.showme.optin" = "❗ You are opted **in** to data collection for game statistics"
 "commands.privacy.showme.optout" = "❌ You are opted **out** of data collection for game statistics, or you haven't played a game yet"
-"commands.stats.guild.reset.confirmation" = "⚠️**Are you sure?**⚠️\\nDo you really want to reset the stats for **{{.Guild}}**?\\nThis process cannot be undone!"
+"commands.stats.guild.reset.confirmation" = """
+⚠️**Are you sure?**⚠️
+Do you really want to reset the stats for **{{.Guild}}**?
+This process cannot be undone!"""
 "commands.stats.guild.reset.error" = "Encountered an error resetting the stats for this guild: {{.Error}}"
 "commands.stats.guild.reset.success" = "Successfully reset the stats for **{{.Guild}}**!"
 "commands.stats.reset.button.cancel" = "Cancel"
 "commands.stats.reset.button.proceed" = "RESET"
 "commands.stats.reset.canceled" = "Operation has been canceled"
-"commands.stats.user.reset.confirmation" = "⚠️**Are you sure?**⚠️\\nDo you really want to reset the stats for {{.User}}?\\nThis process cannot be undone!"
+"commands.stats.user.reset.confirmation" = """
+⚠️**Are you sure?**⚠️
+Do you really want to reset the stats for {{.User}}?
+This process cannot be undone!"""
 "commands.stats.user.reset.error" = "Encountered an error resetting the stats for {{.User}}: {{.Error}}"
 "commands.stats.user.reset.notfound" = "Failed to gather user from message!"
 "commands.stats.user.reset.success" = "Successfully reset the stats for {{.User}}!"
@@ -52,8 +84,15 @@
 "commands.unlink.success" = "Successfully unlinked {{.UserMention}}"
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "Deconectat"
 "eventHandler.gameOver.deleteMessageFooter" = "Ştergerea mesajului {{.Mins}} minute de la:"
-"eventHandler.gameOver.matchID" = "Finalizarea jocului! Vezi statisticile meciului folosind ID-ul meciului: `{{.MatchID}}`\\n{{.Winners}}"
-"message_handlers.useslashcommands" = "Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!\\n\\nFor example, try `/help`, `/new`, etc.\\n\\nIf you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"
+"eventHandler.gameOver.matchID" = """
+Game Over! View the match's stats using Match ID: `{{.MatchID}}`
+{{.Winners}}"""
+"message_handlers.useslashcommands" = """
+Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!
+
+For example, try `/help`, `/new`, etc.
+
+If you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"""
 "processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
 "responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
 "responses.guildStatsEmbed.CrewmateWins" = "Winrate echipaj ({{.Min}}+ jocuri)"
@@ -74,21 +113,40 @@
 "responses.lobbyMetaEmbedFields.Region" = "🌎 REGIUNE"
 "responses.lobbyMetaEmbedFields.RoomCode" = "🔒 COD ROOM"
 "responses.lobbyMetaEmbedFields.VoiceChannel" = "Canal de voce"
-"responses.makeDescription.GameNotRunning" = "\\n⚠ **Bot este Pauzat!** ⚠\\n\\n"
+"responses.makeDescription.GameNotRunning" = """
+
+⚠ **Bot is Paused!** ⚠
+
+"""
 "responses.menuMessage.Linked.FooterText" = "(Introduceți un lobby de joc în rândul nostru pentru a începe meciul)"
 "responses.menuMessage.Title" = "Meniul principal"
 "responses.menuMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
 "responses.nonPremiumSetting.Desc" = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details"
 "responses.premiumInviteResponse.Title" = "Premium Bot Invites"
 "responses.premiumInviteResponse.desc" = "{{.Tier}} utilizatori au acces la {{.Count}} bot-uri prioritare: invitații furnizate mai jos!"
-"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
+"responses.premiumInviteResponseNoAccess.desc" = """
+{{.Tier}} users don't have access to Priority mute bots!
+Please type `/premium` to see more details about AutoMuteUs Premium"""
 "responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
 "responses.premiumResponse.FastMuteDesc" = 'Utilizatorii Premium au acces la roboți "ajutor" care se asigură că amuțirea este rapidă!'
-"responses.premiumResponse.FreeDescription" = "Uită-te la lucrurile interesante pe care Premium AutoMuteUs le poate oferi!\\n\\n[Obține AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.FreeDescription" = """
+Check out the cool things that Premium AutoMuteUs has to offer!
+
+[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})
+or
+[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!
+(One time per user)
+"""
 "responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
-"responses.premiumResponse.PremiumDescription" = "Se pare că ai AutoMuteUs **{{.Tier}}**{{.DaysString}}! Mulțumesc pentru sprijin!\\n\\nMai jos sunt câteva dintre beneficiile pe care le poți personaliza cu statutul tău Premium!"
+"responses.premiumResponse.PremiumDescription" = """
+Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!
+
+Below are some of the benefits you can customize with your Premium status!"""
 "responses.premiumResponse.PremiumDescriptionDaysRemaining" = " pentru alte {{.Days}} zile"
-"responses.premiumResponse.PremiumDescriptionExpired" = "Oh nu! Se pare că obișnuiai să ai AutoMuteUs **{{.Tier}}**, dar **a expirat acum {{.Days}} zile**! 😦\\n\\nTe rugăm să iei în considerare re-abonarea aici: [Obține AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
+"responses.premiumResponse.PremiumDescriptionExpired" = """
+Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦
+
+Please consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"""
 "responses.premiumResponse.PriorityGameAccess" = "👑 Acces la jocul prioritar"
 "responses.premiumResponse.PriorityGameAccessDesc" = "Dacă bot-ul este în sarcină grea, utilizatorii Premium vor putea întotdeauna să facă jocuri noi!"
 "responses.premiumResponse.Settings" = "🛠 Setări speciale"
@@ -98,7 +156,9 @@
 "responses.premiumResponse.StatsDesc" = "Utilizatorii premium au acces la o suită completă de statistici pentru jucători și clasamente!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
 "responses.settingResponse.Description" = "Type `/settings <setting>` to change a setting from those listed below"
-"responses.settingResponse.PremiumNoThanks" = "The following settings are only for AutoMuteUs premium users.\\nType `/premium` to learn more!"
+"responses.settingResponse.PremiumNoThanks" = """
+The following settings are only for AutoMuteUs premium users.
+Type `/premium` to learn more!"""
 "responses.settingResponse.PremiumThanks" = "Mulțumim pentru că ești utilizator Premium AutoMuteUs!"
 "responses.settingResponse.Title" = "Setări"
 "responses.stats.Exiled" = "Exicat"
@@ -134,7 +194,10 @@
 "responses.userStatsEmbed.WorstTeammateServerCrewmate" = "Echipa cea mai slabă de echipaj"
 "responses.userStatsEmbed.WorstTeammateServerImpostor" = "Echipa Impostor cea mai slabă"
 "settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Valoarea Curentă"
-"settings.ConstructEmbedForSetting.StarterDesc" = "Type `/settings {{.Command}}` to view or change this setting.\\n\\n"
+"settings.ConstructEmbedForSetting.StarterDesc" = """
+Type `/settings {{.Command}}` to view or change this setting.
+
+"""
 "settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} was already a bot admin!"
 "settings.SettingAdminUserIDs.clearAdmins" = "Ştergerea tuturor AdminUserID-urilor!"
 "settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} is now a bot admin!"
@@ -146,7 +209,9 @@
 "settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage"
 "settings.SettingDelays.Phase.UNINITIALIZED" = "Nu ştiu ce este `{{.PhaseName}}. Lista fazei de joc este `Lobby`, `Tasks` şi `Discussion`."
 "settings.SettingDelays.delayBetweenPhases" = "În prezent, întârzierea la trecerea de la `{{.PhaseA}}` la `{{.PhaseB}}este {{.OldDelay}}."
-"settings.SettingDelays.missingPhases" = "Lista etapelor de joc este `Lobby`, `Tasks` şi `Discussion`.\\nTrebuie să tastezi ambele faze, de la care jocul trece și pentru a schimba întârzierea."
+"settings.SettingDelays.missingPhases" = """
+The list of game phases are `Lobby`, `Tasks` and `Discussion`.
+You need to type both phases the game is transitioning from and to to change the delay."""
 "settings.SettingDelays.setDelayBetweenPhases" = "Întârzierea la trecerea de la `{{.PhaseA}}` la `{{.PhaseB}}a fost schimbată de la {{.OldDelay}} la {{.NewDelay}}."
 "settings.SettingDelays.wrongNumber" = "`{{.Number}}` nu este un număr valid! Te rugăm să încerci din nou"
 "settings.SettingDisplayRoomCode.AlwaysOrNever" = "De acum înainte, {{.Arg}} va afișa codul camerei în mesaj"
@@ -155,7 +220,10 @@
 "settings.SettingLanguage.notFound" = "Limba nu a fost găsită! Cod de limbă disponibil: {{.Langs}}"
 "settings.SettingLanguage.notLoaded" = "Fișierele de localizare nu au fost încărcate! {{.Langs}}"
 "settings.SettingLanguage.set" = "Localization is set to `{{.LangCode}}`"
-"settings.SettingLanguage.set.needsTranslations" = "Localization is set to `{{.LangCode}}`, but it looks like the translations aren't complete!\\n\\nHelp us translate the bot [here](https://automuteus.crowdin.com/)!"
+"settings.SettingLanguage.set.needsTranslations" = """
+Localization is set to `{{.LangCode}}`, but it looks like the translations aren't complete!
+
+Help us translate the bot [here](https://automuteus.crowdin.com/)!"""
 "settings.SettingLanguage.tooShort" = "Ne pare rău, codul de limbă este scurt. Codul de limbă disponibil: {{.Langs}}."
 "settings.SettingLeaderboardMention.False" = "De acum înainte, voi folosi porecle/nume de utilizator jucător în clasament"
 "settings.SettingLeaderboardMention.True" = "De acum înainte, voi menționa jucători direct în clasament"
@@ -174,7 +242,9 @@
 "settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} is not a valid text channel ID or mention!"
 "settings.SettingMatchSummaryChannel.withChannelID" = "Match Summary text channel ID changed to {{.channelID}}!"
 "settings.SettingMuteSpectators.false_muteSpectators" = "Nu voi mai muta spectatori ca niște jucători morți"
-"settings.SettingMuteSpectators.true_noMuteSpectators" = "Acum voi muta spectatori la fel ca jucătorii morți. \\n**Notați, acest lucru poate cauza întârzieri sau încetiniri atunci când nu te găzduiești pe cont propriu, sau când folosești un robot de lucrător Premium!**"
+"settings.SettingMuteSpectators.true_noMuteSpectators" = """
+I will now mute spectators just like dead players. 
+**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**"""
 "settings.SettingPermissionRoleIDs.alreadyBotOperator" = "That role was already a bot operator!"
 "settings.SettingPermissionRoleIDs.clearRoles" = "Curăță toate ID-urile de Permisiune!"
 "settings.SettingPermissionRoleIDs.newBotOperator" = "I successfully added that role as bot operators!"
@@ -201,5 +271,3 @@
 "state.phase.LOBBY" = "LOBBY"
 "state.phase.MENU" = "MENIU"
 "state.phase.TASKS" = "SARCINI"
-"locale.language.name" = "Română"
-"responses.matchStatsEmbed.Title" = "Jocul `{{.MatchID}}`"
