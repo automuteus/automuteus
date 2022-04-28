@@ -56,7 +56,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				if err != nil {
 					log.Println("err issuing wait response ", err)
 				}
-				followUpMsg, err = s.FollowupMessageCreate(s.State.User.ID, i.Interaction, true, &discordgo.WebhookParams{
+				followUpMsg, err = s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: Hourglass,
 				})
 				if err != nil {
@@ -68,7 +68,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 		case resp := <-respondChan:
 			if followUpMsg != nil {
 				if resp != nil && resp.Data != nil {
-					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
+					followUpMsg, err = s.FollowupMessageEdit(i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
 						Content:    resp.Data.Content,
 						Components: resp.Data.Components,
 						Embeds:     resp.Data.Embeds,
