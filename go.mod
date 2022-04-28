@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/automuteus/utils v0.1.2
 	github.com/bsm/redislock v0.7.1
-	github.com/bwmarrin/discordgo v0.24.1-0.20220401145527-4ef1d502cd1e
+	github.com/bwmarrin/discordgo v0.25.0
 	github.com/go-redis/redis/v8 v8.8.0
 	github.com/gorilla/mux v1.8.0
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
