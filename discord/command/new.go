@@ -74,7 +74,7 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID: "commands.new.lockout",
 			Other: "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\n" +
-				"Please try again in a few minutes, or consider AutoMuteUs Premium (`/premium`)\n" +
+				"Please try again in a few minutes, or consider AutoMuteUs Premium (`/premium info`)\n" +
 				"Current Games: {{.Games}}",
 		}, map[string]interface{}{
 			"Games": fmt.Sprintf("%d/%d", info.ActiveGames, DefaultMaxActiveGames),

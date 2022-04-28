@@ -241,10 +241,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isAdmin {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
-			isPrem := !premium.IsExpired(premStatus, days)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Err in /settings get premium:", err)
+			}
 			setting, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, isPrem)
+			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, !premium.IsExpired(premStatus, days))
 			return command.SettingsResponse(msg)
 
 		case command.New.Name:
@@ -387,7 +389,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		case command.Stats.Name:
 			action, opType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
 			prem := true
-			if premium.IsExpired(bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)) {
+			tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Error in /stats getPremium:", err)
+			}
+			if premium.IsExpired(tier, days) {
 				prem = false
 			}
 			if action == setting.View {
@@ -455,7 +461,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Err in /premium get guild prem:", err)
+			}
 			if premium.IsExpired(premStatus, days) {
 				premStatus = premium.FreeTier
 			}
