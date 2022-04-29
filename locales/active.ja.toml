@@ -3,26 +3,13 @@
 "commands.debug.clear.user.success" = "{{.User}} のキャッシュ済みユーザー名を消去しました"
 "commands.debug.view.error" = "デバッグ情報の表示中にエラーが発生しました： {{.Error}}"
 "commands.debug.view.user.empty" = "{{.User}} のキャッシュ済みユーザー名はありません"
-"commands.debug.view.user.success" = """
-I have the following cached usernames for {{.User}}:
-```
-{{.Cached}}
-```"""
+"commands.debug.view.user.success" = "{{.User}} のキャッシュ済みユーザー名は以下の通りです：\\n```\\n{{.Cached}}\\n```"
 "commands.dm" = "ごめんなさい、DM には応答していません。コマンドはテキストチャンネルで実行してください。"
 "commands.error" = "コマンド `{{.Command}}` の実行中にエラーが発生しました： `{{.Error}}`"
 "commands.error.nogame" = "現在実行されているゲームはありません"
-"commands.error.reinvite" = """
-I'm missing the following required permissions to function properly in this server or channel:
-```
-{{.Perm}}```
-Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"""
-"commands.help.subtitle" = """
-[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)
-
-Type `/help <command>` to see more details on a command!"""
-"commands.help.title" = """
-AutoMuteUs Bot Commands:
-"""
+"commands.error.reinvite" = "このサーバーかチャンネルに必要な権限が不足しています：\\n```\\n{{.Perm}}```\\nテキスト / ボイスチャンネル {{.Channel}} の権限を確認してください。または、ボットを [こちら](https://add.automute.us) から再招待してください。"
+"commands.help.subtitle" = "[GitHub のプロジェクトを開く](https://github.com/automuteus/automuteus) / [AutoMuteUs の Discord に参加する](https://discord.gg/ZkqZSWF)\\n\\n`/help <コマンド名>` で各コマンドの詳細を確認できます！"
+"commands.help.title" = "AutoMuteUs Botコマンド:\\n"
 "commands.info.activegames" = "アクティブなゲーム"
 "commands.info.creator" = "作成者"
 "commands.info.footer" = "v{{.Version}}-{{.Commit}} | シャード {{.ID}}/{{.Num}}"
@@ -38,45 +25,26 @@ AutoMuteUs Bot Commands:
 "commands.link.nogamedata" = "色が `{{.Color}}` のプレイヤーが見つかりませんでした。"
 "commands.link.noplayer" = "現在のゲームに {{.UserMention}} に該当するプレイヤーはいませんでした。"
 "commands.link.success" = "{{.UserMention}} を色が `{{.Color}} のプレイヤーにリンクしました"
-"commands.new.lockout" = """
-If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦
-Please try again in a few minutes, or consider AutoMuteUs Premium (`/premium info`)
-Current Games: {{.Games}}"""
+"commands.new.lockout" = "これ以上ゲームを始めると、Discord にロックアウトされたり、実行中のゲームが制限されてしまいます！ 😦\\n数分後にもう一度試すか、AutoMuteUs プレミアム（`/premium info`）を検討してください。\\n現在のゲーム数： {{.Games}}"
 "commands.new.nochannel" = "ゲームを開始する前に、ボイスチャンネルに参加してください！"
-"commands.new.success" = """
-Click the following link to link your capture: 
- <{{.hyperlink}}>
-
-Don't have the capture installed? Latest version [here]({{.downloadURL}})
-
-To link your capture manually:"""
+"commands.new.success" = "このリンクをクリックしてキャプチャ開始：\\n <{{.hyperlink}}>\\n\\nキャプチャソフトを入れてない？ 最新版は [こちら！]({{.downloadURL}})\\n\\n手動でキャプチャするなら："
 "commands.new.success.code" = "コード"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "ごめんなさい、あなたはそのコマンドを実行する権限を持っていないようです。"
-"commands.privacy.info" = """
-AutoMuteUs privacy and data collection details.
-More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"""
-"commands.privacy.opt.error" = """
-❌ I encountered an error changing your opt in/out status:
-`{{.Error}}`"""
+"commands.privacy.info" = "AutoMuteUsプライバシーとデータ収集の詳細情報\\n詳細情報 [here](https://github.com/automatuteus/automatuteus/blob/master/PRIVACY.md)"
+"commands.privacy.opt.error" = "❌オプトイン / アウトの設定を変更する際にエラーが発生しました：\\n`{{.Error}}"
 "commands.privacy.opt.success" = "✅オプトイン / アウトの設定を変更しました"
 "commands.privacy.showme.cache" = "❗あなたのキャッシュ済みユーザ名は次のとおりです。"
 "commands.privacy.showme.nocache" = "❌あなたのプレーヤー名はキャッシュされていません！"
 "commands.privacy.showme.optin" = "❗あなたはゲーム統計のためのデータ収集にオプト **イン** しています。"
 "commands.privacy.showme.optout" = "❌ あなたはゲーム統計のためのデータ収集をオプト **アウト** している、またはまだゲームをプレイしていません。"
-"commands.stats.guild.reset.confirmation" = """
-⚠️**Are you sure?**⚠️
-Do you really want to reset the stats for **{{.Guild}}**?
-This process cannot be undone!"""
+"commands.stats.guild.reset.confirmation" = "⚠️**リセットしますか？**⚠️\\n本当にギルド **{{.Guild}}** の統計情報をリセットしますか？\\nこの操作は取り消せません！"
 "commands.stats.guild.reset.error" = "このギルドの統計情報をリセット中にエラーが発生しました： {{.Error}}"
 "commands.stats.guild.reset.success" = "**{{.Guild}}** の統計をリセットしました！"
 "commands.stats.reset.button.cancel" = "キャンセル"
 "commands.stats.reset.button.proceed" = "リセットする"
 "commands.stats.reset.canceled" = "操作はキャンセルされました。"
-"commands.stats.user.reset.confirmation" = """
-⚠️**Are you sure?**⚠️
-Do you really want to reset the stats for {{.User}}?
-This process cannot be undone!"""
+"commands.stats.user.reset.confirmation" = "⚠️**リセットしますか？**⚠️\\n本当にユーザー {{.User}} の統計情報をリセットしますか？\\nこの操作は取り消せません！"
 "commands.stats.user.reset.error" = "{{.User}} の統計をリセット中にエラーが発生しました： {{.Error}}"
 "commands.stats.user.reset.notfound" = "メッセージからユーザ名を取得できませんでした！"
 "commands.stats.user.reset.success" = "{{.User}} の統計をリセットしました！"
@@ -84,15 +52,8 @@ This process cannot be undone!"""
 "commands.unlink.success" = "{{.UserMention}} のリンクを解除しました"
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "未リンク"
 "eventHandler.gameOver.deleteMessageFooter" = "このメッセージは {{.Mins}} 分後に削除されます。"
-"eventHandler.gameOver.matchID" = """
-Game Over! View the match's stats using Match ID: `{{.MatchID}}`
-{{.Winners}}"""
-"message_handlers.useslashcommands" = """
-Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!
-
-For example, try `/help`, `/new`, etc.
-
-If you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"""
+"eventHandler.gameOver.matchID" = "ゲーム終了！ 次のマッチ ID を使用してこの試合の統計情報を表示できます： `{{.MatchID}}`\\n{{.Winners}}"
+"message_handlers.useslashcommands" = "ごめんなさい、`.au` コマンドはもう使えません。新しいスラッシュコマンドを使ってください！\\n\\n例えば、 `/help` や `/new` などのコマンドが使えます。\\n\\nもしスラッシュコマンドがチャットに出てこない場合は、次のリンクからボットを再招待してください： https://add.automute.us"
 "processplayer.error" = "{{.User}} のミュートまたはスピーカーミュート中にエラーが発生しました。{{.VoiceChannel}} でミュート / スピーカーミュートの権限がボットにあることを確認してください。"
 "responses.gameStatsEmbed.NoPremium" = "試合ごとの詳細な統計は AutoMuteUs プレミアムのユーザーのみ利用できます。詳細は `/premium` を入力してください。"
 "responses.guildStatsEmbed.CrewmateWins" = "クルーメイト勝率（{{.Min}} ゲーム以上）"
@@ -113,40 +74,21 @@ If you don't see any slash commands in your chat, you may need to re-invite me h
 "responses.lobbyMetaEmbedFields.Region" = "🌎 リージョン"
 "responses.lobbyMetaEmbedFields.RoomCode" = "🔒 ルームコード"
 "responses.lobbyMetaEmbedFields.VoiceChannel" = "ボイスチャンネル"
-"responses.makeDescription.GameNotRunning" = """
-
-⚠ **Bot is Paused!** ⚠
-
-"""
+"responses.makeDescription.GameNotRunning" = "\\n⚠ **ボットは一時停止中！** ⚠\\n\\n"
 "responses.menuMessage.Linked.FooterText" = "（ゲームを開始するには、ロビーに参加してください）"
 "responses.menuMessage.Title" = "メインメニュー"
 "responses.menuMessage.notLinked.Description" = "❌**キャプチャがリンクされていません！ 上のメッセージ中のリンクをクリックして、キャプチャを開始してください！**❌"
 "responses.nonPremiumSetting.Desc" = "ごめんなさい、この設定は AutoMuteUs プレミアムのユーザー専用です！詳細は `/premium` を参照してください。"
 "responses.premiumInviteResponse.Title" = "プレミアムボットの招待"
 "responses.premiumInviteResponse.desc" = "{{.Tier}} のユーザーは、{{.Count}} 個の優先ミュートボットを利用できます！ 招待用リンクは以下です！"
-"responses.premiumInviteResponseNoAccess.desc" = """
-{{.Tier}} users don't have access to Priority mute bots!
-Please type `/premium` to see more details about AutoMuteUs Premium"""
+"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} のユーザーは優先ミュートボットにアクセスできません！\\nAutoMuteUs プレミアムの詳細を確認するには、`/premium info` と入力してください。"
 "responses.premiumResponse.FastMute" = "🙊 高速なミュート / スピーカーミュート"
 "responses.premiumResponse.FastMuteDesc" = "プレミアムのユーザーは、ミュートを高速化するヘルパーボットを利用できます！"
-"responses.premiumResponse.FreeDescription" = """
-Check out the cool things that Premium AutoMuteUs has to offer!
-
-[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})
-or
-[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!
-(One time per user)
-"""
+"responses.premiumResponse.FreeDescription" = "AutoMuteUs プレミアムでは次のすばらしい機能が使えます！\\n\\n[AutoMuteUs プレミアムに加入する]({{.BaseURL}}{{.GuildID}})\\nまたは\\n[top.gg で AutoMuteUs に投票](https://top.gg/bot/753795015830011944) して無料でプレミアム機能を 12 時間試す\\n（ひとり一回のみ）\\n"
 "responses.premiumResponse.Invites" = "`/premium invites` で招待できるプレミアムボットのリストを表示します。"
-"responses.premiumResponse.PremiumDescription" = """
-Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!
-
-Below are some of the benefits you can customize with your Premium status!"""
+"responses.premiumResponse.PremiumDescription" = "AutoMuteUs の **{{.Tier}}** を利用しているようです！ {{.DaysString}}ご利用ありがとうございます！\\n\\nプレミアムユーザーは以下の特典が利用できます！"
 "responses.premiumResponse.PremiumDescriptionDaysRemaining" = "残り日数は {{.Days}} 日です。"
-"responses.premiumResponse.PremiumDescriptionExpired" = """
-Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦
-
-Please consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"""
+"responses.premiumResponse.PremiumDescriptionExpired" = "AutoMuteUs **{{.Tier}}** を利用いただいていましたが、残念ながら **{{.Days}} 日前に期限切れ** になってしまいました！😦\\n\\n次のリンクから再度加入できます： [AutoMuteUs プレミアムに加入]({{.BaseURL}}{{.GuildID}})"
 "responses.premiumResponse.PriorityGameAccess" = "👑 優先ゲームアクセス"
 "responses.premiumResponse.PriorityGameAccessDesc" = "ボットの負荷が高くても、プレミアムユーザーはいつでも新しいゲームを開始できます！"
 "responses.premiumResponse.Settings" = "🛠 特別な設定"
@@ -156,9 +98,7 @@ Please consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.Gui
 "responses.premiumResponse.StatsDesc" = "プレミアムユーザーは、フル機能のゲームの統計とリーダーボードを利用できます！"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs プレミアム 💎"
 "responses.settingResponse.Description" = "以下の設定を変更するには、`/settings <設定名>` を入力してください。"
-"responses.settingResponse.PremiumNoThanks" = """
-The following settings are only for AutoMuteUs premium users.
-Type `/premium` to learn more!"""
+"responses.settingResponse.PremiumNoThanks" = "以下の設定は、AutoMuteUs プレミアムのユーザー専用です。\\n詳しくは `/premium` と入力してください。"
 "responses.settingResponse.PremiumThanks" = "AutoMuteUs プレミアムをご利用いただきありがとうございます！"
 "responses.settingResponse.Title" = "設定"
 "responses.stats.Exiled" = "追放"
@@ -194,10 +134,7 @@ Type `/premium` to learn more!"""
 "responses.userStatsEmbed.WorstTeammateServerCrewmate" = "低勝率のクルーメイトチーム"
 "responses.userStatsEmbed.WorstTeammateServerImpostor" = "低勝率のインポスターチーム"
 "settings.ConstructEmbedForSetting.Fields.CurrentValue" = "現在の値"
-"settings.ConstructEmbedForSetting.StarterDesc" = """
-Type `/settings {{.Command}}` to view or change this setting.
-
-"""
+"settings.ConstructEmbedForSetting.StarterDesc" = "この設定を表示または変更するには、`/settings {{.Command}}` と入力してください。\\n\\n"
 "settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} はすでにボットの管理者です！"
 "settings.SettingAdminUserIDs.clearAdmins" = "管理者の設定をリセットしました！"
 "settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} はボットの管理者になりました！"
@@ -209,9 +146,7 @@ Type `/settings {{.Command}}` to view or change this setting.
 "settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} は True または False ではありません。使用方法は `/settings auto-refresh` を参照してください。"
 "settings.SettingDelays.Phase.UNINITIALIZED" = "フェーズ名 `{{.PhaseName}}` が正しくありません。フェーズは `LOBBY`、`TASKS`、`DISCUSSION` のいずれかです。"
 "settings.SettingDelays.delayBetweenPhases" = "`{{.PhaseA}}` から `{{.PhaseB}}` に遷移するときの遅延は、現在 {{.OldDelay}} 秒です。"
-"settings.SettingDelays.missingPhases" = """
-The list of game phases are `Lobby`, `Tasks` and `Discussion`.
-You need to type both phases the game is transitioning from and to to change the delay."""
+"settings.SettingDelays.missingPhases" = "フェーズは、`LOBBY`、`TASKS`、`DISCUSSION` のいずれかです。\\n遅延を変更するには、遷移前と遷移後の両方のフェーズを入力する必要があります。"
 "settings.SettingDelays.setDelayBetweenPhases" = "`{{.PhaseA}}` から `{{.PhaseB}}` に遷移するときの遅延を、{{.OldDelay}} 秒から {{.NewDelay}} 秒に変更しました。"
 "settings.SettingDelays.wrongNumber" = "`{{.Number}}` は有効な数字ではありません！ もう一度やり直してください"
 "settings.SettingDisplayRoomCode.AlwaysOrNever" = "以降、ステータスメッセージ中のルームコードの表示モードは {{.Arg}} です。"
@@ -220,10 +155,7 @@ You need to type both phases the game is transitioning from and to to change the
 "settings.SettingLanguage.notFound" = "言語が見つかりません！ 利用可能な言語コード： {{.Langs}}"
 "settings.SettingLanguage.notLoaded" = "言語ファイルが読み込まれませんでした！ {{.Langs}}"
 "settings.SettingLanguage.set" = "言語が `{{.LangCode}} ` に設定されました"
-"settings.SettingLanguage.set.needsTranslations" = """
-Localization is set to `{{.LangCode}}`, but it looks like the translations aren't complete!
-
-Help us translate the bot [here](https://automuteus.crowdin.com/)!"""
+"settings.SettingLanguage.set.needsTranslations" = "言語が `{{.LangCode}}` に設定されましたが、翻訳が充分ではないようです！\\n\\nボットの翻訳に [こちら](https://automateus.crowdin.com/) からご協力ください ！"
 "settings.SettingLanguage.tooShort" = "言語コードが短すぎるようです。利用できる言語コード： {{.Langs}}"
 "settings.SettingLeaderboardMention.False" = "以降、リーダーボードにはプレイヤーのニックネームを利用します。"
 "settings.SettingLeaderboardMention.True" = "以降、リーダーボードにはユーザーへのメンションを利用します。"
@@ -242,9 +174,7 @@ Help us translate the bot [here](https://automuteus.crowdin.com/)!"""
 "settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} は有効なテキストチャンネルの ID またはメンションではありません！"
 "settings.SettingMatchSummaryChannel.withChannelID" = "試合結果を投稿するテキストチャンネル ID を {{.channelID}} に変更しました！"
 "settings.SettingMuteSpectators.false_muteSpectators" = "以降、観戦者は自動ではミュートされません。"
-"settings.SettingMuteSpectators.true_noMuteSpectators" = """
-I will now mute spectators just like dead players. 
-**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**"""
+"settings.SettingMuteSpectators.true_noMuteSpectators" = "以降、観戦者は死者と同様に自動でミュートされます。\\n**セルフホスティングやプレミアムワーカーボットを使用していない場合、自動ミュートの遅延を引き起こす可能性がありますのでご注意ください！**"
 "settings.SettingPermissionRoleIDs.alreadyBotOperator" = "指定されたロールはすでにボットのオペレータに設定されています！"
 "settings.SettingPermissionRoleIDs.clearRoles" = "オペレータの設定をリセットしました！"
 "settings.SettingPermissionRoleIDs.newBotOperator" = "指定されたロールをボットオペレーターとして追加しました！"
@@ -271,3 +201,5 @@ I will now mute spectators just like dead players.
 "state.phase.LOBBY" = "ロビー"
 "state.phase.MENU" = "メニュー"
 "state.phase.TASKS" = "タスク"
+"locale.language.name" = "日本語"
+"responses.matchStatsEmbed.Title" = "ゲーム `{{.MatchID}}`"
