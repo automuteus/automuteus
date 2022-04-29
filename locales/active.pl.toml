@@ -3,26 +3,13 @@
 "commands.debug.clear.user.success" = "Successfully cleared cached usernames for {{.User}}"
 "commands.debug.view.error" = "Encountered an error trying to view debug information: {{.Error}}"
 "commands.debug.view.user.empty" = "I don't have any saved usernames for {{.User}}"
-"commands.debug.view.user.success" = """
-I have the following cached usernames for {{.User}}:
-```
-{{.Cached}}
-```"""
+"commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
 "commands.dm" = "Sorry, I don't respond to DMs. Please execute the command in a text channel instead."
 "commands.error" = "Error executing `{{.Command}}`: `{{.Error}}`"
 "commands.error.nogame" = "No game is currently running."
-"commands.error.reinvite" = """
-I'm missing the following required permissions to function properly in this server or channel:
-```
-{{.Perm}}```
-Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"""
-"commands.help.subtitle" = """
-[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)
-
-Type `/help <command>` to see more details on a command!"""
-"commands.help.title" = """
-AutoMuteUs Bot Commands:
-"""
+"commands.error.reinvite" = "I'm missing the following required permissions to function properly in this server or channel:\\n```\\n{{.Perm}}```\\nCheck the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)"
+"commands.help.subtitle" = "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\\n\\nType `/help <command>` to see more details on a command!"
+"commands.help.title" = "Komendy Bot AutoMuteUs:\\n"
 "commands.info.activegames" = "Aktywne gry"
 "commands.info.creator" = "Twórca"
 "commands.info.footer" = "v{{.Version}}-{{.Commit}} | Odłamek {{.ID}}/{{.Num}}"
@@ -38,45 +25,26 @@ AutoMuteUs Bot Commands:
 "commands.link.nogamedata" = "No game data found for the color `{{.Color}}`"
 "commands.link.noplayer" = "No player in the current game was detected for {{.UserMention}}"
 "commands.link.success" = "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`"
-"commands.new.lockout" = """
-If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦
-Please try again in a few minutes, or consider AutoMuteUs Premium (`/premium info`)
-Current Games: {{.Games}}"""
+"commands.new.lockout" = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`/premium info`)\\nCurrent Games: {{.Games}}"
 "commands.new.nochannel" = "Please join a voice channel before starting a match!"
-"commands.new.success" = """
-Click the following link to link your capture: 
- <{{.hyperlink}}>
-
-Don't have the capture installed? Latest version [here]({{.downloadURL}})
-
-To link your capture manually:"""
+"commands.new.success" = "Kliknij poniższy link, aby połączyć swoje przechwytywanie: \\n <{{.hyperlink}}>\\n\\nNie masz zainstalowanego przechwytywania? Najnowsza wersja [here]({{.downloadURL}})\\n\\nAby połączyć przechwytywanie ręcznie:"
 "commands.new.success.code" = "Kod"
 "commands.new.success.url" = "Adres URL"
 "commands.no_permissions" = "Sorry, you don't have the required permissions to issue that command."
-"commands.privacy.info" = """
-AutoMuteUs privacy and data collection details.
-More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"""
-"commands.privacy.opt.error" = """
-❌ I encountered an error changing your opt in/out status:
-`{{.Error}}`"""
+"commands.privacy.info" = "AutoMuteUs dane prywatności i gromadzenia danych.\\nWięcej szczegółów [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
+"commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
 "commands.privacy.opt.success" = "✅ I successfully changed your opt in/out status"
 "commands.privacy.showme.cache" = "❗ Here's your cached in-game names:"
 "commands.privacy.showme.nocache" = "❌ I don't have any cached player names stored for you!"
 "commands.privacy.showme.optin" = "❗ You are opted **in** to data collection for game statistics"
 "commands.privacy.showme.optout" = "❌ You are opted **out** of data collection for game statistics, or you haven't played a game yet"
-"commands.stats.guild.reset.confirmation" = """
-⚠️**Are you sure?**⚠️
-Do you really want to reset the stats for **{{.Guild}}**?
-This process cannot be undone!"""
+"commands.stats.guild.reset.confirmation" = "⚠️**Are you sure?**⚠️\\nDo you really want to reset the stats for **{{.Guild}}**?\\nThis process cannot be undone!"
 "commands.stats.guild.reset.error" = "Encountered an error resetting the stats for this guild: {{.Error}}"
 "commands.stats.guild.reset.success" = "Successfully reset the stats for **{{.Guild}}**!"
 "commands.stats.reset.button.cancel" = "Cancel"
 "commands.stats.reset.button.proceed" = "RESET"
 "commands.stats.reset.canceled" = "Operation has been canceled"
-"commands.stats.user.reset.confirmation" = """
-⚠️**Are you sure?**⚠️
-Do you really want to reset the stats for {{.User}}?
-This process cannot be undone!"""
+"commands.stats.user.reset.confirmation" = "⚠️**Are you sure?**⚠️\\nDo you really want to reset the stats for {{.User}}?\\nThis process cannot be undone!"
 "commands.stats.user.reset.error" = "Encountered an error resetting the stats for {{.User}}: {{.Error}}"
 "commands.stats.user.reset.notfound" = "Failed to gather user from message!"
 "commands.stats.user.reset.success" = "Successfully reset the stats for {{.User}}!"
@@ -84,15 +52,8 @@ This process cannot be undone!"""
 "commands.unlink.success" = "Successfully unlinked {{.UserMention}}"
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "Niepołączone"
 "eventHandler.gameOver.deleteMessageFooter" = "Usuwanie wiadomości {{.Mins}} min z:"
-"eventHandler.gameOver.matchID" = """
-Game Over! View the match's stats using Match ID: `{{.MatchID}}`
-{{.Winners}}"""
-"message_handlers.useslashcommands" = """
-Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!
-
-For example, try `/help`, `/new`, etc.
-
-If you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"""
+"eventHandler.gameOver.matchID" = "Zakończono grę! Zobacz statystyki meczu używając ID meczu: `{{.MatchID}}`\\n{{.Winners}}"
+"message_handlers.useslashcommands" = "Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!\\n\\nFor example, try `/help`, `/new`, etc.\\n\\nIf you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us"
 "processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
 "responses.gameStatsEmbed.NoPremium" = "Detailed match stats are only available for AutoMuteUs Premium users; type `/premium` to learn more"
 "responses.guildStatsEmbed.CrewmateWins" = "Współczynnik zwycięstw Crewmate ({{.Min}}+ Gry)"
@@ -113,40 +74,21 @@ If you don't see any slash commands in your chat, you may need to re-invite me h
 "responses.lobbyMetaEmbedFields.Region" = "🌎 REGION"
 "responses.lobbyMetaEmbedFields.RoomCode" = "🔒 KOD ROOM"
 "responses.lobbyMetaEmbedFields.VoiceChannel" = "Kanał głosowy"
-"responses.makeDescription.GameNotRunning" = """
-
-⚠ **Bot is Paused!** ⚠
-
-"""
+"responses.makeDescription.GameNotRunning" = "\\n⚠ **Bot jest wstrzymany!** ⚠\\n\\n"
 "responses.menuMessage.Linked.FooterText" = "(Użyj lobby gry pośród nas, aby rozpocząć mecze)"
 "responses.menuMessage.Title" = "Menu główne"
 "responses.menuMessage.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
 "responses.nonPremiumSetting.Desc" = "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details"
 "responses.premiumInviteResponse.Title" = "Premium Bot Invites"
 "responses.premiumInviteResponse.desc" = "{{.Tier}} użytkowników ma dostęp do {{.Count}} wyciszonych botów: zaproszenia przedstawione poniżej!"
-"responses.premiumInviteResponseNoAccess.desc" = """
-{{.Tier}} users don't have access to Priority mute bots!
-Please type `/premium` to see more details about AutoMuteUs Premium"""
+"responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
 "responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
 "responses.premiumResponse.FastMuteDesc" = 'Użytkownicy premium uzyskują dostęp do "pomocników" botów, które upewniają się, że wyciszenie jest szybkie!'
-"responses.premiumResponse.FreeDescription" = """
-Check out the cool things that Premium AutoMuteUs has to offer!
-
-[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})
-or
-[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!
-(One time per user)
-"""
+"responses.premiumResponse.FreeDescription" = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\\nor\\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\\n(One time per user)\\n"
 "responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
-"responses.premiumResponse.PremiumDescription" = """
-Looks like you have AutoMuteUs **{{.Tier}}**{{.DaysString}}! Thanks for the support!
-
-Below are some of the benefits you can customize with your Premium status!"""
+"responses.premiumResponse.PremiumDescription" = "Wygląda na to, że masz AutoMuteUs **{{.Tier}}**{{.DaysString}}! Dziękujemy za wsparcie!\\n\\nPoniżej znajdują się niektóre z korzyści, które możesz dostosować do swojego statusu Premium!"
 "responses.premiumResponse.PremiumDescriptionDaysRemaining" = " na kolejne {{.Days}} dni"
-"responses.premiumResponse.PremiumDescriptionExpired" = """
-Oh no! It looks like you used to have AutoMuteUs **{{.Tier}}**, but it **expired {{.Days}} days ago**! 😦
-
-Please consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"""
+"responses.premiumResponse.PremiumDescriptionExpired" = "O nie! Wygląda na to, że używałeś AutoMuteUs **{{.Tier}}**, ale **wygasło {{.Days}} dni temu**! 😦\\n\\nRozważ ponowną subskrypcję tutaj: [Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})"
 "responses.premiumResponse.PriorityGameAccess" = "👑 Priorytetowy dostęp do gry"
 "responses.premiumResponse.PriorityGameAccessDesc" = "Jeśli bot jest poważnie załadowany, użytkownicy Premium zawsze będą mogli tworzyć nowe gry!"
 "responses.premiumResponse.Settings" = "🛠 Ustawienia specjalne"
@@ -156,9 +98,7 @@ Please consider re-subscribing here: [Get AutoMuteUs Premium]({{.BaseURL}}{{.Gui
 "responses.premiumResponse.StatsDesc" = "Użytkownicy premium mają dostęp do pełnego zestawu statystyk graczy i tablic wyników!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
 "responses.settingResponse.Description" = "Type `/settings <setting>` to change a setting from those listed below"
-"responses.settingResponse.PremiumNoThanks" = """
-The following settings are only for AutoMuteUs premium users.
-Type `/premium` to learn more!"""
+"responses.settingResponse.PremiumNoThanks" = "The following settings are only for AutoMuteUs premium users.\\nType `/premium` to learn more!"
 "responses.settingResponse.PremiumThanks" = "Dziękujemy za bycie użytkownikiem AutoMuteUs Premium!"
 "responses.settingResponse.Title" = "Ustawienia"
 "responses.stats.Exiled" = "Wygnany"
@@ -194,10 +134,7 @@ Type `/premium` to learn more!"""
 "responses.userStatsEmbed.WorstTeammateServerCrewmate" = "Najgorszy Crewmate Drużyna"
 "responses.userStatsEmbed.WorstTeammateServerImpostor" = "Najgorszy Zespół Impostora"
 "settings.ConstructEmbedForSetting.Fields.CurrentValue" = "Aktualna wartość"
-"settings.ConstructEmbedForSetting.StarterDesc" = """
-Type `/settings {{.Command}}` to view or change this setting.
-
-"""
+"settings.ConstructEmbedForSetting.StarterDesc" = "Type `/settings {{.Command}}` to view or change this setting.\\n\\n"
 "settings.SettingAdminUserIDs.alreadyBotAdmin" = "{{.User}} was already a bot admin!"
 "settings.SettingAdminUserIDs.clearAdmins" = "Czyszczenie wszystkich AdminUserID!"
 "settings.SettingAdminUserIDs.newBotAdmin" = "{{.User}} is now a bot admin!"
@@ -209,9 +146,7 @@ Type `/settings {{.Command}}` to view or change this setting.
 "settings.SettingAutoRefresh.Unrecognized" = "{{.Arg}} is not a true/false value. See `/settings auto-refresh` for usage"
 "settings.SettingDelays.Phase.UNINITIALIZED" = "Nie wiem, co jest `{{.PhaseName}}`. Lista faz gry to `Lobby`, `Tasks` i `Discussion`."
 "settings.SettingDelays.delayBetweenPhases" = "Obecnie opóźnienie przy przechodzeniu z `{{.PhaseA}}` do `{{.PhaseB}}` wynosi {{.OldDelay}}."
-"settings.SettingDelays.missingPhases" = """
-The list of game phases are `Lobby`, `Tasks` and `Discussion`.
-You need to type both phases the game is transitioning from and to to change the delay."""
+"settings.SettingDelays.missingPhases" = "Lista faz gry to `Lobby`, `Tasks` i `Discussion`.\\nMusisz wpisać obie fazy, z których gra przechodzi i zmienić opóźnienie."
 "settings.SettingDelays.setDelayBetweenPhases" = "Opóźnienie podczas przejścia z `{{.PhaseA}}` na `{{.PhaseB}}` zmieniło się z {{.OldDelay}} na {{.NewDelay}}."
 "settings.SettingDelays.wrongNumber" = "`{{.Number}}` nie jest prawidłową liczbą! Spróbuj ponownie"
 "settings.SettingDisplayRoomCode.AlwaysOrNever" = "Od teraz {{.Arg}} wyświetli kod pokoju w wiadomości"
@@ -220,10 +155,7 @@ You need to type both phases the game is transitioning from and to to change the
 "settings.SettingLanguage.notFound" = "Język nie znaleziony! Dostępne kody języka: {{.Langs}}"
 "settings.SettingLanguage.notLoaded" = "Pliki lokalizacji nie zostały załadowane! {{.Langs}}"
 "settings.SettingLanguage.set" = "Localization is set to `{{.LangCode}}`"
-"settings.SettingLanguage.set.needsTranslations" = """
-Localization is set to `{{.LangCode}}`, but it looks like the translations aren't complete!
-
-Help us translate the bot [here](https://automuteus.crowdin.com/)!"""
+"settings.SettingLanguage.set.needsTranslations" = "Localization is set to `{{.LangCode}}`, but it looks like the translations aren't complete!\\n\\nHelp us translate the bot [here](https://automuteus.crowdin.com/)!"
 "settings.SettingLanguage.tooShort" = "Przepraszamy, kod języka jest krótki. Dostępne kody języka: {{.Langs}}."
 "settings.SettingLeaderboardMention.False" = "Od teraz będę używać pseudonimów gracza/nazw użytkowników w tablicy wyników"
 "settings.SettingLeaderboardMention.True" = "Od teraz wspomnę graczy bezpośrednio w rankingu"
@@ -242,9 +174,7 @@ Help us translate the bot [here](https://automuteus.crowdin.com/)!"""
 "settings.SettingMatchSummaryChannel.invalidChannelID" = "{{.channelID}} is not a valid text channel ID or mention!"
 "settings.SettingMatchSummaryChannel.withChannelID" = "Match Summary text channel ID changed to {{.channelID}}!"
 "settings.SettingMuteSpectators.false_muteSpectators" = "Nie będę już wyciszać obserwatorów jak martwi gracze"
-"settings.SettingMuteSpectators.true_noMuteSpectators" = """
-I will now mute spectators just like dead players. 
-**Note, this can cause delays or slowdowns when not self-hosting, or using a Premium worker bot!**"""
+"settings.SettingMuteSpectators.true_noMuteSpectators" = "Teraz wyciszę obserwatorów tak samo jak martwych graczy. \\n**Uwaga, może to spowodować opóźnienia lub spowolnienie w przypadku niesamodzielnego hostingu lub użycia robotnika Premium!**"
 "settings.SettingPermissionRoleIDs.alreadyBotOperator" = "That role was already a bot operator!"
 "settings.SettingPermissionRoleIDs.clearRoles" = "Usuwanie wszystkich uprawnieńRoleID!"
 "settings.SettingPermissionRoleIDs.newBotOperator" = "I successfully added that role as bot operators!"
@@ -271,3 +201,5 @@ I will now mute spectators just like dead players.
 "state.phase.LOBBY" = "LOBBY"
 "state.phase.MENU" = "MENU"
 "state.phase.TASKS" = "ZADANIA"
+"locale.language.name" = "Angielski"
+"responses.matchStatsEmbed.Title" = "Gra `{{.MatchID}}`"
