@@ -186,13 +186,23 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID: "responses.premiumResponse.FreeDescription",
 			Other: "Check out the cool things that Premium AutoMuteUs has to offer!\n\n" +
-				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\nor\n" +
-				"[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\n" +
-				"(One time per user)\n",
+				"[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\n",
 		}, map[string]interface{}{
 			"BaseURL": BasePremiumURL,
 			"GuildID": guildID,
 		})
+		if tier == premium.TrialTier {
+			desc += sett.LocalizeMessage(&i18n.Message{
+				ID:    "responses.premiumResponse.Trial",
+				Other: "You're currently on a TRIAL of AutoMuteUs Premium\n\n",
+			})
+		} else {
+			desc += sett.LocalizeMessage(&i18n.Message{
+				ID: "responses.premiumResponse.TopGG",
+				Other: "or\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\n" +
+					"(One time per user)\n\n",
+			})
+		}
 		fields = []*discordgo.MessageEmbedField{
 			{
 				Name: sett.LocalizeMessage(&i18n.Message{
