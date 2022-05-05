@@ -3,7 +3,7 @@ module github.com/automuteus/automuteus
 go 1.18
 
 require (
-	github.com/automuteus/utils v0.2.1
+	github.com/automuteus/utils v0.3.0
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.24.0
 	github.com/go-redis/redis/v8 v8.8.0
@@ -50,5 +50,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
-
-replace github.com/automuteus/utils => ../utils
