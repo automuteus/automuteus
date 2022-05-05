@@ -21,7 +21,7 @@ const (
 )
 
 func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) error {
-	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(nil, dgs.GuildID, "")
+	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
 	premTier := premium.FreeTier
 	if !premium.IsExpired(prem, days) {
 		premTier = prem
@@ -83,7 +83,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 		}
 	}
 	if len(users) > 0 {
-		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(nil, dgs.GuildID, "")
+		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
 		premTier := premium.FreeTier
 		if !premium.IsExpired(prem, days) {
 			premTier = prem
@@ -187,7 +187,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 	}
 
 	if dgs.Running && len(users) > 0 {
-		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(nil, dgs.GuildID, "")
+		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
 		premTier := premium.FreeTier
 		if !premium.IsExpired(prem, days) {
 			premTier = prem

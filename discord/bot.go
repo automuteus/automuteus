@@ -25,7 +25,8 @@ import (
 )
 
 type Bot struct {
-	url string
+	official bool
+	url      string
 
 	// mapping of socket connections to the game connect codes
 	ConnsToGames map[string]string
@@ -69,6 +70,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	}
 
 	bot := Bot{
+		official:     os.Getenv("AUTOMUTEUS_OFFICIAL") != "",
 		url:          url,
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
@@ -409,7 +411,8 @@ func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64)
 
 		dgs.Reset()
 	} else {
-		premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, dgs.GuildID, dgs.GameStateMsg.LeaderID)
+		premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(
+			bot.official, bot.TopGGClient, dgs.GuildID, dgs.GameStateMsg.LeaderID)
 		if err != nil {
 			log.Println("Error in /newgame get premium:", err)
 		}

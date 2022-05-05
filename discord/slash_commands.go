@@ -241,7 +241,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isAdmin {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
 			if err != nil {
 				log.Println("Err in /settings get premium:", err)
 			}
@@ -389,7 +389,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		case command.Stats.Name:
 			action, opType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
 			prem := true
-			tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
 			if err != nil {
 				log.Println("Error in /stats getPremium:", err)
 			}
@@ -461,7 +461,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
 			if err != nil {
 				log.Println("Err in /premium get guild prem:", err)
 			}
