@@ -84,7 +84,7 @@
 "responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} users don't have access to Priority mute bots!\\nPlease type `/premium` to see more details about AutoMuteUs Premium"
 "responses.premiumResponse.FastMute" = "🙊 Fast Mute/Deafen"
 "responses.premiumResponse.FastMuteDesc" = 'Premium-brukere får tilgang til "hjelpere" botter som sørger for at demping er raskt!'
-"responses.premiumResponse.FreeDescription" = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\\nor\\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\\n(One time per user)\\n"
+"responses.premiumResponse.FreeDescription" = "Check out the cool things that Premium AutoMuteUs has to offer!\\n\\n[Get AutoMuteUs Premium]({{.BaseURL}}{{.GuildID}})\\n"
 "responses.premiumResponse.Invites" = "View a list of Premium bots you can invite with `/premium invites`!"
 "responses.premiumResponse.PremiumDescription" = "Ser ut som du har AutoMuteUs **{{.Tier}}**{{.DaysString}}-! Takk for støtten!\\n\\nnedenfor viser noen av fordelene du kan tilpasse med din Premium-status!"
 "responses.premiumResponse.PremiumDescriptionDaysRemaining" = " i ytterligere {{.Days}} dager"
@@ -97,6 +97,8 @@
 "responses.premiumResponse.Stats" = "📊 Spillstatistikk og lister"
 "responses.premiumResponse.StatsDesc" = "Premium-brukere har tilgang til en full samling av spillerstatistikk og ledertavler!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
+"responses.premiumResponse.TopGG" = "or\\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\\n(One time per user)\\n\\n"
+"responses.premiumResponse.Trial" = "You're currently on a TRIAL of AutoMuteUs Premium\\n\\n"
 "responses.settingResponse.Description" = "Type `/settings <setting>` to change a setting from those listed below"
 "responses.settingResponse.PremiumNoThanks" = "The following settings are only for AutoMuteUs premium users.\\nType `/premium` to learn more!"
 "responses.settingResponse.PremiumThanks" = "Takk for at du var AutoMuteUs Premium-bruker!"
