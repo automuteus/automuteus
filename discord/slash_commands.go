@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command/locales"
 	"log"
 	"regexp"
 	"strings"
@@ -399,7 +400,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if action == setting.View {
 				var embed *discordgo.MessageEmbed
 				switch opType {
-				case command.User:
+				case locales.DefaultFields.User:
 					embed = bot.UserStatsEmbed(id, i.GuildID, sett, prem)
 				case command.Guild:
 					embed = bot.GuildStatsEmbed(i.GuildID, sett, prem)
@@ -430,7 +431,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				var content string
 				var components []discordgo.MessageComponent
 				switch opType {
-				case command.User:
+				case locales.DefaultFields.User:
 					content = sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.stats.user.reset.confirmation",
 						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for {{.User}}?\nThis process cannot be undone!",
@@ -473,11 +474,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		case command.Debug.Name:
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
 			if action == setting.View {
-				if opType == command.User {
+				if opType == locales.DefaultFields.User {
 					cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
 					log.Println("View user cache")
 					return command.DebugResponse(setting.View, cached, nil, id, err, sett)
-				} else if opType == command.GameState {
+				} else if opType == locales.DefaultFields.GameState {
 					state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 					if state != nil {
 						jBytes, err := json.MarshalIndent(state, "", "  ")
@@ -487,7 +488,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					}
 				}
 			} else if action == setting.Clear {
-				if opType == command.User {
+				if opType == locales.DefaultFields.User {
 					if id != i.Member.User.ID {
 						if !isAdmin {
 							return command.InsufficientPermissionsResponse(sett)

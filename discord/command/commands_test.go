@@ -1,8 +1,12 @@
 package command
 
 import (
+	"embed"
 	"testing"
 )
+
+//go:embed locales/active.*.toml
+var localizedCommandFiles embed.FS
 
 func TestParseLocalizations(t *testing.T) {
 	entries, err := localizedCommandFiles.ReadDir("locales")

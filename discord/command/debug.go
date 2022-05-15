@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/discord/command/locales"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
@@ -9,25 +10,17 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-const (
-	User      = "user"
-	GameState = "game-state"
-)
-
-//go:embed ../../locales/command/debug.toml
-const
-
 var Debug = discordgo.ApplicationCommand{
 	Name:        "debug",
 	Description: "View and clear debug information for AutoMuteUs",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:              setting.View,
+			Name:              locales.DefaultFields.View,
 			NameLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",
 			},
-			Description:              "View debug info",
+			Description:              locales.DefaultFields.DebugViewDesc,
 			DescriptionLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",
@@ -35,12 +28,12 @@ var Debug = discordgo.ApplicationCommand{
 			Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:              User,
+					Name:              locales.DefaultFields.User,
 					NameLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
 					},
-					Description:              "User Cache",
+					Description:              locales.DefaultFields.DebugViewUserDesc,
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
@@ -48,12 +41,12 @@ var Debug = discordgo.ApplicationCommand{
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:              User,
+							Name:              locales.DefaultFields.User,
 							NameLocalizations: map[discordgo.Locale]string{
 								// TODO
 								// discordgo.Japanese: "",
 							},
-							Description:              "User whose cache you want to view",
+							Description:              locales.DefaultFields.DebugViewUserCacheDesc,
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								// TODO
 								// discordgo.Japanese: "",
@@ -64,12 +57,12 @@ var Debug = discordgo.ApplicationCommand{
 					},
 				},
 				{
-					Name:              GameState,
+					Name:              locales.DefaultFields.GameState,
 					NameLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
 					},
-					Description:              "Game State",
+					Description:              locales.DefaultFields.DebugViewGameStateDesc,
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
@@ -79,12 +72,12 @@ var Debug = discordgo.ApplicationCommand{
 			},
 		},
 		{
-			Name:              setting.Clear,
+			Name:              locales.DefaultFields.Clear,
 			NameLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",
 			},
-			Description:              "Clear debug info",
+			Description:              locales.DefaultFields.DebugClearDesc,
 			DescriptionLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",
@@ -92,12 +85,12 @@ var Debug = discordgo.ApplicationCommand{
 			Type: discordgo.ApplicationCommandOptionSubCommand,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:              User,
+					Name:              locales.DefaultFields.User,
 					NameLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
 					},
-					Description:              "User whose cache should be cleared",
+					Description:              locales.DefaultFields.DebugClearUserDesc,
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						// TODO
 						// discordgo.Japanese: "",
@@ -108,12 +101,12 @@ var Debug = discordgo.ApplicationCommand{
 			},
 		},
 		{
-			Name:              UnmuteAll,
+			Name:              locales.DefaultFields.DebugUnmuteAllName,
 			NameLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",
 			},
-			Description:              "Unmute all players",
+			Description:              locales.DefaultFields.DebugUnmuteAllDesc,
 			DescriptionLocalizations: map[discordgo.Locale]string{
 				// TODO
 				// discordgo.Japanese: "",

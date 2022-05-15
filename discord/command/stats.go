@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/automuteus/automuteus/discord/command/locales"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/bwmarrin/discordgo"
 )
@@ -20,12 +21,12 @@ var Stats = discordgo.ApplicationCommand{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        User,
+					Name:        locales.DefaultFields.User,
 					Description: "User stats",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        User,
+							Name:        locales.DefaultFields.User,
 							Description: "User whose stats you want to view",
 							Type:        discordgo.ApplicationCommandOptionUser,
 							Required:    true,
@@ -58,12 +59,12 @@ var Stats = discordgo.ApplicationCommand{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        User,
+					Name:        locales.DefaultFields.User,
 					Description: "User stats",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Name:        User,
+							Name:        locales.DefaultFields.User,
 							Description: "User whose stats you want to clear",
 							Type:        discordgo.ApplicationCommandOptionUser,
 							Required:    true,
@@ -84,7 +85,7 @@ func GetStatsParams(s *discordgo.Session, guildID string, options []*discordgo.A
 	action = options[0].Name
 	opType = options[0].Options[0].Name
 	switch opType {
-	case User:
+	case locales.DefaultFields.User:
 		id = options[0].Options[0].Options[0].UserValue(s).ID
 	case Guild:
 		id = guildID
