@@ -14,6 +14,9 @@ const (
 	GameState = "game-state"
 )
 
+//go:embed ../../locales/command/debug.toml
+const
+
 var Debug = discordgo.ApplicationCommand{
 	Name:        "debug",
 	Description: "View and clear debug information for AutoMuteUs",
