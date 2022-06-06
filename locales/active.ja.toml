@@ -53,7 +53,6 @@
 "discordGameState.ToEmojiEmbedFields.Unlinked" = "未リンク"
 "eventHandler.gameOver.deleteMessageFooter" = "このメッセージは {{.Mins}} 分後に削除されます。"
 "eventHandler.gameOver.matchID" = "ゲーム終了！ 次のマッチ ID を使用してこの試合の統計情報を表示できます： `{{.MatchID}}`\\n{{.Winners}}"
-"message_handlers.useslashcommands" = "ごめんなさい、`.au` コマンドはもう使えません。新しいスラッシュコマンドを使ってください！\\n\\n例えば、 `/help` や `/new` などのコマンドが使えます。\\n\\nもしスラッシュコマンドがチャットに出てこない場合は、次のリンクからボットを再招待してください： https://add.automute.us"
 "processplayer.error" = "{{.User}} のミュートまたはスピーカーミュート中にエラーが発生しました。{{.VoiceChannel}} でミュート / スピーカーミュートの権限がボットにあることを確認してください。"
 "responses.gameStatsEmbed.NoPremium" = "試合ごとの詳細な統計は AutoMuteUs プレミアムのユーザーのみ利用できます。詳細は `/premium` を入力してください。"
 "responses.guildStatsEmbed.CrewmateWins" = "クルーメイト勝率（{{.Min}} ゲーム以上）"
