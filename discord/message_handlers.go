@@ -1,13 +1,9 @@
 package discord
 
 import (
-	redis_common "github.com/automuteus/automuteus/common"
-	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/settings"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/automuteus/utils/pkg/premium"
@@ -146,38 +142,4 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 
 	// release the lock
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
-}
-func (bot *Bot) handleMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// only respond to .au in this deprecated listener
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
-	// check .au or a bot mention
-	if !strings.HasPrefix(m.Content, ".au") && !strings.HasPrefix(m.Content, discord.MentionByUserID(s.State.User.ID)) {
-		return
-	}
-
-	if redis_common.IsUserBanned(bot.RedisInterface.client, m.Author.ID) || redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, m.Author.ID) {
-		return
-	}
-
-	lock := bot.RedisInterface.LockSnowflake(m.ID)
-	// couldn't obtain lock; bail bail bail!
-	if lock == nil {
-		return
-	}
-	defer lock.Release(ctx)
-
-	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
-	redis_common.MarkUserRateLimit(bot.RedisInterface.client, m.Author.ID, "", 0)
-	_, err := s.ChannelMessageSend(m.ChannelID, sett.LocalizeMessage(&i18n.Message{
-		ID: "message_handlers.useslashcommands",
-		Other: "Sorry, I don't respond to `.au` or mentions anymore, please use my new slash commands!\n\n" +
-			"For example, try `/help`, `/new`, etc.\n\n" +
-			"If you don't see any slash commands in your chat, you may need to re-invite me here: https://add.automute.us",
-	}))
-	if err != nil {
-		log.Println("err sending useslashcommands message: ", err)
-	}
 }

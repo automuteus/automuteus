@@ -91,7 +91,6 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
 	dg.AddHandler(bot.rateLimitEventCallback)
-	dg.AddHandler(bot.handleMessageCreate)
 	// Slash commands
 	dg.AddHandler(bot.handleInteractionCreate)
 
