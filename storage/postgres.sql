@@ -26,6 +26,9 @@ create table if not exists users
     vote_time_unix integer --if they've ever voted for the bot on top.gg
 );
 
+-- add vote_time_unix column if not exists due to upgrade from 7.1.2 or earlier
+alter table users add column if not exists vote_time_unix integer;
+
 create table if not exists game_events
 (
     event_id   bigserial,
