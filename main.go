@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/utils/pkg/locale"
 	storage2 "github.com/automuteus/utils/pkg/storage"
@@ -85,13 +86,20 @@ func discordMainWrapper() error {
 	}
 
 	shardIDStr := os.Getenv("SHARD_ID")
-	shardID, err := strconv.Atoi(shardIDStr)
-	if shardID >= numShards {
-		return errors.New("you specified a shardID higher than or equal to the total number of shards")
+	if shardIDStr != "" {
+		return errors.New("SHARD_ID is no longer supported! Please use SHARD_RANGE instead")
 	}
-	if err != nil {
-		log.Println("No SHARD_ID specified; defaulting to 0")
-		shardID = 0
+
+	var shardRange shardRange
+	shardRangeStr := os.Getenv("SHARD_RANGE")
+	if shardRangeStr == "" {
+		log.Println("No SHARD_RANGE specified, defaulting to 0,0")
+		shardRange = defaultShardRange()
+	} else {
+		shardRange, err = parseShardRange(os.Getenv("SHARD_RANGE"), numShards)
+		if err != nil {
+			return err
+		}
 	}
 
 	url := os.Getenv("HOST")
@@ -174,9 +182,14 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
-	if bot == nil {
-		log.Fatal("bot failed to initialize; did you provide a valid Discord Bot Token?")
+	bots := make([]*discord.Bot, shardRange.max-shardRange.min)
+	var i int
+	for shard := shardRange.min; shard < shardRange.max; shard++ {
+		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+		if bots[i] == nil {
+			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
+		}
+		i++
 	}
 
 	// empty string entry = global
@@ -186,8 +199,9 @@ func discordMainWrapper() error {
 		slashCommandGuildIds = strings.Split(slashCommandGuildIdStr, ",")
 	}
 
+	// only register commands if we're not the official bot, OR we're the first shard
 	var registeredCommands []registeredCommand
-	if !isOfficial || shardID == 0 {
+	if !isOfficial || shardRange.isFirstShard() {
 		for _, guild := range slashCommandGuildIds {
 			for _, v := range command.All {
 				if guild == "" {
@@ -196,7 +210,7 @@ func discordMainWrapper() error {
 					log.Printf("Registering command %s in guild %s\n", v.Name, guild)
 				}
 
-				id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
+				id, err := bots[0].PrimarySession.ApplicationCommandCreate(bots[0].PrimarySession.State.User.ID, guild, v)
 				if err != nil {
 					log.Panicf("Cannot create command: %v", err)
 				} else {
@@ -214,7 +228,8 @@ func discordMainWrapper() error {
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	if !isOfficial {
+	// only delete the slash commands if we're not the official bot, and the first shard
+	if !isOfficial && shardRange.isFirstShard() {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
 			if v.GuildID == "" {
@@ -222,7 +237,7 @@ func discordMainWrapper() error {
 			} else {
 				log.Printf("Deleting command %s on guild %s\n", v.ApplicationCommand.Name, v.GuildID)
 			}
-			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
+			err = bots[0].PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
 			if err != nil {
 				log.Println(err)
 			}
@@ -230,6 +245,52 @@ func discordMainWrapper() error {
 		log.Println("Finished deleting all commands")
 	}
 
-	bot.Close()
+	for _, v := range bots {
+		v.Close()
+	}
 	return nil
+}
+
+type shardRange struct {
+	min, max int
+}
+
+func defaultShardRange() shardRange {
+	return shardRange{
+		min: 0,
+		max: 0,
+	}
+}
+
+// IsFirstShard indicates if we're running in the (default) single shard mode
+func (sr shardRange) isFirstShard() bool {
+	return sr.min == 0 && sr.max == 0
+}
+
+func parseShardRange(str string, maxShards int) (shardRange, error) {
+	var sRange shardRange
+	var err error
+	var min, max uint64
+
+	tokens := strings.Split(strings.ReplaceAll(str, " ", ""), ",")
+	if len(tokens) != 2 {
+		return sRange, errors.New("error parsing shard range string: \"" + str + "\"; expected 2 uints separated by ,")
+	}
+	min, err = strconv.ParseUint(tokens[0], 10, 64)
+	if err != nil {
+		return sRange, err
+	}
+	max, err = strconv.ParseUint(tokens[1], 10, 64)
+	if err != nil {
+		return sRange, err
+	}
+	sRange.min = int(min)
+	sRange.max = int(max)
+	if sRange.min > sRange.max {
+		return sRange, fmt.Errorf("shard range min: %d is greater than shard range max: %d", sRange.min, sRange.max)
+	}
+	if sRange.max >= maxShards {
+		return sRange, fmt.Errorf("shard range max: %d is greater or equal to the total number of shards: %d", sRange.max, max)
+	}
+	return sRange, nil
 }
