@@ -76,8 +76,8 @@ func GetDebugParams(s *discordgo.Session, userID string, options []*discordgo.Ap
 			userID = options[0].Options[0].Options[0].UserValue(s).ID
 		}
 	case setting.Clear:
-		if len(options[0].Options[0].Options) > 0 {
-			userID = options[0].Options[0].Options[0].UserValue(s).ID
+		if len(options[0].Options) > 0 {
+			userID = options[0].Options[0].UserValue(s).ID
 		}
 	}
 	return action, opType, userID
