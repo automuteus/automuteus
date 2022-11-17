@@ -20,19 +20,20 @@ const (
 // All is all slash commands for the bot, ordered to match the README
 var All = []*discordgo.ApplicationCommand{
 	&Help,
-	&New,
-	&Refresh,
-	&Pause,
-	&End,
-	&Link,
-	&Unlink,
-	&Settings,
-	&Privacy,
-	&Info,
-	&Map,
-	&Stats,
-	&Premium,
-	&Debug,
+	//&New,
+	//&Refresh,
+	//&Pause,
+	//&End,
+	//&Link,
+	//&Unlink,
+	//&Settings,
+	//&Privacy,
+	//&Info,
+	//&Map,
+	//&Stats,
+	//&Premium,
+	//&Debug,
+	&Download,
 }
 
 func DeadlockGameStateResponse(command string, sett *settings.GuildSettings) *discordgo.InteractionResponse {

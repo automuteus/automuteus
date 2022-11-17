@@ -12,6 +12,8 @@ const GlobalUserRateLimitDuration = 1 * time.Second
 
 const NewGameRateLimitDuration = 3000 * time.Millisecond
 
+const GuildDownloadCooldown = 24 * time.Hour
+
 // when a user exceeds the threshold, they're ignored for this long
 const SoftbanDuration = 5 * time.Minute
 
@@ -35,6 +37,10 @@ func UserSoftbanKey(userID string) string {
 
 func UserSoftbanCountKey(userID string) string {
 	return "automuteus:ratelimit:softban:count:user:" + userID
+}
+
+func GuildDownloadCooldownKey(guildID string) string {
+	return "automuteus:ratelimit:download:guild:" + guildID
 }
 
 func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttl time.Duration) {
@@ -112,4 +118,22 @@ func IsUserRateLimitedSpecific(client *redis.Client, userID string, cmdType stri
 		return false
 	}
 	return v == 1 // =1 means the user is present, and thus rate-limited
+}
+
+func MarkGuildDownloadCooldown(client *redis.Client, guildID string) {
+	err := client.Set(context.Background(), GuildDownloadCooldownKey(guildID), "", GuildDownloadCooldown).Err()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func GetGuildDownloadCooldown(client *redis.Client, guildID string) (time.Duration, error) {
+	v, err := client.TTL(context.Background(), GuildDownloadCooldownKey(guildID)).Result()
+	if err == redis.Nil {
+		return 0, nil
+	} else if err != nil {
+		log.Println(err)
+		return -1, err
+	}
+	return v, nil
 }

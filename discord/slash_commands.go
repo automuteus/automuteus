@@ -21,6 +21,10 @@ import (
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
+var DownloadPermissions = []int64{
+	discordgo.PermissionAttachFiles,
+}
+
 var RequiredPermissions = []int64{
 	discordgo.PermissionViewChannel, discordgo.PermissionSendMessages,
 	discordgo.PermissionManageMessages, discordgo.PermissionEmbedLinks,
@@ -32,10 +36,12 @@ var VoicePermissions = []int64{
 }
 
 const (
-	resetUserConfirmedID  = "reset-user-confirmed"
-	resetUserCanceledID   = "reset-user-canceled"
-	resetGuildConfirmedID = "reset-guild-confirmed"
-	resetGuildCanceledID  = "reset-guild-canceled"
+	resetUserConfirmedID     = "reset-user-confirmed"
+	resetUserCanceledID      = "reset-user-canceled"
+	resetGuildConfirmedID    = "reset-guild-confirmed"
+	resetGuildCanceledID     = "reset-guild-canceled"
+	downloadGuildConfirmedID = "download-guild-confirmed"
+	downloadGuildCanceledID  = "download-guild-canceled"
 )
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -504,6 +510,48 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return command.PrivateResponse(ThumbsUp)
 			}
+		case command.Download.Name:
+			// don't send the userid because downloading is restricted to Gold members
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, "")
+			if err != nil {
+				log.Println("Err in /download get guild prem:", err)
+			}
+			if premium.IsExpired(premStatus, days) {
+				premStatus = premium.FreeTier
+			}
+			if premStatus != premium.SelfHostTier && premStatus != premium.GoldTier {
+				return command.DownloadNotGoldResponse(sett)
+			}
+			missingPerms = checkPermissions(perm, DownloadPermissions)
+			if missingPerms > 0 {
+				return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
+			}
+			category := command.GetDownloadParams(i.ApplicationCommandData().Options)
+			switch category {
+			case command.Guild:
+				d, err := redis_common.GetGuildDownloadCooldown(bot.RedisInterface.client, i.GuildID)
+				if err != nil {
+					return command.PrivateErrorResponse("/download guild", err, sett)
+				}
+				if d > 0 {
+					return command.DownloadGuildOnCooldownResponse(sett, d)
+				}
+				var content string
+				var components []discordgo.MessageComponent
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.download.guild.confirmation",
+					Other: "⚠️**Are you sure?**⚠️\nIf you download the guild's stats now, they will not be downloadable again for 24 hours",
+				})
+				components = confirmationComponents(downloadGuildConfirmedID, downloadGuildCanceledID, sett)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Flags:      1 << 6, //private message
+						Content:    content,
+						Components: components,
+					},
+				}
+			}
 		}
 
 	} else if i.Type == discordgo.InteractionMessageComponent {
@@ -612,13 +660,33 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					Components: []discordgo.MessageComponent{},
 				},
 			}
+		case downloadGuildConfirmedID:
+			// TODO fetch the basic information about the guild
+			// TODO fetch all the games played in the guild
+			// TODO for every game played in the guild, get all the linked game events (Postgres FOLD)
+			// TODO prepend the relevant headers to each csv
 
-		case resetUserCanceledID:
-			if i.Message.MessageReference != nil {
-				bot.deleteComponentInParentMessage(s, i)
+			// redis_common.MarkGuildDownloadCooldown(bot.RedisInterface.client, i.GuildID)
+
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    "Here are your files!",
+					Components: []discordgo.MessageComponent{},
+					Files: []*discordgo.File{
+						&discordgo.File{
+							Name:        "test.csv",
+							ContentType: "text/csv",
+							Reader:      strings.NewReader("testfile"),
+						},
+					},
+				},
 			}
-			return resetCancelResponse(sett)
-
+		case downloadGuildCanceledID:
+			fallthrough
+		case resetUserCanceledID:
+			fallthrough
 		case resetGuildCanceledID:
 			if i.Message.MessageReference != nil {
 				bot.deleteComponentInParentMessage(s, i)
@@ -667,7 +735,7 @@ func confirmationComponents(confirmedID string, canceledID string, sett *setting
 					Style:    discordgo.DangerButton,
 					Label: sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.stats.reset.button.proceed",
-						Other: "RESET",
+						Other: "Confirm",
 					}),
 				},
 				discordgo.Button{
