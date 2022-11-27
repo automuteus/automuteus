@@ -190,7 +190,7 @@ func ReinviteMeResponse(missingPerms int64, channelID string, sett *settings.Gui
 			Content: sett.LocalizeMessage(&i18n.Message{
 				ID: "commands.error.reinvite",
 				Other: "I'm missing the following required permissions to function properly in this server or channel:\n```\n{{.Perm}}```\n" +
-					"Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)",
+					"Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://discord.com/oauth2/authorize?client_id=782083206240403487&permissions=12905472&scope=applications.commands bot)",
 			}, map[string]interface{}{
 				"Perm":    missingPermsText,
 				"Channel": discord.MentionByChannelID(channelID),
