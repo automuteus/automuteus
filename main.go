@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"github.com/j0nas500/automuteus-tor/discord/command"
-	"github.com/automuteus/utils/pkg/locale"
-	storage2 "github.com/automuteus/utils/pkg/storage"
+	"github.com/j0nas500/utils/pkg/locale"
+	storage2 "github.com/j0nas500/utils/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
