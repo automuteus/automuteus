@@ -55,7 +55,9 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 </div>
 </div>
+
 # HOW TO
+
 1. Use this `docker-compose.yml`:
 ```
 version: "3"
@@ -141,7 +143,7 @@ volumes:
   redis-data:
   postgres-data:
 ```
-2. Fill the Variables with the (`sample.env`)[https://github.com/automuteus/deploy/blob/main/sample.env]
+2. Fill the Variables with the [`sample.env`](https://github.com/automuteus/deploy/blob/main/sample.env)
 3. Use this custom [AmongUsCapture.exe](https://github.com/j0nas500/amonguscapture/releases)
 4. Maybe you need also [.NET Desktop Runtime 5.0.1](https://download.visualstudio.microsoft.com/download/pr/c6a74d6b-576c-4ab0-bf55-d46d45610730/f70d2252c9f452c2eb679b8041846466/windowsdesktop-runtime-5.0.1-win-x64.exe)
 
