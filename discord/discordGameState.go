@@ -3,7 +3,7 @@ package discord
 import (
 	"fmt"
 	"github.com/automuteus/automuteus/amongus"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"

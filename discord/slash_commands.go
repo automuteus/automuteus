@@ -12,9 +12,9 @@ import (
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/utils/pkg/discord"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/j0nas500/utils/pkg/discord"
+	"github.com/j0nas500/utils/pkg/premium"
+	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )

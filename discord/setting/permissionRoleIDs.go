@@ -1,8 +1,8 @@
 package setting
 
 import (
-	"github.com/automuteus/utils/pkg/discord"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/j0nas500/utils/pkg/discord"
+	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 

@@ -2,7 +2,7 @@ package setting
 
 import (
 	"errors"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 )
 
