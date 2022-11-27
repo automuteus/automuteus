@@ -61,7 +61,6 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
-			log.Println(v.Name, emoji.Name, v.Name == emoji.Name)
 			if v.Name == emoji.Name {
 				emoji.ID = v.ID
 				bot.StatusEmojis[alive][i] = emoji
