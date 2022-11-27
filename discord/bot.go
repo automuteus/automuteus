@@ -218,7 +218,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				log.Println(err)
 			} else {
 				bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
-				bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
+				//bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
 
 				// if we specified the guild ID, then any subsequent guilds should just use the existing emojis
 				if os.Getenv("EMOJI_GUILD_ID") != "" {
