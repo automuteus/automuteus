@@ -199,7 +199,17 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			userID, color := command.GetLinkParams(s, i.ApplicationCommandData().Options)
+			userID, colorVanilla, colorTor := command.GetLinkParams(s, i.ApplicationCommandData().Options)
+
+
+			var color string
+			if (colorVanilla != "") {
+				color = colorVanilla
+			}
+			if (colorTor != "") {
+				color = colorTor
+			}
+
 
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {

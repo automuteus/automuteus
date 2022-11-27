@@ -100,9 +100,20 @@ func constructEmbedForCommand(
 	}
 }
 
-func colorsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+func colorsVanillaToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
 	var choices []*discordgo.ApplicationCommandOptionChoice
-	for color := range game.ColorStrings {
+	for color := range game.ColorVanillaStrings {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  color,
+			Value: color,
+		})
+	}
+	return choices
+}
+
+func colorsTorToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+	var choices []*discordgo.ApplicationCommandOptionChoice
+	for color := range game.ColorTorStrings {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  color,
 			Value: color,
