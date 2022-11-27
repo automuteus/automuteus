@@ -116,7 +116,7 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X, true),
 				},
 				discordgo.SelectMenu{
-					CustomID:    colorSelectID,
+					CustomID:    colorSelectID + "-tor",
 					Placeholder: "Select your TOR in-game color",
 					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X, false),
 				},
