@@ -3,7 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/automuteus/discord/setting"
+	"github.com/j0nas500/automuteus-tor/discord/setting"
 	"github.com/j0nas500/utils/pkg/settings"
 	"log"
 )

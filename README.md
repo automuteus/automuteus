@@ -2,13 +2,13 @@
     <a href="https://automute.us/#/" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
-    <a href="https://github.com/automuteus/automuteus/actions?query=build" alt="Build Status">
-        <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />
+    <a href="https://github.com/j0nas500/automuteus-tor/actions?query=build" alt="Build Status">
+        <img src="https://github.com/j0nas500/automuteus-tor/workflows/build/badge.svg" />
     </a>
-    <a href="https://github.com/automuteus/automuteus/releases/latest">
+    <a href="https://github.com/j0nas500/automuteus-tor/releases/latest">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/automuteus/automuteus" >
     </a>
-    <a href="https://github.com/automuteus/automuteus/graphs/contributors" alt="Contributors">
+    <a href="https://github.com/j0nas500/automuteus-tor/graphs/contributors" alt="Contributors">
         <img src="https://img.shields.io/github/contributors/automuteus/automuteus" />
     </a>
     <a href="https://discord.gg/ZkqZSWF" alt="Discord Link">
@@ -22,8 +22,8 @@
     <a href="https://automuteus.crowdin.com/automuteus" alt="localize">
         <img alt="Localize" src="https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/automuteus/automuteus" alt="Report Card">
-        <img src="https://goreportcard.com/badge/github.com/automuteus/automuteus" />
+    <a href="https://goreportcard.com/report/github.com/j0nas500/automuteus-tor" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/j0nas500/automuteus-tor" />
     </a>
 </p>
 

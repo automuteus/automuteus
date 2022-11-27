@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/automuteus/discord/setting"
+	"github.com/j0nas500/automuteus-tor/discord/setting"
 	"github.com/j0nas500/utils/pkg/discord"
 	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"

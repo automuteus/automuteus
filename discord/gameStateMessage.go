@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"github.com/automuteus/automuteus/metrics"
+	"github.com/j0nas500/automuteus-tor/metrics"
 	"github.com/j0nas500/utils/pkg/settings"
 	"sync"
 	"time"

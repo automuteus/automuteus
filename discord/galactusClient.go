@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/metrics"
+	"github.com/j0nas500/automuteus-tor/metrics"
 	"github.com/j0nas500/utils/pkg/premium"
 	"github.com/j0nas500/utils/pkg/task"
 	"github.com/bsm/redislock"

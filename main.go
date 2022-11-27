@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/automuteus/automuteus/discord/command"
+	"github.com/j0nas500/automuteus-tor/discord/command"
 	"github.com/automuteus/utils/pkg/locale"
 	storage2 "github.com/automuteus/utils/pkg/storage"
 	"github.com/bwmarrin/discordgo"
@@ -17,9 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/automuteus/automuteus/storage"
+	"github.com/j0nas500/automuteus-tor/storage"
 
-	"github.com/automuteus/automuteus/discord"
+	"github.com/j0nas500/automuteus-tor/discord"
 )
 
 var (

@@ -62,7 +62,7 @@ func PrivacyResponse(status string, cached map[string]interface{}, user *storage
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID: "commands.privacy.info",
 			Other: "AutoMuteUs privacy and data collection details.\n" +
-				"More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)",
+				"More details [here](https://github.com/j0nas500/automuteus-tor/blob/master/PRIVACY.md)",
 		})
 	case PrivacyShowMe:
 		if len(cached) == 0 {

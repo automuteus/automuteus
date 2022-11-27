@@ -1,7 +1,7 @@
 package command
 
 import (
-	"github.com/automuteus/automuteus/discord/setting"
+	"github.com/j0nas500/automuteus-tor/discord/setting"
 	"github.com/bwmarrin/discordgo"
 	"log"
 )
