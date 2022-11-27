@@ -83,7 +83,7 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 }
 
 // TODO
-func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string) (arr []discordgo.SelectMenuOption, (isVanillaColor bool)) {
+func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string) (arr []discordgo.SelectMenuOption) {
 	for i, v := range emojis {
 		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
 	}
@@ -250,7 +250,7 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		game.Ice : {
 			Name: "aured",
 			ID:   "866558066921177108",
-		}		
+		},		
 	},
 	false: []Emoji{
 		game.Red: {
@@ -392,7 +392,7 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 		game.Ice : {
 			Name: "aureddead",
 			ID:   "866558066921177108",
-		}
+		},
 	},
 }
 
