@@ -61,6 +61,7 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
+			log.Println(v.Name, emoji.Name, v.Name == emoji.Name)
 			if v.Name == emoji.Name {
 				emoji.ID = v.ID
 				bot.StatusEmojis[alive][i] = emoji
@@ -264,143 +265,143 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	false: []Emoji{
 		game.Red: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Blue: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Green: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Pink: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Orange: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Yellow: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Black: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.White: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Purple: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Brown: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Cyan: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Lime: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Maroon: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Rose: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Banana: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Gray: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Tan: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Coral: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Salmon: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Bordeaux: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Olive: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Turqoise: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Mint: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Lavender: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Nougat: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Peach: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Wasabi: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.HotPink: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Petrol: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Lemon: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.SignalOrange: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Teal: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Blurple: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Sunrise: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "1046402641435049984",
 		},
 		game.Ice: {
 			Name: "aureddead",
-			ID:   "1046352479119482921",
+			ID:   "11046402641435049984",
 		},
 	},
 }
