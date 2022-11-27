@@ -535,6 +535,27 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return resp
 			}
+		case colorSelectID + "-tor":
+			if len(i.MessageComponentData().Values) > 0 {
+				value := i.MessageComponentData().Values[0]
+				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+				if lock == nil {
+					log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
+					return command.DeadlockGameStateResponse(command.Link.Name, sett)
+				}
+				if value == UnlinkEmojiName {
+					value = ""
+				}
+				resp, success := bot.linkOrUnlinkAndRespond(dgs, i.Member.User.ID, value, sett)
+				if success {
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					bot.DispatchRefreshOrEdit(dgs, gsr, sett)
+				} else {
+					// only release the lock; no changes
+					bot.RedisInterface.SetDiscordGameState(nil, lock)
+				}
+				return resp
+			}
 
 		case resetUserConfirmedID:
 			var content string
