@@ -115,6 +115,10 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 					Placeholder: "Select your Vanilla in-game color",
 					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X, true),
 				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
 					CustomID:    colorSelectID + "-tor",
 					Placeholder: "Select your TOR in-game color",
