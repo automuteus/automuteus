@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	redis_common "github.com/j0nas500/automuteus-tor/common"
 	"github.com/j0nas500/automuteus-tor/discord/command"
 	"github.com/j0nas500/automuteus-tor/discord/setting"
@@ -15,7 +16,6 @@ import (
 	"github.com/j0nas500/utils/pkg/discord"
 	"github.com/j0nas500/utils/pkg/premium"
 	"github.com/j0nas500/utils/pkg/settings"
-	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -199,17 +199,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			userID, colorVanilla, colorTor := command.GetLinkParams(s, i.ApplicationCommandData().Options)
-
-
-			var color string
-			if (colorVanilla != "") {
-				color = colorVanilla
-			}
-			if (colorTor != "") {
-				color = colorTor
-			}
-
+			userID, color := command.GetLinkParams(s, i.ApplicationCommandData().Options)
 
 			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
