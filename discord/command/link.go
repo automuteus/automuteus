@@ -44,7 +44,10 @@ var Link = discordgo.ApplicationCommand{
 	},
 }
 
-func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string,) {
+func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string) {
+	if len(options) < 2 {
+		return options[0].UserValue(s).ID, ""
+	}
 	return options[0].UserValue(s).ID, strings.ReplaceAll(strings.ToLower(options[1].StringValue()), " ", "")
 }
 
