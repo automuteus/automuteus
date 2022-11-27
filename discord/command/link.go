@@ -29,14 +29,14 @@ var Link = discordgo.ApplicationCommand{
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "color",
+			Name:        "vanillacolor",
 			Description: "Vanilla In-game color",
 			Required:    false,
 			Choices:     colorsVanillaToCommandChoices(),
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "color",
+			Name:        "torcolor",
 			Description: "Tor In-game color",
 			Required:    false,
 			Choices:     colorsTorToCommandChoices(),
