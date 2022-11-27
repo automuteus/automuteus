@@ -83,10 +83,19 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 }
 
 // TODO
-func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string) (arr []discordgo.SelectMenuOption) {
-	for i, v := range emojis {
-		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
+func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string, isVanilla bool) (arr []discordgo.SelectMenuOption) {
+	if (isVanilla) {
+		for i := 0; i < 18; i++ {
+			arr = append(arr, emojis[i].toSelectMenuOption(game.GetColorStringForInt(i)))
+		}
+	} else {
+		for i := 18; i < len(emojis); i++ {
+			arr = append(arr, emojis[i].toSelectMenuOption(game.GetColorStringForInt(i)))
+		}
 	}
+	/*for i, v := range emojis {
+		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
+	}*/
 	arr = append(arr, discordgo.SelectMenuOption{
 		Label:   "unlink",
 		Value:   UnlinkEmojiName,
@@ -396,6 +405,7 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	},
 }
 
+/*
 var GlobalAlivenessVanillaEmojis = AlivenessEmojis{
 	true: []Emoji{
 		game.Red: {
@@ -692,7 +702,7 @@ var GlobalAlivenessTorEmojis = AlivenessEmojis{
 			ID:   "1046367151621144616",
 		},
 	},
-}
+}*/
 
 /*
 Helpful for copy/paste into Discord to get new emoji IDs when they are re-uploaded...
