@@ -1,9 +1,9 @@
-module github.com/automuteus/automuteus
+module github.com/j0nas500/automuteus-tor
 
 go 1.18
 
 require (
-	github.com/automuteus/utils v0.3.2
+	github.com/j0nas500/utils v0.3.2
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.24.0
 	github.com/go-redis/redis/v8 v8.8.0
