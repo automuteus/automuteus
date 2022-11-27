@@ -74,11 +74,11 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 }
 
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
-	unsorted := make([]*discordgo.MessageEmbedField, 18)
+	unsorted := make([]*discordgo.MessageEmbedField, 35)
 	num := 0
 
 	for _, player := range dgs.GameData.PlayerData {
-		if player.Color < 0 || player.Color > 17 {
+		if player.Color < 0 || player.Color > 34 {
 			break
 		}
 		for _, userData := range dgs.UserData {
