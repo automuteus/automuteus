@@ -60,7 +60,7 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 ## Public Bot
 
-1. Invite the Public [Bot](https://discord.com/oauth2/authorize?client_id=762435324953231440&scope=bot%20applications.commands&permissions=12853248)
+1. Invite the Public [Bot](https://discord.com/oauth2/authorize?client_id=762435324953231440&scope=bot%20applications.commands&permissions=12854272)
 2. Use this custom [AmongUsCapture.exe](https://github.com/j0nas500/amonguscapture/releases)
 3. Maybe you need also [.NET Desktop Runtime 5.0.1](https://download.visualstudio.microsoft.com/download/pr/c6a74d6b-576c-4ab0-bf55-d46d45610730/f70d2252c9f452c2eb679b8041846466/windowsdesktop-runtime-5.0.1-win-x64.exe)
 
