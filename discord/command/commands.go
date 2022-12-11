@@ -1,7 +1,10 @@
 package command
 
 import (
+	_ "embed"
 	"fmt"
+	"github.com/BurntSushi/toml"
+	"github.com/automuteus/automuteus/discord/command/locales"
 	"github.com/automuteus/utils/pkg/discord"
 	"github.com/automuteus/utils/pkg/game"
 	"github.com/automuteus/utils/pkg/settings"
@@ -16,6 +19,16 @@ const (
 	DefaultMaxActiveGames = 150
 	UnmuteAll             = "unmute-all"
 )
+
+// if you wish to translate a new language, you should embed the file similar to how it is performed below
+//go:embed locales/active.sample.toml
+var sampleLocalizedCommandFile string
+
+func parseLocalization(input string) (locales.LocalizedFields, error) {
+	var vals locales.LocalizedFields
+	_, err := toml.Decode(input, &vals)
+	return vals, err
+}
 
 // All is all slash commands for the bot, ordered to match the README
 var All = []*discordgo.ApplicationCommand{
