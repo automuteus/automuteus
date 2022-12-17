@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -661,27 +662,44 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				},
 			}
 		case downloadGuildConfirmedID:
-			// TODO fetch the basic information about the guild
-			// TODO fetch all the games played in the guild
-			// TODO for every game played in the guild, get all the linked game events (Postgres FOLD)
-			// TODO prepend the relevant headers to each csv
+			// TODO fetch the basic information about the guild (to populate the guild table)
 
-			// redis_common.MarkGuildDownloadCooldown(bot.RedisInterface.client, i.GuildID)
+			gid, err := strconv.ParseUint(i.GuildID, 10, 64)
+			if err != nil {
+				log.Println(err)
+				// TODO report this properly
+			} else {
+				games, err := bot.PostgresInterface.GetGamesForGuild(gid)
+				if err != nil {
+					log.Println(err)
+				}
+				log.Println("Games played", len(games))
+				events, err := bot.PostgresInterface.GetGamesEventsForGuild(gid)
+				if err != nil {
+					log.Println(err)
+				}
+				log.Println("Events", events)
+				// TODO get the relevant users as well? To view opt info?
 
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Flags:      1 << 6, //private message
-					Content:    "Here are your files!",
-					Components: []discordgo.MessageComponent{},
-					Files: []*discordgo.File{
-						&discordgo.File{
-							Name:        "test.csv",
-							ContentType: "text/csv",
-							Reader:      strings.NewReader("testfile"),
+				// TODO prepend the relevant headers to each csv
+
+				// redis_common.MarkGuildDownloadCooldown(bot.RedisInterface.client, i.GuildID)
+
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags:      1 << 6, //private message
+						Content:    "Here are your files!",
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							&discordgo.File{
+								Name:        "test.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader("testfile"),
+							},
 						},
 					},
-				},
+				}
 			}
 		case downloadGuildCanceledID:
 			fallthrough
