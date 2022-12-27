@@ -52,6 +52,7 @@ const (
 	DisplayRoomCode     = "display-room-code"
 	Show                = "show"
 	List                = "list"
+	Save                = "save"
 	Reset               = "reset"
 )
 
@@ -412,6 +413,19 @@ var AllSettings = []Setting{
 		ShortDesc: "Show All Current Settings",
 		Arguments: []*discordgo.ApplicationCommandOption{},
 		Premium:   false,
+	},
+	{
+		Name:      Save,
+		ShortDesc: "Save Current Settings",
+		Arguments: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "name",
+				Description: "name",
+				Required:    true,
+			},
+		},
+		Premium: true,
 	},
 	{
 		Name:      Reset,

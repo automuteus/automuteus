@@ -51,6 +51,15 @@ create table if not exists users_games
     PRIMARY KEY (user_id, game_id)
 );
 
+create table if not exists guild_settings
+(
+    guild_id numeric REFERENCES guilds ON DELETE CASCADE, --if a guild is deleted, delete all linked games
+    slot_number smallint NOT NULL,
+    settings_name VARCHAR NOT NULL,
+    settings_json jsonb NOT NULL,
+    PRIMARY KEY (guild_id, slot_number)
+);
+
 create index if not exists guilds_id_index ON guilds (guild_id); --query guilds by ID
 create index if not exists guilds_premium_index ON guilds (premium); --query guilds by prem status
 
