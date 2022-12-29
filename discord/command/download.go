@@ -8,7 +8,11 @@ import (
 )
 
 const (
-	Category = "category"
+	Category   = "category"
+	Users      = "users"
+	UsersGames = "users_games"
+	Games      = "games"
+	GameEvents = "game_events"
 )
 
 var Download = discordgo.ApplicationCommand{
@@ -20,11 +24,26 @@ var Download = discordgo.ApplicationCommand{
 			Description: "Data to download",
 			Type:        discordgo.ApplicationCommandOptionString,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				&discordgo.ApplicationCommandOptionChoice{
+				{
 					Name:  Guild,
 					Value: Guild,
 				},
-				// TODO add option to download individual user data?
+				{
+					Name:  Users,
+					Value: Users,
+				},
+				{
+					Name:  UsersGames,
+					Value: UsersGames,
+				},
+				{
+					Name:  Games,
+					Value: Games,
+				},
+				{
+					Name:  GameEvents,
+					Value: GameEvents,
+				},
 			},
 			Required: true,
 		},
@@ -35,17 +54,21 @@ func GetDownloadParams(options []*discordgo.ApplicationCommandInteractionDataOpt
 	return options[0].StringValue()
 }
 
-func DownloadGuildOnCooldownResponse(sett *settings.GuildSettings, duration time.Duration) *discordgo.InteractionResponse {
+func DownloadCooldownResponse(sett *settings.GuildSettings, category string, duration time.Duration) *discordgo.InteractionResponse {
+	// report with minute-level precision
+	durationStr := duration.Truncate(time.Minute).String()
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: 1 << 6,
 			Content: sett.LocalizeMessage(&i18n.Message{
-				ID: "commands.download.guild.cooldown",
-				Other: "Sorry, guild stats can only downloaded once every 24 hours!\n\n" +
+				ID: "commands.download.cooldown",
+				Other: "Sorry, `{{.Category}}` data can only downloaded once every 24 hours!\n\n" +
 					"Please wait {{.Duration}} and then try again",
 			}, map[string]interface{}{
-				"Duration": duration.Truncate(time.Hour).String(),
+				"Category": category,
+				// strip the "0s" off the end
+				"Duration": durationStr[:len(durationStr)-2],
 			}),
 		},
 	}

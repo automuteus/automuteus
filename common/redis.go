@@ -39,8 +39,8 @@ func UserSoftbanCountKey(userID string) string {
 	return "automuteus:ratelimit:softban:count:user:" + userID
 }
 
-func GuildDownloadCooldownKey(guildID string) string {
-	return "automuteus:ratelimit:download:guild:" + guildID
+func GuildDownloadCategoryCooldownKey(guildID, category string) string {
+	return "automuteus:ratelimit:download:guild:" + guildID + ":category:" + category
 }
 
 func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttl time.Duration) {
@@ -120,15 +120,15 @@ func IsUserRateLimitedSpecific(client *redis.Client, userID string, cmdType stri
 	return v == 1 // =1 means the user is present, and thus rate-limited
 }
 
-func MarkGuildDownloadCooldown(client *redis.Client, guildID string) {
-	err := client.Set(context.Background(), GuildDownloadCooldownKey(guildID), "", GuildDownloadCooldown).Err()
+func MarkDownloadCategoryCooldown(client *redis.Client, guildID, category string) {
+	err := client.Set(context.Background(), GuildDownloadCategoryCooldownKey(guildID, category), "", GuildDownloadCooldown).Err()
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func GetGuildDownloadCooldown(client *redis.Client, guildID string) (time.Duration, error) {
-	v, err := client.TTL(context.Background(), GuildDownloadCooldownKey(guildID)).Result()
+func GetDownloadCategoryCooldown(client *redis.Client, guildID, category string) (time.Duration, error) {
+	v, err := client.TTL(context.Background(), GuildDownloadCategoryCooldownKey(guildID, category)).Result()
 	if err == redis.Nil {
 		return 0, nil
 	} else if err != nil {
