@@ -116,7 +116,6 @@ To extract strings for translation to `locales/en.toml`:
 ```
 goi18n extract -outdir locales
 curl -s https://raw.githubusercontent.com/automuteus/utils/main/locales/active.en.toml >> locales/active.en.toml
-sed -i 's/\\n/\\\\n/g' locales/active.en.toml
 ```
 
 # Self-Hosting
