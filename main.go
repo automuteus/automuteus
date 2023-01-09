@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	version = "7.0.0"
+	version = "7.3.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -181,11 +181,12 @@ func discordMainWrapper() error {
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
 	bots := make([]*discord.Bot, shardRange.max-shardRange.min)
 	var i int
 	for shard := shardRange.min; shard < shardRange.max; shard++ {
-		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}

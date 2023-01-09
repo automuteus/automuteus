@@ -3,6 +3,13 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/utils/pkg/storage"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	redis_common "github.com/automuteus/automuteus/common"
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/discord/setting"
@@ -12,12 +19,13 @@ import (
 	"github.com/automuteus/utils/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
-	"regexp"
-	"strings"
 )
 
 var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
+
+var DownloadPermissions = []int64{
+	discordgo.PermissionAttachFiles,
+}
 
 var RequiredPermissions = []int64{
 	discordgo.PermissionViewChannel, discordgo.PermissionSendMessages,
@@ -29,13 +37,85 @@ var VoicePermissions = []int64{
 	discordgo.PermissionVoiceMuteMembers, discordgo.PermissionVoiceDeafenMembers,
 }
 
+const (
+	resetUserConfirmedID          = "reset-user-confirmed"
+	resetUserCanceledID           = "reset-user-canceled"
+	resetGuildConfirmedID         = "reset-guild-confirmed"
+	resetGuildCanceledID          = "reset-guild-canceled"
+	downloadGuildConfirmedID      = "download-guild-confirmed"
+	downloadUsersConfirmedID      = "download-users-confirmed"
+	downloadUsersGamesConfirmedID = "download-users-games-confirmed"
+	downloadGamesConfirmedID      = "download-games-confirmed"
+	downloadGameEventsConfirmedID = "download-game-events-confirmed"
+	downloadCanceledID            = "download-canceled"
+)
+
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	response := bot.slashCommandHandler(s, i)
-	if response != nil {
-		err := s.InteractionRespond(i.Interaction, response)
-		if err != nil {
-			log.Println("error issuing interaction response: ", err)
-			log.Println(i.Interaction)
+	respondChan := make(chan *discordgo.InteractionResponse)
+	ticker := time.NewTicker(time.Second * 2)
+	var followUpMsg *discordgo.Message
+	var err error
+
+	// get the result in the background
+	go func() {
+		respondChan <- bot.slashCommandHandler(s, i)
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			// only followup the first time
+			if followUpMsg == nil {
+				err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Flags:   1 << 6,
+						Content: "Give me just a little bit to make a proper response :)",
+					},
+				})
+				if err != nil {
+					log.Println("err issuing wait response ", err)
+				}
+				followUpMsg, err = s.FollowupMessageCreate(s.State.User.ID, i.Interaction, true, &discordgo.WebhookParams{
+					Content: Hourglass,
+				})
+				if err != nil {
+					log.Println("Error creating followup message: ", err)
+				}
+			}
+			// don't return here
+
+		case resp := <-respondChan:
+			if followUpMsg != nil {
+				if resp != nil && resp.Data != nil {
+					content := resp.Data.Content
+					if content == "" {
+						content = "\u200b"
+					}
+					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
+						Content:    content,
+						Components: resp.Data.Components,
+						Embeds:     resp.Data.Embeds,
+					})
+				} else {
+					//TODO if this shows up in logs regularly, print more context
+					log.Println("received a nil response, or resp.data was nil")
+				}
+			} else if resp != nil {
+				err = s.InteractionRespond(i.Interaction, resp)
+				if err != nil {
+					log.Println("error issuing interaction response: ", err)
+					iBytes, err := json.Marshal(i.Interaction)
+					if err != nil {
+						log.Println(err)
+					} else {
+						log.Println(string(iBytes))
+					}
+				}
+			}
+			ticker.Stop()
+			// no matter what we get back, return
+			return
 		}
 	}
 }
@@ -173,10 +253,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isAdmin {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
-			isPrem := !premium.IsExpired(premStatus, days)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Err in /settings get premium:", err)
+			}
 			setting, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, isPrem)
+			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, !premium.IsExpired(premStatus, days))
 			return command.SettingsResponse(msg)
 
 		case command.New.Name:
@@ -185,6 +267,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 
 			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
+			if voiceChannelID == "" {
+				return command.NewResponse(command.NewNoVoiceChannel, command.NewInfo{}, sett)
+			}
+
 			perm, err = bot.PrimarySession.State.UserChannelPermissions(s.State.User.ID, voiceChannelID)
 			missingPerms = checkPermissions(perm, VoicePermissions)
 			if missingPerms > 0 {
@@ -197,7 +283,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
 			}
 
-			status, activeGames := bot.newGame(dgs, voiceChannelID)
+			status, activeGames := bot.newGame(dgs)
 			if status == command.NewSuccess {
 				// release the lock
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -315,7 +401,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		case command.Stats.Name:
 			action, opType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
 			prem := true
-			if premium.IsExpired(bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)) {
+			tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Error in /stats getPremium:", err)
+			}
+			if premium.IsExpired(tier, days) {
 				prem = false
 			}
 			if action == setting.View {
@@ -350,58 +440,43 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.InsufficientPermissionsResponse(sett)
 				}
 				var content string
+				var components []discordgo.MessageComponent
 				switch opType {
 				case command.User:
-					err := bot.PostgresInterface.DeleteAllGamesForUser(id)
-					if err != nil {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.user.reset.error",
-							Other: "Encountered an error resetting the stats for {{.User}}: {{.Error}}",
-						},
-							map[string]interface{}{
-								"User":  discord.MentionByUserID(id),
-								"Error": err.Error(),
-							})
-					} else {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.user.reset.success",
-							Other: "Successfully reset the stats for {{.User}}!",
-						},
-							map[string]interface{}{
-								"User": discord.MentionByUserID(id),
-							})
-					}
-
-				case command.Guild:
-					err := bot.PostgresInterface.DeleteAllGamesForServer(id)
-					if err != nil {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.guild.reset.error",
-							Other: "Encountered an error resetting the stats for this guild: {{.Error}}",
-						},
-							map[string]interface{}{
-								"Error": err.Error(),
-							})
-					} else {
-						content = sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.stats.guild.reset.success",
-							Other: "Successfully reset this guild's stats!",
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.confirmation",
+						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for {{.User}}?\nThis process cannot be undone!",
+					},
+						map[string]interface{}{
+							"User": discord.MentionByUserID(id),
 						})
-					}
+					components = confirmationComponents(resetUserConfirmedID, resetUserCanceledID, sett)
+				case command.Guild:
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.guild.reset.confirmation",
+						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for **{{.Guild}}**?\nThis process cannot be undone!",
+					},
+						map[string]interface{}{
+							"Guild": g.Name,
+						})
+					components = confirmationComponents(resetGuildConfirmedID, resetGuildCanceledID, sett)
 				}
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Flags:   1 << 6, //private message
-						Content: content,
+						Flags:      1 << 6, //private message
+						Content:    content,
+						Components: components,
 					},
 				}
-				// TODO handle clear confirmation (message followups?)
 			}
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
-			premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(i.GuildID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			if err != nil {
+				log.Println("Err in /premium get guild prem:", err)
+			}
 			if premium.IsExpired(premStatus, days) {
 				premStatus = premium.FreeTier
 			}
@@ -441,6 +516,65 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return command.PrivateResponse(ThumbsUp)
 			}
+		case command.Download.Name:
+			if !isAdmin {
+				return command.InsufficientPermissionsResponse(sett)
+			}
+			// don't send the userid because downloading is restricted to Gold members
+			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, "")
+			if err != nil {
+				log.Println("Err in /download get guild prem:", err)
+			}
+			if premium.IsExpired(premStatus, days) {
+				premStatus = premium.FreeTier
+			}
+			if premStatus != premium.SelfHostTier && premStatus != premium.GoldTier {
+				return command.DownloadNotGoldResponse(sett)
+			}
+			missingPerms = checkPermissions(perm, DownloadPermissions)
+			if missingPerms > 0 {
+				return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
+			}
+
+			category := command.GetDownloadParams(i.ApplicationCommandData().Options)
+
+			d, err := redis_common.GetDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, category)
+			if err != nil {
+				return command.PrivateErrorResponse("/download guild", err, sett)
+			}
+			if d > 0 {
+				return command.DownloadCooldownResponse(sett, category, d)
+			}
+			var content string
+			var components []discordgo.MessageComponent
+			content = sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.download.guild.confirmation",
+				Other: "⚠️**Are you sure?**⚠️\nIf you download the `{{.Category}}` data now, it will not be downloadable again for 24 hours!",
+			}, map[string]interface{}{
+				"Category": category,
+			})
+			var downloadConfirmedID string
+			switch category {
+			case command.Guild:
+				downloadConfirmedID = downloadGuildConfirmedID
+			case command.Users:
+				downloadConfirmedID = downloadUsersConfirmedID
+			case command.UsersGames:
+				downloadConfirmedID = downloadUsersGamesConfirmedID
+			case command.Games:
+				downloadConfirmedID = downloadGamesConfirmedID
+			case command.GameEvents:
+				downloadConfirmedID = downloadGameEventsConfirmedID
+			}
+			components = confirmationComponents(downloadConfirmedID, downloadCanceledID, sett)
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    content,
+					Components: components,
+				},
+			}
 		}
 
 	} else if i.Type == discordgo.InteractionMessageComponent {
@@ -450,7 +584,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
 
-		if i.MessageComponentData().CustomID == colorSelectID {
+		gid, err := strconv.ParseUint(i.GuildID, 10, 64)
+		if err != nil {
+			log.Println(err)
+			// TODO report this properly
+		}
+		switch i.MessageComponentData().CustomID {
+		case colorSelectID:
 			if len(i.MessageComponentData().Values) > 0 {
 				value := i.MessageComponentData().Values[0]
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
@@ -471,11 +611,243 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return resp
 			}
+
+		case resetUserConfirmedID:
+			var content string
+			// i.Message.Mentions is the list of the mentions in the original message.
+			// in this case we can gather target user since the original message contains only one mention,
+			// like "Do you really want to reset the stats for @kurokobo?".
+			// a bit dirty way but works :P
+			if len(i.Message.Mentions) == 1 {
+				id := i.Message.Mentions[0].ID
+				err := bot.PostgresInterface.DeleteAllGamesForUser(id)
+				if err != nil {
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.error",
+						Other: "Encountered an error resetting the stats for {{.User}}: {{.Error}}",
+					},
+						map[string]interface{}{
+							"User":  discord.MentionByUserID(id),
+							"Error": err.Error(),
+						})
+				} else {
+					content = sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.user.reset.success",
+						Other: "Successfully reset the stats for {{.User}}!",
+					},
+						map[string]interface{}{
+							"User": discord.MentionByUserID(id),
+						})
+				}
+			} else {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.user.reset.notfound",
+					Other: "Failed to gather user from message!",
+				})
+			}
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    content,
+					Components: []discordgo.MessageComponent{},
+				},
+			}
+
+		case resetGuildConfirmedID:
+			var content string
+			err := bot.PostgresInterface.DeleteAllGamesForServer(i.GuildID)
+			if err != nil {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.guild.reset.error",
+					Other: "Encountered an error resetting the stats for this guild: {{.Error}}",
+				},
+					map[string]interface{}{
+						"Error": err.Error(),
+					})
+			} else {
+				content = sett.LocalizeMessage(&i18n.Message{
+					ID:    "commands.stats.guild.reset.success",
+					Other: "Successfully reset the stats for **{{.Guild}}**!",
+				},
+					map[string]interface{}{
+						"Guild": g.Name,
+					})
+			}
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Flags:      1 << 6, //private message
+					Content:    content,
+					Components: []discordgo.MessageComponent{},
+				},
+			}
+		case downloadGuildConfirmedID:
+			guild, err := bot.PostgresInterface.GetGuildForDownload(gid)
+			if err != nil {
+				log.Println("Error downloading guild data:", err)
+				return downloadErrorResponse(sett, err)
+			} else {
+				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Guild)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags: 1 << 6, //private message
+						Content: sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.download.file.success",
+							Other: "Here's that file for you!",
+						}),
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							{
+								Name:        "guilds.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader(guild.ToCSV()),
+							},
+						},
+					},
+				}
+			}
+
+		case downloadUsersConfirmedID:
+			users, err := bot.PostgresInterface.GetUsersForGuild(gid)
+			if err != nil {
+				log.Println("Error downloading users data:", err)
+				return downloadErrorResponse(sett, err)
+			} else {
+				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Users)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags: 1 << 6, //private message
+						Content: sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.download.file.success",
+							Other: "Here's that file for you!",
+						}),
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							{
+								Name:        "users.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader(storage.UsersToCSV(users)),
+							},
+						},
+					},
+				}
+			}
+		case downloadUsersGamesConfirmedID:
+			usersGames, err := bot.PostgresInterface.GetUsersGamesForGuild(gid)
+			if err != nil {
+				log.Println("Error downloading users_games data:", err)
+				return downloadErrorResponse(sett, err)
+			} else {
+				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.UsersGames)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags: 1 << 6, //private message
+						Content: sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.download.file.success",
+							Other: "Here's that file for you!",
+						}),
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							{
+								Name:        "users_games.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader(storage.UsersGamesToCSV(usersGames)),
+							},
+						},
+					},
+				}
+			}
+		case downloadGamesConfirmedID:
+			games, err := bot.PostgresInterface.GetGamesForGuild(gid)
+			if err != nil {
+				log.Println("Error downloading game data:", err)
+				return downloadErrorResponse(sett, err)
+			} else {
+				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Games)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags: 1 << 6, //private message
+						Content: sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.download.file.success",
+							Other: "Here's that file for you!",
+						}),
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							{
+								Name:        "games.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader(storage.GamesToCSV(games)),
+							},
+						},
+					},
+				}
+			}
+		case downloadGameEventsConfirmedID:
+			events, err := bot.PostgresInterface.GetGamesEventsForGuild(gid)
+			if err != nil {
+				log.Println("Error downloading game events data:", err)
+				return downloadErrorResponse(sett, err)
+			} else {
+				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.GameEvents)
+				return &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Flags: 1 << 6, //private message
+						Content: sett.LocalizeMessage(&i18n.Message{
+							ID:    "commands.download.file.success",
+							Other: "Here's that file for you!",
+						}),
+						Components: []discordgo.MessageComponent{},
+						Files: []*discordgo.File{
+							{
+								Name:        "events.csv",
+								ContentType: "text/csv",
+								Reader:      strings.NewReader(storage.EventsToCSV(events)),
+							},
+						},
+					},
+				}
+			}
+		case downloadCanceledID:
+			fallthrough
+		case resetUserCanceledID:
+			fallthrough
+		case resetGuildCanceledID:
+			if i.Message.MessageReference != nil {
+				bot.deleteComponentInParentMessage(s, i)
+			}
+			return resetCancelResponse(sett)
 		}
 	}
 
 	// no command or handler matched somehow
 	return nil
+}
+
+func downloadErrorResponse(sett *settings.GuildSettings, err error) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 1 << 6, //private message
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID:    "commands.download.guild.error",
+				Other: "I encountered an error fetching your stats for download: {{.Error}}",
+			}, map[string]interface{}{
+				"Error": err.Error(),
+			}),
+		},
+	}
 }
 
 func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string, sett *settings.GuildSettings) (*discordgo.InteractionResponse, bool) {
@@ -490,6 +862,58 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string,
 	} else {
 		status := unlinkPlayer(dgs, userID)
 		return command.UnlinkResponse(status, userID, sett), status == command.UnlinkSuccess
+	}
+}
+
+// deleteComponentInParentMessage deletes any components from parent messages.
+// this is required for safety. if the resetting process takes over 2 seconds,
+// since RESET/Cancel buttons remain forever once the button has been clicked.
+func (bot *Bot) deleteComponentInParentMessage(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	me := discordgo.NewMessageEdit(i.ChannelID, i.Message.ID)
+	me.Components = []discordgo.MessageComponent{}
+	_, err := s.ChannelMessageEditComplex(me)
+	if err != nil {
+		log.Println("Error when attempting to edit complex message", err)
+	}
+}
+
+func confirmationComponents(confirmedID string, canceledID string, sett *settings.GuildSettings) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					CustomID: confirmedID,
+					Style:    discordgo.DangerButton,
+					Label: sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.reset.button.proceed",
+						Other: "Confirm",
+					}),
+				},
+				discordgo.Button{
+					CustomID: canceledID,
+					Style:    discordgo.SecondaryButton,
+					Label: sett.LocalizeMessage(&i18n.Message{
+						ID:    "commands.stats.reset.button.cancel",
+						Other: "Cancel",
+					}),
+				},
+			},
+		},
+	}
+}
+
+func resetCancelResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	content := sett.LocalizeMessage(&i18n.Message{
+		ID:    "commands.stats.reset.canceled",
+		Other: "Operation has been canceled",
+	})
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Flags:      1 << 6, //private message
+			Content:    content,
+			Components: []discordgo.MessageComponent{},
+		},
 	}
 }
 

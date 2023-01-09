@@ -22,7 +22,7 @@ func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (inter
 	case args[0] == "true":
 		if unmuteDead {
 			return sett.LocalizeMessage(&i18n.Message{
-				ID:    "settings.SettingUnmuteDeadDuringTasks.true_unmuteDead",
+				ID:    "settings.already_true",
 				Other: "It's already true!",
 			}), false
 		} else {
@@ -41,7 +41,7 @@ func FnUnmuteDeadDuringTasks(sett *settings.GuildSettings, args []string) (inter
 			}), true
 		}
 		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "settings.SettingUnmuteDeadDuringTasks.false_noUnmuteDead",
+			ID:    "settings.already_false",
 			Other: "It's already false!",
 		}), false
 	default:

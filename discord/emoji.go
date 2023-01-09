@@ -15,6 +15,7 @@ const (
 	UnlinkEmojiName = "auunlink"
 	X               = "❌"
 	ThumbsUp        = "👍"
+	Hourglass       = "⌛"
 )
 
 // Emoji struct for discord

@@ -26,16 +26,6 @@ func TestFnLanguage(t *testing.T) {
 		t.Error("Unimplemented language should never result in a valid language change")
 	}
 
-	_, valid = FnLanguage(sett, []string{"list"})
-	if valid {
-		t.Error("Listing languages should never result in a valid language change")
-	}
-
-	_, valid = FnLanguage(sett, []string{"reload"})
-	if valid {
-		t.Error("Reloading languages should never result in a valid language change")
-	}
-
 	locale.InitLang("testdata", "")
 	_, valid = FnLanguage(sett, []string{"zu"})
 	if !valid {

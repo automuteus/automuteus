@@ -16,6 +16,7 @@ import (
 	storageutils "github.com/automuteus/utils/pkg/storage"
 	"github.com/automuteus/utils/pkg/token"
 	"github.com/bwmarrin/discordgo"
+	"github.com/top-gg/go-dbl"
 	"log"
 	"os"
 	"strconv"
@@ -24,7 +25,8 @@ import (
 )
 
 type Bot struct {
-	url string
+	official bool
+	url      string
 
 	// mapping of socket connections to the game connect codes
 	ConnsToGames map[string]string
@@ -39,6 +41,8 @@ type Bot struct {
 
 	GalactusClient *GalactusClient
 
+	TopGGClient *dbl.Client
+
 	RedisInterface *RedisInterface
 
 	StorageInterface *storage.StorageInterface
@@ -52,7 +56,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -66,6 +70,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 	}
 
 	bot := Bot{
+		official:     os.Getenv("AUTOMUTEUS_OFFICIAL") != "",
 		url:          url,
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
@@ -93,7 +98,7 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds | discordgo.IntentsGuildMessages)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)
@@ -134,6 +139,16 @@ func MakeAndStartBot(version, commit, botToken, url, emojiGuildID string, numSha
 
 	// indicate to Kubernetes that we're ready to start receiving traffic
 	metrics.GlobalReady = true
+
+	if topGGToken != "" {
+		dblClient, err := dbl.NewClient(topGGToken)
+		if err != nil {
+			log.Println("Error creating Top.gg client: ", err)
+		}
+		bot.TopGGClient = dblClient
+	} else {
+		log.Println("No TOP_GG_TOKEN provided")
+	}
 
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bot.statsRefreshWorker(rediskey.TotalUsersExpiration)
@@ -386,11 +401,7 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	return ""
 }
 
-func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewStatus, activeGames int64) {
-	if voiceChannelID == "" {
-		return command.NewNoVoiceChannel, 0
-	}
-
+func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- true
@@ -399,7 +410,11 @@ func (bot *Bot) newGame(dgs *GameState, voiceChannelID string) (_ command.NewSta
 
 		dgs.Reset()
 	} else {
-		premStatus, days := bot.PostgresInterface.GetGuildPremiumStatus(dgs.GuildID)
+		premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(
+			bot.official, bot.TopGGClient, dgs.GuildID, dgs.GameStateMsg.LeaderID)
+		if err != nil {
+			log.Println("Error in /newgame get premium:", err)
+		}
 		premTier := premium.FreeTier
 		if !premium.IsExpired(premStatus, days) {
 			premTier = premStatus
