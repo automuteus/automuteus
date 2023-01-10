@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/discord/command"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/locale"
+	"github.com/automuteus/utils/pkg/rediskey"
 	storage2 "github.com/automuteus/utils/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
@@ -96,7 +98,7 @@ func discordMainWrapper() error {
 		log.Println("No SHARD_RANGE specified, defaulting to 0,0")
 		shardRange = defaultShardRange()
 	} else {
-		shardRange, err = parseShardRange(os.Getenv("SHARD_RANGE"), numShards)
+		shardRange, err = parseShardRange(shardRangeStr, numShards)
 		if err != nil {
 			return err
 		}
@@ -183,15 +185,28 @@ func discordMainWrapper() error {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
-	bots := make([]*discord.Bot, shardRange.max-shardRange.min)
+	//ex: 0,0 is still 1 shard, 0,1 is actually 2 shards
+	maxBots := (shardRange.max - shardRange.min) + 1
+	bots := make([]*discord.Bot, maxBots)
 	var i int
-	for shard := shardRange.min; shard < shardRange.max; shard++ {
-		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	for shard := shardRange.min; shard <= shardRange.max; shard++ {
+		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
 		i++
 	}
+	go bots[0].SetVersionAndCommit(version, commit)
+
+	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
+
+	go metrics.StartHealthCheckServer("8080")
+
+	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
+	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
+
+	// indicate to Kubernetes that we're ready to start receiving traffic
+	metrics.GlobalReady = true
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
@@ -229,7 +244,7 @@ func discordMainWrapper() error {
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	// only delete the slash commands if we're not the official bot, and the first shard
+	// only delete the slash commands if we're not the official bot, AND we're the first shard
 	if !isOfficial && shardRange.isFirstShard() {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
