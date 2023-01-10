@@ -3,7 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/utils/pkg/storage"
+	"github.com/j0nas500/utils/pkg/storage"
 	"log"
 	"regexp"
 	"strconv"
