@@ -42,7 +42,7 @@
 "commands.stats.guild.reset.error" = "Encountered an error resetting the stats for this guild: {{.Error}}"
 "commands.stats.guild.reset.success" = "Successfully reset the stats for **{{.Guild}}**!"
 "commands.stats.reset.button.cancel" = "Cancel"
-"commands.stats.reset.button.proceed" = "RESET"
+"commands.stats.reset.button.proceed" = "Confirm"
 "commands.stats.reset.canceled" = "Operation has been canceled"
 "commands.stats.user.reset.confirmation" = "⚠️**Are you sure?**⚠️\\nDo you really want to reset the stats for {{.User}}?\\nThis process cannot be undone!"
 "commands.stats.user.reset.error" = "Encountered an error resetting the stats for {{.User}}: {{.Error}}"
