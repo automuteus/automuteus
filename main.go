@@ -92,13 +92,13 @@ func discordMainWrapper() error {
 		return errors.New("SHARD_ID is no longer supported! Please use SHARD_RANGE instead")
 	}
 
-	var shardRange shardRange
-	shardRangeStr := os.Getenv("SHARD_RANGE")
-	if shardRangeStr == "" {
-		log.Println("No SHARD_RANGE specified, defaulting to 0,0")
-		shardRange = defaultShardRange()
+	var shards shards
+	shardsStr := os.Getenv("SHARDS")
+	if shardsStr == "" {
+		log.Println("No SHARDS specified, defaulting to 0")
+		shards = defaultShard()
 	} else {
-		shardRange, err = parseShardRange(shardRangeStr, numShards)
+		shards, err = parseShards(shardsStr, numShards)
 		if err != nil {
 			return err
 		}
@@ -185,17 +185,16 @@ func discordMainWrapper() error {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
-	//ex: 0,0 is still 1 shard, 0,1 is actually 2 shards
-	maxBots := (shardRange.max - shardRange.min) + 1
-	bots := make([]*discord.Bot, maxBots)
-	var i int
-	for shard := shardRange.min; shard <= shardRange.max; shard++ {
-		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, shard, &redisClient, &storageInterface, &psql, galactusClient, logPath)
+	bots := make([]*discord.Bot, len(shards))
+	for i, shard := range shards {
+		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, galactusClient, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
-		i++
 	}
+	// indicate to Kubernetes that we're ready to start receiving traffic
+	metrics.GlobalReady = true
+
 	go bots[0].SetVersionAndCommit(version, commit)
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
@@ -205,9 +204,6 @@ func discordMainWrapper() error {
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
 
-	// indicate to Kubernetes that we're ready to start receiving traffic
-	metrics.GlobalReady = true
-
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
 	slashCommandGuildIdStr := strings.ReplaceAll(os.Getenv("SLASH_COMMAND_GUILD_IDS"), " ", "")
@@ -215,9 +211,9 @@ func discordMainWrapper() error {
 		slashCommandGuildIds = strings.Split(slashCommandGuildIdStr, ",")
 	}
 
-	// only register commands if we're not the official bot, OR we're the first shard
+	// only register commands if we're not the official bot, OR we're the primary/main shard
 	var registeredCommands []registeredCommand
-	if !isOfficial || shardRange.isFirstShard() {
+	if !isOfficial || shards.isPrimaryShard() {
 		for _, guild := range slashCommandGuildIds {
 			for _, v := range command.All {
 				if guild == "" {
@@ -244,8 +240,8 @@ func discordMainWrapper() error {
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	// only delete the slash commands if we're not the official bot, AND we're the first shard
-	if !isOfficial && shardRange.isFirstShard() {
+	// only delete the slash commands if we're not the official bot, AND we're running a single (default) shard
+	if !isOfficial && shards.isSingleShard() {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
 			if v.GuildID == "" {
@@ -267,46 +263,37 @@ func discordMainWrapper() error {
 	return nil
 }
 
-type shardRange struct {
-	min, max int
+type shards []uint8
+
+func defaultShard() shards {
+	return []uint8{0}
 }
 
-func defaultShardRange() shardRange {
-	return shardRange{
-		min: 0,
-		max: 0,
-	}
+// isSingleShard asserts that we have no other shards running in this instance
+func (sr shards) isSingleShard() bool {
+	return len(sr) == 1 && sr[0] == 0
 }
 
-// IsFirstShard indicates if we're running in the (default) single shard mode
-func (sr shardRange) isFirstShard() bool {
-	return sr.min == 0 && sr.max == 0
+// isPrimaryShard ensures that the FIRST shard running is the 0th/primary shard.
+// This prevents performing additional work when shard instances may overlap
+// (for example, an instance running 0,1, and another running 1,0)
+func (sr shards) isPrimaryShard() bool {
+	return len(sr) > 0 && sr[0] == 0
 }
 
-func parseShardRange(str string, maxShards int) (shardRange, error) {
-	var sRange shardRange
-	var err error
-	var min, max uint64
+func parseShards(str string, maxShards int) (shards, error) {
+	var shards shards
 
 	tokens := strings.Split(strings.ReplaceAll(str, " ", ""), ",")
-	if len(tokens) != 2 {
-		return sRange, errors.New("error parsing shard range string: \"" + str + "\"; expected 2 uints separated by ,")
+	for _, token := range tokens {
+		v, err := strconv.ParseUint(token, 10, 64)
+		if err != nil {
+			return shards, err
+		}
+		if v >= uint64(maxShards) {
+			return shards, fmt.Errorf("shard: %d is greater or equal to the total max shards: %d", v, maxShards)
+		}
+		shards = append(shards, uint8(v))
 	}
-	min, err = strconv.ParseUint(tokens[0], 10, 64)
-	if err != nil {
-		return sRange, err
-	}
-	max, err = strconv.ParseUint(tokens[1], 10, 64)
-	if err != nil {
-		return sRange, err
-	}
-	sRange.min = int(min)
-	sRange.max = int(max)
-	if sRange.min > sRange.max {
-		return sRange, fmt.Errorf("shard range min: %d is greater than shard range max: %d", sRange.min, sRange.max)
-	}
-	if sRange.max >= maxShards {
-		return sRange, fmt.Errorf("shard range max: %d is greater or equal to the total number of shards: %d", sRange.max, max)
-	}
-	return sRange, nil
+	return shards, nil
 }
