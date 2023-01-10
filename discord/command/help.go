@@ -65,6 +65,14 @@ var Help = discordgo.ApplicationCommand{
 					Name:  Premium.Name,
 					Value: Premium.Name,
 				},
+				{
+					Name:  Debug.Name,
+					Value: Debug.Name,
+				},
+				{
+					Name:  Download.Name,
+					Value: Download.Name,
+				},
 			},
 			Required: false,
 		},
