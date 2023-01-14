@@ -89,7 +89,7 @@ func discordMainWrapper() error {
 
 	shardIDStr := os.Getenv("SHARD_ID")
 	if shardIDStr != "" {
-		return errors.New("SHARD_ID is no longer supported! Please use SHARD_RANGE instead")
+		return errors.New("SHARD_ID is no longer supported! Please use SHARDS instead")
 	}
 
 	var shards shards
