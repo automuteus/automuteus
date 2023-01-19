@@ -2,8 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/automuteus/automuteus/discord/command"
+	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/utils/pkg/locale"
+	"github.com/automuteus/utils/pkg/rediskey"
 	storage2 "github.com/automuteus/utils/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
@@ -85,13 +88,20 @@ func discordMainWrapper() error {
 	}
 
 	shardIDStr := os.Getenv("SHARD_ID")
-	shardID, err := strconv.Atoi(shardIDStr)
-	if shardID >= numShards {
-		return errors.New("you specified a shardID higher than or equal to the total number of shards")
+	if shardIDStr != "" {
+		return errors.New("SHARD_ID is no longer supported! Please use SHARDS instead")
 	}
-	if err != nil {
-		log.Println("No SHARD_ID specified; defaulting to 0")
-		shardID = 0
+
+	var shards shards
+	shardsStr := os.Getenv("SHARDS")
+	if shardsStr == "" {
+		log.Println("No SHARDS specified, defaulting to 0")
+		shards = defaultShard()
+	} else {
+		shards, err = parseShards(shardsStr, numShards)
+		if err != nil {
+			return err
+		}
 	}
 
 	url := os.Getenv("HOST")
@@ -175,10 +185,24 @@ func discordMainWrapper() error {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
-	bot := discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, shardID, &redisClient, &storageInterface, &psql, galactusClient, logPath)
-	if bot == nil {
-		log.Fatal("bot failed to initialize; did you provide a valid Discord Bot Token?")
+	bots := make([]*discord.Bot, len(shards))
+	for i, shard := range shards {
+		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, galactusClient, logPath)
+		if bots[i] == nil {
+			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
+		}
 	}
+	// indicate to Kubernetes that we're ready to start receiving traffic
+	metrics.GlobalReady = true
+
+	go bots[0].SetVersionAndCommit(version, commit)
+
+	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
+
+	go metrics.StartHealthCheckServer("8080")
+
+	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
+	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
@@ -187,8 +211,9 @@ func discordMainWrapper() error {
 		slashCommandGuildIds = strings.Split(slashCommandGuildIdStr, ",")
 	}
 
+	// only register commands if we're not the official bot, OR we're the primary/main shard
 	var registeredCommands []registeredCommand
-	if !isOfficial || shardID == 0 {
+	if !isOfficial || shards.isPrimaryShard() {
 		for _, guild := range slashCommandGuildIds {
 			for _, v := range command.All {
 				if guild == "" {
@@ -197,7 +222,7 @@ func discordMainWrapper() error {
 					log.Printf("Registering command %s in guild %s\n", v.Name, guild)
 				}
 
-				id, err := bot.PrimarySession.ApplicationCommandCreate(bot.PrimarySession.State.User.ID, guild, v)
+				id, err := bots[0].PrimarySession.ApplicationCommandCreate(bots[0].PrimarySession.State.User.ID, guild, v)
 				if err != nil {
 					log.Panicf("Cannot create command: %v", err)
 				} else {
@@ -215,7 +240,8 @@ func discordMainWrapper() error {
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	if !isOfficial {
+	// only delete the slash commands if we're not the official bot, AND we're the primary/"master" shard
+	if !isOfficial && shards.isPrimaryShard() {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
 			if v.GuildID == "" {
@@ -223,7 +249,7 @@ func discordMainWrapper() error {
 			} else {
 				log.Printf("Deleting command %s on guild %s\n", v.ApplicationCommand.Name, v.GuildID)
 			}
-			err = bot.PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
+			err = bots[0].PrimarySession.ApplicationCommandDelete(v.ApplicationCommand.ApplicationID, v.GuildID, v.ApplicationCommand.ID)
 			if err != nil {
 				log.Println(err)
 			}
@@ -231,6 +257,38 @@ func discordMainWrapper() error {
 		log.Println("Finished deleting all commands")
 	}
 
-	bot.Close()
+	for _, v := range bots {
+		v.Close()
+	}
 	return nil
+}
+
+type shards []uint8
+
+func defaultShard() shards {
+	return []uint8{0}
+}
+
+// isPrimaryShard ensures that the FIRST shard running is the 0th/primary shard.
+// This prevents performing additional work when shard instances may overlap
+// (for example, an instance running 0,1, and another running 1,0)
+func (sr shards) isPrimaryShard() bool {
+	return len(sr) > 0 && sr[0] == 0
+}
+
+func parseShards(str string, maxShards int) (shards, error) {
+	var shards shards
+
+	tokens := strings.Split(strings.ReplaceAll(str, " ", ""), ",")
+	for _, token := range tokens {
+		v, err := strconv.ParseUint(token, 10, 64)
+		if err != nil {
+			return shards, err
+		}
+		if v >= uint64(maxShards) {
+			return shards, fmt.Errorf("shard: %d is greater or equal to the total max shards: %d", v, maxShards)
+		}
+		shards = append(shards, uint8(v))
+	}
+	return shards, nil
 }
