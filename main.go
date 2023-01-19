@@ -240,8 +240,8 @@ func discordMainWrapper() error {
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	time.Sleep(time.Second)
 
-	// only delete the slash commands if we're not the official bot, AND we're running a single (default) shard
-	if !isOfficial && shards.isSingleShard() {
+	// only delete the slash commands if we're not the official bot, AND we're the primary/"master" shard
+	if !isOfficial && shards.isPrimaryShard() {
 		log.Println("Deleting slash commands")
 		for _, v := range registeredCommands {
 			if v.GuildID == "" {
@@ -267,11 +267,6 @@ type shards []uint8
 
 func defaultShard() shards {
 	return []uint8{0}
-}
-
-// isSingleShard asserts that we have no other shards running in this instance
-func (sr shards) isSingleShard() bool {
-	return len(sr) == 1 && sr[0] == 0
 }
 
 // isPrimaryShard ensures that the FIRST shard running is the 0th/primary shard.
