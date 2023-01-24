@@ -183,6 +183,9 @@ func discordMainWrapper() error {
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+
+	go metrics.StartHealthCheckServer("8080")
+
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
 	bots := make([]*discord.Bot, len(shards))
@@ -198,8 +201,6 @@ func discordMainWrapper() error {
 	go bots[0].SetVersionAndCommit(version, commit)
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
-
-	go metrics.StartHealthCheckServer("8080")
 
 	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
 	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
