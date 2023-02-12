@@ -21,10 +21,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build
-        run: go build -o amongusdiscord.exe main.go
-
-      - name: Beta-Release
-        uses: actions/upload-artifact@v2
-        with:
-          name: amongusdiscord-beta.exe
-          path: amongusdiscord.exe
+        run: go build main.go
