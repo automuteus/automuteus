@@ -2,10 +2,9 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"strings"
 	"time"
 )
 
@@ -26,9 +25,6 @@ type BotInfo struct {
 }
 
 func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
-	if strings.HasPrefix(info.Version, "6.9") {
-		info.Version = "😎 " + info.Version + " 😎"
-	}
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
@@ -47,7 +43,7 @@ func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *d
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: sett.LocalizeMessage(&i18n.Message{
 				ID:    "commands.info.footer",
-				Other: "v{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}",
+				Other: "{{.Version}}-{{.Commit}} | Shard {{.ID}}/{{.Num}}",
 			},
 				map[string]interface{}{
 					"Version": info.Version,

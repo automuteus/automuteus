@@ -1,13 +1,13 @@
 package discord
 
 import (
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"log"
 	"strconv"
 	"time"
 
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/task"
+	"github.com/automuteus/automuteus/v7/pkg/premium"
+	"github.com/automuteus/automuteus/v7/pkg/task"
 	"github.com/bsm/redislock"
 
 	"github.com/bwmarrin/discordgo"

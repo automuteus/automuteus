@@ -3,8 +3,8 @@ package command
 import (
 	"bytes"
 	"fmt"
-	"github.com/automuteus/utils/pkg/settings"
-	"github.com/automuteus/utils/pkg/storage"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -62,7 +62,7 @@ func PrivacyResponse(status string, cached map[string]interface{}, user *storage
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID: "commands.privacy.info",
 			Other: "AutoMuteUs privacy and data collection details.\n" +
-				"More details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)",
+				"More details [here](https://github.com/automuteus/automuteus/v7/blob/master/PRIVACY.md)",
 		})
 	case PrivacyShowMe:
 		if len(cached) == 0 {

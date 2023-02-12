@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/automuteus/utils/pkg/rediskey"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/rediskey"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"github.com/go-redis/redis/v8"
 	"log"
 )

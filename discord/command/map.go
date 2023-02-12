@@ -2,13 +2,13 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/bwmarrin/discordgo"
 	"os"
 )
 
 const (
-	DefaultBaseUrl = "https://github.com/automuteus/automuteus/blob/master/assets/maps/"
+	DefaultBaseUrl = "https://github.com/automuteus/automuteus/v7/blob/master/assets/maps/"
 )
 
 var Map = discordgo.ApplicationCommand{

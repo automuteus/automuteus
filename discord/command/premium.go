@@ -2,8 +2,8 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/premium"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"time"

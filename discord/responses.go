@@ -3,16 +3,16 @@ package discord
 import (
 	"bytes"
 	"fmt"
-	"github.com/automuteus/automuteus/discord/command"
-	"github.com/automuteus/utils/pkg/discord"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/discord/command"
+	"github.com/automuteus/automuteus/v7/pkg/discord"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/automuteus/automuteus/amongus"
-	"github.com/automuteus/automuteus/discord/setting"
-	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/automuteus/v7/amongus"
+	"github.com/automuteus/automuteus/v7/discord/setting"
+	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )

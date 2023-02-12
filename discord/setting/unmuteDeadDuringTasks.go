@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 

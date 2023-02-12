@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -116,7 +116,7 @@ func HelpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.
 		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/automuteus/automuteus/blob/master/assets/BotProfilePicture.png?raw=true",
+			URL:      "https://github.com/automuteus/automuteus/v7/blob/master/assets/BotProfilePicture.png?raw=true",
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,
