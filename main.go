@@ -6,6 +6,7 @@ import (
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/metrics"
 	"github.com/automuteus/automuteus/pkg/locale"
+	"github.com/automuteus/automuteus/pkg/rediskey"
 	storage2 "github.com/automuteus/automuteus/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
