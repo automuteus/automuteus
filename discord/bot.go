@@ -56,7 +56,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -98,7 +98,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		log.Println("Bot is now online according to discord Ready handler")
 	})
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds | discordgo.IntentsGuildMessages)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)
@@ -109,13 +109,6 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		return nil
 	}
 
-	rediskey.SetVersionAndCommit(context.Background(), bot.RedisInterface.client, version, commit)
-
-	nodeID := os.Getenv("SCW_NODE_ID")
-	go metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
-
-	go metrics.StartHealthCheckServer("8080")
-
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
@@ -123,6 +116,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		listeningTo = "/help"
 	}
 
+	// pretty sure this needs to happen per-shard
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
 		Activities: []*discordgo.Activity{&discordgo.Activity{
@@ -137,9 +131,6 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		log.Println(err)
 	}
 
-	// indicate to Kubernetes that we're ready to start receiving traffic
-	metrics.GlobalReady = true
-
 	if topGGToken != "" {
 		dblClient, err := dbl.NewClient(topGGToken)
 		if err != nil {
@@ -150,13 +141,14 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		log.Println("No TOP_GG_TOKEN provided")
 	}
 
-	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
-	go bot.statsRefreshWorker(rediskey.TotalUsersExpiration)
-
 	return &bot
 }
 
-func (bot *Bot) statsRefreshWorker(dur time.Duration) {
+func (bot *Bot) StartMetricsServer(nodeID string) error {
+	return metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
+}
+
+func (bot *Bot) StatsRefreshWorker(dur time.Duration) {
 	for {
 		users := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
 		if users == rediskey.NotFound {
