@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 	"errors"
-	"github.com/automuteus/utils/pkg/rediskey"
+	"github.com/automuteus/automuteus/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

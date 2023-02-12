@@ -3,7 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/utils/pkg/storage"
+	"github.com/automuteus/automuteus/pkg/storage"
 	"log"
 	"regexp"
 	"strconv"
@@ -14,9 +14,9 @@ import (
 	"github.com/automuteus/automuteus/discord/command"
 	"github.com/automuteus/automuteus/discord/setting"
 	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/utils/pkg/discord"
-	"github.com/automuteus/utils/pkg/premium"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/pkg/discord"
+	"github.com/automuteus/automuteus/pkg/premium"
+	"github.com/automuteus/automuteus/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )

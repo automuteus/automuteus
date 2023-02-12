@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/utils/pkg/game"
+	"github.com/automuteus/automuteus/pkg/game"
 	"github.com/bwmarrin/discordgo"
 	"os"
 )

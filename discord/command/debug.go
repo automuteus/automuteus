@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/automuteus/automuteus/discord/setting"
-	"github.com/automuteus/utils/pkg/discord"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/pkg/discord"
+	"github.com/automuteus/automuteus/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )

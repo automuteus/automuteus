@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/automuteus/automuteus/discord/setting"
-	"github.com/automuteus/utils/pkg/settings"
+	"github.com/automuteus/automuteus/pkg/settings"
 	"log"
 )
 

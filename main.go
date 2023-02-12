@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"github.com/automuteus/automuteus/discord/command"
-	"github.com/automuteus/utils/pkg/locale"
-	storage2 "github.com/automuteus/utils/pkg/storage"
+	"github.com/automuteus/automuteus/pkg/locale"
+	storage2 "github.com/automuteus/automuteus/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	version = "7.3.0"
+	version = "v7.4.2"
 	commit  = "none"
 	date    = "unknown"
 )
