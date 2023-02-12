@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/automuteus/v7/amongus"
 	"github.com/bwmarrin/discordgo"
 )
 

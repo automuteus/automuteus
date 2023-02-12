@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/automuteus/automuteus/pkg/game"
+	"github.com/automuteus/automuteus/v7/pkg/game"
 
 	"github.com/bwmarrin/discordgo"
 )

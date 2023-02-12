@@ -3,11 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/discord/command"
-	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/automuteus/pkg/locale"
-	"github.com/automuteus/automuteus/pkg/rediskey"
-	storage2 "github.com/automuteus/automuteus/pkg/storage"
+	"github.com/automuteus/automuteus/v7/discord/command"
+	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/pkg/locale"
+	"github.com/automuteus/automuteus/v7/pkg/rediskey"
+	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
@@ -20,9 +20,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/automuteus/automuteus/storage"
+	"github.com/automuteus/automuteus/v7/storage"
 
-	"github.com/automuteus/automuteus/discord"
+	"github.com/automuteus/automuteus/v7/discord"
 )
 
 var (

@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"github.com/automuteus/automuteus/metrics"
-	"github.com/automuteus/automuteus/pkg/settings"
+	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"sync"
 	"time"
 

@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/automuteus/automuteus/pkg/premium"
+	"github.com/automuteus/automuteus/v7/pkg/premium"
 	"github.com/bwmarrin/discordgo"
 	"time"
 )

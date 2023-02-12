@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/automuteus/automuteus/amongus"
+	"github.com/automuteus/automuteus/v7/amongus"
 )
 
 type UserDataSet map[string]UserData

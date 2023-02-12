@@ -1,7 +1,7 @@
 package amongus
 
 import (
-	"github.com/automuteus/automuteus/pkg/game"
+	"github.com/automuteus/automuteus/v7/pkg/game"
 	"log"
 	"strings"
 )
