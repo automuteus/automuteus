@@ -1,4 +1,4 @@
-module github.com/automuteus/automuteus
+module github.com/automuteus/automuteus/v7
 
 go 1.18
 
