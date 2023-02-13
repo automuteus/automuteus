@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v7/discord/command"
+	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
 	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/pkg/capture"
 	"github.com/automuteus/automuteus/v7/pkg/locale"
 	"github.com/automuteus/automuteus/v7/pkg/rediskey"
 	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
@@ -32,6 +34,7 @@ var (
 )
 
 const DefaultURL = "http://localhost:8123"
+const DefaultMaxRequests5Sec int64 = 7
 
 type registeredCommand struct {
 	GuildID            string
@@ -141,12 +144,6 @@ func discordMainWrapper() error {
 		return errors.New("no GALACTUS_ADDR specified; exiting")
 	}
 
-	galactusClient, err := discord.NewGalactusClient(galactusAddr)
-	if err != nil {
-		log.Println("Error connecting to Galactus!")
-		return err
-	}
-
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	psql := storage2.PsqlInterface{}
@@ -188,13 +185,43 @@ func discordMainWrapper() error {
 
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
+	taskTimeoutms := capture.DefaultCaptureBotTimeout
+
+	taskTimeoutmsStr := os.Getenv("ACK_TIMEOUT_MS")
+	num, err := strconv.ParseInt(taskTimeoutmsStr, 10, 64)
+	if err == nil {
+		log.Printf("Read from env; using ACK_TIMEOUT_MS=%d\n", num)
+		taskTimeoutms = time.Millisecond * time.Duration(num)
+	}
+
+	maxReq5Sec := os.Getenv("MAX_REQ_5_SEC")
+	maxReq := DefaultMaxRequests5Sec
+	num, err = strconv.ParseInt(maxReq5Sec, 10, 64)
+	if err == nil {
+		maxReq = num
+	}
+
+	tokenProvider := tokenprovider.NewTokenProvider(nil, nil, taskTimeoutms, maxReq)
+	var extraTokens []string
+	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
+	if extraTokenStr != "" {
+		extraTokens = strings.Split(extraTokenStr, ",")
+	}
+
 	bots := make([]*discord.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, galactusClient, logPath)
+		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
 	}
+
+	// initialize the token provider using the first shard's redis client and primary session
+	bots[0].InitTokenProvider(tokenProvider)
+	for i := 0; i < len(shards); i++ {
+		bots[i].TokenProvider = tokenProvider
+	}
+	tokenProvider.PopulateAndStartSessions(extraTokens)
 	// indicate to Kubernetes that we're ready to start receiving traffic
 	metrics.GlobalReady = true
 
@@ -261,6 +288,7 @@ func discordMainWrapper() error {
 	for _, v := range bots {
 		v.Close()
 	}
+	tokenProvider.Close()
 	return nil
 }
 
@@ -293,3 +321,37 @@ func parseShards(str string, maxShards int) (shards, error) {
 	}
 	return shards, nil
 }
+
+//router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+//	// TODO For any higher-sensitivity info in the future, this should properly identify the origin specifically
+//	w.Header().Set("Access-Control-Allow-Origin", "*")
+//	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+//	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length")
+//
+//	broker.connectionsLock.RLock()
+//	activeConns := len(broker.connections)
+//	broker.connectionsLock.RUnlock()
+//
+//	// default to listing active games in the last 15 mins
+//	activeGames := rediskey.GetActiveGames(context.Background(), broker.client, 900)
+//	version, commit := rediskey.GetVersionAndCommit(context.Background(), broker.client)
+//	totalGuilds := rediskey.GetGuildCounter(context.Background(), broker.client)
+//	totalUsers := rediskey.GetTotalUsers(context.Background(), broker.client)
+//	totalGames := rediskey.GetTotalGames(context.Background(), broker.client)
+//
+//	data := map[string]interface{}{
+//		"version":           version,
+//		"commit":            commit,
+//		"totalGuilds":       totalGuilds,
+//		"activeConnections": activeConns,
+//		"activeGames":       activeGames,
+//		"totalUsers":        totalUsers,
+//		"totalGames":        totalGames,
+//	}
+//
+//	jsonBytes, err := json.Marshal(data)
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	w.Write(jsonBytes)
+//})

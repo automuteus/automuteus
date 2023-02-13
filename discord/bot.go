@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/v7/amongus"
 	"github.com/automuteus/automuteus/v7/discord/command"
+	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
 	"github.com/automuteus/automuteus/v7/metrics"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/game"
@@ -39,7 +40,7 @@ type Bot struct {
 
 	PrimarySession *discordgo.Session
 
-	GalactusClient *GalactusClient
+	TokenProvider *tokenprovider.TokenProvider
 
 	TopGGClient *dbl.Client
 
@@ -56,7 +57,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -78,7 +79,6 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 		EndGameChannels:   make(map[string]chan EndGameMessage),
 		ChannelsMapLock:   sync.RWMutex{},
 		PrimarySession:    dg,
-		GalactusClient:    gc,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
 		PostgresInterface: psql,
@@ -144,6 +144,10 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 	return &bot
 }
 
+func (bot *Bot) InitTokenProvider(tp *tokenprovider.TokenProvider) {
+	tp.Init(bot.RedisInterface.client, bot.PrimarySession)
+}
+
 func (bot *Bot) StartMetricsServer(nodeID string) error {
 	return metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 }
@@ -183,14 +187,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		}
 
 		go func() {
-			guild, err := bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
+			_, err = bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 			if err != nil {
 				log.Println(err)
-			} else if guild != nil {
-				err = bot.GalactusClient.VerifyPremiumMembership(guild.GuildID, premium.Tier(guild.Premium))
-				if err != nil {
-					log.Println(err)
-				}
 			}
 		}()
 

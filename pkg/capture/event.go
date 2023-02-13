@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const DefaultCaptureBotTimeout = time.Second
+
 type EventType int
 
 const (

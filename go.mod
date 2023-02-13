@@ -1,6 +1,6 @@
 module github.com/automuteus/automuteus/v7
 
-go 1.18
+go 1.19
 
 require (
 	github.com/BurntSushi/toml v1.1.0
@@ -15,6 +15,7 @@ require (
 	github.com/pashagolub/pgxmock v1.8.0
 	github.com/prometheus/client_golang v1.10.0
 	github.com/top-gg/go-dbl v0.0.0-20201116001615-e844586b1159
+	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6
 	golang.org/x/text v0.4.0
 )
 
@@ -44,7 +45,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.19.0 // indirect
 	go.opentelemetry.io/otel/trace v0.19.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
