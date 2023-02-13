@@ -67,10 +67,6 @@ func GuildTokenLock(guildID, hToken string) string {
 	return "automuteus:muterequest:lock:" + hToken + ":" + guildID
 }
 
-func RoomCodesForConnCode(connCode string) string {
-	return "automuteus:roomcode:" + connCode
-}
-
 func CachedUserInfoOnGuild(userID, guildID string) string {
 	return "automuteus:cache:userinfo:" + guildID + ":" + userID
 }

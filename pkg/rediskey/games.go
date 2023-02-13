@@ -40,21 +40,3 @@ func RefreshTotalGames(ctx context.Context, client *redis.Client, pool *pgxpool.
 	}
 	return v
 }
-
-func IsGameInVoiceChannel(ctx context.Context, client *redis.Client, guildID, voiceChannelID string) (bool, error) {
-	res, err := client.Exists(ctx, VoiceChannelPtr(guildID, voiceChannelID)).Result()
-	if err != nil {
-		return false, err
-	}
-
-	return res == 1, nil
-}
-
-func IsGameInTextChannel(ctx context.Context, client *redis.Client, guildID, textChannelID string) (bool, error) {
-	res, err := client.Exists(ctx, TextChannelPtr(guildID, textChannelID)).Result()
-	if err != nil {
-		return false, err
-	}
-
-	return res == 1, nil
-}

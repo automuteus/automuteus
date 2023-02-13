@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/storage"
 	"log"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 	redis_common "github.com/automuteus/automuteus/v7/common"
 	"github.com/automuteus/automuteus/v7/discord/command"
 	"github.com/automuteus/automuteus/v7/discord/setting"
-	"github.com/automuteus/automuteus/v7/metrics"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/premium"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
@@ -133,7 +133,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	if interactionLock == nil {
 		return nil
 	}
-	defer metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+	defer server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	defer interactionLock.Release(ctx)
 
 	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)

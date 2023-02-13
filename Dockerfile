@@ -44,6 +44,8 @@ COPY --from=builder /app /app
 COPY ./locales/ /app/locales
 COPY ./storage/postgres.sql /app/storage/postgres.sql
 
+# Port used for AMU API
+EXPOSE 5000
 # Port used for health/liveliness checks
 EXPOSE 8080
 # Port used for prometheus metrics

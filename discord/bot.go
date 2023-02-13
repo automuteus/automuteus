@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/amongus"
 	"github.com/automuteus/automuteus/v7/discord/command"
 	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
+	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/automuteus/automuteus/v7/pkg/premium"
@@ -149,25 +149,7 @@ func (bot *Bot) InitTokenProvider(tp *tokenprovider.TokenProvider) {
 }
 
 func (bot *Bot) StartMetricsServer(nodeID string) error {
-	return metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
-}
-
-func (bot *Bot) StatsRefreshWorker(dur time.Duration) {
-	for {
-		users := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-		if users == rediskey.NotFound {
-			log.Println("Refreshing user stats with worker")
-			rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-		}
-
-		games := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-		if games == rediskey.NotFound {
-			log.Println("Refreshing game stats with worker")
-			rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-		}
-
-		time.Sleep(dur)
-	}
+	return server.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 }
 
 func (bot *Bot) Close() {
@@ -272,7 +254,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
 	if deleted {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -311,9 +293,9 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)

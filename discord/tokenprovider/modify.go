@@ -3,7 +3,7 @@ package tokenprovider
 import (
 	"context"
 	"encoding/json"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/rediskey"
 	"github.com/automuteus/automuteus/v7/pkg/task"
 	"github.com/go-redis/redis/v8"
@@ -11,10 +11,10 @@ import (
 )
 
 func RecordDiscordRequestsByCounts(client *redis.Client, counts task.MuteDeafenSuccessCounts) {
-	metrics.RecordDiscordRequests(client, metrics.MuteDeafenOfficial, counts.Official)
-	metrics.RecordDiscordRequests(client, metrics.MuteDeafenWorker, counts.Worker)
-	metrics.RecordDiscordRequests(client, metrics.MuteDeafenCapture, counts.Capture)
-	metrics.RecordDiscordRequests(client, metrics.InvalidRequest, counts.RateLimit)
+	server.RecordDiscordRequests(client, server.MuteDeafenOfficial, counts.Official)
+	server.RecordDiscordRequests(client, server.MuteDeafenWorker, counts.Worker)
+	server.RecordDiscordRequests(client, server.MuteDeafenCapture, counts.Capture)
+	server.RecordDiscordRequests(client, server.InvalidRequest, counts.RateLimit)
 }
 
 func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID string, tokenSubset map[string]struct{}, request task.UserModify) string {

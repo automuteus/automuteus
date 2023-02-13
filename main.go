@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/automuteus/automuteus/v7/discord/command"
 	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/capture"
 	"github.com/automuteus/automuteus/v7/pkg/locale"
-	"github.com/automuteus/automuteus/v7/pkg/rediskey"
 	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
@@ -181,7 +180,7 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	go metrics.StartHealthCheckServer("8080")
+	go server.StartHealthCheckServer("8080")
 
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
@@ -223,14 +222,13 @@ func discordMainWrapper() error {
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
 	// indicate to Kubernetes that we're ready to start receiving traffic
-	metrics.GlobalReady = true
+	server.GlobalReady = true
 
 	go bots[0].SetVersionAndCommit(version, commit)
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
 
-	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
-	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
+	go bots[0].StartAPIServer("5000")
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
@@ -321,37 +319,3 @@ func parseShards(str string, maxShards int) (shards, error) {
 	}
 	return shards, nil
 }
-
-//router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-//	// TODO For any higher-sensitivity info in the future, this should properly identify the origin specifically
-//	w.Header().Set("Access-Control-Allow-Origin", "*")
-//	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-//	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length")
-//
-//	broker.connectionsLock.RLock()
-//	activeConns := len(broker.connections)
-//	broker.connectionsLock.RUnlock()
-//
-//	// default to listing active games in the last 15 mins
-//	activeGames := rediskey.GetActiveGames(context.Background(), broker.client, 900)
-//	version, commit := rediskey.GetVersionAndCommit(context.Background(), broker.client)
-//	totalGuilds := rediskey.GetGuildCounter(context.Background(), broker.client)
-//	totalUsers := rediskey.GetTotalUsers(context.Background(), broker.client)
-//	totalGames := rediskey.GetTotalGames(context.Background(), broker.client)
-//
-//	data := map[string]interface{}{
-//		"version":           version,
-//		"commit":            commit,
-//		"totalGuilds":       totalGuilds,
-//		"activeConnections": activeConns,
-//		"activeGames":       activeGames,
-//		"totalUsers":        totalUsers,
-//		"totalGames":        totalGames,
-//	}
-//
-//	jsonBytes, err := json.Marshal(data)
-//	if err != nil {
-//		log.Println(err)
-//	}
-//	w.Write(jsonBytes)
-//})
