@@ -111,7 +111,12 @@ Help us translate the bot here:
 
 [![Crowdin](https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg)](https://automuteus.crowdin.com/automuteus)
 
-To extract strings for translation to `locales/en.toml`:
+To prepare any new strings for translation, first install goi18n v2.1.1 using the following command:
+```
+go install -v github.com/nicksnyder/go-i18n/v2/goi18n@v2.1.1
+```
+
+Then run the following command anytime new strings or translations are added:
 
 ```
 goi18n extract -outdir locales
