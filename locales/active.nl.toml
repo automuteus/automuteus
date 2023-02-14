@@ -36,7 +36,7 @@
 "commands.new.success.code" = "Code"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "Sorry, je hebt niet de vereiste rechten om deze opdracht uit te voeren."
-"commands.privacy.info" = "AutoMuteUs privacy and data collection details.\\nMore details [here](https://github.com/automuteus/automuteus/v7/blob/master/PRIVACY.md)"
+"commands.privacy.info" = "AutoMuteUs privacy en data collectie.\\nmeer details [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
 "commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
 "commands.privacy.opt.success" = "✅Ik heb jouw doe wel/niet mee status succesvol aangepast"
 "commands.privacy.showme.cache" = "❗ Hier zijn de in-game namen die ik me voor jou herinner:"
