@@ -36,7 +36,7 @@
 "commands.new.success.code" = "Koodi"
 "commands.new.success.url" = "URL-osoite"
 "commands.no_permissions" = "Sorry, you don't have the required permissions to issue that command."
-"commands.privacy.info" = "AutoMuteUs privacy and data collection details.\\nMore details [here](https://github.com/automuteus/automuteus/v7/blob/master/PRIVACY.md)"
+"commands.privacy.info" = "AutoMuteUs yksityisyys- ja tiedonkeruutiedot.\\nLisätietoja [here](https://github.com/automuteus/automuteus/blob/master/PRIVACY.md)"
 "commands.privacy.opt.error" = "❌ I encountered an error changing your opt in/out status:\\n`{{.Error}}`"
 "commands.privacy.opt.success" = "✅ I successfully changed your opt in/out status"
 "commands.privacy.showme.cache" = "❗ Here's your cached in-game names:"
