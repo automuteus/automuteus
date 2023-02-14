@@ -36,7 +36,7 @@
 "commands.new.success.code" = "コード"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "ごめんなさい、あなたはそのコマンドを実行する権限を持っていないようです。"
-"commands.privacy.info" = "AutoMuteUs のプライバシーとデータ収集の詳細情報：\\n[詳細はこちら](https://github.com/automatuteus/automatuteus/blob/master/PRIVACY.md)"
+"commands.privacy.info" = "AutoMuteUsプライバシーとデータ収集の詳細情報\\n詳細情報 [here](https://github.com/automatuteus/automatuteus/blob/master/PRIVACY.md)"
 "commands.privacy.opt.error" = "❌オプトイン / アウトの設定を変更する際にエラーが発生しました：\\n`{{.Error}}`"
 "commands.privacy.opt.success" = "✅オプトイン / アウトの設定を変更しました"
 "commands.privacy.showme.cache" = "❗あなたのキャッシュ済みユーザ名は次のとおりです。"
