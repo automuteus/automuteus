@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	version = "v7.4.2"
+	version = "v8.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -136,11 +136,6 @@ func discordMainWrapper() error {
 		}
 	} else {
 		return errors.New("no REDIS_ADDR specified; exiting")
-	}
-
-	galactusAddr := os.Getenv("GALACTUS_ADDR")
-	if galactusAddr == "" {
-		return errors.New("no GALACTUS_ADDR specified; exiting")
 	}
 
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
