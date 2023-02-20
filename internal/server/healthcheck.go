@@ -1,4 +1,4 @@
-package metrics
+package server
 
 import (
 	"github.com/gorilla/mux"

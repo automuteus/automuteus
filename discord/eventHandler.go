@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/amongus"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
+	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
@@ -127,7 +127,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 								"VoiceChannel": discord.MentionByChannelID(readOnlyDgs.VoiceChannel),
 							},
 						))
-						metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+						server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 					}
 					correlatedUserID = userID
 				case task.GameOverJob:
@@ -166,10 +166,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 							}
 							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(channelID, embed)
 							if delTime > 0 && err == nil {
-								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+								server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
 								go MessageDeleteWorker(bot.PrimarySession, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
 							} else if err == nil {
-								metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+								server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 							}
 						}
 						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)

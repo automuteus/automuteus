@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
+	"github.com/automuteus/automuteus/v7/internal/server"
+	"github.com/automuteus/automuteus/v7/pkg/capture"
 	"github.com/automuteus/automuteus/v7/pkg/locale"
-	"github.com/automuteus/automuteus/v7/pkg/rediskey"
 	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
@@ -26,12 +27,13 @@ import (
 )
 
 var (
-	version = "v7.4.2"
+	version = "v8.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
 const DefaultURL = "http://localhost:8123"
+const DefaultMaxRequests5Sec int64 = 7
 
 type registeredCommand struct {
 	GuildID            string
@@ -136,17 +138,6 @@ func discordMainWrapper() error {
 		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
-	galactusAddr := os.Getenv("GALACTUS_ADDR")
-	if galactusAddr == "" {
-		return errors.New("no GALACTUS_ADDR specified; exiting")
-	}
-
-	galactusClient, err := discord.NewGalactusClient(galactusAddr)
-	if err != nil {
-		log.Println("Error connecting to Galactus!")
-		return err
-	}
-
 	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
 
 	psql := storage2.PsqlInterface{}
@@ -184,26 +175,53 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	go metrics.StartHealthCheckServer("8080")
+	go server.StartHealthCheckServer("8080")
 
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
+	taskTimeoutms := capture.DefaultCaptureBotTimeout
+
+	taskTimeoutmsStr := os.Getenv("ACK_TIMEOUT_MS")
+	num, err := strconv.ParseInt(taskTimeoutmsStr, 10, 64)
+	if err == nil {
+		log.Printf("Read from env; using ACK_TIMEOUT_MS=%d\n", num)
+		taskTimeoutms = time.Millisecond * time.Duration(num)
+	}
+
+	maxReq5Sec := os.Getenv("MAX_REQ_5_SEC")
+	maxReq := DefaultMaxRequests5Sec
+	num, err = strconv.ParseInt(maxReq5Sec, 10, 64)
+	if err == nil {
+		maxReq = num
+	}
+
+	tokenProvider := tokenprovider.NewTokenProvider(nil, nil, taskTimeoutms, maxReq)
+	var extraTokens []string
+	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
+	if extraTokenStr != "" {
+		extraTokens = strings.Split(extraTokenStr, ",")
+	}
+
 	bots := make([]*discord.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, galactusClient, logPath)
+		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
 	}
-	// indicate to Kubernetes that we're ready to start receiving traffic
-	metrics.GlobalReady = true
 
-	go bots[0].SetVersionAndCommit(version, commit)
+	// initialize the token provider using the first shard's redis client and primary session
+	bots[0].InitTokenProvider(tokenProvider)
+	for i := 0; i < len(shards); i++ {
+		bots[i].TokenProvider = tokenProvider
+	}
+	tokenProvider.PopulateAndStartSessions(extraTokens)
+	// indicate to Kubernetes that we're ready to start receiving traffic
+	server.GlobalReady = true
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
 
-	// TODO this is ugly. Should make a proper cronjob to refresh the stats regularly
-	go bots[0].StatsRefreshWorker(rediskey.TotalUsersExpiration)
+	go bots[0].StartAPIServer("5000")
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}
@@ -261,6 +279,7 @@ func discordMainWrapper() error {
 	for _, v := range bots {
 		v.Close()
 	}
+	tokenProvider.Close()
 	return nil
 }
 

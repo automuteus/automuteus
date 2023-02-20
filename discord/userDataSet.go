@@ -2,9 +2,8 @@ package discord
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"strings"
-
-	"github.com/automuteus/automuteus/v7/amongus"
 )
 
 type UserDataSet map[string]UserData

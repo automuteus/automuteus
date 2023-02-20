@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/amongus"
 	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
+	"github.com/automuteus/automuteus/v7/internal/server"
+	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/automuteus/automuteus/v7/pkg/premium"
@@ -25,6 +26,8 @@ import (
 )
 
 type Bot struct {
+	version  string
+	commit   string
 	official bool
 	url      string
 
@@ -39,7 +42,7 @@ type Bot struct {
 
 	PrimarySession *discordgo.Session
 
-	GalactusClient *GalactusClient
+	TokenProvider *tokenprovider.TokenProvider
 
 	TopGGClient *dbl.Client
 
@@ -56,7 +59,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, gc *GalactusClient, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -70,6 +73,8 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 	}
 
 	bot := Bot{
+		version:      version,
+		commit:       commit,
 		official:     os.Getenv("AUTOMUTEUS_OFFICIAL") != "",
 		url:          url,
 		ConnsToGames: make(map[string]string),
@@ -78,7 +83,6 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 		EndGameChannels:   make(map[string]chan EndGameMessage),
 		ChannelsMapLock:   sync.RWMutex{},
 		PrimarySession:    dg,
-		GalactusClient:    gc,
 		RedisInterface:    redisInterface,
 		StorageInterface:  storageInterface,
 		PostgresInterface: psql,
@@ -144,26 +148,12 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 	return &bot
 }
 
-func (bot *Bot) StartMetricsServer(nodeID string) error {
-	return metrics.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
+func (bot *Bot) InitTokenProvider(tp *tokenprovider.TokenProvider) {
+	tp.Init(bot.RedisInterface.client, bot.PrimarySession)
 }
 
-func (bot *Bot) StatsRefreshWorker(dur time.Duration) {
-	for {
-		users := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-		if users == rediskey.NotFound {
-			log.Println("Refreshing user stats with worker")
-			rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-		}
-
-		games := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-		if games == rediskey.NotFound {
-			log.Println("Refreshing game stats with worker")
-			rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
-		}
-
-		time.Sleep(dur)
-	}
+func (bot *Bot) StartMetricsServer(nodeID string) error {
+	return server.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
 }
 
 func (bot *Bot) Close() {
@@ -183,14 +173,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		}
 
 		go func() {
-			guild, err := bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
+			_, err = bot.PostgresInterface.EnsureGuildExists(gid, m.Guild.Name)
 			if err != nil {
 				log.Println(err)
-			} else if guild != nil {
-				err = bot.GalactusClient.VerifyPremiumMembership(guild.GuildID, premium.Tier(guild.Premium))
-				if err != nil {
-					log.Println(err)
-				}
 			}
 		}()
 
@@ -273,7 +258,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
 	if deleted {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -312,9 +297,9 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 2)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageCreateDelete, 1)
+		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	}
 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
@@ -323,7 +308,6 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 }
 
 func (bot *Bot) getInfo() command.BotInfo {
-	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
 	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
 	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 
@@ -337,8 +321,8 @@ func (bot *Bot) getInfo() command.BotInfo {
 		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
 	}
 	return command.BotInfo{
-		Version:     version,
-		Commit:      commit,
+		Version:     bot.version,
+		Commit:      bot.commit,
 		ShardID:     bot.PrimarySession.ShardID,
 		ShardCount:  bot.PrimarySession.ShardCount,
 		TotalGuilds: totalGuilds,

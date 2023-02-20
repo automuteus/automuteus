@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"sync"
 	"time"
@@ -134,7 +134,7 @@ func (bot *Bot) DispatchRefreshOrEdit(readOnlyDgs *GameState, dgsRequest GameSta
 	} else {
 		edited := readOnlyDgs.dispatchEdit(bot.PrimarySession, bot.gameStateResponse(readOnlyDgs, sett))
 		if edited {
-			metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.MessageEdit, 1)
+			server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageEdit, 1)
 		}
 	}
 }

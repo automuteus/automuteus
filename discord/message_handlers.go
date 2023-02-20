@@ -100,11 +100,9 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 					},
 				},
 			}
-			mdsc, err := bot.GalactusClient.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			err = bot.TokenProvider.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
 				log.Println("error received from galactus for modifyUsers: ", err.Error())
-			} else if mdsc != nil {
-				go RecordDiscordRequestsByCounts(bot.RedisInterface.client, mdsc)
 			}
 		}
 	}

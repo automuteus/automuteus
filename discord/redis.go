@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/metrics"
+	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/rediskey"
 	"github.com/automuteus/automuteus/v7/storage"
 	"github.com/bsm/redislock"
@@ -41,10 +41,6 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func (bot *Bot) SetVersionAndCommit(version, commit string) {
-	rediskey.SetVersionAndCommit(context.Background(), bot.RedisInterface.client, version, commit)
-}
-
 func (bot *Bot) refreshGameLiveness(code string) {
 	t := time.Now()
 	bot.RedisInterface.client.ZAdd(ctx, rediskey.ActiveGamesZSet, &redis.Z{
@@ -57,7 +53,7 @@ func (bot *Bot) refreshGameLiveness(code string) {
 
 func (bot *Bot) rateLimitEventCallback(_ *discordgo.Session, rl *discordgo.RateLimit) {
 	log.Println(rl.Message)
-	metrics.RecordDiscordRequests(bot.RedisInterface.client, metrics.InvalidRequest, 1)
+	server.RecordDiscordRequests(bot.RedisInterface.client, server.InvalidRequest, 1)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {

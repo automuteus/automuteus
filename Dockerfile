@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} golang:1.18-alpine AS builder
+FROM --platform=${BUILDPLATFORM} golang:1.19-alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
 # Git is required for getting the dependencies.
@@ -44,6 +44,8 @@ COPY --from=builder /app /app
 COPY ./locales/ /app/locales
 COPY ./storage/postgres.sql /app/storage/postgres.sql
 
+# Port used for AMU API
+EXPOSE 5000
 # Port used for health/liveliness checks
 EXPOSE 8080
 # Port used for prometheus metrics
