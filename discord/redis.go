@@ -41,10 +41,6 @@ func (redisInterface *RedisInterface) Init(params interface{}) error {
 	return nil
 }
 
-func (bot *Bot) SetVersionAndCommit(version, commit string) {
-	rediskey.SetVersionAndCommit(context.Background(), bot.RedisInterface.client, version, commit)
-}
-
 func (bot *Bot) refreshGameLiveness(code string) {
 	t := time.Now()
 	bot.RedisInterface.client.ZAdd(ctx, rediskey.ActiveGamesZSet, &redis.Z{

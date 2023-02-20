@@ -204,7 +204,7 @@ func discordMainWrapper() error {
 
 	bots := make([]*discord.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = discord.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
+		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
@@ -218,8 +218,6 @@ func discordMainWrapper() error {
 	tokenProvider.PopulateAndStartSessions(extraTokens)
 	// indicate to Kubernetes that we're ready to start receiving traffic
 	server.GlobalReady = true
-
-	go bots[0].SetVersionAndCommit(version, commit)
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
 

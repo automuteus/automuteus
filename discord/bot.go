@@ -26,6 +26,8 @@ import (
 )
 
 type Bot struct {
+	version  string
+	commit   string
 	official bool
 	url      string
 
@@ -57,7 +59,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
+func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -71,6 +73,8 @@ func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, 
 	}
 
 	bot := Bot{
+		version:      version,
+		commit:       commit,
 		official:     os.Getenv("AUTOMUTEUS_OFFICIAL") != "",
 		url:          url,
 		ConnsToGames: make(map[string]string),
@@ -304,7 +308,6 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 }
 
 func (bot *Bot) getInfo() command.BotInfo {
-	version, commit := rediskey.GetVersionAndCommit(context.Background(), bot.RedisInterface.client)
 	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
 	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
 
@@ -318,8 +321,8 @@ func (bot *Bot) getInfo() command.BotInfo {
 		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
 	}
 	return command.BotInfo{
-		Version:     version,
-		Commit:      commit,
+		Version:     bot.version,
+		Commit:      bot.commit,
 		ShardID:     bot.PrimarySession.ShardID,
 		ShardCount:  bot.PrimarySession.ShardCount,
 		TotalGuilds: totalGuilds,

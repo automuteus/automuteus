@@ -3,7 +3,6 @@ package discord
 import (
 	"encoding/json"
 	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -38,5 +37,5 @@ func (bot *Bot) StartAPIServer(port string) {
 	// TODO add endpoints for notable player information, like total games played, num wins, etc
 
 	// TODO properly configure CORS -_-
-	http.ListenAndServe(":"+port, handlers.CORS()(r))
+	http.ListenAndServe(":"+port, r)
 }
