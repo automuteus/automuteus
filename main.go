@@ -77,11 +77,6 @@ func discordMainWrapper() error {
 
 	log.Println(version + "-" + commit)
 
-	if os.Getenv("WORKER_BOT_TOKENS") != "" {
-		log.Println("WORKER_BOT_TOKENS is now a variable used by Galactus, not AutoMuteUs!")
-		log.Fatal("Move WORKER_BOT_TOKENS to Galactus' config, then try again")
-	}
-
 	numShardsStr := os.Getenv("NUM_SHARDS")
 	numShards, err := strconv.Atoi(numShardsStr)
 	if err != nil {
