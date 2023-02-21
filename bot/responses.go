@@ -3,7 +3,6 @@ package bot
 import (
 	"bytes"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/bot/command"
 	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
@@ -336,13 +335,13 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 }
 
 func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *discordgo.MessageEmbedThumbnail {
-	var thumbNail *discordgo.MessageEmbedThumbnail = nil
-	if playMap != game.EMPTYMAP && playMap != game.DLEKS {
-		thumbNail = &discordgo.MessageEmbedThumbnail{
-			URL: command.FormMapUrl(os.Getenv("BASE_MAP_URL"), playMap, sett.MapVersion == "detailed"),
+	url := game.FormMapUrl(os.Getenv("BASE_MAP_URL"), playMap, sett.MapVersion == "detailed")
+	if url != "" {
+		return &discordgo.MessageEmbedThumbnail{
+			URL: url,
 		}
 	}
-	return thumbNail
+	return nil
 }
 
 func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {

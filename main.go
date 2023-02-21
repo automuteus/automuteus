@@ -32,8 +32,10 @@ var (
 	date    = "unknown"
 )
 
-const DefaultURL = "http://localhost:8123"
-const DefaultMaxRequests5Sec int64 = 7
+const (
+	DefaultURL                   = "http://localhost:8123"
+	DefaultMaxRequests5Sec int64 = 7
+)
 
 type registeredCommand struct {
 	GuildID            string
