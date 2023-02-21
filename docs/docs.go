@@ -97,7 +97,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/discord.GameState"
+                            "$ref": "#/definitions/bot.GameState"
                         }
                     },
                     "400": {
@@ -152,6 +152,101 @@ const docTemplate = `{
                 }
             }
         },
+        "bot.GameState": {
+            "type": "object",
+            "properties": {
+                "amongUsData": {
+                    "$ref": "#/definitions/amongus.GameData"
+                },
+                "connectCode": {
+                    "type": "string"
+                },
+                "gameStateMessage": {
+                    "$ref": "#/definitions/bot.GameStateMessage"
+                },
+                "guildID": {
+                    "type": "string"
+                },
+                "linked": {
+                    "type": "boolean"
+                },
+                "matchID": {
+                    "type": "integer"
+                },
+                "matchStartUnix": {
+                    "type": "integer"
+                },
+                "running": {
+                    "type": "boolean"
+                },
+                "subscribed": {
+                    "type": "boolean"
+                },
+                "userData": {
+                    "$ref": "#/definitions/bot.UserDataSet"
+                },
+                "voiceChannel": {
+                    "type": "string"
+                }
+            }
+        },
+        "bot.GameStateMessage": {
+            "type": "object",
+            "properties": {
+                "creationTimeUnix": {
+                    "type": "integer"
+                },
+                "leaderID": {
+                    "type": "string"
+                },
+                "messageChannelID": {
+                    "type": "string"
+                },
+                "messageID": {
+                    "type": "string"
+                }
+            }
+        },
+        "bot.User": {
+            "type": "object",
+            "properties": {
+                "Discriminator": {
+                    "type": "string"
+                },
+                "Nick": {
+                    "type": "string"
+                },
+                "UserID": {
+                    "type": "string"
+                },
+                "UserName": {
+                    "type": "string"
+                }
+            }
+        },
+        "bot.UserData": {
+            "type": "object",
+            "properties": {
+                "PlayerName": {
+                    "type": "string"
+                },
+                "ShouldBeDeaf": {
+                    "type": "boolean"
+                },
+                "ShouldBeMute": {
+                    "type": "boolean"
+                },
+                "User": {
+                    "$ref": "#/definitions/bot.User"
+                }
+            }
+        },
+        "bot.UserDataSet": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/bot.UserData"
+            }
+        },
         "command.BotInfo": {
             "type": "object",
             "properties": {
@@ -179,101 +274,6 @@ const docTemplate = `{
                 "version": {
                     "type": "string"
                 }
-            }
-        },
-        "discord.GameState": {
-            "type": "object",
-            "properties": {
-                "amongUsData": {
-                    "$ref": "#/definitions/amongus.GameData"
-                },
-                "connectCode": {
-                    "type": "string"
-                },
-                "gameStateMessage": {
-                    "$ref": "#/definitions/discord.GameStateMessage"
-                },
-                "guildID": {
-                    "type": "string"
-                },
-                "linked": {
-                    "type": "boolean"
-                },
-                "matchID": {
-                    "type": "integer"
-                },
-                "matchStartUnix": {
-                    "type": "integer"
-                },
-                "running": {
-                    "type": "boolean"
-                },
-                "subscribed": {
-                    "type": "boolean"
-                },
-                "userData": {
-                    "$ref": "#/definitions/discord.UserDataSet"
-                },
-                "voiceChannel": {
-                    "type": "string"
-                }
-            }
-        },
-        "discord.GameStateMessage": {
-            "type": "object",
-            "properties": {
-                "creationTimeUnix": {
-                    "type": "integer"
-                },
-                "leaderID": {
-                    "type": "string"
-                },
-                "messageChannelID": {
-                    "type": "string"
-                },
-                "messageID": {
-                    "type": "string"
-                }
-            }
-        },
-        "discord.User": {
-            "type": "object",
-            "properties": {
-                "Discriminator": {
-                    "type": "string"
-                },
-                "Nick": {
-                    "type": "string"
-                },
-                "UserID": {
-                    "type": "string"
-                },
-                "UserName": {
-                    "type": "string"
-                }
-            }
-        },
-        "discord.UserData": {
-            "type": "object",
-            "properties": {
-                "PlayerName": {
-                    "type": "string"
-                },
-                "ShouldBeDeaf": {
-                    "type": "boolean"
-                },
-                "ShouldBeMute": {
-                    "type": "boolean"
-                },
-                "User": {
-                    "$ref": "#/definitions/discord.User"
-                }
-            }
-        },
-        "discord.UserDataSet": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/discord.UserData"
             }
         },
         "discordgo.ApplicationCommand": {

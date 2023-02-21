@@ -517,7 +517,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					}
 					return command.PrivateResponse(ThumbsUp)
 				}
-				return command.DeadlockGameStateResponse(command.Debug.Name, sett)
+				return command.DeadlockGameStateResponse(command.UnmuteAll, sett)
 			}
 		case command.Download.Name:
 			if !isAdmin {

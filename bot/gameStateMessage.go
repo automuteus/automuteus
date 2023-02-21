@@ -34,17 +34,20 @@ func (gsm *GameStateMessage) Exists() bool {
 }
 
 func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session, reset bool) bool {
+	retValue := false
 	if dgs.GameStateMsg.Exists() {
 		err := s.ChannelMessageDelete(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		if err != nil {
-			return false
+			retValue = false
+		} else {
+			retValue = true
 		}
-		if reset {
-			dgs.GameStateMsg = MakeGameStateMessage()
-		}
-		return true
 	}
-	return false
+	// whether or not we were successful in deleting the message, reset the state
+	if reset {
+		dgs.GameStateMsg = MakeGameStateMessage()
+	}
+	return retValue
 }
 
 var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
