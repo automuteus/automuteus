@@ -20,9 +20,13 @@ func (bot *Bot) StartAPIServer(port string) {
 	docs.SwaggerInfo.Version = bot.version
 	docs.SwaggerInfo.Description = "AutoMuteUs Bot API"
 	var schemes []string
-	host := os.Getenv("OPENAPI_SERVER_BASE")
+	host := os.Getenv("API_SERVER_BASE")
 	if host == "" {
 		host = "http://localhost"
+	}
+	adminPassword := os.Getenv("API_ADMIN_PASS")
+	if adminPassword == "" {
+		adminPassword = "automuteus"
 	}
 	if strings.HasPrefix(host, "http://") {
 		schemes = append(schemes, "http")
@@ -35,10 +39,14 @@ func (bot *Bot) StartAPIServer(port string) {
 	docs.SwaggerInfo.Host = host
 	docs.SwaggerInfo.Schemes = schemes
 
-	r.GET("/bot/info", handleGetInfo(bot))
-	r.GET("/bot/commands", handleGetCommands())
+	botGroup := r.Group("/bot")
+	botGroup.GET("/info", handleGetInfo(bot))
+	botGroup.GET("/commands", handleGetCommands())
 
-	r.GET("/game/state", handleGetGameState(bot))
+	gameGroup := r.Group("/game", gin.BasicAuth(gin.Accounts{
+		"admin": adminPassword,
+	}))
+	gameGroup.GET("/state", handleGetGameState(bot))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -83,6 +91,7 @@ func handleGetCommands() func(c *gin.Context) {
 // @Summary Get Game State
 // @Schemes GET
 // @Description Get the current state of a running game
+// @Security BasicAuth
 // @Tags game
 // @Accept json
 // @Produce json
@@ -118,7 +127,7 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 		if key == "" {
 			c.JSON(http.StatusBadRequest, HttpError{
 				StatusCode: http.StatusBadRequest,
-				Error:      "no game status found with those ",
+				Error:      "no game status found with those details",
 			})
 			return
 		}
