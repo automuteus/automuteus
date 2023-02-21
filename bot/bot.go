@@ -1,11 +1,11 @@
-package discord
+package bot
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
+	"github.com/automuteus/automuteus/v7/bot/command"
+	"github.com/automuteus/automuteus/v7/bot/tokenprovider"
 	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"

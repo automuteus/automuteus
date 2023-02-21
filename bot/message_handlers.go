@@ -1,4 +1,4 @@
-package discord
+package bot
 
 import (
 	"github.com/automuteus/automuteus/v7/pkg/settings"

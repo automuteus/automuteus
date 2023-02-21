@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/game"
@@ -36,8 +35,6 @@ var All = []*discordgo.ApplicationCommand{
 	&Debug,
 	&Download,
 }
-
-var AllJson, _ = json.Marshal(All)
 
 func DeadlockGameStateResponse(command string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{

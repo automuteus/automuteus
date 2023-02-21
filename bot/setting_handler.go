@@ -1,9 +1,9 @@
-package discord
+package bot
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/discord/setting"
+	"github.com/automuteus/automuteus/v7/bot/setting"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
 	"log"
 )

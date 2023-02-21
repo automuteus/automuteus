@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
+	"github.com/automuteus/automuteus/v7/bot/command"
+	"github.com/automuteus/automuteus/v7/bot/tokenprovider"
 	"github.com/automuteus/automuteus/v7/internal/server"
 	"github.com/automuteus/automuteus/v7/pkg/capture"
 	"github.com/automuteus/automuteus/v7/pkg/locale"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/automuteus/automuteus/v7/storage"
 
-	"github.com/automuteus/automuteus/v7/discord"
+	"github.com/automuteus/automuteus/v7/bot"
 )
 
 var (
@@ -107,7 +107,7 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	var redisClient discord.RedisInterface
+	var redisClient bot.RedisInterface
 	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -197,9 +197,9 @@ func discordMainWrapper() error {
 		extraTokens = strings.Split(extraTokenStr, ",")
 	}
 
-	bots := make([]*discord.Bot, len(shards))
+	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
+		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}

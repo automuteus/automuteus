@@ -1,4 +1,4 @@
-package discord
+package bot
 
 import (
 	"bytes"
@@ -193,7 +193,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				if job.JobType != task.ConnectionJob {
 					go func(userID string, ge storage.PostgresGameEvent) {
 						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
-						if dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
+						if dgs != nil && dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
 							ge.GameID = dgs.MatchID
 							if userID != "" {
 								num, err := strconv.ParseUint(userID, 10, 64)

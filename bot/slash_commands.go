@@ -1,4 +1,4 @@
-package discord
+package bot
 
 import (
 	"encoding/json"
@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/automuteus/automuteus/v7/bot/command"
+	"github.com/automuteus/automuteus/v7/bot/setting"
 	redis_common "github.com/automuteus/automuteus/v7/common"
-	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/discord/setting"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/premium"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
@@ -510,11 +510,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 			} else if action == command.UnmuteAll {
 				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-				err = bot.applyToAll(dgs, false, false)
-				if err != nil {
-					return command.PrivateErrorResponse(command.UnmuteAll, err, sett)
+				if dgs != nil {
+					err = bot.applyToAll(dgs, false, false)
+					if err != nil {
+						return command.PrivateErrorResponse(command.UnmuteAll, err, sett)
+					}
+					return command.PrivateResponse(ThumbsUp)
 				}
-				return command.PrivateResponse(ThumbsUp)
+				return command.DeadlockGameStateResponse(command.Debug.Name, sett)
 			}
 		case command.Download.Name:
 			if !isAdmin {

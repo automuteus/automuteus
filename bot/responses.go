@@ -1,9 +1,9 @@
-package discord
+package bot
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/discord/command"
+	"github.com/automuteus/automuteus/v7/bot/command"
 	"github.com/automuteus/automuteus/v7/pkg/amongus"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
 	"github.com/automuteus/automuteus/v7/pkg/settings"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/automuteus/automuteus/v7/discord/setting"
+	"github.com/automuteus/automuteus/v7/bot/setting"
 	"github.com/automuteus/automuteus/v7/pkg/game"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
