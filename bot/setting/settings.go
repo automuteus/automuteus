@@ -107,7 +107,6 @@ var phaseChoices = []*discordgo.ApplicationCommandOptionChoice{
 	},
 }
 
-// TODO parse these from JSON so the web UI can use the same file
 var AllSettings = []Setting{
 	{
 		Name:      List,

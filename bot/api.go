@@ -43,11 +43,16 @@ func (bot *Bot) StartAPIServer(port string) {
 	botGroup.GET("/info", handleGetInfo(bot))
 	botGroup.GET("/commands", handleGetCommands())
 
+	// TODO in the future, I'd like this to receive a Discord Access Token
+	// that way, any user that is logged in via Discord (not only through the web UI)
+	// can get info about a game going on in a guild that they're a member of...
 	gameGroup := r.Group("/game", gin.BasicAuth(gin.Accounts{
 		"admin": adminPassword,
 	}))
 	gameGroup.GET("/state", handleGetGameState(bot))
 
+	// TODO same as above, but we also need to check the User's permissions within the server in question
+	// (aka if user is not a bot admin for a guild, they can't change that guild's settings)
 	guildGroup := r.Group("/guild", gin.BasicAuth(gin.Accounts{
 		"admin": adminPassword,
 	}))
