@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/automuteus/automuteus/v7/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"strings"
 	"testing"
 )

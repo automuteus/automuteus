@@ -3,12 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/bot/command"
-	"github.com/automuteus/automuteus/v7/bot/tokenprovider"
-	"github.com/automuteus/automuteus/v7/internal/server"
-	"github.com/automuteus/automuteus/v7/pkg/capture"
-	"github.com/automuteus/automuteus/v7/pkg/locale"
-	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
+	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
+	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
@@ -21,13 +21,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/automuteus/automuteus/v7/storage"
+	"github.com/automuteus/automuteus/v8/storage"
 
-	"github.com/automuteus/automuteus/v7/bot"
+	"github.com/automuteus/automuteus/v8/bot"
 )
 
 var (
-	version = "v8.0.0"
+	version = "v8.1.0"
 	commit  = "none"
 	date    = "unknown"
 )

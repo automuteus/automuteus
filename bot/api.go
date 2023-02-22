@@ -1,10 +1,10 @@
 package bot
 
 import (
-	"github.com/automuteus/automuteus/v7/bot/command"
-	"github.com/automuteus/automuteus/v7/docs"
-	"github.com/automuteus/automuteus/v7/pkg/discord"
-	"github.com/automuteus/automuteus/v7/pkg/premium"
+	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/docs"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

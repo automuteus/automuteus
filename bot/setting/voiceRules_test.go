@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/v7/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/game"
 	"testing"
 )
 

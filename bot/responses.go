@@ -3,15 +3,15 @@ package bot
 import (
 	"bytes"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/pkg/amongus"
-	"github.com/automuteus/automuteus/v7/pkg/discord"
-	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/amongus"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/automuteus/automuteus/v7/bot/setting"
-	"github.com/automuteus/automuteus/v7/pkg/game"
+	"github.com/automuteus/automuteus/v8/bot/setting"
+	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )

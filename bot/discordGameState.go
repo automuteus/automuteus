@@ -2,8 +2,8 @@ package bot
 
 import (
 	"fmt"
-	"github.com/automuteus/automuteus/v7/pkg/amongus"
-	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/amongus"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"

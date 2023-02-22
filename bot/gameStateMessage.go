@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"github.com/automuteus/automuteus/v7/internal/server"
-	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"sync"
 	"time"
 

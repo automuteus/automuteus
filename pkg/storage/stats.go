@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/pkg/capture"
-	"github.com/automuteus/automuteus/v7/pkg/game"
-	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -351,15 +351,15 @@ type StringModeCount struct {
 	Mode  string `db:"mode"`
 }
 
-//func (psqlInterface *PsqlInterface) ColorRankingForPlayer(userID string) []*Int16ModeCount {
-//	r := []*Int16ModeCount{}
-//	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_color ORDER BY count desc;", userID)
+//	func (psqlInterface *PsqlInterface) ColorRankingForPlayer(userID string) []*Int16ModeCount {
+//		r := []*Int16ModeCount{}
+//		err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 GROUP BY player_color ORDER BY count desc;", userID)
 //
-//	if err != nil {
-//		log.Println(err)
+//		if err != nil {
+//			log.Println(err)
+//		}
+//		return r
 //	}
-//	return r
-//}
 func (psqlInterface *PsqlInterface) ColorRankingForPlayerOnServer(userID, guildID string) []*Int16ModeCount {
 	r := []*Int16ModeCount{}
 	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &r, "SELECT count(*),mode() within GROUP (ORDER BY player_color) AS mode FROM users_games WHERE user_id=$1 AND guild_id=$2 GROUP BY player_color ORDER BY count desc;", userID, guildID)
