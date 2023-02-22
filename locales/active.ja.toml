@@ -83,7 +83,7 @@
 "responses.menuMessage.Linked.FooterText" = "（ゲームを開始するには、ロビーに参加してください）"
 "responses.menuMessage.Title" = "メインメニュー"
 "responses.nonPremiumSetting.Desc" = "ごめんなさい、この設定は AutoMuteUs プレミアムのユーザー専用です！詳細は `/premium` を参照してください。"
-"responses.notLinked.Description" = "❌**No capture linked! Click the link above to connect!**❌"
+"responses.notLinked.Description" = "❌**キャプチャがリンクされていません！ 上のメッセージ中のリンクをクリックして、キャプチャを開始してください！**❌"
 "responses.premiumInviteResponse.Title" = "プレミアムボットの招待"
 "responses.premiumInviteResponse.desc" = "{{.Tier}} のユーザーは、{{.Count}} 個の優先ミュートボットを利用できます！ 招待用リンクは以下です！"
 "responses.premiumInviteResponseNoAccess.desc" = "{{.Tier}} のユーザーは優先ミュートボットにアクセスできません！\\nAutoMuteUs プレミアムの詳細を確認するには、`/premium` と入力してください。"
