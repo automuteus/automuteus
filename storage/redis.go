@@ -34,6 +34,13 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 	return nil
 }
 
+func (storageInterface *StorageInterface) GuildSettingsExists(guildID string) bool {
+	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+
+	v, err := storageInterface.client.Exists(ctx, key).Result()
+	return err == nil && v == 1
+}
+
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
 	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
 

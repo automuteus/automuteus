@@ -4,6 +4,7 @@ import (
 	"github.com/automuteus/automuteus/v7/bot/command"
 	"github.com/automuteus/automuteus/v7/docs"
 	"github.com/automuteus/automuteus/v7/pkg/discord"
+	"github.com/automuteus/automuteus/v7/pkg/premium"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -20,9 +21,9 @@ func (bot *Bot) StartAPIServer(port string) {
 	docs.SwaggerInfo.Version = bot.version
 	docs.SwaggerInfo.Description = "AutoMuteUs Bot API"
 	var schemes []string
-	host := os.Getenv("API_SERVER_BASE")
+	host := os.Getenv("API_SERVER_URL")
 	if host == "" {
-		host = "http://localhost"
+		host = "http://localhost:5000"
 	}
 	adminPassword := os.Getenv("API_ADMIN_PASS")
 	if adminPassword == "" {
@@ -35,7 +36,6 @@ func (bot *Bot) StartAPIServer(port string) {
 		schemes = append(schemes, "https")
 		host = strings.Replace(host, "https://", "", 1)
 	}
-	host += ":" + port
 	docs.SwaggerInfo.Host = host
 	docs.SwaggerInfo.Schemes = schemes
 
@@ -47,6 +47,12 @@ func (bot *Bot) StartAPIServer(port string) {
 		"admin": adminPassword,
 	}))
 	gameGroup.GET("/state", handleGetGameState(bot))
+
+	guildGroup := r.Group("/guild", gin.BasicAuth(gin.Accounts{
+		"admin": adminPassword,
+	}))
+	guildGroup.GET("/settings", handleGetGuildSettings(bot))
+	guildGroup.GET("/premium", handleGetGuildPremium(bot))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -95,8 +101,8 @@ func handleGetCommands() func(c *gin.Context) {
 // @Tags game
 // @Accept json
 // @Produce json
-// @Param guildID query string true "Game Guild ID"
-// @Param connectCode query string true "Game Connect Code"
+// @Param guildID query string true "Guild ID"
+// @Param connectCode query string true "Connect Code"
 // @Success 200 {object} GameState
 // @Failure 400 {string} HttpError
 // @Failure 500 {object} nil
@@ -138,6 +144,83 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, state)
+	}
+}
+
+// GetGuildSettings godoc
+// @Summary Get Guild Settings
+// @Schemes GET
+// @Description Get the settings for a given guild
+// @Security BasicAuth
+// @Tags guild
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Success 200 {object} settings.GuildSettings
+// @Failure 400 {string} HttpError
+// @Failure 404 {string} HttpError
+// @Failure 500 {object} nil
+// @Router /guild/settings [get]
+func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid guild ID",
+			})
+			return
+		}
+
+		exists := bot.StorageInterface.GuildSettingsExists(guildID)
+		if !exists {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusNotFound,
+				Error:      "No settings found for that GuildID",
+			})
+			return
+		}
+		settings := bot.StorageInterface.GetGuildSettings(guildID)
+		c.JSON(http.StatusOK, settings)
+	}
+}
+
+// GetGuildPremium godoc
+// @Summary Get Guild Premium
+// @Schemes GET
+// @Description Get the premium status for a given guild
+// @Security BasicAuth
+// @Tags guild
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Success 200 {object} premium.PremiumRecord
+// @Failure 400 {string} HttpError
+// @Failure 500 {object} HttpError
+// @Router /guild/premium [get]
+func handleGetGuildPremium(bot *Bot) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid guild ID",
+			})
+			return
+		}
+
+		tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, guildID, "")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, premium.PremiumRecord{
+			Tier: tier,
+			Days: days,
+		})
 	}
 }
 
