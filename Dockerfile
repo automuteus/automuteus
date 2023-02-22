@@ -11,9 +11,13 @@ WORKDIR /src
 # and will therefore be cached for speeding up the next build
 COPY ./go.mod ./go.sum ./
 RUN go mod download
+# Install the swag tool that generates swagger docs from the source code
+RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Import the code from the context.
 COPY ./ ./
+# Generate API documentation
+RUN swag init --parseDependency true
 
 # Build the executable to `/app`. Mark the build as statically linked.
 # hadolint ignore=SC2155

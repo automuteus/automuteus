@@ -3,12 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v7/discord/command"
-	"github.com/automuteus/automuteus/v7/discord/tokenprovider"
-	"github.com/automuteus/automuteus/v7/internal/server"
-	"github.com/automuteus/automuteus/v7/pkg/capture"
-	"github.com/automuteus/automuteus/v7/pkg/locale"
-	storage2 "github.com/automuteus/automuteus/v7/pkg/storage"
+	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
+	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
@@ -21,19 +21,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/automuteus/automuteus/v7/storage"
+	"github.com/automuteus/automuteus/v8/storage"
 
-	"github.com/automuteus/automuteus/v7/discord"
+	"github.com/automuteus/automuteus/v8/bot"
 )
 
 var (
-	version = "v8.0.0"
+	version = "v8.1.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
-const DefaultURL = "http://localhost:8123"
-const DefaultMaxRequests5Sec int64 = 7
+const (
+	DefaultURL                   = "http://localhost:8123"
+	DefaultMaxRequests5Sec int64 = 7
+)
 
 type registeredCommand struct {
 	GuildID            string
@@ -107,7 +109,7 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	var redisClient discord.RedisInterface
+	var redisClient bot.RedisInterface
 	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -197,9 +199,9 @@ func discordMainWrapper() error {
 		extraTokens = strings.Split(extraTokenStr, ",")
 	}
 
-	bots := make([]*discord.Bot, len(shards))
+	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = discord.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
+		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}

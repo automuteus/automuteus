@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/automuteus/automuteus/v7/pkg/rediskey"
+	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 	"time"
 )

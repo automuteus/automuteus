@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/automuteus/automuteus/v7/pkg/rediskey"
-	"github.com/automuteus/automuteus/v7/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/rediskey"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/go-redis/redis/v8"
 	"log"
 )
@@ -32,6 +32,13 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 	})
 	storageInterface.client = rdb
 	return nil
+}
+
+func (storageInterface *StorageInterface) GuildSettingsExists(guildID string) bool {
+	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+
+	v, err := storageInterface.client.Exists(ctx, key).Result()
+	return err == nil && v == 1
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
