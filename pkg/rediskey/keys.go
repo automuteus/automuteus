@@ -8,9 +8,6 @@ const JobNamespace = "automuteus:jobs:"
 const TotalUsers = "automuteus:users:total"
 const TotalGames = "automuteus:games:total"
 
-const Commit = "automuteus:commit"
-const Version = "automuteus:version"
-
 func ActiveGamesForGuild(guildID string) string {
 	return "automuteus:discord:" + guildID + ":games:set"
 }

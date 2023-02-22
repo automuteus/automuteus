@@ -23,7 +23,7 @@ func (bot *Bot) StartAPIServer(port string) {
 	var schemes []string
 	host := os.Getenv("API_SERVER_URL")
 	if host == "" {
-		host = "http://localhost:5000"
+		host = "http://localhost"
 	}
 	adminPassword := os.Getenv("API_ADMIN_PASS")
 	if adminPassword == "" {
