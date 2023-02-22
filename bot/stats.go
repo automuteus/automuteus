@@ -545,7 +545,7 @@ func (bot *Bot) GuildStatsEmbed(guildID string, sett *settings.GuildSettings, is
 		gname = guildID
 	} else {
 		gname = g.Name
-		avatarURL = g.IconURL()
+		avatarURL = g.IconURL("256")
 	}
 
 	gamesPlayed := bot.PostgresInterface.NumGamesPlayedOnGuild(guildID)

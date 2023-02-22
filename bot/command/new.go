@@ -30,7 +30,7 @@ var New = discordgo.ApplicationCommand{
 func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var content string
 	var embeds []*discordgo.MessageEmbed
-	var flags uint64 = 1 << 6 // private message by default
+	flags := discordgo.MessageFlagsEphemeral // private message by default
 
 	switch status {
 	case NewSuccess:
@@ -79,7 +79,7 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 		}, map[string]interface{}{
 			"Games": fmt.Sprintf("%d/%d", info.ActiveGames, DefaultMaxActiveGames),
 		})
-		flags = 0 // public message
+		flags = discordgo.MessageFlags(0) // public message
 
 	}
 	return &discordgo.InteractionResponse{

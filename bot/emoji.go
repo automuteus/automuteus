@@ -70,7 +70,12 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 		}
 		if !alreadyExists {
 			b64 := emoji.DownloadAndBase64Encode()
-			em, err := s.GuildEmojiCreate(guildID, emoji.Name, b64, nil)
+			p := discordgo.EmojiParams{
+				Name:  emoji.Name,
+				Image: b64,
+				Roles: nil,
+			}
+			em, err := s.GuildEmojiCreate(guildID, &p)
 			if err != nil {
 				log.Println(err)
 			} else {

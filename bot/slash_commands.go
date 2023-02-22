@@ -76,7 +76,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 				if err != nil {
 					log.Println("err issuing wait response ", err)
 				}
-				followUpMsg, err = s.FollowupMessageCreate(s.State.User.ID, i.Interaction, true, &discordgo.WebhookParams{
+				followUpMsg, err = s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: Hourglass,
 				})
 				if err != nil {
@@ -92,10 +92,10 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 					if content == "" {
 						content = "\u200b"
 					}
-					followUpMsg, err = s.FollowupMessageEdit(s.State.User.ID, i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
-						Content:    content,
-						Components: resp.Data.Components,
-						Embeds:     resp.Data.Embeds,
+					followUpMsg, err = s.FollowupMessageEdit(i.Interaction, followUpMsg.ID, &discordgo.WebhookEdit{
+						Content:    &content,
+						Components: &resp.Data.Components,
+						Embeds:     &resp.Data.Embeds,
 					})
 				} else {
 					//TODO if this shows up in logs regularly, print more context
