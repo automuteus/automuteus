@@ -14,14 +14,14 @@ var Info = discordgo.ApplicationCommand{
 }
 
 type BotInfo struct {
-	Version     string
-	Commit      string
-	ShardID     int
-	ShardCount  int
-	TotalGuilds int64
-	ActiveGames int64
-	TotalUsers  int64
-	TotalGames  int64
+	Version     string `json:"version"`
+	Commit      string `json:"commit"`
+	ShardID     int    `json:"shardID"`
+	ShardCount  int    `json:"shardCount"`
+	TotalGuilds int64  `json:"totalGuilds"`
+	ActiveGames int64  `json:"activeGames"`
+	TotalUsers  int64  `json:"totalUsers"`
+	TotalGames  int64  `json:"totalGames"`
 }
 
 func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
