@@ -327,7 +327,7 @@ func (bot *Bot) GetInfo() discord.BotInfo {
 	}
 }
 
-func linkPlayer(redisDriver redis.Driver, dgs *discord.GameState, userID, color string) (command.LinkStatus, error) {
+func linkPlayer(redisDriver redis.Driver, dgs *discord.GameState, userID, color string) (amongus.LinkStatus, error) {
 	var auData amongus.PlayerData
 	found := false
 	if game.IsColorString(color) {
@@ -340,24 +340,24 @@ func linkPlayer(redisDriver redis.Driver, dgs *discord.GameState, userID, color 
 			if err != nil {
 				log.Println(err)
 			}
-			return command.LinkSuccess, nil
+			return amongus.LinkSuccess, nil
 		} else {
 			err := fmt.Sprintf("No player in the current game was found matching %s", discord.MentionByUserID(userID))
-			return command.LinkNoPlayer, errors.New(err)
+			return amongus.LinkNoPlayer, errors.New(err)
 		}
 	} else {
 		err := fmt.Errorf("no game data found for player %s and color %s", discord.MentionByUserID(userID), color)
-		return command.LinkNoGameData, err
+		return amongus.LinkNoGameData, err
 	}
 }
 
-func unlinkPlayer(dgs *discord.GameState, userID string) command.UnlinkStatus {
+func unlinkPlayer(dgs *discord.GameState, userID string) amongus.UnlinkStatus {
 	// if we found the player and cleared their data
 	success := dgs.ClearPlayerData(userID)
 	if success {
-		return command.UnlinkSuccess
+		return amongus.UnlinkSuccess
 	} else {
-		return command.UnlinkNoPlayer
+		return amongus.UnlinkNoPlayer
 	}
 }
 

@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/docs"
+	"github.com/automuteus/automuteus/v8/pkg"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/redis"
@@ -14,10 +15,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 	"strings"
-)
-
-var (
-	version = "v0.0.1"
 )
 
 type Api struct {
@@ -47,7 +44,7 @@ func (api *Api) StartServer(port string) error {
 
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Title = "AutoMuteUs"
-	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Version = pkg.Version
 	docs.SwaggerInfo.Description = "AutoMuteUs Bot API"
 	var schemes []string
 	host := api.url
@@ -80,6 +77,7 @@ func (api *Api) StartServer(port string) error {
 	}))
 	guildGroup.GET("/settings", handleGetGuildSettings(api))
 	guildGroup.GET("/premium", handleGetGuildPremium(api))
+	guildGroup.POST("/premium/transfer", handlePostGuildPremiumTransfer(api))
 	guildGroup.POST("/premium/subserver", handlePostGuildPremiumAddGoldSubserver(api))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -101,7 +99,7 @@ func (api *Api) StartServer(port string) error {
 // @Router /bot/info [get]
 func handleGetInfo(api *Api) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		info := redis.GetApiInfo(version, api.redisDriver, api.postgresInterface, api.discordSession)
+		info := redis.GetApiInfo(api.redisDriver, api.postgresInterface, api.discordSession)
 		c.JSON(http.StatusOK, info)
 	}
 }
@@ -252,6 +250,56 @@ func handleGetGuildPremium(api *Api) func(c *gin.Context) {
 	}
 }
 
+// TransferPremium godoc
+// @Summary Transfer premium
+// @Schemes POST
+// @Description Transfer premium from one guild to another
+// @Security BasicAuth
+// @Tags guild premium
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Param   GuildIDRequest body GuildIDRequest true "Guild to transfer premium to"
+// @Success 202 {object} string
+// @Failure 400 {string} HttpError
+// @Failure 500 {object} HttpError
+// @Router /guild/premium/transfer [post]
+func handlePostGuildPremiumTransfer(api *Api) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid guild ID",
+			})
+			return
+		}
+		var p GuildIDRequest
+		if err := c.ShouldBindBodyWith(&p, binding.JSON); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
+		if discord.ValidateSnowflake(p.GuildID) != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid transfer guild ID",
+			})
+			return
+		}
+		if err := api.postgresInterface.TransferPremium(guildID, p.GuildID); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusAccepted, "Premium transferred successfully")
+	}
+}
+
 // AddPremiumSubserver godoc
 // @Summary Add a premium subserver
 // @Schemes POST
@@ -261,7 +309,7 @@ func handleGetGuildPremium(api *Api) func(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param guildID query string true "Guild ID"
-// @Param   PremiumSubserverRequest body PremiumSubserverRequest true "Subserver to inherit premium"
+// @Param   GuildIDRequest body GuildIDRequest true "Subserver to inherit premium"
 // @Success 202 {object} string
 // @Failure 400 {string} HttpError
 // @Failure 500 {object} HttpError
@@ -276,12 +324,13 @@ func handlePostGuildPremiumAddGoldSubserver(api *Api) func(c *gin.Context) {
 			})
 			return
 		}
-		var p PremiumSubserverRequest
+		var p GuildIDRequest
 		if err := c.ShouldBindBodyWith(&p, binding.JSON); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
 				StatusCode: http.StatusInternalServerError,
 				Error:      err.Error(),
 			})
+			return
 		}
 		if discord.ValidateSnowflake(p.GuildID) != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{
@@ -295,12 +344,13 @@ func handlePostGuildPremiumAddGoldSubserver(api *Api) func(c *gin.Context) {
 				StatusCode: http.StatusInternalServerError,
 				Error:      err.Error(),
 			})
+			return
 		}
 		c.JSON(http.StatusAccepted, "Premium subserver status updated")
 	}
 }
 
-type PremiumSubserverRequest struct {
+type GuildIDRequest struct {
 	GuildID string `json:"guildID"`
 }
 

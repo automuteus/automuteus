@@ -16,6 +16,11 @@ func CanTransfer(origin, dest *PostgresGuild) error {
 	if origin == nil || dest == nil {
 		return errors.New("nil origin or dest server")
 	}
+
+	if origin.GuildID == dest.GuildID {
+		return errors.New("can't transfer premium to the same guild")
+	}
+
 	if origin.GuildID == 754465589958803548 {
 		return errors.New("cant transfer the official AMU server premium")
 	}

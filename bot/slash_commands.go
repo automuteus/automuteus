@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/redis"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"log"
@@ -861,10 +862,10 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *discord.GameState, userID, testValue
 		if err != nil {
 			log.Println(err)
 		}
-		return command.LinkResponse(status, userID, testValue, sett), status == command.LinkSuccess
+		return command.LinkResponse(status, userID, testValue, sett), status == amongus.LinkSuccess
 	} else {
 		status := unlinkPlayer(dgs, userID)
-		return command.UnlinkResponse(status, userID, sett), status == command.UnlinkSuccess
+		return command.UnlinkResponse(status, userID, sett), status == amongus.UnlinkSuccess
 	}
 }
 

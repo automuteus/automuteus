@@ -1,6 +1,6 @@
 package pkg
 
 var (
-	Version = "v8.1.0"
+	Version = "v8.2.0"
 	Commit  = "none"
 )

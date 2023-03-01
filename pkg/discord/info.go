@@ -12,8 +12,7 @@ type BotInfo struct {
 }
 
 type ApiInfo struct {
-	Version     string `json:"apiVersion"`
-	BotVersion  string `json:"botVersion"`
+	Version     string `json:"version"`
 	Commit      string `json:"commit"`
 	ShardCount  int    `json:"shardCount"`
 	TotalGuilds int64  `json:"totalGuilds"`

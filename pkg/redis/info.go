@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func GetApiInfo(apiVersion string, redisDriver Driver, psql storage.PsqlInterface, sess *discordgo.Session) discord.ApiInfo {
+func GetApiInfo(redisDriver Driver, psql storage.PsqlInterface, sess *discordgo.Session) discord.ApiInfo {
 	totalGuilds := redisDriver.GetGuildCounter(context.Background())
 	activeGames := redisDriver.GetActiveGames(context.Background(), GameTimeoutSeconds)
 
@@ -26,8 +26,7 @@ func GetApiInfo(apiVersion string, redisDriver Driver, psql storage.PsqlInterfac
 		shardCount = sess.ShardCount
 	}
 	return discord.ApiInfo{
-		Version:     apiVersion,
-		BotVersion:  pkg.Version,
+		Version:     pkg.Version,
 		Commit:      pkg.Commit,
 		ShardCount:  shardCount,
 		TotalGuilds: totalGuilds,

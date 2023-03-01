@@ -1,19 +1,12 @@
 package command
 
 import (
+	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
-)
-
-type LinkStatus int
-
-const (
-	LinkSuccess LinkStatus = iota
-	LinkNoPlayer
-	LinkNoGameData
 )
 
 var Link = discordgo.ApplicationCommand{
@@ -40,10 +33,10 @@ func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommand
 	return options[0].UserValue(s).ID, strings.ReplaceAll(strings.ToLower(options[1].StringValue()), " ", "")
 }
 
-func LinkResponse(status LinkStatus, userID, color string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func LinkResponse(status amongus.LinkStatus, userID, color string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var content string
 	switch status {
-	case LinkSuccess:
+	case amongus.LinkSuccess:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.success",
 			Other: "Successfully linked {{.UserMention}} to an in-game player with the color: `{{.Color}}`",
@@ -51,14 +44,14 @@ func LinkResponse(status LinkStatus, userID, color string, sett *settings.GuildS
 			"UserMention": discord.MentionByUserID(userID),
 			"Color":       color,
 		})
-	case LinkNoPlayer:
+	case amongus.LinkNoPlayer:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.noplayer",
 			Other: "No player in the current game was detected for {{.UserMention}}",
 		}, map[string]interface{}{
 			"UserMention": discord.MentionByUserID(userID),
 		})
-	case LinkNoGameData:
+	case amongus.LinkNoGameData:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.link.nogamedata",
 			Other: "No game data found for the color `{{.Color}}`",
