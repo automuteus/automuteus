@@ -1,12 +1,12 @@
-package rediskey
+package redis
 
 const TotalGuildsSet = "automuteus:count:guilds"
 const ActiveGamesZSet = "automuteus:games"
-const EventsNamespace = "automuteus:capture:events"
-const JobNamespace = "automuteus:jobs:"
 
 const TotalUsers = "automuteus:users:total"
 const TotalGames = "automuteus:games:total"
+const JobNamespace = "automuteus:jobs:"
+const EventsNamespace = "automuteus:capture:events"
 
 func ActiveGamesForGuild(guildID string) string {
 	return "automuteus:discord:" + guildID + ":games:set"
@@ -44,20 +44,16 @@ func RequestsByType(typeStr string) string {
 	return "automuteus:requests:type:" + typeStr
 }
 
-func CompleteTask(taskID string) string {
+func completeTask(taskID string) string {
 	return "automuteus:tasks:complete:ack:" + taskID
 }
 
-func TasksList(connectCode string) string {
+func tasksList(connectCode string) string {
 	return "automuteus:tasks:list:" + connectCode
 }
 
 func BotTokenIdentifyLock(token string) string {
 	return "automuteus:token:lock" + token
-}
-
-func GuildSettings(id HashedID) string {
-	return "automuteus:settings:guild:" + string(id)
 }
 
 func GuildTokenLock(guildID, hToken string) string {

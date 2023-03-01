@@ -86,9 +86,9 @@ func settingResponse(settings []setting.Setting, sett *settings.GuildSettings, p
 	return &embed
 }
 
-func (bot *Bot) gameStateResponse(dgs *GameState, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func (bot *Bot) gameStateResponse(dgs *discord.GameState, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	// we need to generate the messages based on the state of the game
-	messages := map[game.Phase]func(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed{
+	messages := map[game.Phase]func(dgs *discord.GameState, emojis discord.AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed{
 		game.MENU:     menuMessage,
 		game.LOBBY:    lobbyMessage,
 		game.TASKS:    gamePlayMessage,
@@ -161,9 +161,9 @@ func lobbyMetaEmbedFields(room, region string, author, voiceChannelID string, pl
 	return gameInfoFields
 }
 
-func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func menuMessage(dgs *discord.GameState, _ discord.AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	var footer *discordgo.MessageEmbedFooter
-	desc, color := dgs.descriptionAndColor(sett)
+	desc, color := dgs.DescriptionAndColor(sett)
 	if color == discord.DEFAULT {
 		color = discord.GREEN
 		footer = &discordgo.MessageEmbedFooter{
@@ -227,14 +227,14 @@ func menuMessage(dgs *GameState, _ AlivenessEmojis, sett *settings.GuildSettings
 	return &msg
 }
 
-func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func lobbyMessage(dgs *discord.GameState, emojis discord.AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	room, region, playMap := dgs.GameData.GetRoomRegionMap()
 	gameInfoFields := lobbyMetaEmbedFields(room, region, dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
 	listResp = append(gameInfoFields, listResp...)
 
-	desc, color := dgs.descriptionAndColor(sett)
+	desc, color := dgs.DescriptionAndColor(sett)
 	if color == discord.DEFAULT {
 		color = discord.GREEN
 	}
@@ -254,7 +254,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 				Other: "Use the select below with your in-game color! (or {{.X}} to leave)",
 			},
 				map[string]interface{}{
-					"X": X,
+					"X": discord.X,
 				}),
 			IconURL:      "",
 			ProxyIconURL: "",
@@ -270,7 +270,7 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 	return &msg
 }
 
-func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings, winners string) *discordgo.MessageEmbed {
+func gameOverMessage(dgs *discord.GameState, emojis discord.AlivenessEmojis, sett *settings.GuildSettings, winners string) *discordgo.MessageEmbed {
 	_, _, playMap := dgs.GameData.GetRoomRegionMap()
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
@@ -280,7 +280,7 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 		Other: "Game Over! View the match's stats using Match ID: `{{.MatchID}}`\n{{.Winners}}",
 	},
 		map[string]interface{}{
-			"MatchID": matchIDCode(dgs.ConnectCode, dgs.MatchID),
+			"MatchID": discord.MatchIDCode(dgs.ConnectCode, dgs.MatchID),
 			"Winners": winners,
 		})
 
@@ -328,7 +328,7 @@ func getThumbnailFromMap(playMap game.PlayMap, sett *settings.GuildSettings) *di
 	return nil
 }
 
-func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func gamePlayMessage(dgs *discord.GameState, emojis discord.AlivenessEmojis, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	phase := dgs.GameData.GetPhase()
 	playMap := dgs.GameData.GetPlayMap()
 	// send empty fields because we don't need to display those fields during the game...
@@ -336,7 +336,7 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 
 	gameInfoFields := lobbyMetaEmbedFields("", "", dgs.GameStateMsg.LeaderID, dgs.VoiceChannel, dgs.GameData.GetNumDetectedPlayers(), dgs.GetCountLinked(), sett)
 	listResp = append(gameInfoFields, listResp...)
-	desc, color := dgs.descriptionAndColor(sett)
+	desc, color := dgs.DescriptionAndColor(sett)
 	if color == discord.DEFAULT {
 		switch phase {
 		case game.TASKS:
@@ -364,25 +364,6 @@ func gamePlayMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 	}
 
 	return &msg
-}
-
-// returns the description and color to use, based on the gamestate
-// usage dictates DEFAULT should be overwritten by other state subsequently,
-// whereas RED and DARK_ORANGE are error/flag values that should be passed on
-func (dgs *GameState) descriptionAndColor(sett *settings.GuildSettings) (string, int) {
-	if !dgs.Linked {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.notLinked.Description",
-			Other: "❌**No capture linked! Click the link above to connect!**❌",
-		}), discord.RED // red
-	} else if !dgs.Running {
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "responses.makeDescription.GameNotRunning",
-			Other: "\n⚠ **Bot is Paused!** ⚠\n\n",
-		}), discord.DARK_ORANGE
-	}
-	return "\n", discord.DEFAULT
-
 }
 
 func nonPremiumSettingResponse(sett *settings.GuildSettings) string {

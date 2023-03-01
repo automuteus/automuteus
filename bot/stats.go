@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -498,7 +497,7 @@ func (bot *Bot) UserStatsEmbed(userID, guildID string, sett *settings.GuildSetti
 }
 
 func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, string, string) {
-	info := rediskey.GetCachedUserInfo(context.Background(), bot.RedisInterface.client, userID, guildID)
+	info := bot.RedisDriver.GetCachedUserInfo(context.Background(), userID, guildID)
 	if info == "" {
 		mem, err := bot.PrimarySession.GuildMember(guildID, userID)
 		if err != nil {
@@ -506,7 +505,7 @@ func (bot *Bot) CheckOrFetchCachedUserData(userID, guildID string) (string, stri
 			return "", "", ""
 		}
 		if mem.User != nil {
-			err := rediskey.SetCachedUserInfo(context.Background(), bot.RedisInterface.client, userID, guildID,
+			err := bot.RedisDriver.SetCachedUserInfo(context.Background(), userID, guildID,
 				fmt.Sprintf("%s:%s:%s", mem.User.Username, mem.Nick, mem.User.Discriminator))
 			if err != nil {
 				log.Println(err)

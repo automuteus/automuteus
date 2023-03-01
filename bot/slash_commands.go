@@ -1,9 +1,10 @@
 package bot
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/redis"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"log"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/setting"
-	redis_common "github.com/automuteus/automuteus/v8/common"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -77,7 +77,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 					log.Println("err issuing wait response ", err)
 				}
 				followUpMsg, err = s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-					Content: Hourglass,
+					Content: discord.Hourglass,
 				})
 				if err != nil {
 					log.Println("Error creating followup message: ", err)
@@ -122,19 +122,19 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 
 func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.InteractionResponse {
 	if i.Member != nil && i.Member.User != nil {
-		if redis_common.IsUserBanned(bot.RedisInterface.client, i.Member.User.ID) {
+		if bot.RedisDriver.IsUserBanned(i.Member.User.ID) {
 			return nil
 		}
 	}
 
 	// lock this particular interaction message so no other shard tries to process it
-	interactionLock := bot.RedisInterface.LockSnowflake(i.ID)
+	interactionLock := bot.RedisDriver.LockSnowflake(i.ID)
 	// couldn't obtain lock; bail bail bail!
 	if interactionLock == nil {
 		return nil
 	}
-	defer server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
-	defer interactionLock.Release(ctx)
+	defer bot.RedisDriver.RecordDiscordRequests(redis.MessageCreateDelete, 1)
+	defer interactionLock.Release(context.Background())
 
 	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)
 
@@ -144,8 +144,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.DmResponse(sett)
 	}
 
-	if redis_common.IsUserRateLimitedGeneral(bot.RedisInterface.client, i.Member.User.ID) {
-		banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+	if bot.RedisDriver.IsUserRateLimitedGeneral(i.Member.User.ID) {
+		banned := bot.RedisDriver.IncrementRateLimitExceed(i.Member.User.ID)
 		return softbanResponse(banned, sett)
 	}
 
@@ -183,28 +183,28 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	}
 
 	// common gsr, but not necessarily used by all commands
-	gsr := GameStateRequest{
+	gsr := discord.GameStateRequest{
 		GuildID:     i.GuildID,
 		TextChannel: i.ChannelID,
 	}
 
 	if i.Type == discordgo.InteractionApplicationCommand {
-		if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, i.Member.User.ID, i.ApplicationCommandData().Name) {
-			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+		if bot.RedisDriver.IsUserRateLimitedSpecific(i.Member.User.ID, i.ApplicationCommandData().Name) {
+			banned := bot.RedisDriver.IncrementRateLimitExceed(i.Member.User.ID)
 			return softbanResponse(banned, sett)
 		}
-		var cmdRatelimitTimeout = redis_common.GlobalUserRateLimitDuration
+		var cmdRatelimitTimeout = redis.GlobalUserRateLimitDuration
 		// /new has a longer ratelimit window than other commands (it's an expensive operation)
 		if i.ApplicationCommandData().Name == command.New.Name {
-			cmdRatelimitTimeout = redis_common.NewGameRateLimitDuration
+			cmdRatelimitTimeout = redis.NewGameRateLimitDuration
 		}
-		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.ApplicationCommandData().Name, cmdRatelimitTimeout)
+		bot.RedisDriver.MarkUserRateLimit(i.Member.User.ID, i.ApplicationCommandData().Name, cmdRatelimitTimeout)
 		switch i.ApplicationCommandData().Name {
 		case command.Help.Name:
 			return command.HelpResponse(sett, i.ApplicationCommandData().Options)
 
 		case command.Info.Name:
-			botInfo := bot.getInfo()
+			botInfo := bot.GetInfo()
 			return command.InfoResponse(botInfo, i.GuildID, sett)
 
 		case command.Link.Name:
@@ -213,18 +213,18 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			userID, color := command.GetLinkParams(s, i.ApplicationCommandData().Options)
 
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+			lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Link.Name, sett)
 			}
 			resp, success := bot.linkOrUnlinkAndRespond(dgs, userID, color, sett)
 			if success {
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.RedisDriver.SetDiscordGameState(dgs, lock)
 				bot.DispatchRefreshOrEdit(dgs, gsr, sett)
 			} else {
 				// release the lock
-				bot.RedisInterface.SetDiscordGameState(nil, lock)
+				bot.RedisDriver.SetDiscordGameState(nil, lock)
 			}
 			return resp
 
@@ -234,18 +234,18 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 			userID := command.GetUnlinkParams(s, i.ApplicationCommandData().Options)
 
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 			if lock == nil {
 				log.Printf("No lock could be obtained when unlinking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Unlink.Name, sett)
 			}
 			resp, success := bot.linkOrUnlinkAndRespond(dgs, userID, "", sett)
 			if success {
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.RedisDriver.SetDiscordGameState(dgs, lock)
 				bot.DispatchRefreshOrEdit(dgs, gsr, sett)
 			} else {
 				// release the lock
-				bot.RedisInterface.SetDiscordGameState(nil, lock)
+				bot.RedisDriver.SetDiscordGameState(nil, lock)
 			}
 			return resp
 
@@ -257,8 +257,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if err != nil {
 				log.Println("Err in /settings get premium:", err)
 			}
-			setting, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, !premium.IsExpired(premStatus, days))
+			settingName, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
+			msg := bot.HandleSettingsCommand(i.GuildID, sett, settingName, args, !premium.IsExpired(premStatus, days))
 			return command.SettingsResponse(msg)
 
 		case command.New.Name:
@@ -277,7 +277,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.ReinviteMeResponse(missingPerms, voiceChannelID, sett)
 			}
 
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+			lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when making a new game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.New.Name, sett)
@@ -286,9 +286,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			status, activeGames := bot.newGame(dgs)
 			if status == command.NewSuccess {
 				// release the lock
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.RedisDriver.SetDiscordGameState(dgs, lock)
 
-				bot.RedisInterface.RefreshActiveGame(dgs.GuildID, dgs.ConnectCode)
+				bot.RedisDriver.RefreshActiveGame(dgs.GuildID, dgs.ConnectCode)
 
 				killChan := make(chan EndGameMessage)
 
@@ -298,7 +298,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 
-				hyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
+				hyperlink, minimalURL := discord.FormCaptureURL(bot.url, dgs.ConnectCode)
 
 				bot.handleGameStartMessage(i.GuildID, i.ChannelID, voiceChannelID, i.Member.User.ID, sett, g, dgs.ConnectCode)
 
@@ -310,14 +310,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}, sett)
 			} else {
 				// release the lock
-				bot.RedisInterface.SetDiscordGameState(nil, lock)
+				bot.RedisDriver.SetDiscordGameState(nil, lock)
 				return command.NewResponse(status, command.NewInfo{
 					ActiveGames: activeGames, // only field we need for success messages
 				}, sett)
 			}
 		case command.Refresh.Name:
 			if bot.RefreshGameStateMessage(gsr, sett) {
-				return command.PrivateResponse(ThumbsUp)
+				return command.PrivateResponse(discord.ThumbsUp)
 			} else {
 				return command.NoGameResponse(sett)
 			}
@@ -326,19 +326,19 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+			lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLockRetries(gsr, 5)
 			if lock == nil {
 				log.Printf("No lock could be obtained when pausing game for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 				return command.DeadlockGameStateResponse(command.Pause.Name, sett)
 			}
 			if !dgs.GameStateMsg.Exists() {
-				bot.RedisInterface.SetDiscordGameState(nil, lock)
+				bot.RedisDriver.SetDiscordGameState(nil, lock)
 				return command.NoGameResponse(sett)
 			}
 
 			dgs.Running = !dgs.Running
 
-			bot.RedisInterface.SetDiscordGameState(dgs, lock)
+			bot.RedisDriver.SetDiscordGameState(dgs, lock)
 			// if we paused the game, unmute/undeafen all players
 			if !dgs.Running {
 				err = bot.applyToAll(dgs, false, false)
@@ -347,13 +347,13 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if err != nil {
 				return command.PrivateErrorResponse(command.Pause.Name, err, sett)
 			}
-			return command.PrivateResponse(ThumbsUp)
+			return command.PrivateResponse(discord.ThumbsUp)
 
 		case command.End.Name:
 			if !isPermissioned {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+			dgs := bot.RedisDriver.GetReadOnlyDiscordGameState(gsr)
 			if dgs != nil {
 				if !dgs.GameStateMsg.Exists() {
 					return command.NoGameResponse(sett)
@@ -368,7 +368,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				if err != nil {
 					return command.PrivateErrorResponse(command.End.Name, err, sett)
 				}
-				return command.PrivateResponse(ThumbsUp)
+				return command.PrivateResponse(discord.ThumbsUp)
 			}
 			return command.DeadlockGameStateResponse(command.End.Name, sett)
 
@@ -379,7 +379,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.PrivacyResponse(privArg, nil, nil, nil, sett)
 
 			case command.PrivacyOptOut:
-				err = bot.RedisInterface.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
+				err = bot.RedisDriver.DeleteLinksByUserID(i.GuildID, i.Member.User.ID)
 				if err != nil {
 					return command.PrivacyResponse(privArg, nil, nil, err, sett)
 				}
@@ -389,7 +389,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 			case command.PrivacyShowMe:
-				cached, _ := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
+				cached, _ := bot.RedisDriver.GetUsernameOrUserIDMappings(i.GuildID, i.Member.User.ID)
 				user, err := bot.PostgresInterface.GetUserByString(i.Member.User.ID)
 				return command.PrivacyResponse(privArg, cached, user, err, sett)
 			}
@@ -486,11 +486,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
 			if action == setting.View {
 				if opType == command.User {
-					cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
+					cached, err := bot.RedisDriver.GetUsernameOrUserIDMappings(i.GuildID, id)
 					log.Println("View user cache")
 					return command.DebugResponse(setting.View, cached, nil, id, err, sett)
 				} else if opType == command.GameState {
-					state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+					state := bot.RedisDriver.GetReadOnlyDiscordGameState(gsr)
 					if state != nil {
 						jBytes, err := json.MarshalIndent(state, "", "  ")
 						return command.DebugResponse(setting.View, nil, jBytes, id, err, sett)
@@ -505,17 +505,17 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 							return command.InsufficientPermissionsResponse(sett)
 						}
 					}
-					err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
+					err := bot.RedisDriver.DeleteLinksByUserID(i.GuildID, id)
 					return command.DebugResponse(setting.Clear, nil, nil, id, err, sett)
 				}
 			} else if action == command.UnmuteAll {
-				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
+				dgs := bot.RedisDriver.GetReadOnlyDiscordGameState(gsr)
 				if dgs != nil {
 					err = bot.applyToAll(dgs, false, false)
 					if err != nil {
 						return command.PrivateErrorResponse(command.UnmuteAll, err, sett)
 					}
-					return command.PrivateResponse(ThumbsUp)
+					return command.PrivateResponse(discord.ThumbsUp)
 				}
 				return command.DeadlockGameStateResponse(command.UnmuteAll, sett)
 			}
@@ -541,7 +541,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 			category := command.GetDownloadParams(i.ApplicationCommandData().Options)
 
-			d, err := redis_common.GetDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, category)
+			d, err := bot.RedisDriver.GetDownloadCategoryCooldown(i.GuildID, category)
 			if err != nil {
 				return command.PrivateErrorResponse("/download guild", err, sett)
 			}
@@ -581,11 +581,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 
 	} else if i.Type == discordgo.InteractionMessageComponent {
-		if redis_common.IsUserRateLimitedSpecific(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID) {
-			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
+		if bot.RedisDriver.IsUserRateLimitedSpecific(i.Member.User.ID, i.MessageComponentData().CustomID) {
+			banned := bot.RedisDriver.IncrementRateLimitExceed(i.Member.User.ID)
 			return softbanResponse(banned, sett)
 		}
-		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
+		bot.RedisDriver.MarkUserRateLimit(i.Member.User.ID, i.MessageComponentData().CustomID, redis.GlobalUserRateLimitDuration)
 
 		gid, err := strconv.ParseUint(i.GuildID, 10, 64)
 		if err != nil {
@@ -593,24 +593,24 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			// TODO report this properly
 		}
 		switch i.MessageComponentData().CustomID {
-		case colorSelectID:
+		case discord.ColorSelectID:
 			if len(i.MessageComponentData().Values) > 0 {
 				value := i.MessageComponentData().Values[0]
-				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+				lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLockRetries(gsr, 5)
 				if lock == nil {
 					log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
 					return command.DeadlockGameStateResponse(command.Link.Name, sett)
 				}
-				if value == UnlinkEmojiName {
+				if value == discord.UnlinkEmojiName {
 					value = ""
 				}
 				resp, success := bot.linkOrUnlinkAndRespond(dgs, i.Member.User.ID, value, sett)
 				if success {
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					bot.RedisDriver.SetDiscordGameState(dgs, lock)
 					bot.DispatchRefreshOrEdit(dgs, gsr, sett)
 				} else {
 					// only release the lock; no changes
-					bot.RedisInterface.SetDiscordGameState(nil, lock)
+					bot.RedisDriver.SetDiscordGameState(nil, lock)
 				}
 				return resp
 			}
@@ -697,7 +697,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Println("Error downloading guild data:", err)
 				return downloadErrorResponse(sett, err)
 			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Guild)
+				bot.RedisDriver.MarkDownloadCategoryCooldown(i.GuildID, command.Guild)
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
@@ -724,7 +724,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Println("Error downloading users data:", err)
 				return downloadErrorResponse(sett, err)
 			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Users)
+				bot.RedisDriver.MarkDownloadCategoryCooldown(i.GuildID, command.Users)
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
@@ -750,7 +750,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Println("Error downloading users_games data:", err)
 				return downloadErrorResponse(sett, err)
 			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.UsersGames)
+				bot.RedisDriver.MarkDownloadCategoryCooldown(i.GuildID, command.UsersGames)
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
@@ -776,7 +776,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Println("Error downloading game data:", err)
 				return downloadErrorResponse(sett, err)
 			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Games)
+				bot.RedisDriver.MarkDownloadCategoryCooldown(i.GuildID, command.Games)
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
@@ -802,7 +802,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				log.Println("Error downloading game events data:", err)
 				return downloadErrorResponse(sett, err)
 			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.GameEvents)
+				bot.RedisDriver.MarkDownloadCategoryCooldown(i.GuildID, command.GameEvents)
 				return &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
@@ -853,11 +853,11 @@ func downloadErrorResponse(sett *settings.GuildSettings, err error) *discordgo.I
 	}
 }
 
-func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string, sett *settings.GuildSettings) (*discordgo.InteractionResponse, bool) {
+func (bot *Bot) linkOrUnlinkAndRespond(dgs *discord.GameState, userID, testValue string, sett *settings.GuildSettings) (*discordgo.InteractionResponse, bool) {
 	if testValue != "" {
 		// don't care if it's successful, just always unlink before linking
 		unlinkPlayer(dgs, userID)
-		status, err := linkPlayer(bot.RedisInterface, dgs, userID, testValue)
+		status, err := linkPlayer(bot.RedisDriver, dgs, userID, testValue)
 		if err != nil {
 			log.Println(err)
 		}

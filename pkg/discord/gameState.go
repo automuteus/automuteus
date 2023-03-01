@@ -1,4 +1,4 @@
-package bot
+package discord
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
+	"sync"
+	"time"
 )
 
 // GameState represents a full record of the entire current game's state. It is intended to be fully JSON-serializable,
@@ -37,6 +39,23 @@ func NewDiscordGameState(guildID string) *GameState {
 	return &dgs
 }
 
+func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session, reset bool) bool {
+	retValue := false
+	if dgs.GameStateMsg.Exists() {
+		err := s.ChannelMessageDelete(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		if err != nil {
+			retValue = false
+		} else {
+			retValue = true
+		}
+	}
+	// whether or not we were successful in deleting the message, reset the state
+	if reset {
+		dgs.GameStateMsg = MakeGameStateMessage()
+	}
+	return retValue
+}
+
 func (dgs *GameState) Reset() {
 	// Explicitly does not reset the GuildID!
 	dgs.ConnectCode = ""
@@ -51,7 +70,68 @@ func (dgs *GameState) Reset() {
 	dgs.GameData = amongus.NewGameData()
 }
 
-func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
+func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
+	components := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    ColorSelectID,
+					Placeholder: "Select your in-game color",
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X),
+				},
+			},
+		},
+	}
+	msg := sendEmbedWithComponents(s, channelID, me, components)
+	if msg != nil {
+		dgs.GameStateMsg.LeaderID = authorID
+		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
+		dgs.GameStateMsg.MessageID = msg.ID
+		dgs.GameStateMsg.CreationTimeUnix = time.Now().Unix()
+		return true
+	}
+	return false
+}
+
+// Note this is not a pointer; we never expect the underlying DGS to change on an edit
+func (dgs GameState) DispatchEdit(s *discordgo.Session, me *discordgo.MessageEmbed) (newEdit bool) {
+	if !ValidFields(me) {
+		return false
+	}
+
+	DeferredEditsLock.Lock()
+
+	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
+	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
+		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		newEdit = true
+	}
+	// whether or not it's found, replace the contents with the new message
+	DeferredEdits[dgs.GameStateMsg.MessageID] = me
+	DeferredEditsLock.Unlock()
+	return newEdit
+}
+
+// returns the description and color to use, based on the gamestate
+// usage dictates DEFAULT should be overwritten by other state subsequently,
+// whereas RED and DARK_ORANGE are error/flag values that should be passed on
+func (dgs *GameState) DescriptionAndColor(sett *settings.GuildSettings) (string, int) {
+	if !dgs.Linked {
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.notLinked.Description",
+			Other: "❌**No capture linked! Click the link above to connect!**❌",
+		}), RED // red
+	} else if !dgs.Running {
+		return sett.LocalizeMessage(&i18n.Message{
+			ID:    "responses.makeDescription.GameNotRunning",
+			Other: "\n⚠ **Bot is Paused!** ⚠\n\n",
+		}), DARK_ORANGE
+	}
+	return "\n", DEFAULT
+
+}
+
+func (dgs *GameState) CheckCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
 	if g == nil {
 		return UserData{}, false
 	}
@@ -124,4 +204,12 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.
 		})
 	}
 	return sorted
+}
+
+var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
+var DeferredEditsLock = sync.Mutex{}
+
+func (dgs GameState) ShouldRefresh() bool {
+	// discord dictates that we can't edit messages that are older than 1 hour, so they should be refreshed
+	return (time.Now().Sub(time.Unix(dgs.GameStateMsg.CreationTimeUnix, 0))) > time.Hour
 }

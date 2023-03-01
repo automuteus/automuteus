@@ -2,19 +2,16 @@ package tokenprovider
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
+	"github.com/automuteus/automuteus/v8/pkg/redis"
 	"github.com/automuteus/automuteus/v8/pkg/task"
-	"github.com/go-redis/redis/v8"
 	"log"
 )
 
-func RecordDiscordRequestsByCounts(client *redis.Client, counts task.MuteDeafenSuccessCounts) {
-	server.RecordDiscordRequests(client, server.MuteDeafenOfficial, counts.Official)
-	server.RecordDiscordRequests(client, server.MuteDeafenWorker, counts.Worker)
-	server.RecordDiscordRequests(client, server.MuteDeafenCapture, counts.Capture)
-	server.RecordDiscordRequests(client, server.InvalidRequest, counts.RateLimit)
+func RecordDiscordRequestsByCounts(driver redis.Driver, counts task.MuteDeafenSuccessCounts) {
+	driver.RecordDiscordRequests(redis.MuteDeafenOfficial, counts.Official)
+	driver.RecordDiscordRequests(redis.MuteDeafenWorker, counts.Worker)
+	driver.RecordDiscordRequests(redis.MuteDeafenCapture, counts.Capture)
+	driver.RecordDiscordRequests(redis.InvalidRequest, counts.RateLimit)
 }
 
 func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID string, tokenSubset map[string]struct{}, request task.UserModify) string {
@@ -27,7 +24,7 @@ func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID str
 				log.Println(err)
 
 				// don't attempt this token for this guild for another 5 minutes
-				err = tokenProvider.BlacklistTokenForDuration(guildID, hToken, UnresponsiveCaptureBlacklistDuration)
+				err = tokenProvider.redisDriver.BlacklistTokenForDuration(guildID, hToken, UnresponsiveCaptureBlacklistDuration, tokenProvider.maxRequests5Seconds)
 				if err != nil {
 					log.Println(err)
 				}
@@ -46,23 +43,17 @@ func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID str
 
 func (tokenProvider *TokenProvider) attemptOnCaptureBot(guildID, connectCode string, gid uint64, request task.UserModify) bool {
 	// this is cheeky, but use the connect code as part of the lock; don't issue too many requests on the capture client w/ this code
-	if tokenProvider.IncrAndTestGuildTokenComboLock(guildID, connectCode) {
+	if tokenProvider.redisDriver.IncrAndTestGuildTokenComboLock(guildID, connectCode, tokenProvider.maxRequests5Seconds) {
 		// if the secondary token didn't work, then next we try the client-side capture request
 		taskObj := task.NewModifyTask(gid, request.UserID, task.PatchParams{
 			Deaf: request.Deaf,
 			Mute: request.Mute,
 		})
-		jBytes, err := json.Marshal(taskObj)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
 		acked := make(chan bool)
 		// now we wait for an ack with respect to actually performing the mute
-		pubsub := tokenProvider.client.Subscribe(context.Background(), rediskey.CompleteTask(taskObj.TaskID))
-		err = tokenProvider.client.Publish(context.Background(), rediskey.TasksList(connectCode), jBytes).Err()
+		pubsub := tokenProvider.redisDriver.TaskSubscribe(context.Background(), taskObj)
+		err := tokenProvider.redisDriver.TaskPublish(context.Background(), connectCode, taskObj)
 		if err != nil {
-			log.Println("Error in publishing task to " + rediskey.TasksList(connectCode))
 			log.Println(err)
 		} else {
 			go tokenProvider.waitForAck(pubsub, acked)
@@ -73,7 +64,7 @@ func (tokenProvider *TokenProvider) attemptOnCaptureBot(guildID, connectCode str
 				// hooray! we did the mute with a client token!
 				return true
 			}
-			err = tokenProvider.BlacklistTokenForDuration(guildID, connectCode, UnresponsiveCaptureBlacklistDuration)
+			err = tokenProvider.redisDriver.BlacklistTokenForDuration(guildID, connectCode, UnresponsiveCaptureBlacklistDuration, tokenProvider.maxRequests5Seconds)
 			if err == nil {
 				log.Printf("No ack from capture clients; blacklisting capture client for gamecode \"%s\" for %s\n", connectCode, UnresponsiveCaptureBlacklistDuration.String())
 			}

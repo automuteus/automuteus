@@ -6,8 +6,9 @@ import (
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
 	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg"
 	"github.com/automuteus/automuteus/v8/pkg/locale"
+	"github.com/automuteus/automuteus/v8/pkg/redis"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"io"
@@ -21,15 +22,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/automuteus/automuteus/v8/storage"
-
 	"github.com/automuteus/automuteus/v8/bot"
-)
-
-var (
-	version = "v8.1.0"
-	commit  = "none"
-	date    = "unknown"
 )
 
 const (
@@ -45,8 +38,7 @@ type registeredCommand struct {
 func main() {
 	// seed the rand generator (used for making connection codes)
 	rand.Seed(time.Now().Unix())
-	err := discordMainWrapper()
-	if err != nil {
+	if err := discordMainWrapper(); err != nil {
 		log.Println("Program exited with the following error:")
 		log.Println(err)
 		return
@@ -77,7 +69,7 @@ func discordMainWrapper() error {
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 
-	log.Println(version + "-" + commit)
+	log.Println(pkg.Version + "-" + pkg.Commit)
 
 	numShardsStr := os.Getenv("NUM_SHARDS")
 	numShards, err := strconv.Atoi(numShardsStr)
@@ -109,13 +101,13 @@ func discordMainWrapper() error {
 		url = DefaultURL
 	}
 
-	var redisClient bot.RedisInterface
-	var storageInterface storage.StorageInterface
+	var redisClient redis.Driver
+	var storageInterface storage2.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASS")
 	if redisAddr != "" {
-		err := redisClient.Init(storage.RedisParameters{
+		err := redisClient.Init(storage2.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: redisPassword,
@@ -123,7 +115,7 @@ func discordMainWrapper() error {
 		if err != nil {
 			log.Println(err)
 		}
-		err = storageInterface.Init(storage.RedisParameters{
+		err = storageInterface.Init(storage2.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: redisPassword,
@@ -176,7 +168,7 @@ func discordMainWrapper() error {
 
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
-	taskTimeoutms := capture.DefaultCaptureBotTimeout
+	taskTimeoutms := redis.DefaultCaptureBotTimeout
 
 	taskTimeoutmsStr := os.Getenv("ACK_TIMEOUT_MS")
 	num, err := strconv.ParseInt(taskTimeoutmsStr, 10, 64)
@@ -192,7 +184,7 @@ func discordMainWrapper() error {
 		maxReq = num
 	}
 
-	tokenProvider := tokenprovider.NewTokenProvider(nil, nil, taskTimeoutms, maxReq)
+	tokenProvider := tokenprovider.NewTokenProvider(redisClient, nil, taskTimeoutms, maxReq)
 	var extraTokens []string
 	extraTokenStr := strings.ReplaceAll(os.Getenv("WORKER_BOT_TOKENS"), " ", "")
 	if extraTokenStr != "" {
@@ -201,7 +193,7 @@ func discordMainWrapper() error {
 
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
+		bots[i] = bot.MakeAndStartBot(discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), redisClient, storageInterface, psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
@@ -217,8 +209,6 @@ func discordMainWrapper() error {
 	server.GlobalReady = true
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
-
-	go bots[0].StartAPIServer("5000")
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}

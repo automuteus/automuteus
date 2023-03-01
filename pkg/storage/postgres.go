@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/top-gg/go-dbl"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -59,7 +59,7 @@ func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
 	}
 	defer f.Close()
 
-	bytes, err := ioutil.ReadAll(f)
+	bytes, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -529,6 +529,26 @@ func (psqlInterface *PsqlInterface) UpdateGameAndPlayers(gameID int64, winType i
 	}
 
 	return nil
+}
+
+const NotFound = -1
+
+func (psqlInterface *PsqlInterface) QueryTotalUsers(ctx context.Context) int64 {
+	var r []int64
+	err := pgxscan.Select(ctx, psqlInterface.Pool, &r, "SELECT COUNT(*) FROM users")
+	if err != nil || len(r) < 1 {
+		return NotFound
+	}
+	return r[0]
+}
+
+func (psqlInterface *PsqlInterface) QueryTotalGames(ctx context.Context) int64 {
+	var r []int64
+	err := pgxscan.Select(ctx, psqlInterface.Pool, &r, "SELECT COUNT (*) FROM games WHERE start_time != -1 AND end_time != -1")
+	if err != nil || len(r) < 1 {
+		return NotFound
+	}
+	return r[0]
 }
 
 func (psqlInterface *PsqlInterface) Close() {

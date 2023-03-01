@@ -1,4 +1,4 @@
-package bot
+package discord
 
 import (
 	"github.com/automuteus/automuteus/v8/pkg/amongus"

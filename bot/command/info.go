@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -13,18 +14,7 @@ var Info = discordgo.ApplicationCommand{
 	Description: "AutoMuteUs info",
 }
 
-type BotInfo struct {
-	Version     string `json:"version"`
-	Commit      string `json:"commit"`
-	ShardID     int    `json:"shardID"`
-	ShardCount  int    `json:"shardCount"`
-	TotalGuilds int64  `json:"totalGuilds"`
-	ActiveGames int64  `json:"activeGames"`
-	TotalUsers  int64  `json:"totalUsers"`
-	TotalGames  int64  `json:"totalGames"`
-}
-
-func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func InfoResponse(info discord.BotInfo, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	embed := discordgo.MessageEmbed{
 		URL:  "",
 		Type: "",
