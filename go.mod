@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/bsm/redislock v0.7.1
-	github.com/bwmarrin/discordgo v0.27.0
+	github.com/bwmarrin/discordgo v0.27.1
 	github.com/georgysavva/scany v0.2.7
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-redis/redis/v8 v8.8.0
