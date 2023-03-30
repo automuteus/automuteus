@@ -14,7 +14,6 @@ const (
 	BasePremiumURL        = "https://automute.us/premium?guild="
 	CaptureDownloadURL    = "https://capture.automute.us"
 	DefaultMaxActiveGames = 150
-	UnmuteAll             = "unmute-all"
 )
 
 // All is all slash commands for the bot, ordered to match the README
