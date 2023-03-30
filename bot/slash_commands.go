@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/redis"
@@ -509,6 +510,42 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					err := bot.RedisDriver.DeleteLinksByUserID(i.GuildID, id)
 					return command.DebugResponse(setting.Clear, nil, nil, id, err, sett)
 				}
+			} else if action == command.Unmute {
+				// prob shouldn't be constructing the GameState explicitly like this... okay so long as we don't reuse it
+				dgs := GameState{
+					GuildID:     i.GuildID,
+					ConnectCode: i.GuildID + "-unmute",
+				}
+				// admins can always unmute no matter what
+				if isAdmin {
+					err = bot.applyToSingle(&dgs, id, false, false)
+					if err != nil {
+						return command.PrivateErrorResponse(command.Unmute, err, sett)
+					}
+					return command.PrivateResponse(ThumbsUp)
+				}
+
+				for _, v := range g.VoiceStates {
+					if v.UserID == id {
+						// fetch the game state purely by the voice channel ID
+						gsr.TextChannel = ""
+						gsr.VoiceChannel = v.ChannelID
+						log.Println("fetching game by id ", v.ChannelID)
+
+						// no game is happening in this voice channel, so we're safe to unmute
+						if bot.RedisInterface.getDiscordGameStateKey(gsr) == "" {
+							err = bot.applyToSingle(&dgs, id, false, false)
+							if err != nil {
+								return command.PrivateErrorResponse(command.Unmute, err, sett)
+							}
+							return command.PrivateResponse(ThumbsUp)
+						} else {
+							// there's a game happening, so we can't unmute
+							return command.DebugResponse(command.Unmute, nil, nil, id, errors.New(""), sett)
+						}
+					}
+				}
+				return command.PrivateErrorResponse(command.Unmute, errors.New("user is not in a voice channel"), sett)
 			} else if action == command.UnmuteAll {
 				dgs := bot.RedisDriver.GetReadOnlyDiscordGameState(gsr)
 				if dgs != nil {
