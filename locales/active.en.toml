@@ -1,6 +1,7 @@
 "commands.deadlock" = "I wasn't able to obtain the game state for your {{.Command}} command. Please try again."
 "commands.debug.clear.error" = "Encountered an error trying to clear debug information: {{.Error}}"
 "commands.debug.clear.user.success" = "Successfully cleared cached usernames for {{.User}}"
+"commands.debug.unmute.error" = "A game is active in this channel, so only admins can unmute. Please try in another voice channel"
 "commands.debug.view.error" = "Encountered an error trying to view debug information: {{.Error}}"
 "commands.debug.view.user.empty" = "I don't have any saved usernames for {{.User}}"
 "commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
