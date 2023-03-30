@@ -1,6 +1,7 @@
 "commands.deadlock" = "我无法获得你的 {{.Command}} 命令的游戏状态。请再试一次。"
 "commands.debug.clear.error" = "尝试清除调试信息时发生错误: {{.Error}}"
 "commands.debug.clear.user.success" = "成功清理缓存用户名 {{.User}}"
+"commands.debug.unmute.error" = "A game is active in this channel, so only admins can unmute. Please try in another voice channel"
 "commands.debug.view.error" = "尝试查看调试信息时发生错误: {{.Error}}"
 "commands.debug.view.user.empty" = "我没有任何保存的 {{.User}} 用户名。"
 "commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
