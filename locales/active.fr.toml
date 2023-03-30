@@ -1,6 +1,7 @@
 "commands.deadlock" = "Je n'ai pas réussi à obtenir l'état de jeu pour votre commande {{.Command}}. Veuillez réessayer."
 "commands.debug.clear.error" = "Une erreur s'est produite lors de la tentative d'effacement des informations de débogage : {{.Error}}"
 "commands.debug.clear.user.success" = "Les noms d'utilisateur mis en cache pour {{.User}} ont été supprimés avec succès"
+"commands.debug.unmute.error" = "A game is active in this channel, so only admins can unmute. Please try in another voice channel"
 "commands.debug.view.error" = "Une erreur est survenue lors de la tentative de visualisation des informations de débogage: {{.Error}}"
 "commands.debug.view.user.empty" = "Je n’ai aucun nom d’utilisateur enregistré pour {{.User}}"
 "commands.debug.view.user.success" = "I have the following cached usernames for {{.User}}:\\n```\\n{{.Cached}}\\n```"
