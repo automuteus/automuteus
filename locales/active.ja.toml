@@ -1,7 +1,7 @@
 "commands.deadlock" = "コマンド {{.Command}} に必要なゲームの状態を取得できませんでした。もう一度やり直してください。"
 "commands.debug.clear.error" = "デバッグ情報の消去中にエラーが発生しました： {{.Error}}"
 "commands.debug.clear.user.success" = "{{.User}} のキャッシュ済みユーザー名を消去しました"
-"commands.debug.unmute.error" = "A game is active in this channel, so only admins can unmute. Please try in another voice channel"
+"commands.debug.unmute.error" = "このチャンネルでゲームが進行中のため、管理者のみがミュートを解除できます。別のボイスチャンネルをお試しください。"
 "commands.debug.view.error" = "デバッグ情報の表示中にエラーが発生しました： {{.Error}}"
 "commands.debug.view.user.empty" = "{{.User}} のキャッシュ済みユーザー名はありません"
 "commands.debug.view.user.success" = "{{.User}} のキャッシュ済みユーザー名は以下の通りです：\\n```\\n{{.Cached}}\\n```"
