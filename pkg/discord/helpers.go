@@ -1,4 +1,4 @@
-package bot
+package discord
 
 import (
 	"crypto/sha256"
@@ -12,7 +12,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func generateConnectCode(guildID string) string {
+func GenerateConnectCode(guildID string) string {
 	h := sha256.New()
 	h.Write([]byte(guildID))
 
@@ -23,7 +23,7 @@ func generateConnectCode(guildID string) string {
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
 
-func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
+func FormCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 	if match := urlregex.FindStringSubmatch(url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]
@@ -81,6 +81,18 @@ func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, 
 	return msg
 }
 
-func matchIDCode(connectCode string, matchID int64) string {
+func MatchIDCode(connectCode string, matchID int64) string {
 	return fmt.Sprintf("%s:%d", connectCode, matchID)
+}
+
+func ValidFields(me *discordgo.MessageEmbed) bool {
+	for _, v := range me.Fields {
+		if v == nil {
+			return false
+		}
+		if v.Name == "" || v.Value == "" {
+			return false
+		}
+	}
+	return true
 }

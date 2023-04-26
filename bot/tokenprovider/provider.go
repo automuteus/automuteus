@@ -5,12 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
+	"github.com/automuteus/automuteus/v8/pkg/redis"
 	"github.com/automuteus/automuteus/v8/pkg/task"
-	"github.com/automuteus/automuteus/v8/pkg/token"
 	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
+	redisv8 "github.com/go-redis/redis/v8"
 	"golang.org/x/exp/constraints"
 	"log"
 	"strconv"
@@ -28,7 +27,7 @@ var PremiumBotConstraints = map[premium.Tier]int{
 }
 
 type TokenProvider struct {
-	client         *redis.Client
+	redisDriver    redis.Driver
 	primarySession *discordgo.Session
 
 	// maps hashed tokens to active discord sessions
@@ -38,9 +37,9 @@ type TokenProvider struct {
 	taskTimeoutMs       time.Duration
 }
 
-func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout time.Duration, maxReq int64) *TokenProvider {
+func NewTokenProvider(redisDriver redis.Driver, sess *discordgo.Session, taskTimeout time.Duration, maxReq int64) *TokenProvider {
 	return &TokenProvider{
-		client:              client,
+		redisDriver:         redisDriver,
 		primarySession:      sess,
 		activeSessions:      make(map[string]*discordgo.Session),
 		maxRequests5Seconds: maxReq,
@@ -49,14 +48,10 @@ func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout
 	}
 }
 
-func (tp *TokenProvider) Init(client *redis.Client, sess *discordgo.Session) {
-	tp.client = client
+func (tp *TokenProvider) Init(redisDriver redis.Driver, sess *discordgo.Session) {
+	tp.redisDriver = redisDriver
 	tp.primarySession = sess
 }
-
-//func rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
-//	log.Println(rl.Message)
-//}
 
 func (tokenProvider *TokenProvider) PopulateAndStartSessions(tokens []string) {
 	for _, v := range tokens {
@@ -70,8 +65,8 @@ func (tokenProvider *TokenProvider) openAndStartSessionWithToken(botToken string
 	defer tokenProvider.sessionLock.Unlock()
 
 	if _, ok := tokenProvider.activeSessions[k]; !ok {
-		token.WaitForToken(tokenProvider.client, botToken)
-		token.LockForToken(tokenProvider.client, botToken)
+		tokenProvider.redisDriver.WaitForToken(botToken)
+		tokenProvider.redisDriver.LockForToken(botToken)
 		sess, err := discordgo.New("Bot " + botToken)
 		if err != nil {
 			log.Println(err)
@@ -100,7 +95,7 @@ func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[
 		// if we have already used this token successfully, or haven't set any restrictions
 		if hTokenSubset == nil || mapHasEntry(hTokenSubset, hToken) {
 			// if this token isn't potentially rate-limited
-			if tokenProvider.IncrAndTestGuildTokenComboLock(guildID, hToken) {
+			if tokenProvider.redisDriver.IncrAndTestGuildTokenComboLock(guildID, hToken, tokenProvider.maxRequests5Seconds) {
 				return sess, hToken
 			} else {
 				log.Println("Secondary token is potentially rate-limited. Skipping")
@@ -117,35 +112,6 @@ func mapHasEntry[T constraints.Ordered, K any](dict map[T]K, key T) bool {
 	}
 	_, ok := dict[key]
 	return ok
-}
-
-func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hashToken string) bool {
-	i, err := tokenProvider.client.Incr(context.Background(), rediskey.GuildTokenLock(guildID, hashToken)).Result()
-	if err != nil {
-		log.Println(err)
-	}
-	usable := i < tokenProvider.maxRequests5Seconds
-	log.Printf("Token/capture %s on guild %s is at count %d. Using?: %v", hashToken, guildID, i, usable)
-	if !usable {
-		return false
-	}
-
-	// set the expiry only if the mute/deafen was successful, because we want to preserve any existing blacklist expiries
-	err = tokenProvider.client.Expire(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), time.Second*5).Err()
-	if err != nil {
-		log.Println(err)
-	}
-
-	return true
-}
-
-// BlacklistTokenForDuration sets a guild token (or connect code ala capture bot) to the maximum value allowed before
-// attempting other non-rate-limited mute/deafen methods.
-// NOTE: this will manifest as the capture/token in question appearing like it "has been used <maxnum> times" in logs,
-// even if this is not technically accurate. A more accurate approach would probably use a totally separate Redis key,
-// as opposed to this approach, which simply uses the ratelimiting counter key(s) to achieve blacklisting
-func (tokenProvider *TokenProvider) BlacklistTokenForDuration(guildID, hashToken string, duration time.Duration) error {
-	return tokenProvider.client.Set(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), tokenProvider.maxRequests5Seconds, duration).Err()
 }
 
 const DefaultMaxWorkers = 8
@@ -235,7 +201,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	wg.Wait()
 	close(tasksChannel)
 
-	RecordDiscordRequestsByCounts(tokenProvider.client, mdsc)
+	RecordDiscordRequestsByCounts(tokenProvider.redisDriver, mdsc)
 
 	// note, this should probably be more systematic on startup, not when a mute/deafen task comes in. But this is a
 	// context in which we already have the guildID, successful tokens, AND the premium limit...
@@ -244,11 +210,11 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	return latestErr
 }
 
-func (tokenProvider *TokenProvider) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
+func (tokenProvider *TokenProvider) rateLimitEventCallback(_ *discordgo.Session, rl *discordgo.RateLimit) {
 	log.Println(rl.Message)
 }
 
-func (tokenProvider *TokenProvider) waitForAck(pubsub *redis.PubSub, result chan<- bool) {
+func (tokenProvider *TokenProvider) waitForAck(pubsub *redisv8.PubSub, result chan<- bool) {
 	t := time.NewTimer(tokenProvider.taskTimeoutMs)
 	defer pubsub.Close()
 	channel := pubsub.Channel()
@@ -284,6 +250,6 @@ func (tokenProvider *TokenProvider) Close() {
 	tokenProvider.primarySession.Close()
 }
 
-func (tokenProvider *TokenProvider) newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
+func (tokenProvider *TokenProvider) newGuild(_ *discordgo.Session, m *discordgo.GuildCreate) {
 	log.Println("added to " + m.ID)
 }

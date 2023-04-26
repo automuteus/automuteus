@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/task"
@@ -20,7 +21,7 @@ const (
 	DeadPriority  HandlePriority = 2
 )
 
-func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) error {
+func (bot *Bot) applyToSingle(dgs *discord.GameState, userID string, mute, deaf bool) error {
 	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
 	premTier := premium.FreeTier
 	if !premium.IsExpired(prem, days) {
@@ -41,7 +42,7 @@ func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) er
 	return bot.TokenProvider.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 }
 
-func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
+func (bot *Bot) applyToAll(dgs *discord.GameState, mute, deaf bool) error {
 	g, err := bot.PrimarySession.State.Guild(dgs.GuildID)
 	if err != nil {
 		return err
@@ -54,7 +55,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 		if err != nil {
 			// the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
+			userData, added = dgs.CheckCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -93,17 +94,17 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 }
 
 // handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.GuildSettings, delay int, handlePriority HandlePriority, gsr discord.GameStateRequest) {
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	}
 
 	g, err := sess.State.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
-		lock.Release(ctx)
+		lock.Release(context.Background())
 		return
 	}
 
@@ -115,7 +116,7 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 		if err != nil {
 			// the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
+			userData, added = dgs.CheckCacheAndAddUser(g, sess, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -166,9 +167,9 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 	}
 
 	// we relinquish the lock while we wait
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisDriver.SetDiscordGameState(dgs, lock)
 
-	voiceLock := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
+	voiceLock := bot.RedisDriver.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
 
 	if delay > 0 {
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)

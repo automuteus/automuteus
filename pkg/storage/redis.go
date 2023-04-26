@@ -2,18 +2,35 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/go-redis/redis/v8"
+	redisv8 "github.com/go-redis/redis/v8"
 	"log"
 )
+
+type HashedID string
+
+func HashGuildID(guildID string) HashedID {
+	return genericHash(guildID)
+}
+
+func genericHash(s string) HashedID {
+	h := sha256.New()
+	h.Write([]byte(s))
+	return HashedID(hex.EncodeToString(h.Sum(nil)))
+}
+
+func guildSettingsKey(id HashedID) string {
+	return "automuteus:settings:guild:" + string(id)
+}
 
 var ctx = context.Background()
 
 type StorageInterface struct {
-	client *redis.Client
+	client *redisv8.Client
 }
 
 type RedisParameters struct {
@@ -24,7 +41,7 @@ type RedisParameters struct {
 
 func (storageInterface *StorageInterface) Init(params interface{}) error {
 	redisParams := params.(RedisParameters)
-	rdb := redis.NewClient(&redis.Options{
+	rdb := redisv8.NewClient(&redisv8.Options{
 		Addr:     redisParams.Addr,
 		Username: redisParams.Username,
 		Password: redisParams.Password,
@@ -35,18 +52,18 @@ func (storageInterface *StorageInterface) Init(params interface{}) error {
 }
 
 func (storageInterface *StorageInterface) GuildSettingsExists(guildID string) bool {
-	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+	key := guildSettingsKey(HashGuildID(guildID))
 
 	v, err := storageInterface.client.Exists(ctx, key).Result()
 	return err == nil && v == 1
 }
 
 func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *settings.GuildSettings {
-	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+	key := guildSettingsKey(HashGuildID(guildID))
 
 	j, err := storageInterface.client.Get(ctx, key).Result()
 	switch {
-	case errors.Is(err, redis.Nil):
+	case errors.Is(err, redisv8.Nil):
 		s := settings.MakeGuildSettings()
 		jBytes, err := json.MarshalIndent(s, "", "  ")
 		if err != nil {
@@ -73,7 +90,7 @@ func (storageInterface *StorageInterface) GetGuildSettings(guildID string) *sett
 }
 
 func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guildSettings *settings.GuildSettings) error {
-	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+	key := guildSettingsKey(HashGuildID(guildID))
 
 	jbytes, err := json.MarshalIndent(guildSettings, "", "  ")
 	if err != nil {
@@ -84,7 +101,7 @@ func (storageInterface *StorageInterface) SetGuildSettings(guildID string, guild
 }
 
 func (storageInterface *StorageInterface) DeleteGuildSettings(guildID string) error {
-	key := rediskey.GuildSettings(rediskey.HashGuildID(guildID))
+	key := guildSettingsKey(HashGuildID(guildID))
 
 	err := storageInterface.client.Del(ctx, key).Err()
 	return err

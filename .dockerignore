@@ -3,15 +3,13 @@
 .github
 .gitignore
 .goreleaser.yaml
-amongusdiscord.xml
-app.json
-docker-compose.yml
+crowdin.yml
 Dockerfile
+Dockerfile.api
 LICENSE
-renovate.json
-TODO.org
-LOCALIZATION.md
 PRIVACY.md
 README.md
-
 *.md
+
+# remove if ever using embedding, but until then, no need to send to Docker context
+assets

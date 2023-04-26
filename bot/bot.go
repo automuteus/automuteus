@@ -5,17 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/bot/server"
 	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
-	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
+	"github.com/automuteus/automuteus/v8/pkg/redis"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	storageutils "github.com/automuteus/automuteus/v8/pkg/storage"
-	"github.com/automuteus/automuteus/v8/pkg/token"
-	"github.com/automuteus/automuteus/v8/storage"
+	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"github.com/top-gg/go-dbl"
 	"log"
@@ -26,15 +25,13 @@ import (
 )
 
 type Bot struct {
-	version  string
-	commit   string
 	official bool
 	url      string
 
 	// mapping of socket connections to the game connect codes
 	ConnsToGames map[string]string
 
-	StatusEmojis AlivenessEmojis
+	StatusEmojis discord.AlivenessEmojis
 
 	EndGameChannels map[string]chan EndGameMessage
 
@@ -46,11 +43,11 @@ type Bot struct {
 
 	TopGGClient *dbl.Client
 
-	RedisInterface *RedisInterface
+	RedisDriver redis.Driver
 
-	StorageInterface *storage.StorageInterface
+	StorageInterface storage.StorageInterface
 
-	PostgresInterface *storageutils.PsqlInterface
+	PostgresInterface storage.PsqlInterface
 
 	logPath string
 
@@ -59,7 +56,7 @@ type Bot struct {
 
 // MakeAndStartBot does what it sounds like
 // TODO collapse these fields into proper structs?
-func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
+func MakeAndStartBot(botToken, topGGToken, url, emojiGuildID string, numShards, shardID int, redisDriver redis.Driver, storageInterface storage.StorageInterface, psql storage.PsqlInterface, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -73,28 +70,26 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	}
 
 	bot := Bot{
-		version:      version,
-		commit:       commit,
 		official:     os.Getenv("AUTOMUTEUS_OFFICIAL") != "",
 		url:          url,
 		ConnsToGames: make(map[string]string),
-		StatusEmojis: emptyStatusEmojis(),
+		StatusEmojis: discord.EmptyStatusEmojis(),
 
 		EndGameChannels:   make(map[string]chan EndGameMessage),
 		ChannelsMapLock:   sync.RWMutex{},
 		PrimarySession:    dg,
-		RedisInterface:    redisInterface,
+		RedisDriver:       redisDriver,
 		StorageInterface:  storageInterface,
 		PostgresInterface: psql,
 		logPath:           logPath,
-		captureTimeout:    GameTimeoutSeconds,
+		captureTimeout:    redis.GameTimeoutSeconds,
 	}
 	dg.LogLevel = discordgo.LogInformational
 
 	dg.AddHandler(bot.handleVoiceStateChange)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
 	dg.AddHandler(bot.leaveGuild)
-	dg.AddHandler(bot.rateLimitEventCallback)
+	dg.AddHandler(bot.RedisDriver.RateLimitEventCallback)
 	// Slash commands
 	dg.AddHandler(bot.handleInteractionCreate)
 
@@ -104,8 +99,8 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
 
-	token.WaitForToken(bot.RedisInterface.client, botToken)
-	token.LockForToken(bot.RedisInterface.client, botToken)
+	bot.RedisDriver.WaitForToken(botToken)
+	bot.RedisDriver.LockForToken(botToken)
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
@@ -123,7 +118,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	// pretty sure this needs to happen per-shard
 	status := &discordgo.UpdateStatusData{
 		IdleSince: nil,
-		Activities: []*discordgo.Activity{&discordgo.Activity{
+		Activities: []*discordgo.Activity{{
 			Name: listeningTo,
 			Type: discordgo.ActivityTypeListening,
 		}},
@@ -149,16 +144,16 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 }
 
 func (bot *Bot) InitTokenProvider(tp *tokenprovider.TokenProvider) {
-	tp.Init(bot.RedisInterface.client, bot.PrimarySession)
+	tp.Init(bot.RedisDriver, bot.PrimarySession)
 }
 
 func (bot *Bot) StartMetricsServer(nodeID string) error {
-	return server.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
+	return server.PrometheusMetricsServer(bot.RedisDriver, nodeID, "2112")
 }
 
 func (bot *Bot) Close() {
 	bot.PrimarySession.Close()
-	bot.RedisInterface.Close()
+	bot.RedisDriver.Close()
 	bot.StorageInterface.Close()
 }
 
@@ -180,7 +175,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		}()
 
 		log.Printf("Added to new Guild, id %s, name %s", m.Guild.ID, m.Guild.Name)
-		bot.RedisInterface.AddUniqueGuildCounter(m.Guild.ID)
+		bot.RedisDriver.AddUniqueGuildCounter(m.Guild.ID)
 
 		if emojiGuildID == "" {
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
@@ -210,16 +205,16 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 		}
 		EmojiLock.Unlock()
 
-		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
+		games := bot.RedisDriver.LoadAllActiveGames(m.Guild.ID)
 
 		for _, connCode := range games {
-			gsr := GameStateRequest{
+			gsr := discord.GameStateRequest{
 				GuildID:     m.Guild.ID,
 				ConnectCode: connCode,
 			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 			for lock == nil {
-				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+				lock, dgs = bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 			}
 			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
@@ -227,20 +222,20 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 				dgs.Subscribed = true
 
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.RedisDriver.SetDiscordGameState(dgs, lock)
 
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 			}
-			lock.Release(ctx)
+			lock.Release(context.Background())
 		}
 	}
 }
 
 func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	log.Println("Bot was removed from Guild " + m.ID)
-	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
+	bot.RedisDriver.LeaveUniqueGuildCounter(m.ID)
 
 	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
 	if err != nil {
@@ -248,25 +243,25 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 }
 
-func (bot *Bot) forceEndGame(gsr GameStateRequest) {
+func (bot *Bot) forceEndGame(gsr discord.GameStateRequest) {
 	// lock because we don't want anyone else modifying while we delete
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	}
 
 	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
 	if deleted {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.RedisDriver.RecordDiscordRequests(redis.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisDriver.SetDiscordGameState(dgs, lock)
 
-	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
+	bot.RedisDriver.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
 	// Note, this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
-	bot.RedisInterface.DeleteDiscordGameState(dgs)
+	bot.RedisDriver.DeleteDiscordGameState(dgs)
 }
 
 func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
@@ -278,14 +273,14 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 	}
 }
 
-func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) bool {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+func (bot *Bot) RefreshGameStateMessage(gsr discord.GameStateRequest, sett *settings.GuildSettings) bool {
+	lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	}
 
 	// don't try to edit this message, because we're about to delete it
-	RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
+	discord.RemovePendingDGSEdit(dgs.GameStateMsg.MessageID)
 
 	// note, this checks the variables being set, not whether or not the actual Discord message still exists
 	gameExists := dgs.GameStateMsg.Exists()
@@ -297,32 +292,32 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
+		go bot.RedisDriver.RecordDiscordRequests(redis.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.RedisDriver.RecordDiscordRequests(redis.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisDriver.SetDiscordGameState(dgs, lock)
 	// if for whatever reason the message failed to create, this would catch it
 	return dgs.GameStateMsg.Exists()
 }
 
-func (bot *Bot) getInfo() command.BotInfo {
-	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
-	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
+func (bot *Bot) GetInfo() discord.BotInfo {
+	totalGuilds := bot.RedisDriver.GetGuildCounter(context.Background())
+	activeGames := bot.RedisDriver.GetActiveGames(context.Background(), redis.GameTimeoutSeconds)
 
-	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-	if totalUsers == rediskey.NotFound {
-		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	totalUsers := bot.RedisDriver.GetTotalUsers(context.Background())
+	if totalUsers == redis.NotFound {
+		totalUsers = bot.RedisDriver.RefreshTotalUsers(context.Background(), bot.PostgresInterface)
 	}
 
-	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-	if totalGames == rediskey.NotFound {
-		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	totalGames := bot.RedisDriver.GetTotalGames(context.Background())
+	if totalGames == redis.NotFound {
+		totalGames = bot.RedisDriver.RefreshTotalGames(context.Background(), bot.PostgresInterface)
 	}
-	return command.BotInfo{
-		Version:     bot.version,
-		Commit:      bot.commit,
+	return discord.BotInfo{
+		Version:     pkg.Version,
+		Commit:      pkg.Commit,
 		ShardID:     bot.PrimarySession.ShardID,
 		ShardCount:  bot.PrimarySession.ShardCount,
 		TotalGuilds: totalGuilds,
@@ -332,7 +327,7 @@ func (bot *Bot) getInfo() command.BotInfo {
 	}
 }
 
-func linkPlayer(redis *RedisInterface, dgs *GameState, userID, color string) (command.LinkStatus, error) {
+func linkPlayer(redisDriver redis.Driver, dgs *discord.GameState, userID, color string) (amongus.LinkStatus, error) {
 	var auData amongus.PlayerData
 	found := false
 	if game.IsColorString(color) {
@@ -341,28 +336,28 @@ func linkPlayer(redis *RedisInterface, dgs *GameState, userID, color string) (co
 	if found {
 		foundID := dgs.AttemptPairingByUserIDs(auData, map[string]interface{}{userID: struct{}{}})
 		if foundID != "" {
-			err := redis.AddUsernameLink(dgs.GuildID, userID, auData.Name)
+			err := redisDriver.AddUsernameLink(dgs.GuildID, userID, auData.Name)
 			if err != nil {
 				log.Println(err)
 			}
-			return command.LinkSuccess, nil
+			return amongus.LinkSuccess, nil
 		} else {
 			err := fmt.Sprintf("No player in the current game was found matching %s", discord.MentionByUserID(userID))
-			return command.LinkNoPlayer, errors.New(err)
+			return amongus.LinkNoPlayer, errors.New(err)
 		}
 	} else {
 		err := fmt.Errorf("no game data found for player %s and color %s", discord.MentionByUserID(userID), color)
-		return command.LinkNoGameData, err
+		return amongus.LinkNoGameData, err
 	}
 }
 
-func unlinkPlayer(dgs *GameState, userID string) command.UnlinkStatus {
+func unlinkPlayer(dgs *discord.GameState, userID string) amongus.UnlinkStatus {
 	// if we found the player and cleared their data
 	success := dgs.ClearPlayerData(userID)
 	if success {
-		return command.UnlinkSuccess
+		return amongus.UnlinkSuccess
 	} else {
-		return command.UnlinkNoPlayer
+		return amongus.UnlinkNoPlayer
 	}
 }
 
@@ -377,7 +372,7 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 	return ""
 }
 
-func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
+func (bot *Bot) newGame(dgs *discord.GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
 		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
 			v <- true
@@ -398,14 +393,14 @@ func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64)
 
 		// Premium users should always be allowed to start new games; only check the free guilds
 		if premTier == premium.FreeTier {
-			activeGames = rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
+			activeGames = bot.RedisDriver.GetActiveGames(context.Background(), redis.GameTimeoutSeconds)
 			if activeGames > command.DefaultMaxActiveGames {
 				return command.NewLockout, activeGames
 			}
 		}
 	}
 
-	dgs.ConnectCode = generateConnectCode(dgs.GuildID)
+	dgs.ConnectCode = discord.GenerateConnectCode(dgs.GuildID)
 	dgs.Subscribed = true
 
 	return command.NewSuccess, activeGames

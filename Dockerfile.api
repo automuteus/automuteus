@@ -11,9 +11,13 @@ WORKDIR /src
 # and will therefore be cached for speeding up the next build
 COPY ./go.mod ./go.sum ./
 RUN go mod download
+# Install the swag tool that generates swagger docs from the source code
+RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Import the code from the context.
 COPY ./ ./
+# Generate API documentation
+RUN swag init --parseDependency true
 
 # Build the executable to `/app`. Mark the build as statically linked.
 # hadolint ignore=SC2155
@@ -34,24 +38,15 @@ FROM alpine:3.13.0 AS final
 # * App directory to allow mounting volumes
 RUN addgroup -g 1000 bot && \
     adduser -HD -u 1000 -G bot bot && \
-    mkdir -p /app/logs /app/locales /app/storage && \
+    mkdir /app && \
     chown -R bot:bot /app
 USER bot
 WORKDIR /app
 
 # Import the compiled executable and locales.
 COPY --from=builder /app /app
-COPY ./locales/ /app/locales
-COPY ./storage/postgres.sql /app/storage/postgres.sql
 
-# Port used for health/liveliness checks
-EXPOSE 8080
-# Port used for prometheus metrics
-EXPOSE 2112
-
-ENV LOCALE_PATH="/app/locales" \
-    LOG_PATH="/app/logs"
-VOLUME ["/app/logs"]
+EXPOSE 5000
 
 # Run the compiled binary.
 ENTRYPOINT ["./app"]

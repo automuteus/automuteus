@@ -1,6 +1,8 @@
 package bot
 
 import (
+	"context"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"log"
 	"strconv"
@@ -17,12 +19,12 @@ import (
 // relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 // the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
+	snowFlakeLock := bot.RedisDriver.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	// couldn't obtain lock; bail bail bail!
 	if snowFlakeLock == nil {
 		return
 	}
-	defer snowFlakeLock.Release(ctx)
+	defer snowFlakeLock.Release(context.Background())
 
 	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, m.GuildID, "")
 	premTier := premium.FreeTier
@@ -31,20 +33,20 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	}
 
 	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
-	gsr := GameStateRequest{
+	gsr := discord.GameStateRequest{
 		GuildID:      m.GuildID,
 		VoiceChannel: m.ChannelID,
 	}
 
-	stateLock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	stateLock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(gsr)
 	if stateLock == nil {
 		return
 	}
-	defer stateLock.Release(ctx)
+	defer stateLock.Release(context.Background())
 
 	var voiceLock *redislock.Lock
 	if dgs.ConnectCode != "" {
-		voiceLock = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		voiceLock = bot.RedisDriver.LockVoiceChanges(dgs.ConnectCode, time.Second)
 		if voiceLock == nil {
 			return
 		}
@@ -60,7 +62,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 	userData, err := dgs.GetUser(m.UserID)
 	if err != nil {
 		// the User doesn't exist in our userdata cache; add them
-		userData, _ = dgs.checkCacheAndAddUser(g, s, m.UserID)
+		userData, _ = dgs.CheckCacheAndAddUser(g, s, m.UserID)
 	}
 
 	tracked := m.ChannelID != "" && dgs.VoiceChannel == m.ChannelID
@@ -106,11 +108,11 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			}
 		}
 	}
-	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
+	bot.RedisDriver.SetDiscordGameState(dgs, stateLock)
 }
 
 func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, userID string, sett *settings.GuildSettings, g *discordgo.Guild, connCode string) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+	lock, dgs := bot.RedisDriver.GetDiscordGameStateAndLock(discord.GameStateRequest{
 		GuildID:     guildID,
 		TextChannel: textChannelID,
 		ConnectCode: connCode,
@@ -131,7 +133,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		dgs.VoiceChannel = voiceChannelID
 		for _, v := range g.VoiceStates {
 			if v.ChannelID == voiceChannelID {
-				dgs.checkCacheAndAddUser(g, bot.PrimarySession, v.UserID)
+				dgs.CheckCacheAndAddUser(g, bot.PrimarySession, v.UserID)
 			}
 		}
 	}
@@ -139,5 +141,5 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 	_ = dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), textChannelID, userID)
 
 	// release the lock
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.RedisDriver.SetDiscordGameState(dgs, lock)
 }
