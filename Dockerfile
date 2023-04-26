@@ -12,7 +12,7 @@ WORKDIR /src
 COPY ./go.mod ./go.sum ./
 RUN go mod download
 # Install the swag tool that generates swagger docs from the source code
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
 
 # Import the code from the context.
 COPY ./ ./
