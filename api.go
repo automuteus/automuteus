@@ -10,15 +10,6 @@ import (
 	"os"
 )
 
-func main() {
-	if err := apiWrapper(); err != nil {
-		log.Println("Program exited with the following error:")
-		log.Println(err)
-		return
-	}
-
-}
-
 func apiWrapper() error {
 	var isOfficial = os.Getenv("AUTOMUTEUS_OFFICIAL") != ""
 

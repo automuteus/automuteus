@@ -56,6 +56,10 @@ func (redisDriver *Driver) CheckDiscordGameStateKey(gsr discord.GameStateRequest
 	return redisDriver.getDiscordGameStateKey(gsr) != ""
 }
 
+func (redisDriver *Driver) GameExists(gsr discord.GameStateRequest) bool {
+	return redisDriver.getDiscordGameStateKey(gsr) != ""
+}
+
 // TODO this can technically be a race condition? what happens if one of these is updated while we're fetching...
 func (redisDriver *Driver) getDiscordGameStateKey(gsr discord.GameStateRequest) string {
 	key := redisDriver.CheckPointer(ConnectCodePtr(gsr.GuildID, gsr.ConnectCode))

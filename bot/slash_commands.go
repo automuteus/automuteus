@@ -512,7 +512,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 			} else if action == command.Unmute {
 				// prob shouldn't be constructing the GameState explicitly like this... okay so long as we don't reuse it
-				dgs := GameState{
+				dgs := discord.GameState{
 					GuildID:     i.GuildID,
 					ConnectCode: i.GuildID + "-unmute",
 				}
@@ -522,7 +522,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					if err != nil {
 						return command.PrivateErrorResponse(command.Unmute, err, sett)
 					}
-					return command.PrivateResponse(ThumbsUp)
+					return command.PrivateResponse(discord.ThumbsUp)
 				}
 
 				for _, v := range g.VoiceStates {
@@ -533,12 +533,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						log.Println("fetching game by id ", v.ChannelID)
 
 						// no game is happening in this voice channel, so we're safe to unmute
-						if bot.RedisInterface.getDiscordGameStateKey(gsr) == "" {
+						if !bot.RedisDriver.GameExists(gsr) {
 							err = bot.applyToSingle(&dgs, id, false, false)
 							if err != nil {
 								return command.PrivateErrorResponse(command.Unmute, err, sett)
 							}
-							return command.PrivateResponse(ThumbsUp)
+							return command.PrivateResponse(discord.ThumbsUp)
 						} else {
 							// there's a game happening, so we can't unmute
 							return command.DebugResponse(command.Unmute, nil, nil, id, errors.New(""), sett)

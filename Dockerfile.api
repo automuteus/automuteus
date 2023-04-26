@@ -29,7 +29,7 @@ RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && 
     GOARCH=${TARGETARCH} \
     go build -installsuffix 'static' \
     -ldflags="-X pkg.Version=${TAG} -X pkg.Commit=${COMMIT}" \
-    -o /app api.go
+    -o /app main.go
 
 FROM alpine:3.13.0 AS final
 
