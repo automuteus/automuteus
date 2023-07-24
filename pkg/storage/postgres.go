@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/top-gg/go-dbl"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -59,7 +59,7 @@ func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
 	}
 	defer f.Close()
 
-	bytes, err := ioutil.ReadAll(f)
+	bytes, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
