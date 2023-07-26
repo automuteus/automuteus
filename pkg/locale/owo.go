@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"math/rand"
 	"os"
@@ -61,7 +60,7 @@ func OwoToml(path, output string) error {
 	}
 	defer f.Close()
 
-	bytes, err := ioutil.ReadAll(f)
+	bytes, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -92,7 +91,7 @@ func OwoToml(path, output string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(output, content, 0666); err != nil {
+	if err := os.WriteFile(output, content, 0666); err != nil {
 		return err
 	}
 

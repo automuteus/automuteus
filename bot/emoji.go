@@ -2,7 +2,7 @@ package bot
 
 import (
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -42,7 +42,7 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 		log.Println(err)
 	}
 	defer response.Body.Close()
-	bytes, err := ioutil.ReadAll(response.Body)
+	bytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Println(err)
 	}

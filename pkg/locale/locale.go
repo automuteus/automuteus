@@ -1,8 +1,8 @@
 package locale
 
 import (
-	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -49,7 +49,7 @@ func LoadTranslations(localePath, defaultLang string) *i18n.Bundle {
 	localeLanguages = make(map[string]string)
 	localeLanguages[defaultLang] = language.Make(defaultLang).String()
 
-	files, err := ioutil.ReadDir(localePath)
+	files, err := os.ReadDir(localePath)
 	if err == nil {
 		re := regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
 		for _, file := range files {
