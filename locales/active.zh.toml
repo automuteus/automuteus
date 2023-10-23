@@ -33,7 +33,7 @@
 "commands.link.success" = "成功将 {{.UserMention}} 与游戏中的玩家链接到一个颜色：`{{.Color}}`"
 "commands.new.lockout" = "If I start any more games, Discord will lock me out, or throttle the games I'm running! 😦\\nPlease try again in a few minutes, or consider AutoMuteUs Premium (`/premium`)\\nCurrent Games: {{.Games}}"
 "commands.new.nochannel" = "在开始比赛前，请加入一个语音频道！"
-"commands.new.success" = "Click the following URL to link your capture, or paste it into your web browser: \\n <{{.hyperlink}}>\\n\\nIf the URL doesn't work, you may need to run the capture program first, and then try again.\\n\\nDon't have the capture installed? Latest version [here]({{.downloadURL}})\\n\\nTo link your capture manually:"
+"commands.new.success" = "Click the following URL to link your capture, or paste it into your web browser: \\n <{{.hyperlink}}> or click [here]({{.apiHyperlink}})\\nIf the URL doesn't work, you may need to run the capture program first, and then try again.\\n\\nDon't have the capture installed? Latest version [here]({{.downloadURL}})\\n\\nTo link your capture manually:"
 "commands.new.success.code" = "代码"
 "commands.new.success.url" = "网址"
 "commands.no_permissions" = "抱歉，您没有发布此命令所需的权限。"
