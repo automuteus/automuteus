@@ -7,10 +7,9 @@ import (
 
 // User struct
 type User struct {
-	Nick          string `json:"Nick"`
-	UserID        string `json:"UserID"`
-	UserName      string `json:"UserName"`
-	Discriminator string `json:"Discriminator"`
+	Nick     string `json:"Nick"`
+	UserID   string `json:"UserID"`
+	UserName string `json:"UserName"`
 }
 
 // UserData struct
@@ -24,10 +23,9 @@ type UserData struct {
 func MakeUserDataFromDiscordUser(dUser *discordgo.User, nick string) UserData {
 	return UserData{
 		User: User{
-			Nick:          nick,
-			UserID:        dUser.ID,
-			UserName:      dUser.Username,
-			Discriminator: dUser.Discriminator,
+			Nick:     nick,
+			UserID:   dUser.ID,
+			UserName: dUser.Username,
 		},
 		ShouldBeDeaf: false,
 		ShouldBeMute: false,
