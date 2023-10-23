@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"regexp"
 	"strings"
 
@@ -23,7 +24,7 @@ func generateConnectCode(guildID string) string {
 
 var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
 
-func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
+func formCaptureURL(url, connectCode string) (hyperlink, apiHyperlink, minimalURL string) {
 	if match := urlregex.FindStringSubmatch(url); match != nil {
 		secure := match[urlregex.SubexpIndex("secure")] == "s"
 		host := match[urlregex.SubexpIndex("host")]
@@ -44,10 +45,17 @@ func formCaptureURL(url, connectCode string) (hyperlink, minimalURL string) {
 			protocol = "https://"
 		}
 
+		hostAPI := os.Getenv("API_SERVER_URL")
+		if hostAPI == "" {
+			hostAPI = "http://localhost"
+		}
+
 		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
+		apiHyperlink = fmt.Sprintf("%s/open/link?connectCode=%s", hostAPI, connectCode)
 		minimalURL = fmt.Sprintf("%s%s%s", protocol, host, port)
 	} else {
 		hyperlink = "Invalid HOST provided (should resemble something like `http://localhost:8123`)"
+		apiHyperlink = "Invalid API Link"
 		minimalURL = "Invalid HOST provided"
 	}
 	return

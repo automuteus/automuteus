@@ -15,6 +15,7 @@ import (
 
 func (bot *Bot) StartAPIServer(port string) {
 	r := gin.Default()
+	r.LoadHTMLGlob("templates/*")
 
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Title = "AutoMuteUs"
@@ -61,6 +62,8 @@ func (bot *Bot) StartAPIServer(port string) {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	r.GET("/open/link", handleGetOpenAmongUsCapture(bot))
+
 	// TODO add endpoints for notable player information, like total games played, num wins, etc
 
 	// TODO properly configure CORS -_-
@@ -95,6 +98,30 @@ func handleGetInfo(bot *Bot) func(c *gin.Context) {
 func handleGetCommands() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, command.All)
+	}
+}
+
+// Open AmongUsCapture
+// @Summary Get AmongUsCapture
+// @Schemes GET
+// @Description Return html that open AmongUsCapture
+// @Produce {string} string "text/html"
+// @Success 200 {string} string "text/html"
+// @Router /open/link [get]
+func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		connectCode := c.Query("connectCode")
+		if len(connectCode) != 8 {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid connect code",
+			})
+			return
+		}
+		hyperlink, _, _ := formCaptureURL(bot.url, connectCode)
+		c.HTML(http.StatusOK, "link.tmpl", gin.H{
+			"URL": hyperlink,
+		})
 	}
 }
 

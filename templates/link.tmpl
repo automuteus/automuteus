@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Redirect</title>
+    <script type="text/javascript">
+        window.onload = function() {
+            window.location = "{{.URL}}";
+            window.onblur = function() {
+                setTimeout(function() {
+                    window.close();
+                }, 5000); // 5s delay before closing the tab
+            };
+        };
+    </script>
+</head>
+<body>
+</body>
+</html>

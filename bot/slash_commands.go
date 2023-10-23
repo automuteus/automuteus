@@ -299,15 +299,16 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 
-				hyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
+				hyperlink, apiHyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
 
 				bot.handleGameStartMessage(i.GuildID, i.ChannelID, voiceChannelID, i.Member.User.ID, sett, g, dgs.ConnectCode)
 
 				return command.NewResponse(status, command.NewInfo{
-					Hyperlink:   hyperlink,
-					MinimalURL:  minimalURL,
-					ConnectCode: dgs.ConnectCode,
-					ActiveGames: activeGames, // not actually needed for Success messages
+					Hyperlink:    hyperlink,
+					ApiHyperlink: apiHyperlink,
+					MinimalURL:   minimalURL,
+					ConnectCode:  dgs.ConnectCode,
+					ActiveGames:  activeGames, // not actually needed for Success messages
 				}, sett)
 			} else {
 				// release the lock

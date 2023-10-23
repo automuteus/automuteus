@@ -33,7 +33,7 @@
 "commands.link.success" = "{{.UserMention}} a été lié avec succès avec la couleur : `{{.Color}}`"
 "commands.new.lockout" = "Si je lance encore plus de parties, Discord risque de me bloquer ou de limiter les parties que je gère ! 😦\\nPMerci de réessayer dans quelques minutes, ou considérez AutoMuteUs Premium (`/premium`)\\nParties en cours : {{.Games}}"
 "commands.new.nochannel" = "Veuillez rejoindre un salon vocal avant de commencer un match !"
-"commands.new.success" = "Cliquez sur le lien suivant pour lier votre capture : \\n <{{.hyperlink}}>\\n\\nVous n'avez pas installé la capture ? Dernière version [ici]({{.downloadURL}})\\n\\nPour lier votre capture manuellement:"
+"commands.new.success" = "Cliquez sur le lien suivant pour lier votre capture : \\n <{{.hyperlink}}> ou cliquez [ici]({{.apiHyperlink}})\\n\\nVous n'avez pas installé la capture ? Dernière version [ici]({{.downloadURL}})\\n\\nPour lier votre capture manuellement:"
 "commands.new.success.code" = "Code"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "Désolé, vous n'avez pas les permissions requises pour exécuter cette commande."
