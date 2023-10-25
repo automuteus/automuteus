@@ -33,7 +33,7 @@
 "commands.link.success" = "{{.UserMention}} を色が `{{.Color}} のプレイヤーにリンクしました"
 "commands.new.lockout" = "これ以上ゲームを始めると、Discord にロックアウトされたり、実行中のゲームが制限されてしまいます！ 😦\\n数分後にもう一度試すか、AutoMuteUs プレミアム（`/premium`）を検討してください。\\n現在のゲーム数： {{.Games}}"
 "commands.new.nochannel" = "ゲームを開始する前に、ボイスチャンネルに参加してください！"
-"commands.new.success" = "Click the following URL to link your capture, or paste it into your web browser: \\n <{{.hyperlink}}> or click [here]({{.apiHyperlink}})\\nIf the URL doesn't work, you may need to run the capture program first, and then try again.\\n\\nDon't have the capture installed? Latest version [here]({{.downloadURL}})\\n\\nTo link your capture manually:"
+"commands.new.success" = "Paste this link into your web browser:\\n <{{.hyperlink}}>\\nor click [here]({{.apiHyperlink}})\\n\\nIf the URL doesn't work, you may need to run the capture program first, and then try again.\\n\\nDon't have the capture installed? Latest version [here]({{.downloadURL}})\\n\\nTo link your capture manually:"
 "commands.new.success.code" = "コード"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "ごめんなさい、あなたはそのコマンドを実行する権限を持っていないようです。"
