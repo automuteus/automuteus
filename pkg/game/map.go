@@ -12,6 +12,7 @@ const (
 	POLUS
 	DLEKS // Skeld backwards
 	AIRSHIP
+	FUNGLE
 	EMPTYMAP PlayMap = 10
 )
 
@@ -21,6 +22,7 @@ var MapNames = map[PlayMap]string{
 	POLUS:   "Polus",
 	DLEKS:   "dlekS",
 	AIRSHIP: "Airship",
+	FUNGLE:  "Fungle",
 }
 
 var nameToPlayMap = map[string]int32{
@@ -29,6 +31,7 @@ var nameToPlayMap = map[string]int32{
 	"polus":     (int32)(POLUS),
 	"dleks":     (int32)(DLEKS),
 	"airship":   (int32)(AIRSHIP),
+	"fungle":    (int32)(FUNGLE),
 	"NoMap":     -1,
 }
 
