@@ -37,7 +37,7 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 	case NewSuccess:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID: "commands.new.success",
-			Other: "Click the following URL to link your capture, or paste it into your web browser: \n <{{.hyperlink}}>\n" +
+			Other: "Paste this link into your web browser:\n <{{.hyperlink}}>\n" +
 				"or click [here]({{.apiHyperlink}})\n\n" +
 				"If the URL doesn't work, you may need to run the capture program first, and then try again.\n\n" +
 				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n\nTo link your capture manually:",
