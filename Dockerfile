@@ -38,7 +38,7 @@ FROM alpine:3.13.0 AS final
 # * App directory to allow mounting volumes
 RUN addgroup -g 1000 bot && \
     adduser -HD -u 1000 -G bot bot && \
-    mkdir -p /app/logs /app/locales /app/storage /app/templates && \
+    mkdir -p /app/logs /app/locales && \
     chown -R bot:bot /app
 USER bot
 WORKDIR /app
@@ -46,8 +46,6 @@ WORKDIR /app
 # Import the compiled executable and locales.
 COPY --from=builder /app /app
 COPY ./locales/ /app/locales
-COPY ./templates/ /app/templates
-COPY ./storage/postgres.sql /app/storage/postgres.sql
 
 # Port used for AMU API
 EXPOSE 5000

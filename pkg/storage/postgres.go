@@ -10,9 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/top-gg/go-dbl"
-	"io"
 	"log"
-	"os"
 	"strconv"
 	"time"
 )
@@ -52,18 +50,8 @@ func (psqlInterface *PsqlInterface) Init(addr string) error {
 	return nil
 }
 
-func (psqlInterface *PsqlInterface) LoadAndExecFromFile(filepath string) error {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	bytes, err := io.ReadAll(f)
-	if err != nil {
-		return err
-	}
-	tag, err := psqlInterface.Pool.Exec(context.Background(), string(bytes))
+func (psqlInterface *PsqlInterface) ExecFromString(postgresFileContents string) error {
+	tag, err := psqlInterface.Pool.Exec(context.Background(), postgresFileContents)
 	if err != nil {
 		return err
 	}
