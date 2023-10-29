@@ -163,7 +163,6 @@ func (bot *Bot) Close() {
 }
 
 var EmojiLock = sync.Mutex{}
-var AllEmojisStartup []*discordgo.Emoji = nil
 
 func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *discordgo.GuildCreate) {
 	return func(s *discordgo.Session, m *discordgo.GuildCreate) {
@@ -187,28 +186,19 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			emojiGuildID = m.Guild.ID
 		}
 
-		// TODO make the emoji guild ID mandatory
-		EmojiLock.Lock()
-		if AllEmojisStartup == nil {
+		// only check/add emojis to the server denoted for emojis, OR, this server that we picked as a fallback above ^
+		if emojiGuildID == m.Guild.ID {
+			EmojiLock.Lock()
 			allEmojis, err := s.GuildEmojis(emojiGuildID)
 			if err != nil {
 				log.Println(err)
 			} else {
-				bot.addAllMissingEmojis(s, m.Guild.ID, true, allEmojis)
-				bot.addAllMissingEmojis(s, m.Guild.ID, false, allEmojis)
-
-				// if we specified the guild ID, then any subsequent guilds should just use the existing emojis
-				if os.Getenv("EMOJI_GUILD_ID") != "" {
-					AllEmojisStartup = allEmojis
-					log.Println("Skipping subsequent guilds; emojis added successfully")
-				}
+				log.Println("Adding any missing emojis now")
+				bot.addAllMissingEmojis(s, emojiGuildID, true, allEmojis)
+				bot.addAllMissingEmojis(s, emojiGuildID, false, allEmojis)
 			}
-		} else {
-			bot.addAllMissingEmojis(s, m.Guild.ID, true, AllEmojisStartup)
-
-			bot.addAllMissingEmojis(s, m.Guild.ID, false, AllEmojisStartup)
+			EmojiLock.Unlock()
 		}
-		EmojiLock.Unlock()
 
 		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
 
