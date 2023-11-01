@@ -1,6 +1,7 @@
 package bot
 
 import (
+	_ "embed"
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/docs"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
@@ -8,14 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"html/template"
 	"net/http"
 	"os"
 	"strings"
 )
 
+//go:embed templates/link.tmpl
+var linkTemplateFileContents string
+
 func (bot *Bot) StartAPIServer(port string) {
 	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
 
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Title = "AutoMuteUs"
@@ -119,9 +123,24 @@ func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
 			return
 		}
 		hyperlink, _, _ := formCaptureURL(bot.url, connectCode)
-		c.HTML(http.StatusOK, "link.tmpl", gin.H{
+		t, err := template.New("template").Parse(linkTemplateFileContents)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
+		err = t.Execute(c.Writer, map[string]string{
 			"URL": hyperlink,
 		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
 	}
 }
 

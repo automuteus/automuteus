@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/bot/command"
@@ -31,6 +32,9 @@ var (
 	commit  = "none"
 	date    = "unknown"
 )
+
+//go:embed storage/postgres.sql
+var postgresFileContents string
 
 const (
 	DefaultURL                   = "http://localhost:8123"
@@ -160,7 +164,7 @@ func discordMainWrapper() error {
 
 	if !isOfficial {
 		go func() {
-			err := psql.LoadAndExecFromFile("./storage/postgres.sql")
+			err := psql.ExecFromString(postgresFileContents)
 			if err != nil {
 				log.Println("Exiting with fatal error when attempting to execute postgres.sql:")
 				log.Fatal(err)
