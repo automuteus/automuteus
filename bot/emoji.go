@@ -50,6 +50,28 @@ func (e *Emoji) DownloadAndBase64Encode() string {
 	return "data:image/png;base64," + encodedStr
 }
 
+func (a AlivenessEmojis) isEmpty() bool {
+	if v, ok := a[true]; ok {
+		for _, vv := range v {
+			if vv.Name == "" || vv.ID == "" {
+				return true
+			}
+		}
+	} else {
+		return true
+	}
+	if v, ok := a[false]; ok {
+		for _, vv := range v {
+			if vv.Name == "" || vv.ID == "" {
+				return true
+			}
+		}
+	} else {
+		return true
+	}
+	return false
+}
+
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
 	topMap[true] = make([]Emoji, 18) // 18 colors for alive/dead
@@ -57,7 +79,7 @@ func emptyStatusEmojis() AlivenessEmojis {
 	return topMap
 }
 
-func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji) {
+func (bot *Bot) verifyEmojis(s *discordgo.Session, guildID string, alive bool, serverEmojis []*discordgo.Emoji, add bool) {
 	for i, emoji := range GlobalAlivenessEmojis[alive] {
 		alreadyExists := false
 		for _, v := range serverEmojis {
@@ -68,7 +90,7 @@ func (bot *Bot) addAllMissingEmojis(s *discordgo.Session, guildID string, alive 
 				break
 			}
 		}
-		if !alreadyExists {
+		if add && !alreadyExists {
 			b64 := emoji.DownloadAndBase64Encode()
 			p := discordgo.EmojiParams{
 				Name:  emoji.Name,

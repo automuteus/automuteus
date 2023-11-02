@@ -185,20 +185,21 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			log.Println("[This is not an error] No explicit guildID provided for emojis; using the current guild default")
 			emojiGuildID = m.Guild.ID
 		}
-
 		// only check/add emojis to the server denoted for emojis, OR, this server that we picked as a fallback above ^
-		if emojiGuildID == m.Guild.ID {
-			EmojiLock.Lock()
+		uploadMissingEmojis := emojiGuildID == m.Guild.ID
+
+		EmojiLock.Lock()
+		// only add the emojis if they haven't been added already. Saves api calls for bots in guilds
+		if bot.StatusEmojis.isEmpty() {
 			allEmojis, err := s.GuildEmojis(emojiGuildID)
 			if err != nil {
 				log.Println(err)
 			} else {
-				log.Println("Adding any missing emojis now")
-				bot.addAllMissingEmojis(s, emojiGuildID, true, allEmojis)
-				bot.addAllMissingEmojis(s, emojiGuildID, false, allEmojis)
+				bot.verifyEmojis(s, emojiGuildID, true, allEmojis, uploadMissingEmojis)
+				bot.verifyEmojis(s, emojiGuildID, false, allEmojis, uploadMissingEmojis)
 			}
-			EmojiLock.Unlock()
 		}
+		EmojiLock.Unlock()
 
 		games := bot.RedisInterface.LoadAllActiveGames(m.Guild.ID)
 
