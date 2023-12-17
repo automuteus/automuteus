@@ -3,7 +3,7 @@
 </p>
 <p align="center">
     <a href="https://github.com/automuteus/automuteus/actions?query=build" alt="Build Status">
-        <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />
+        <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />dasdsdasdsa
     </a>
     <a href="https://github.com/automuteus/automuteus/releases/latest">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/automuteus/automuteus" >
