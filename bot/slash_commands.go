@@ -929,6 +929,7 @@ func confirmationComponents(confirmedID string, canceledID string, sett *setting
 						ID:    "commands.stats.reset.button.proceed",
 						Other: "Confirm",
 					}),
+					Emoji: discordgo.ComponentEmoji{Name: ThumbsUp},
 				},
 				discordgo.Button{
 					CustomID: canceledID,
@@ -937,6 +938,7 @@ func confirmationComponents(confirmedID string, canceledID string, sett *setting
 						ID:    "commands.stats.reset.button.cancel",
 						Other: "Cancel",
 					}),
+					Emoji: discordgo.ComponentEmoji{Name: X},
 				},
 			},
 		},
