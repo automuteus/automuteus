@@ -41,12 +41,7 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 			}), false
 	}
 
-	var oldValue bool
-	if args[0] == "muted" {
-		oldValue = sett.GetVoiceRule(true, gamePhase, args[0])
-	} else {
-		oldValue = sett.GetVoiceRule(false, gamePhase, args[0])
-	}
+	oldValue := sett.GetVoiceRule(args[0] == "muted", gamePhase, args[2])
 
 	if len(args) == 3 {
 		// User was only querying
@@ -72,7 +67,6 @@ func FnVoiceRules(sett *settings.GuildSettings, args []string) (interface{}, boo
 				}), false
 		}
 	}
-
 	newValue := args[3] == "true"
 
 	if newValue == oldValue {

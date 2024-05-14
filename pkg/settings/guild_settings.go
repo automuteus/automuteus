@@ -203,8 +203,9 @@ func (gs *GuildSettings) GetVoiceRule(isMute bool, phase game.Phase, alive strin
 func (gs *GuildSettings) SetVoiceRule(isMute bool, phase game.Phase, alive string, val bool) {
 	if isMute {
 		gs.VoiceRules.MuteRules[phase.ToString()][alive] = val
+	} else {
+		gs.VoiceRules.DeafRules[phase.ToString()][alive] = val
 	}
-	gs.VoiceRules.DeafRules[phase.ToString()][alive] = val
 }
 
 func (gs *GuildSettings) GetVoiceState(alive bool, tracked bool, phase game.Phase) (bool, bool) {

@@ -51,4 +51,8 @@ func TestFnVoiceRules(t *testing.T) {
 	if !valid {
 		t.Error("Valid VR rules should result in a valid settings change")
 	}
+
+	if sett.VoiceRules.DeafRules[game.PhaseNames[game.LOBBY]]["alive"] == false {
+		t.Error("Valid VR rule change was not changed successfully!")
+	}
 }
