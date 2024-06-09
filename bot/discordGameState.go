@@ -2,8 +2,8 @@ package bot
 
 import (
 	"fmt"
-	"github.com/automuteus/automuteus/v8/pkg/amongus"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus-tor/v8/pkg/amongus"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -74,11 +74,11 @@ func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Sess
 }
 
 func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.GuildSettings) []*discordgo.MessageEmbedField {
-	unsorted := make([]*discordgo.MessageEmbedField, 18)
+	unsorted := make([]*discordgo.MessageEmbedField, 35)
 	num := 0
 
 	for _, player := range dgs.GameData.PlayerData {
-		if player.Color < 0 || player.Color > 17 {
+		if player.Color < 0 || player.Color > 34 {
 			break
 		}
 		for _, userData := range dgs.UserData {
@@ -109,7 +109,7 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.
 
 	sorted := make([]*discordgo.MessageEmbedField, num)
 	num = 0
-	for i := 0; i < 18; i++ {
+	for i := 0; i < 35; i++ {
 		if unsorted[i] != nil {
 			sorted[num] = unsorted[i]
 			num++

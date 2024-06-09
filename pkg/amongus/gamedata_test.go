@@ -1,7 +1,7 @@
 package amongus
 
 import (
-	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/j0nas500/automuteus/v8/pkg/game"
 	"testing"
 )
 

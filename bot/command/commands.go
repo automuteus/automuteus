@@ -2,9 +2,9 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/automuteus/v8/pkg/discord"
-	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus/v8/pkg/discord"
+	"github.com/j0nas500/automuteus/v8/pkg/game"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -100,9 +100,20 @@ func constructEmbedForCommand(
 	}
 }
 
-func colorsToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+func colorsVanillaToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
 	var choices []*discordgo.ApplicationCommandOptionChoice
-	for color := range game.ColorStrings {
+	for color := range game.ColorVanillaStrings {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  color,
+			Value: color,
+		})
+	}
+	return choices
+}
+
+func colorsTorToCommandChoices() []*discordgo.ApplicationCommandOptionChoice {
+	var choices []*discordgo.ApplicationCommandOptionChoice
+	for color := range game.ColorTorStrings {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  color,
 			Value: color,
@@ -179,7 +190,7 @@ func ReinviteMeResponse(missingPerms int64, channelID string, sett *settings.Gui
 			Content: sett.LocalizeMessage(&i18n.Message{
 				ID: "commands.error.reinvite",
 				Other: "I'm missing the following required permissions to function properly in this server or channel:\n```\n{{.Perm}}```\n" +
-					"Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://add.automute.us)",
+					"Check the permissions for the Text/Voice channel {{.Channel}}, but you may also need to re-invite me [here](https://discord.com/oauth2/authorize?client_id=782083206240403487&permissions=12905472&scope=applications.commands bot)",
 			}, map[string]interface{}{
 				"Perm":    missingPermsText,
 				"Channel": discord.MentionByChannelID(channelID),

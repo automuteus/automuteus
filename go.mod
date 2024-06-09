@@ -1,4 +1,4 @@
-module github.com/automuteus/automuteus/v8
+module github.com/j0nas500/automuteus-tor/v8
 
 go 1.19
 

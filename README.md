@@ -2,13 +2,13 @@
     <a href="https://automute.us/#/" alt = "Website link"><img src="assets/AutoMuteUsBanner_cropped.png" width="800"></a>
 </p>
 <p align="center">
-    <a href="https://github.com/automuteus/automuteus/actions?query=build" alt="Build Status">
-        <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />
+    <a href="https://github.com/j0nas500/automuteus-tor/actions?query=build" alt="Build Status">
+        <img src="https://github.com/j0nas500/automuteus-tor/workflows/build/badge.svg" />
     </a>
-    <a href="https://github.com/automuteus/automuteus/releases/latest">
+    <a href="https://github.com/j0nas500/automuteus-tor/releases/latest">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/automuteus/automuteus" >
     </a>
-    <a href="https://github.com/automuteus/automuteus/graphs/contributors" alt="Contributors">
+    <a href="https://github.com/j0nas500/automuteus-tor/graphs/contributors" alt="Contributors">
         <img src="https://img.shields.io/github/contributors/automuteus/automuteus" />
     </a>
     <a href="https://discord.gg/ZkqZSWF" alt="Discord Link">
@@ -22,8 +22,8 @@
     <a href="https://automuteus.crowdin.com/automuteus" alt="localize">
         <img alt="Localize" src="https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/automuteus/automuteus/v8" alt="Report Card">
-        <img src="https://goreportcard.com/badge/github.com/automuteus/automuteus/v8" />
+    <a href="https://goreportcard.com/report/github.com/j0nas500/automuteus-tor" alt="Report Card">
+        <img src="https://goreportcard.com/badge/github.com/j0nas500/automuteus-tor" />
     </a>
 </p>
 
@@ -55,6 +55,106 @@ All artwork for the bot has been generously provided by <a href=https://aspen-cy
 
 </div>
 </div>
+
+# HOW TO
+
+## Public Bot
+
+1. Invite the Public [Bot](https://discord.com/oauth2/authorize?client_id=762435324953231440&scope=bot%20applications.commands&permissions=12854272)
+2. Use this custom [AmongUsCapture.exe](https://github.com/j0nas500/amonguscapture/releases)
+3. Maybe you need also [.NET Desktop Runtime 5.0.1](https://download.visualstudio.microsoft.com/download/pr/c6a74d6b-576c-4ab0-bf55-d46d45610730/f70d2252c9f452c2eb679b8041846466/windowsdesktop-runtime-5.0.1-win-x64.exe)
+
+## Self Host with Docker Compose
+
+1. Use this `docker-compose.yml`:
+```
+version: "3"
+
+services:
+  automuteus:
+    # Either:
+    # - Use a prebuilt image
+    #image: automuteus/automuteus:${AUTOMUTEUS_TAG:?err}
+    # - Use an old prebuilt image (prior to 6.16.1)
+    #image: denverquane/amongusdiscord:${AUTOMUTEUS_TAG:?err}
+    # - Build image from local source
+    #build: ../automuteus-tor
+    # - Build image from github directly
+    build: https://github.com/j0nas500/automuteus-tor.git
+
+    restart: always
+    ports:
+      # 5000 is the default service port
+      # Format is HostPort:ContainerPort
+      - ${SERVICE_PORT:-5000}:5000
+    environment:
+      # These are required and will fail if not present
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
+      - HOST=${GALACTUS_HOST:?err}
+      - POSTGRES_USER=${POSTGRES_USER:?err}
+      - POSTGRES_PASS=${POSTGRES_PASS:?err}
+
+      # These Variables are optional
+      - EMOJI_GUILD_ID=${EMOJI_GUILD_ID:-}
+      - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-}
+      - AUTOMUTEUS_LISTENING=${AUTOMUTEUS_LISTENING:-}
+      - AUTOMUTEUS_GLOBAL_PREFIX=${AUTOMUTEUS_GLOBAL_PREFIX:-}
+      - BASE_MAP_URL=${BASE_MAP_URL:-}
+      - SLASH_COMMAND_GUILD_IDS=${SLASH_COMMAND_GUILD_IDS:-}
+
+      # Do **NOT** change this
+      - REDIS_ADDR=${AUTOMUTEUS_REDIS_ADDR}
+      - GALACTUS_ADDR=${GALACTUS_ADDR}
+      - POSTGRES_ADDR=${POSTGRES_ADDR}
+    stop_grace_period: ${STOP_GRACE_PERIOD:-2m}
+    depends_on:
+      - redis
+      - galactus
+      - postgres
+    volumes:
+      - "bot-logs:/app/logs"
+  galactus:
+    ports:
+      # See sample.env for details, but in general, match the GALACTUS_EXTERNAL_PORT w/ the GALACTUS_HOST's port
+      - ${GALACTUS_EXTERNAL_PORT:-8123}:${BROKER_PORT}
+    image: automuteus/galactus:${GALACTUS_TAG:?err}
+    restart: always
+    environment:
+      # This Variable is optional
+      - WORKER_BOT_TOKENS=${WORKER_BOT_TOKENS:-}
+
+      # Do **NOT** change these
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?err}
+      - BROKER_PORT=${BROKER_PORT}
+      - REDIS_ADDR=${GALACTUS_REDIS_ADDR}
+      - GALACTUS_PORT=${GALACTUS_PORT}
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    restart: always
+    volumes:
+      - "redis-data:/data"
+
+  postgres:
+    image: postgres:12-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+
+volumes:
+  bot-logs:
+  redis-data:
+  postgres-data:
+```
+2. Fill the Variables with the [`sample.env`](https://github.com/automuteus/deploy/blob/main/sample.env)
+3. Use this custom [AmongUsCapture.exe](https://github.com/j0nas500/amonguscapture/releases)
+4. Maybe you need also [.NET Desktop Runtime 5.0.1](https://download.visualstudio.microsoft.com/download/pr/c6a74d6b-576c-4ab0-bf55-d46d45610730/f70d2252c9f452c2eb679b8041846466/windowsdesktop-runtime-5.0.1-win-x64.exe)
+
 
 # ⚠️ Requirements ⚠️
 

@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/amongus"
-	"github.com/automuteus/automuteus/v8/pkg/discord"
-	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/automuteus/automuteus/v8/pkg/storage"
-	"github.com/automuteus/automuteus/v8/pkg/task"
+	"github.com/j0nas500/automuteus-tor/v8/internal/server"
+	"github.com/j0nas500/automuteus-tor/v8/pkg/amongus"
+	"github.com/j0nas500/automuteus/v8/pkg/discord"
+	"github.com/j0nas500/automuteus/v8/pkg/game"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus/v8/pkg/storage"
+	"github.com/j0nas500/automuteus/v8/pkg/task"
 	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log"
@@ -109,7 +109,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						log.Println(err)
 						break
 					}
-					if player.Color > 17 || player.Color < 0 {
+					if player.Color > 34 || player.Color < 0 {
 						break
 					}
 
@@ -312,6 +312,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 			return true, userID, dgs, err
 		}
+
 		updated, isAliveUpdated, data := dgs.GameData.UpdatePlayer(player)
 		switch {
 		case player.Action == game.JOINED:
@@ -330,6 +331,11 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 				var uids map[string]interface{}
 				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
+			}
+			// Guesser Shoot in Meeting => mute dead player
+			if isAliveUpdated && dgs.GameData.GetPhase() == game.DISCUSS {
+				err = bot.applyToSingle(dgs, userID, true, false)
+				return true, userID, dgs, err
 			}
 			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
@@ -372,7 +378,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest)
 		dgs.MatchID = int64(gameID)
 		log.Printf("New match has begun. ID %d and starttime %d\n", gameID, matchStart)
 	}
-
+ 
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:

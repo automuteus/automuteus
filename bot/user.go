@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"github.com/automuteus/automuteus/v8/pkg/amongus"
+	"github.com/j0nas500/automuteus-tor/v8/pkg/amongus"
 	"github.com/bwmarrin/discordgo"
 )
 

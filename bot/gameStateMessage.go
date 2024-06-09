@@ -1,10 +1,13 @@
 package bot
 
 import (
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus/v8/internal/server"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
 	"sync"
 	"time"
+
+	"github.com/j0nas500/automuteus-tor/metrics"
+	"github.com/j0nas500/utils/pkg/settings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -114,8 +117,17 @@ func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageE
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
 					CustomID:    colorSelectID,
-					Placeholder: "Select your in-game color",
-					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X),
+					Placeholder: "Select your Vanilla in-game color",
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X, true),
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    colorSelectID + "-tor",
+					Placeholder: "Select your TOR in-game color",
+					Options:     EmojisToSelectMenuOptions(GlobalAlivenessEmojis[true], X, false),
 				},
 			},
 		},

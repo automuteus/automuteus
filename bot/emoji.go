@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/j0nas500/automuteus/v8/pkg/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -74,8 +74,8 @@ func (a AlivenessEmojis) isEmpty() bool {
 
 func emptyStatusEmojis() AlivenessEmojis {
 	topMap := make(AlivenessEmojis)
-	topMap[true] = make([]Emoji, 18) // 18 colors for alive/dead
-	topMap[false] = make([]Emoji, 18)
+	topMap[true] = make([]Emoji, 35) // 35 colors for alive/dead
+	topMap[false] = make([]Emoji, 35)
 	return topMap
 }
 
@@ -109,10 +109,20 @@ func (bot *Bot) verifyEmojis(s *discordgo.Session, guildID string, alive bool, s
 	}
 }
 
-func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string) (arr []discordgo.SelectMenuOption) {
-	for i, v := range emojis {
-		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
+// TODO
+func EmojisToSelectMenuOptions(emojis []Emoji, unlinkEmoji string, isVanilla bool) (arr []discordgo.SelectMenuOption) {
+	if isVanilla {
+		for i := 0; i < 18; i++ {
+			arr = append(arr, emojis[i].toSelectMenuOption(game.GetColorStringForInt(i)))
+		}
+	} else {
+		for i := 18; i < len(emojis); i++ {
+			arr = append(arr, emojis[i].toSelectMenuOption(game.GetColorStringForInt(i)))
+		}
 	}
+	/*for i, v := range emojis {
+		arr = append(arr, v.toSelectMenuOption(game.GetColorStringForInt(i)))
+	}*/
 	arr = append(arr, discordgo.SelectMenuOption{
 		Label:   "unlink",
 		Value:   UnlinkEmojiName,
@@ -139,149 +149,285 @@ var GlobalAlivenessEmojis = AlivenessEmojis{
 	true: []Emoji{
 		game.Red: {
 			Name: "aured",
-			ID:   "866558066921177108",
+			ID:   "1046352430000001075",
 		},
 		game.Blue: {
 			Name: "aublue",
-			ID:   "866558066484183060",
+			ID:   "1046352431254077502",
 		},
 		game.Green: {
 			Name: "augreen",
-			ID:   "866558066568986664",
+			ID:   "1046352432369770566",
 		},
 		game.Pink: {
 			Name: "aupink",
-			ID:   "866558067004538891",
+			ID:   "1046352433682579466",
 		},
 		game.Orange: {
 			Name: "auorange",
-			ID:   "866558066902958090",
+			ID:   "1046352435272233010",
 		},
 		game.Yellow: {
 			Name: "auyellow",
-			ID:   "866558067243221002",
+			ID:   "1046352437184823347",
 		},
 		game.Black: {
 			Name: "aublack",
-			ID:   "866558066442895370",
+			ID:   "1046352438233411614",
 		},
 		game.White: {
 			Name: "auwhite",
-			ID:   "866558067026165770",
+			ID:   "1046352439386832916",
 		},
 		game.Purple: {
 			Name: "aupurple",
-			ID:   "866558066966396928",
+			ID:   "1046352440884211812",
 		},
 		game.Brown: {
 			Name: "aubrown",
-			ID:   "866558066564136970",
+			ID:   "1046352442440306738",
 		},
 		game.Cyan: {
 			Name: "aucyan",
-			ID:   "866558066525601853",
+			ID:   "1046352443774083092",
 		},
 		game.Lime: {
 			Name: "aulime",
-			ID:   "866558066963382282",
+			ID:   "1046352445317578872",
 		},
 		game.Maroon: {
 			Name: "aumaroon",
-			ID:   "866558066917113886",
+			ID:   "1046352446538141756",
 		},
 		game.Rose: {
 			Name: "aurose",
-			ID:   "866558066921439242",
+			ID:   "1046352448031309884",
 		},
 		game.Banana: {
 			Name: "aubanana",
-			ID:   "866558065917558797",
+			ID:   "1046352449310576761",
 		},
 		game.Gray: {
 			Name: "augray",
-			ID:   "866558066174459905",
+			ID:   "1046352450866655323",
 		},
 		game.Tan: {
 			Name: "autan",
-			ID:   "866558066820382721",
+			ID:   "1046352452586328064",
 		},
 		game.Coral: {
 			Name: "aucoral",
-			ID:   "866558066552209448",
+			ID:   "1046352453899137155",
+		},
+		game.Salmon: {
+			Name: "ausalmon",
+			ID:   "1046396936162381885",
+		},
+		game.Bordeaux: {
+			Name: "aubordeaux",
+			ID:   "1046396801386811392",
+		},
+		game.Olive: {
+			Name: "auolive",
+			ID:   "1046396896366829658",
+		},
+		game.Turqoise: {
+			Name: "auturqoise",
+			ID:   "1046396990365372540",
+		},
+		game.Mint: {
+			Name: "aumint",
+			ID:   "1046396868470525962",
+		},
+		game.Lavender: {
+			Name: "aulavender",
+			ID:   "1046396841970892852",
+		},
+		game.Nougat: {
+			Name: "aunougat",
+			ID:   "1046396884794744962",
+		},
+		game.Peach: {
+			Name: "aupeach",
+			ID:   "1046396909662777405",
+		},
+		game.Wasabi: {
+			Name: "auwasabi",
+			ID:   "1046397002218479626",
+		},
+		game.HotPink: {
+			Name: "auhotpink",
+			ID:   "1046396815408377966",
+		},
+		game.Petrol: {
+			Name: "aupetrol",
+			ID:   "1046396922920964126",
+		},
+		game.Lemon: {
+			Name: "aulemon",
+			ID:   "1046396854293757962",
+		},
+		game.SignalOrange: {
+			Name: "ausignalorange",
+			ID:   "1046396948107755531",
+		},
+		game.Teal: {
+			Name: "auteal",
+			ID:   "1046396975064555611",
+		},
+		game.Blurple: {
+			Name: "aublurple",
+			ID:   "1046396788367708230",
+		},
+		game.Sunrise: {
+			Name: "ausunrise",
+			ID:   "1046396960279642122",
+		},
+		game.Ice: {
+			Name: "auice",
+			ID:   "1046396827739635772",
 		},
 	},
 	false: []Emoji{
 		game.Red: {
 			Name: "aureddead",
-			ID:   "866558067255279636",
+			ID:   "1046402641435049984",
 		},
 		game.Blue: {
-			Name: "aubluedead",
-			ID:   "866558066660999218",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Green: {
-			Name: "augreendead",
-			ID:   "866558067088949258",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Pink: {
-			Name: "aupinkdead",
-			ID:   "866558066945556512",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Orange: {
-			Name: "auorangedead",
-			ID:   "866558067508510730",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Yellow: {
-			Name: "auyellowdead",
-			ID:   "866558067206520862",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Black: {
-			Name: "aublackdead",
-			ID:   "866558066668339250",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.White: {
-			Name: "auwhitedead",
-			ID:   "866558067231293450",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Purple: {
-			Name: "aupurpledead",
-			ID:   "866558067223298048",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Brown: {
-			Name: "aubrowndead",
-			ID:   "866558066945163304",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Cyan: {
-			Name: "aucyandead",
-			ID:   "866558067051200512",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Lime: {
-			Name: "aulimedead",
-			ID:   "866558067344408596",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Maroon: {
-			Name: "aumaroondead",
-			ID:   "866558067238895626",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Rose: {
-			Name: "aurosedead",
-			ID:   "866558067083444225",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Banana: {
-			Name: "aubananadead",
-			ID:   "866558066342625350",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Gray: {
-			Name: "augraydead",
-			ID:   "866558067049758740",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Tan: {
-			Name: "autandead",
-			ID:   "866558067230638120",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
 		},
 		game.Coral: {
-			Name: "aucoraldead",
-			ID:   "866558067024723978",
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Salmon: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Bordeaux: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Olive: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Turqoise: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Mint: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Lavender: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Nougat: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Peach: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Wasabi: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.HotPink: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Petrol: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Lemon: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.SignalOrange: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Teal: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Blurple: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Sunrise: {
+			Name: "aureddead",
+			ID:   "1046402641435049984",
+		},
+		game.Ice: {
+			Name: "aureddead",
+			ID:   "11046402641435049984",
 		},
 	},
 }
@@ -306,6 +452,23 @@ Helpful for copy/paste into Discord to get new emoji IDs when they are re-upload
 \:augray:
 \:autan:
 \:aucoral:
+\:ausalmon:
+\:aubordeaux:
+\:auolive:
+\:auturqoise:
+\:aumint:
+\:aulavender:
+\:aunougat:
+\:aupeach:
+\:auwasabi:
+\:auhotpink:
+\:aupetrol:
+\:aulemon:
+\:ausignalorange:
+\:auteal:
+\:aublurple:
+\:ausunrise:
+\:auice:
 
 \:aureddead:
 \:aubluedead:
@@ -325,4 +488,26 @@ Helpful for copy/paste into Discord to get new emoji IDs when they are re-upload
 \:augraydead:
 \:autandead:
 \:aucoraldead:
+
+
+
+
+
+\:ausalmondead:
+\:aubordeauxdead:
+\auolivedead:
+\:auturqoisedead:
+\:aumintdead:
+\:aulavenderdead:
+\:aunougatdead:
+\:aupeachdead:
+WASABI
+\:auhotpinkdead:
+\:aupetroldead:
+LEMON
+SIGNALORANGE
+TEAL
+BLURPLE
+SUNRISE
+ICE
 */

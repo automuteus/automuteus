@@ -14,7 +14,7 @@
 "commands.error" = "コマンド `{{.Command}}` の実行中にエラーが発生しました： `{{.Error}}`"
 "commands.error.nogame" = "現在実行されているゲームはありません"
 "commands.error.reinvite" = "このサーバーかチャンネルに必要な権限が不足しています：\\n```\\n{{.Perm}}```\\nテキスト / ボイスチャンネル {{.Channel}} の権限を確認してください。または、ボットを [こちら](https://add.automute.us) から再招待してください。"
-"commands.help.subtitle" = "[GitHub のプロジェクトを開く](https://github.com/automuteus/automuteus) / [AutoMuteUs の Discord に参加する](https://discord.gg/ZkqZSWF)\\n\\n`/help <コマンド名>` で各コマンドの詳細を確認できます！"
+"commands.help.subtitle" = "[GitHub のプロジェクトを開く](https://github.com/j0nas500/automuteus-tor) / [AutoMuteUs の Discord に参加する](https://discord.gg/ZkqZSWF)\\n\\n`/help <コマンド名>` で各コマンドの詳細を確認できます！"
 "commands.help.title" = "AutoMuteUs Botコマンド:\\n"
 "commands.info.activegames" = "アクティブなゲーム"
 "commands.info.creator" = "作成者"

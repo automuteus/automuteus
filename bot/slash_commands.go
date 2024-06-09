@@ -4,21 +4,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/storage"
+	"github.com/j0nas500/automuteus/v8/internal/server"
+	"github.com/j0nas500/automuteus/v8/pkg/storage"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/automuteus/automuteus/v8/bot/command"
-	"github.com/automuteus/automuteus/v8/bot/setting"
-	redis_common "github.com/automuteus/automuteus/v8/common"
-	"github.com/automuteus/automuteus/v8/pkg/discord"
-	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus/v8/bot/command"
+	"github.com/j0nas500/automuteus/v8/bot/setting"
+	redis_common "github.com/j0nas500/automuteus/v8/common"
+	"github.com/j0nas500/automuteus/v8/pkg/discord"
+	"github.com/j0nas500/automuteus/v8/pkg/premium"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
+	redis_common "github.com/j0nas500/automuteus-tor/common"
+	"github.com/j0nas500/automuteus-tor/discord/command"
+	"github.com/j0nas500/automuteus-tor/discord/setting"
+	"github.com/j0nas500/automuteus-tor/metrics"
+	"github.com/j0nas500/utils/pkg/discord"
+	"github.com/j0nas500/utils/pkg/premium"
+	"github.com/j0nas500/utils/pkg/settings"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -632,6 +639,27 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		switch i.MessageComponentData().CustomID {
 		case colorSelectID:
+			if len(i.MessageComponentData().Values) > 0 {
+				value := i.MessageComponentData().Values[0]
+				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)
+				if lock == nil {
+					log.Printf("No lock could be obtained when linking for guild %s, channel %s\n", i.GuildID, i.ChannelID)
+					return command.DeadlockGameStateResponse(command.Link.Name, sett)
+				}
+				if value == UnlinkEmojiName {
+					value = ""
+				}
+				resp, success := bot.linkOrUnlinkAndRespond(dgs, i.Member.User.ID, value, sett)
+				if success {
+					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+					bot.DispatchRefreshOrEdit(dgs, gsr, sett)
+				} else {
+					// only release the lock; no changes
+					bot.RedisInterface.SetDiscordGameState(nil, lock)
+				}
+				return resp
+			}
+		case colorSelectID + "-tor":
 			if len(i.MessageComponentData().Values) > 0 {
 				value := i.MessageComponentData().Values[0]
 				lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLockRetries(gsr, 5)

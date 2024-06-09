@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/j0nas500/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
@@ -110,13 +110,13 @@ func HelpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.
 		}),
 		Description: sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.help.subtitle",
-			Other: "[View the Github Project](https://github.com/automuteus/automuteus) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `/help <command>` to see more details on a command!",
+			Other: "[View the Github Project](https://github.com/j0nas500/automuteus-tor) or [Join our Discord](https://discord.gg/ZkqZSWF)\n\nType `/help <command>` to see more details on a command!",
 		}),
 		Timestamp: "",
 		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/automuteus/automuteus/v7/blob/master/assets/BotProfilePicture.png?raw=true",
+			URL:      "https://github.com/j0nas500/automuteus-tor/v7/blob/master/assets/BotProfilePicture.png?raw=true",
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,

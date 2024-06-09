@@ -3,9 +3,9 @@ package command
 import (
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"strings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"strings"
 )
 
 type LinkStatus int
@@ -28,15 +28,25 @@ var Link = discordgo.ApplicationCommand{
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "color",
-			Description: "In-game color",
-			Required:    true,
-			Choices:     colorsToCommandChoices(),
+			Name:        "vanillacolor",
+			Description: "Vanilla In-game color",
+			Required:    false,
+			Choices:     colorsVanillaToCommandChoices(),
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "torcolor",
+			Description: "Tor In-game color",
+			Required:    false,
+			Choices:     colorsTorToCommandChoices(),
 		},
 	},
 }
 
 func GetLinkParams(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) (string, string) {
+	if len(options) < 2 {
+		return options[0].UserValue(s).ID, ""
+	}
 	return options[0].UserValue(s).ID, strings.ReplaceAll(strings.ToLower(options[1].StringValue()), " ", "")
 }
 
