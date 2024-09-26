@@ -116,7 +116,7 @@ func HelpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.
 		Color:     15844367, // GOLD
 		Image:     nil,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL:      "https://github.com/automuteus/automuteus/v7/blob/master/assets/BotProfilePicture.png?raw=true",
+			URL:      "https://raw.githubusercontent.com/automuteus/automuteus/refs/heads/master/assets/BotProfilePicture.png",
 			ProxyURL: "",
 			Width:    0,
 			Height:   0,

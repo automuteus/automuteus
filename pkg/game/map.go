@@ -4,7 +4,7 @@ import "fmt"
 
 type PlayMap int
 
-const DefaultMapsUrl = "https://github.com/automuteus/automuteus/blob/master/assets/maps/"
+const DefaultMapsUrl = "https://raw.githubusercontent.com/automuteus/automuteus/refs/heads/master/assets/maps/"
 
 const (
 	SKELD PlayMap = iota
@@ -55,7 +55,7 @@ func FormMapUrl(baseUrl string, mapType PlayMap, detailed bool) string {
 	}
 	// only have the simple variant of dleks
 	if detailed && mapType != DLEKS {
-		return fmt.Sprintf("%s%s_detailed.png?raw=true", baseUrl, mapString)
+		return fmt.Sprintf("%s%s_detailed.png", baseUrl, mapString)
 	}
-	return fmt.Sprintf("%s%s.png?raw=true", baseUrl, mapString)
+	return fmt.Sprintf("%s%s.png", baseUrl, mapString)
 }
