@@ -1,0 +1,25 @@
+# goreleaser is only used to create the GitHub release page with a changelog.
+# No binaries are published: every component ships as a container image
+# (automuteus/automuteus and automuteus/galactus, built by .github/workflows/docker.yml).
+version: 2
+
+builds:
+  - skip: true
+
+checksum:
+  disable: true
+
+changelog:
+  # Use GitHub's own release-notes generator: one line per merged PR with author,
+  # grouped by PR label according to .github/release.yml if present.
+  use: github-native
+
+release:
+  github:
+    owner: automuteus
+    name: automuteus
+  prerelease: auto
+  footer: |
+    ## Container images
+    - `automuteus/automuteus:{{ .Version }}`
+    - `automuteus/galactus:{{ .Version }}`

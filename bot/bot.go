@@ -103,6 +103,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	})
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
+	configureStateTracking(dg)
 
 	token.WaitForToken(bot.RedisInterface.client, botToken)
 	token.LockForToken(bot.RedisInterface.client, botToken)

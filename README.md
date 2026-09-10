@@ -136,6 +136,29 @@ If you are certain that you would prefer to self-host the bot, please follow any
 
 Please refer to the instructions on [automuteus/deploy](https://github.com/automuteus/deploy).
 
+## Repository layout
+
+This repository builds two binaries:
+
+* **AutoMuteUs** (`main.go`): the Discord bot itself. Published as `automuteus/automuteus` on Docker Hub.
+* **Galactus** (`cmd/galactus`): the socket.io broker that capture clients connect to. It relays game events to
+  the bot over Redis, so the bot can be upgraded or restarted without severing capture connections. Published as
+  `automuteus/galactus` on Docker Hub (`Dockerfile.galactus`).
+
+```sh
+go build .               # bot
+go build ./cmd/galactus  # broker
+```
+
+### Galactus environment variables
+
+| Variable      | Required | Description                                                                   |
+|---------------|----------|-------------------------------------------------------------------------------|
+| `REDIS_ADDR`  | yes      | Address of the Redis instance shared with the bot.                            |
+| `BROKER_PORT` | no       | Port to listen on for capture-client socket connections. Defaults to `8123`.  |
+| `REDIS_USER`  | no       | Username to authenticate with Redis, if applicable.                           |
+| `REDIS_PASS`  | no       | Password to authenticate with Redis, if applicable.                           |
+
 # Similar Projects
 
 - [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).
