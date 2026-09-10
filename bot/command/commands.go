@@ -10,10 +10,13 @@ import (
 )
 
 const (
-	ISO8601               = "2006-01-02T15:04:05-0700"
-	BasePremiumURL        = "https://automute.us/premium?guild="
-	CaptureDownloadURL    = "https://capture.automute.us"
-	DefaultMaxActiveGames = 150
+	ISO8601            = "2006-01-02T15:04:05-0700"
+	BasePremiumURL     = "https://automute.us/premium?guild="
+	CaptureDownloadURL = "https://capture.automute.us"
+	// DotNetRuntimeDownloadURL is the .NET 5 Desktop Runtime installer the Windows capture needs. The link the capture
+	// itself shows when the runtime is missing no longer works, so the bot offers this one directly.
+	DotNetRuntimeDownloadURL = "https://download.visualstudio.microsoft.com/download/pr/c6a74d6b-576c-4ab0-bf55-d46d45610730/f70d2252c9f452c2eb679b8041846466/windowsdesktop-runtime-5.0.1-win-x64.exe"
+	DefaultMaxActiveGames    = 150
 )
 
 // All is all slash commands for the bot, ordered to match the README

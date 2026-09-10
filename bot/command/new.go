@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -35,40 +36,7 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 
 	switch status {
 	case NewSuccess:
-		content = sett.LocalizeMessage(&i18n.Message{
-			ID: "commands.new.success",
-			Other: "Paste this link into your web browser:\n <{{.hyperlink}}>\n" +
-				"or click [here]({{.apiHyperlink}})\n\n" +
-				"If the URL doesn't work, you may need to run the capture program first, and then try again.\n\n" +
-				"Don't have the capture installed? Latest version [here]({{.downloadURL}})\n\nTo link your capture manually:",
-		},
-			map[string]interface{}{
-				"hyperlink":    info.Hyperlink,
-				"apiHyperlink": info.ApiHyperlink,
-				"downloadURL":  CaptureDownloadURL,
-			})
-		embeds = []*discordgo.MessageEmbed{
-			{
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.new.success.url",
-							Other: "URL",
-						}),
-						Value:  info.MinimalURL,
-						Inline: true,
-					},
-					{
-						Name: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.new.success.code",
-							Other: "Code",
-						}),
-						Value:  info.ConnectCode,
-						Inline: true,
-					},
-				},
-			},
-		}
+		embeds = []*discordgo.MessageEmbed{newSuccessEmbed(info, sett)}
 	case NewNoVoiceChannel:
 		content = sett.LocalizeMessage(&i18n.Message{
 			ID:    "commands.new.nochannel",
