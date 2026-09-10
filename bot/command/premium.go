@@ -2,11 +2,12 @@ package command
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"time"
 )
 
 // TODO update localization keys
@@ -24,7 +25,7 @@ var botInvites = []string{
 
 const (
 	PremiumInfo    string = "info"
-	PremiumInvites        = "invites"
+	PremiumInvites string = "invites"
 )
 
 // TODO transfer functionality

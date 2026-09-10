@@ -3,11 +3,12 @@ package storage
 import (
 	"context"
 	"errors"
-	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // CanTransfer determines the set of possible transfers for server premium
@@ -55,9 +56,9 @@ func CanTransfer(origin, dest *PostgresGuild) error {
 		daysRem := int(premium.SubDays - (diff / SecsInADay))
 		if !premium.IsExpired(premium.Tier(dest.Premium), daysRem) {
 			return errors.New("destination server has active premium and cannot be overwritten")
-		} else {
-			// destination has premium, but it is expired
 		}
+		// otherwise, destination has premium, but it is expired
+
 	} else if dest.Premium != int16(premium.FreeTier) {
 		return errors.New("cannot transfer to a server with existing non-standard premium")
 	}
@@ -133,25 +134,6 @@ func revertPremiumTransfer(conn PgxIface, original, transferred string) error {
 	}
 	return nil
 }
-
-//func CanChainTransfer(origin, middle, dest *PostgresGuild) error {
-//	if origin == nil || middle == nil || dest == nil {
-//		return errors.New("nil origin, middle, or dest server")
-//	}
-//
-//	if origin.TransferredTo == nil || middle.InheritsFrom == nil || *origin.TransferredTo != middle.GuildID {
-//		return errors.New("origin and middle do not have the required transfer/inherit relationship")
-//	}
-//
-//	if middle.TransferredTo != nil {
-//		return errors.New("middle server has already been transferred, somehow")
-//	}
-//
-//	if dest.InheritsFrom != nil || dest.TransferredTo != nil {
-//		return errors.New("destination server already inherits/transfers to/from another server")
-//	}
-//
-//}
 
 func (psqlInterface *PsqlInterface) AddGoldSubServer(origin, dest string) error {
 	conn, err := psqlInterface.Pool.Acquire(context.Background())

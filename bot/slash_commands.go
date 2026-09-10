@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/storage"
 
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/setting"
@@ -98,6 +99,9 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 						Components: &resp.Data.Components,
 						Embeds:     &resp.Data.Embeds,
 					})
+					if err != nil {
+						log.Println("error editing followup message: ", err)
+					}
 				} else {
 					//TODO if this shows up in logs regularly, print more context
 					log.Println("received a nil response, or resp.data was nil")

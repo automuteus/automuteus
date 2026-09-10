@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/top-gg/go-dbl"
-	"log"
-	"strconv"
-	"time"
 )
 
 type PgxIface interface {
@@ -211,7 +212,7 @@ func (psqlInterface *PsqlInterface) GetGameEvents(matchID string) ([]*PostgresGa
 func insertGame(conn PgxIface, game *PostgresGame) (uint64, error) {
 	t, err := conn.Query(context.Background(), "INSERT INTO games VALUES (DEFAULT, $1, $2, $3, $4, $5) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
 	if t != nil {
-		for t.Next() {
+		if t.Next() {
 			g := uint64(0)
 			err := t.Scan(&g)
 
