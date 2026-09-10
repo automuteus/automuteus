@@ -92,6 +92,68 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 	return nil
 }
 
+// computeVoiceChanges decides, for each member currently in voice, whether their mute/deafen state needs to
+// change given the game state and guild settings. It returns the changes to issue, and how many entries at the
+// front of that list are high-priority per handlePriority (those are sent before the rest).
+//
+// Users not present in dgs.UserData are skipped; callers must populate the cache first (see handleTrackedMembers).
+// For every user that receives a change, dgs.UserData is updated to record the intended state, so calling this
+// again with the same inputs yields no further changes.
+func computeVoiceChanges(dgs *GameState, sett *settings.GuildSettings, voiceStates []*discordgo.VoiceState, handlePriority HandlePriority) ([]task.UserModify, int) {
+	var users []task.UserModify
+	priorityRequests := 0
+	muteSpectators := sett.GetMuteSpectator()
+	phase := dgs.GameData.GetPhase()
+
+	for _, voiceState := range voiceStates {
+		userData, err := dgs.GetUser(voiceState.UserID)
+		if err != nil {
+			continue
+		}
+
+		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
+
+		auData, found := dgs.GameData.GetByName(userData.InGameName)
+		var isAlive bool
+		if !muteSpectators {
+			// only actually tracked if we're in the tracked channel AND linked to a player
+			tracked = tracked && found
+			isAlive = auData.IsAlive
+		} else if found {
+			isAlive = auData.IsAlive
+		} else {
+			// an unlinked user in the tracked channel is a spectator; treat them as dead
+			isAlive = false
+		}
+		shouldMute, shouldDeaf := sett.GetVoiceState(isAlive, tracked, phase)
+
+		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
+
+		// only issue a change if the user isn't in the right state already, and only for linked users (or everyone,
+		// when muting spectators) so that we don't accidentally undeafen music bots, for example
+		if !incorrectMuteDeafenState || !(found || muteSpectators) {
+			continue
+		}
+
+		uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
+		userModify := task.UserModify{
+			UserID: uid,
+			Mute:   shouldMute,
+			Deaf:   shouldDeaf,
+		}
+
+		if handlePriority != NoPriority && ((handlePriority == AlivePriority && isAlive) || (handlePriority == DeadPriority && !isAlive)) {
+			users = append([]task.UserModify{userModify}, users...)
+			priorityRequests++ // counter of how many elements on the front of the arr should be sent first
+		} else {
+			users = append(users, userModify)
+		}
+		userData.SetShouldBeMuteDeaf(shouldMute, shouldDeaf)
+		dgs.UpdateUserData(userData.User.UserID, userData)
+	}
+	return users, priorityRequests
+}
+
 // handleTrackedMembers moves/mutes players according to the current game state
 func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
@@ -107,63 +169,14 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 		return
 	}
 
-	var users []task.UserModify
-
-	priorityRequests := 0
+	// make sure every member currently in voice is in our user cache before deciding on changes
 	for _, voiceState := range g.VoiceStates {
-		userData, err := dgs.GetUser(voiceState.UserID)
-		if err != nil {
-			// the User doesn't exist in our userdata cache; add them
-			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
-			if !added {
-				continue
-			}
-		}
-
-		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
-
-		auData, found := dgs.GameData.GetByName(userData.InGameName)
-		// only actually tracked if we're in a tracked channel AND linked to a player
-		var isAlive bool
-
-		// only actually tracked if we're in a tracked channel AND linked to a player
-		if !sett.GetMuteSpectator() {
-			tracked = tracked && found
-			isAlive = auData.IsAlive
-		} else {
-			if !found {
-				// we just assume the spectator is dead
-				isAlive = false
-			} else {
-				isAlive = auData.IsAlive
-			}
-		}
-		shouldMute, shouldDeaf := sett.GetVoiceState(isAlive, tracked, dgs.GameData.GetPhase())
-
-		incorrectMuteDeafenState := shouldMute != userData.ShouldBeMute || shouldDeaf != userData.ShouldBeDeaf
-
-		// only issue a change if the User isn't in the right state already
-		// nicksmatch can only be false if the in-game data is != nil, so the reference to .audata below is safe
-		// check the userdata is linked here to not accidentally undeafen music bots, for example
-		if incorrectMuteDeafenState && (found || sett.GetMuteSpectator()) {
-			uid, _ := strconv.ParseUint(userData.User.UserID, 10, 64)
-			userModify := task.UserModify{
-				UserID: uid,
-				Mute:   shouldMute,
-				Deaf:   shouldDeaf,
-			}
-
-			if handlePriority != NoPriority && ((handlePriority == AlivePriority && isAlive) || (handlePriority == DeadPriority && !isAlive)) {
-				users = append([]task.UserModify{userModify}, users...)
-				priorityRequests++ // counter of how many elements on the front of the arr should be sent first
-			} else {
-				users = append(users, userModify)
-			}
-			userData.SetShouldBeMuteDeaf(shouldMute, shouldDeaf)
-			dgs.UpdateUserData(userData.User.UserID, userData)
+		if _, err := dgs.GetUser(voiceState.UserID); err != nil {
+			dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
 		}
 	}
+
+	users, priorityRequests := computeVoiceChanges(dgs, sett, g.VoiceStates, handlePriority)
 
 	// we relinquish the lock while we wait
 	bot.RedisInterface.SetDiscordGameState(dgs, lock)
