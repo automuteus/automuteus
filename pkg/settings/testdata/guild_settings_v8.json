@@ -1,0 +1,69 @@
+{
+  "adminIDs": [
+    "123456789012345678"
+  ],
+  "permissionRoleIDs": [
+    "234567890123456789",
+    "345678901234567890"
+  ],
+  "language": "de",
+  "voiceRules": {
+    "MuteRules": {
+      "DISCUSSION": {
+        "alive": false,
+        "dead": true
+      },
+      "LOBBY": {
+        "alive": false,
+        "dead": false
+      },
+      "TASKS": {
+        "alive": true,
+        "dead": false
+      }
+    },
+    "DeafRules": {
+      "DISCUSSION": {
+        "alive": false,
+        "dead": true
+      },
+      "LOBBY": {
+        "alive": false,
+        "dead": false
+      },
+      "TASKS": {
+        "alive": true,
+        "dead": false
+      }
+    }
+  },
+  "mapVersion": "detailed",
+  "delays": {
+    "delays": {
+      "DISCUSSION": {
+        "DISCUSSION": 0,
+        "LOBBY": 6,
+        "TASKS": 7
+      },
+      "LOBBY": {
+        "DISCUSSION": 0,
+        "LOBBY": 0,
+        "TASKS": 3
+      },
+      "TASKS": {
+        "DISCUSSION": 0,
+        "LOBBY": 1,
+        "TASKS": 0
+      }
+    }
+  },
+  "deleteGameSummary": 5,
+  "unmuteDeadDuringTasks": true,
+  "autoRefresh": true,
+  "matchSummaryChannelID": "456789012345678901",
+  "leaderboardMention": false,
+  "leaderboardSize": 5,
+  "leaderboardMin": 2,
+  "muteSpectator": true,
+  "displayRoomCode": "spoiler"
+}
