@@ -1,0 +1,582 @@
+definitions:
+  amongus.GameData:
+    properties:
+      map:
+        $ref: '#/definitions/game.PlayMap'
+      phase:
+        $ref: '#/definitions/game.Phase'
+      playerData:
+        additionalProperties:
+          $ref: '#/definitions/amongus.PlayerData'
+        description: indexed by amongusname
+        type: object
+      region:
+        type: string
+      room:
+        type: string
+    type: object
+  amongus.PlayerData:
+    properties:
+      color:
+        type: integer
+      isAlive:
+        type: boolean
+      name:
+        type: string
+    type: object
+  bot.GameState:
+    properties:
+      amongUsData:
+        $ref: '#/definitions/amongus.GameData'
+      connectCode:
+        type: string
+      gameStateMessage:
+        $ref: '#/definitions/bot.GameStateMessage'
+      guildID:
+        type: string
+      linked:
+        type: boolean
+      matchID:
+        type: integer
+      matchStartUnix:
+        type: integer
+      running:
+        type: boolean
+      subscribed:
+        type: boolean
+      userData:
+        $ref: '#/definitions/bot.UserDataSet'
+      voiceChannel:
+        type: string
+    type: object
+  bot.GameStateMessage:
+    properties:
+      creationTimeUnix:
+        type: integer
+      leaderID:
+        type: string
+      messageChannelID:
+        type: string
+      messageID:
+        type: string
+    type: object
+  bot.HttpError:
+    properties:
+      error:
+        type: string
+      statusCode:
+        type: integer
+    type: object
+  bot.RoomCodeResponse:
+    properties:
+      connectCode:
+        type: string
+      roomCode:
+        type: string
+    type: object
+  bot.User:
+    properties:
+      Nick:
+        type: string
+      UserID:
+        type: string
+      UserName:
+        type: string
+    type: object
+  bot.UserData:
+    properties:
+      PlayerName:
+        type: string
+      ShouldBeDeaf:
+        type: boolean
+      ShouldBeMute:
+        type: boolean
+      User:
+        $ref: '#/definitions/bot.User'
+    type: object
+  bot.UserDataSet:
+    additionalProperties:
+      $ref: '#/definitions/bot.UserData'
+    type: object
+  command.BotInfo:
+    properties:
+      activeGames:
+        type: integer
+      commit:
+        type: string
+      shardCount:
+        type: integer
+      shardID:
+        type: integer
+      totalGames:
+        type: integer
+      totalGuilds:
+        type: integer
+      totalUsers:
+        type: integer
+      version:
+        type: string
+    type: object
+  discordgo.ApplicationCommand:
+    properties:
+      application_id:
+        type: string
+      default_member_permissions:
+        example: "0"
+        type: string
+      default_permission:
+        description: 'NOTE: DefaultPermission will be soon deprecated. Use DefaultMemberPermissions
+          and DMPermission instead.'
+        type: boolean
+      description:
+        type: string
+      description_localizations:
+        additionalProperties:
+          type: string
+        type: object
+      dm_permission:
+        type: boolean
+      guild_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      name_localizations:
+        additionalProperties:
+          type: string
+        type: object
+      nsfw:
+        type: boolean
+      options:
+        items:
+          $ref: '#/definitions/discordgo.ApplicationCommandOption'
+        type: array
+      type:
+        $ref: '#/definitions/discordgo.ApplicationCommandType'
+      version:
+        type: string
+    type: object
+  discordgo.ApplicationCommandOption:
+    properties:
+      autocomplete:
+        description: 'NOTE: mutually exclusive with Choices.'
+        type: boolean
+      channel_types:
+        items:
+          $ref: '#/definitions/discordgo.ChannelType'
+        type: array
+      choices:
+        items:
+          $ref: '#/definitions/discordgo.ApplicationCommandOptionChoice'
+        type: array
+      description:
+        type: string
+      description_localizations:
+        additionalProperties:
+          type: string
+        type: object
+      max_length:
+        description: Maximum length of string option.
+        type: integer
+      max_value:
+        description: Maximum value of number/integer option.
+        type: number
+      min_length:
+        description: Minimum length of string option.
+        type: integer
+      min_value:
+        description: Minimal value of number/integer option.
+        type: number
+      name:
+        type: string
+      name_localizations:
+        additionalProperties:
+          type: string
+        type: object
+      options:
+        items:
+          $ref: '#/definitions/discordgo.ApplicationCommandOption'
+        type: array
+      required:
+        type: boolean
+      type:
+        $ref: '#/definitions/discordgo.ApplicationCommandOptionType'
+    type: object
+  discordgo.ApplicationCommandOptionChoice:
+    properties:
+      name:
+        type: string
+      name_localizations:
+        additionalProperties:
+          type: string
+        type: object
+      value: {}
+    type: object
+  discordgo.ApplicationCommandOptionType:
+    enum:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    type: integer
+    x-enum-varnames:
+    - ApplicationCommandOptionSubCommand
+    - ApplicationCommandOptionSubCommandGroup
+    - ApplicationCommandOptionString
+    - ApplicationCommandOptionInteger
+    - ApplicationCommandOptionBoolean
+    - ApplicationCommandOptionUser
+    - ApplicationCommandOptionChannel
+    - ApplicationCommandOptionRole
+    - ApplicationCommandOptionMentionable
+    - ApplicationCommandOptionNumber
+    - ApplicationCommandOptionAttachment
+  discordgo.ApplicationCommandType:
+    enum:
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-varnames:
+    - ChatApplicationCommand
+    - UserApplicationCommand
+    - MessageApplicationCommand
+  discordgo.ChannelType:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 10
+    - 11
+    - 12
+    - 13
+    - 15
+    type: integer
+    x-enum-varnames:
+    - ChannelTypeGuildText
+    - ChannelTypeDM
+    - ChannelTypeGuildVoice
+    - ChannelTypeGroupDM
+    - ChannelTypeGuildCategory
+    - ChannelTypeGuildNews
+    - ChannelTypeGuildStore
+    - ChannelTypeGuildNewsThread
+    - ChannelTypeGuildPublicThread
+    - ChannelTypeGuildPrivateThread
+    - ChannelTypeGuildStageVoice
+    - ChannelTypeGuildForum
+  game.GameDelays:
+    properties:
+      delays:
+        additionalProperties:
+          additionalProperties:
+            type: integer
+          type: object
+        description: maps from origin->new phases, with the integer number of seconds
+          for the delay
+        type: object
+    type: object
+  game.Phase:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    type: integer
+    x-enum-varnames:
+    - LOBBY
+    - TASKS
+    - DISCUSS
+    - MENU
+    - GAMEOVER
+    - UNINITIALIZED
+  game.PlayMap:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 10
+    type: integer
+    x-enum-comments:
+      DLEKS: Skeld backwards
+    x-enum-varnames:
+    - SKELD
+    - MIRA
+    - POLUS
+    - DLEKS
+    - AIRSHIP
+    - FUNGLE
+    - EMPTYMAP
+  game.VoiceRules:
+    properties:
+      deafRules:
+        additionalProperties:
+          additionalProperties:
+            type: boolean
+          type: object
+        type: object
+      muteRules:
+        additionalProperties:
+          additionalProperties:
+            type: boolean
+          type: object
+        type: object
+    type: object
+  premium.PremiumRecord:
+    properties:
+      days:
+        type: integer
+      tier:
+        $ref: '#/definitions/premium.Tier'
+    type: object
+  premium.Tier:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    type: integer
+    x-enum-varnames:
+    - FreeTier
+    - BronzeTier
+    - SilverTier
+    - GoldTier
+    - TrialTier
+    - SelfHostTier
+  settings.GuildSettings:
+    properties:
+      adminIDs:
+        items:
+          type: string
+        type: array
+      autoRefresh:
+        type: boolean
+      delays:
+        $ref: '#/definitions/game.GameDelays'
+      deleteGameSummary:
+        type: integer
+      displayRoomCode:
+        type: string
+      language:
+        type: string
+      leaderboardMention:
+        type: boolean
+      leaderboardMin:
+        type: integer
+      leaderboardSize:
+        type: integer
+      mapVersion:
+        type: string
+      matchSummaryChannelID:
+        type: string
+      muteSpectator:
+        type: boolean
+      permissionRoleIDs:
+        items:
+          type: string
+        type: array
+      unmuteDeadDuringTasks:
+        type: boolean
+      voiceRules:
+        $ref: '#/definitions/game.VoiceRules'
+    type: object
+info:
+  contact: {}
+paths:
+  /bot/commands:
+    get:
+      consumes:
+      - application/json
+      description: Get all Discord commands that the bot implements
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/discordgo.ApplicationCommand'
+            type: array
+      summary: Get Bot Commands
+      tags:
+      - bot
+  /bot/info:
+    get:
+      consumes:
+      - application/json
+      description: Get basic information about the bot
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/command.BotInfo'
+      summary: Get Bot Info
+      tags:
+      - bot
+  /game/roomcode:
+    get:
+      consumes:
+      - application/json
+      description: Get the Among Us room code most recently reported by the capture
+        client for a connect code
+      parameters:
+      - description: Connect Code
+        in: query
+        name: connectCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bot.RoomCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/bot.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/bot.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/bot.HttpError'
+      security:
+      - BasicAuth: []
+      summary: Get Room Code
+      tags:
+      - game
+  /game/state:
+    get:
+      consumes:
+      - application/json
+      description: Get the current state of a running game
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      - description: Connect Code
+        in: query
+        name: connectCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bot.GameState'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      security:
+      - BasicAuth: []
+      summary: Get Game State
+      tags:
+      - game
+  /guild/premium:
+    get:
+      consumes:
+      - application/json
+      description: Get the premium status for a given guild
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/premium.PremiumRecord'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/bot.HttpError'
+      security:
+      - BasicAuth: []
+      summary: Get Guild Premium
+      tags:
+      - guild
+  /guild/settings:
+    get:
+      consumes:
+      - application/json
+      description: Get the settings for a given guild
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/settings.GuildSettings'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      security:
+      - BasicAuth: []
+      summary: Get Guild Settings
+      tags:
+      - guild
+  /open/link:
+    get:
+      description: Return html that open AmongUsCapture
+      produces:
+      - '{string} string "text/html"'
+      responses:
+        "200":
+          description: text/html
+          schema:
+            type: string
+      summary: Get AmongUsCapture
+swagger: "2.0"

@@ -77,6 +77,10 @@ func (tokenProvider *TokenProvider) openAndStartSessionWithToken(botToken string
 			log.Println(err)
 			return false
 		}
+		// Worker sessions only issue REST calls (mute/deafen, membership checks); they never read the
+		// guild cache. Disabling state avoids holding a full copy of every guild per worker token.
+		// State.User is still populated from the Ready event with state disabled.
+		sess.StateEnabled = false
 		sess.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds)
 		err = sess.Open()
 		if err != nil {

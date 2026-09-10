@@ -21,4 +21,4 @@ jobs:
         id: go
 
       - name: Build
-        run: go build main.go
+        run: go build ./...

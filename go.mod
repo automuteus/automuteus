@@ -9,6 +9,7 @@ require (
 	github.com/georgysavva/scany v0.2.7
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-redis/redis/v8 v8.8.0
+	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v4 v4.18.3
