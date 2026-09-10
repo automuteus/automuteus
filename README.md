@@ -22,9 +22,6 @@
     <a href="https://automuteus.crowdin.com/automuteus" alt="localize">
         <img alt="Localize" src="https://badges.crowdin.net/e/5eb1365b5fd16082e63cc54c33736adc/localized.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/automuteus/automuteus/v8" alt="Report Card">
-        <img src="https://goreportcard.com/badge/github.com/automuteus/automuteus/v8" />
-    </a>
 </p>
 
 <p align="center">

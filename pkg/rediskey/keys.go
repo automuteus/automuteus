@@ -67,19 +67,3 @@ func GuildTokenLock(guildID, hToken string) string {
 func CachedUserInfoOnGuild(userID, guildID string) string {
 	return "automuteus:cache:userinfo:" + guildID + ":" + userID
 }
-
-func UserRateLimitGeneral(userID string) string {
-	return "automuteus:ratelimit:user:" + userID
-}
-
-func UserRateLimitSpecific(userID, cmdType string) string {
-	return "automuteus:ratelimit:user:" + cmdType + ":" + userID
-}
-
-func UserSoftban(userID string) string {
-	return "automuteus:ratelimit:softban:user:" + userID
-}
-
-func UserSoftbanCount(userID string) string {
-	return "automuteus:ratelimit:softban:count:user:" + userID
-}

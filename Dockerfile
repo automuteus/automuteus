@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} golang:1.19-alpine AS builder
+FROM --platform=${BUILDPLATFORM} golang:1.27-alpine AS builder
 ARG TARGETOS
 ARG TARGETARCH
 # Git is required for getting the dependencies.
@@ -31,7 +31,7 @@ RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && 
     -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
     -o /app .
 
-FROM alpine:3.13.0 AS final
+FROM alpine:3.24 AS final
 
 # Set up non-root user and app directory
 # * Non-root because of the principle of least privlege

@@ -1,0 +1,56 @@
+{
+  "guildID": "123456789012345678",
+  "connectCode": "ABCDEFGH",
+  "linked": true,
+  "running": true,
+  "subscribed": true,
+  "matchID": 4242,
+  "matchStartUnix": 1700000000,
+  "userData": {
+    "111111111111111111": {
+      "User": {
+        "Nick": "Soup",
+        "UserID": "111111111111111111",
+        "UserName": "soupdev"
+      },
+      "ShouldBeMute": true,
+      "ShouldBeDeaf": true,
+      "PlayerName": "Soup"
+    },
+    "222222222222222222": {
+      "User": {
+        "Nick": "",
+        "UserID": "222222222222222222",
+        "UserName": "musicbot"
+      },
+      "ShouldBeMute": false,
+      "ShouldBeDeaf": false,
+      "PlayerName": "UnlinkedPlayer"
+    }
+  },
+  "voiceChannel": "333333333333333333",
+  "gameStateMessage": {
+    "messageID": "444444444444444444",
+    "messageChannelID": "555555555555555555",
+    "leaderID": "111111111111111111",
+    "creationTimeUnix": 1700000001
+  },
+  "amongUsData": {
+    "playerData": {
+      "Dev": {
+        "color": 0,
+        "name": "Dev",
+        "isAlive": true
+      },
+      "Soup": {
+        "color": 10,
+        "name": "Soup",
+        "isAlive": false
+      }
+    },
+    "phase": 1,
+    "room": "ABCDEF",
+    "region": "North America",
+    "map": 2
+  }
+}

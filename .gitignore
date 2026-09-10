@@ -18,6 +18,7 @@ docs/
 
 # json config files
 *.json
+!**/testdata/*.json
 
 .idea/
 
