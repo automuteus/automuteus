@@ -90,6 +90,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		captureTimeout:    GameTimeoutSeconds,
 	}
 	dg.LogLevel = discordgo.LogInformational
+	installDiscordgoLogger()
 
 	dg.AddHandler(bot.handleVoiceStateChange)
 	dg.AddHandler(bot.newGuild(emojiGuildID))
