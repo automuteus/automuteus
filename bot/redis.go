@@ -448,3 +448,10 @@ func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock
 func (redisInterface *RedisInterface) Close() error {
 	return redisInterface.client.Close()
 }
+
+// GetRoomCode returns the Among Us room/lobby code most recently reported by the capture client for the given
+// connect code, as written by Galactus under rediskey.RoomCodesForConnCode. It returns redis.Nil if no lobby has
+// been reported (or the entry has expired).
+func (redisInterface *RedisInterface) GetRoomCode(connectCode string) (string, error) {
+	return redisInterface.client.Get(ctx, rediskey.RoomCodesForConnCode(connectCode)).Result()
+}

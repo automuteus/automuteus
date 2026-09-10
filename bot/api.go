@@ -2,11 +2,13 @@ package bot
 
 import (
 	_ "embed"
+	"errors"
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/docs"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
@@ -55,6 +57,7 @@ func (bot *Bot) StartAPIServer(port string) {
 		"admin": adminPassword,
 	}))
 	gameGroup.GET("/state", handleGetGameState(bot))
+	gameGroup.GET("/roomcode", handleGetRoomCode(bot))
 
 	// TODO same as above, but we also need to check the User's permissions within the server in question
 	// (aka if user is not a bot admin for a guild, they can't change that guild's settings)
@@ -198,6 +201,52 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 	}
 }
 
+// GetRoomCode godoc
+// @Summary Get Room Code
+// @Schemes GET
+// @Description Get the Among Us room code most recently reported by the capture client for a connect code
+// @Security BasicAuth
+// @Tags game
+// @Accept json
+// @Produce json
+// @Param connectCode query string true "Connect Code"
+// @Success 200 {object} RoomCodeResponse
+// @Failure 400 {object} HttpError
+// @Failure 404 {object} HttpError
+// @Failure 500 {object} HttpError
+// @Router /game/roomcode [get]
+func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		connectCode := c.Query("connectCode")
+		if len(connectCode) != 8 {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid connect code",
+			})
+			return
+		}
+
+		roomCode, err := bot.RedisInterface.GetRoomCode(connectCode)
+		if errors.Is(err, redis.Nil) {
+			c.JSON(http.StatusNotFound, HttpError{
+				StatusCode: http.StatusNotFound,
+				Error:      "no room code found for that connect code",
+			})
+			return
+		} else if err != nil {
+			c.JSON(http.StatusInternalServerError, HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Error:      err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, RoomCodeResponse{
+			ConnectCode: connectCode,
+			RoomCode:    roomCode,
+		})
+	}
+}
+
 // GetGuildSettings godoc
 // @Summary Get Guild Settings
 // @Schemes GET
@@ -278,4 +327,9 @@ func handleGetGuildPremium(bot *Bot) func(c *gin.Context) {
 type HttpError struct {
 	StatusCode int
 	Error      string
+}
+
+type RoomCodeResponse struct {
+	ConnectCode string `json:"connectCode"`
+	RoomCode    string `json:"roomCode"`
 }

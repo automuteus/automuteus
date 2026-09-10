@@ -65,7 +65,8 @@ func GuildTokenLock(guildID, hToken string) string {
 }
 
 // RoomCodesForConnCode is written by Galactus (cmd/galactus) whenever a capture client reports a lobby,
-// mapping a connect code to the current Among Us room code. The bot itself does not read it, but forked repos/communities use it
+// mapping a connect code to the current Among Us room code. Forked repos/communities read it directly, and the bot
+// serves it via GET /game/roomcode, so the key name must stay stable.
 func RoomCodesForConnCode(connCode string) string {
 	return "automuteus:roomcode:" + connCode
 }
