@@ -37,6 +37,18 @@ type TokenProvider struct {
 	maxRequests5Seconds int64
 	sessionLock         sync.RWMutex
 	taskTimeoutMs       time.Duration
+
+	// applyPrimary, when set, replaces the Discord API call the primary bot makes to mute/deafen a user. Tests use
+	// it to observe the fallback path without a live session.
+	applyPrimary func(guildID, userID string, mute, deaf bool) error
+}
+
+// applyWithPrimary mutes/deafens a user with the primary bot's own session.
+func (tokenProvider *TokenProvider) applyWithPrimary(guildID, userID string, mute, deaf bool) error {
+	if tokenProvider.applyPrimary != nil {
+		return tokenProvider.applyPrimary(guildID, userID, mute, deaf)
+	}
+	return task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userID, mute, deaf)
 }
 
 func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout time.Duration, maxReq int64) *TokenProvider {
@@ -222,7 +234,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 						mu.Unlock()
 					} else {
 						l.Debug("applying voice change via primary bot", "user", userIDStr, "mute", req.Mute, "deaf", req.Deaf)
-						err := task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userIDStr, req.Mute, req.Deaf)
+						err := tokenProvider.applyWithPrimary(guildID, userIDStr, req.Mute, req.Deaf)
 						if err != nil {
 							mu.Lock()
 							latestErr = err
