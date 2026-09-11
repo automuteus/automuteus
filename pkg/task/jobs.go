@@ -18,6 +18,22 @@ const (
 	GameOverJob
 )
 
+func (j JobType) String() string {
+	switch j {
+	case ConnectionJob:
+		return "connection"
+	case LobbyJob:
+		return "lobby"
+	case StateJob:
+		return "state"
+	case PlayerJob:
+		return "player"
+	case GameOverJob:
+		return "gameover"
+	}
+	return "unknown"
+}
+
 type Job struct {
 	JobType JobType     `json:"type"`
 	Payload interface{} `json:"payload"`

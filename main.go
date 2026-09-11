@@ -20,6 +20,7 @@ import (
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/locale"
+	"github.com/automuteus/automuteus/v8/pkg/logging"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
@@ -68,15 +69,15 @@ func discordMainWrapper() error {
 		logPath = "./"
 	}
 
-	logEntry := os.Getenv("DISABLE_LOG_FILE")
-	if logEntry == "" {
+	var logOut io.Writer = os.Stdout
+	if os.Getenv("DISABLE_LOG_FILE") == "" {
 		file, err := os.Create(path.Join(logPath, "logs.txt"))
 		if err != nil {
 			return err
 		}
-		mw := io.MultiWriter(os.Stdout, file)
-		log.SetOutput(mw)
+		logOut = io.MultiWriter(os.Stdout, file)
 	}
+	logging.Setup(logOut)
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
 

@@ -1,10 +1,12 @@
 package bot
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"testing"
 	"time"
@@ -230,6 +232,7 @@ type testDeps struct {
 	metrics  *fakeMetrics
 	settings *settings.GuildSettings
 	sleeps   []time.Duration
+	logs     *bytes.Buffer
 }
 
 // newTestBot returns a Bot wired entirely to in-memory fakes. Delays requested by the mute path are recorded in
@@ -244,6 +247,7 @@ func newTestBot(t *testing.T) (*Bot, *testDeps) {
 		guilds:   discordgo.NewState(),
 		metrics:  &fakeMetrics{},
 		settings: settings.MakeGuildSettings(),
+		logs:     &bytes.Buffer{},
 	}
 	bot := &Bot{
 		StatusEmojis:    emptyStatusEmojis(),
@@ -258,6 +262,7 @@ func newTestBot(t *testing.T) (*Bot, *testDeps) {
 		guilds:          deps.guilds,
 		metrics:         deps.metrics,
 		sleep:           func(d time.Duration) { deps.sleeps = append(deps.sleeps, d) },
+		log:             slog.New(slog.NewTextHandler(deps.logs, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
 	return bot, deps
 }

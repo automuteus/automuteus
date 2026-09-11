@@ -2,12 +2,12 @@ package bot
 
 import (
 	"context"
+	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/bwmarrin/discordgo"
-	"log"
 	"strconv"
 	"time"
 )
@@ -37,6 +37,7 @@ func (bot *Bot) applyToSingle(dgs *GameState, premTier premium.Tier, userID stri
 }
 
 func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf bool) error {
+	gl := bot.gameLog(GameStateRequest{GuildID: dgs.GuildID, ConnectCode: dgs.ConnectCode})
 	g, err := bot.guilds.Guild(dgs.GuildID)
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf boo
 				Mute:   mute,
 				Deaf:   deaf,
 			})
-			log.Println("Forcibly applying mute/deaf to " + userData.User.UserID)
+			gl.Debug("forcing voice state", "user", userData.User.UserID, "mute", mute, "deaf", deaf)
 		}
 	}
 	if len(users) > 0 {
@@ -147,6 +148,7 @@ func computeVoiceChanges(dgs *GameState, sett *settings.GuildSettings, voiceStat
 // handleTrackedMembers moves/mutes players according to the current game state
 func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier premium.Tier, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
+	gl := bot.gameLog(gsr)
 	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
 		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
@@ -174,11 +176,12 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 	voiceLock := bot.store.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
 
 	if delay > 0 {
-		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
+		gl.Info("waiting before applying voice changes", "delay_seconds", delay, "changes", len(users))
 		bot.sleep(time.Second * time.Duration(delay))
 	}
 
 	if dgs.Running && len(users) > 0 {
+		gl.Info("applying voice changes", "changes", len(users), "priority", priorityRequests, "phase", game.PhaseNames[dgs.GameData.GetPhase()])
 		if priorityRequests > 0 {
 			req := task.UserModifyRequest{
 				Premium: premTier,
@@ -187,9 +190,7 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 			// no lock; we're not done yet
 			err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, nil)
 			if err != nil {
-				log.Println(err)
-			} else {
-				log.Println("Successfully finished issuing high priority mutes")
+				gl.Error("failed to issue priority voice changes", "err", err)
 			}
 			rem := users[priorityRequests:]
 			if len(rem) > 0 {
@@ -199,21 +200,20 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 				}
 				err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 				if err != nil {
-					log.Println(err)
+					gl.Error("failed to issue voice changes", "err", err)
 				}
 			} else if voiceLock != nil {
 				voiceLock.Release(context.Background())
 			}
 		} else {
 			// no priority; issue all at once
-			log.Println("Issuing mutes/deafens with no particular priority")
 			req := task.UserModifyRequest{
 				Premium: premTier,
 				Users:   users,
 			}
 			err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
-				log.Println(err)
+				gl.Error("failed to issue voice changes", "err", err)
 			}
 		}
 	}

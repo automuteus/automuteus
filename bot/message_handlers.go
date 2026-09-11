@@ -2,7 +2,6 @@ package bot
 
 import (
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"log"
 	"strconv"
 	"time"
 
@@ -25,7 +24,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	sett, settingsErr := bot.settings.LoadGuildSettings(ctx, m.GuildID)
 	if settingsErr != nil {
-		log.Println(settingsErr)
+		bot.log.Error("failed to load guild settings", "guild", m.GuildID, "err", settingsErr)
 		return
 	}
 	gsr := GameStateRequest{
@@ -38,6 +37,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		return
 	}
 	defer stateLock.Release(ctx)
+	gl := bot.gameLog(GameStateRequest{GuildID: m.GuildID, ConnectCode: dgs.ConnectCode, VoiceChannel: m.ChannelID})
 
 	var voiceLock lock.Lock
 	if dgs.ConnectCode != "" {
@@ -86,6 +86,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		dgs.UpdateUserData(m.UserID, userData)
 
 		if dgs.Running {
+			gl.Info("voice state changed; applying voice change", "user", m.UserID, "mute", mute, "deaf", deaf)
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := task.UserModifyRequest{
 				Premium: bot.premiumTier(m.GuildID),
@@ -99,7 +100,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 			}
 			err = bot.voice.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
-				log.Println("error received from galactus for modifyUsers: ", err.Error())
+				gl.Error("failed to apply voice change", "user", m.UserID, "err", err)
 			}
 		}
 	}
@@ -113,7 +114,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		ConnectCode: connCode,
 	})
 	if lock == nil {
-		log.Println("Couldn't obtain lock for DGS on game start...")
+		bot.log.Warn("could not lock game state on game start", "guild", guildID, "code", connCode)
 		return
 	}
 	dgs.GameData.Reset()

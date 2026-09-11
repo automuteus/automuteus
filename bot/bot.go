@@ -19,6 +19,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/top-gg/go-dbl"
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"sync"
@@ -52,6 +53,7 @@ type Bot struct {
 	guilds        GuildReader
 	metrics       RequestMetrics
 	sleep         func(time.Duration)
+	log           *slog.Logger
 
 	TopGGClient *dbl.Client
 
@@ -99,7 +101,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		captureTimeout:    GameTimeoutSeconds,
 	}
 	bot.useProductionDeps(dg, redisInterface, storageInterface, psql)
-	dg.LogLevel = discordgo.LogInformational
+	dg.LogLevel = discordgo.LogWarning
 	installDiscordgoLogger()
 
 	dg.AddHandler(bot.handleVoiceStateChange)

@@ -13,6 +13,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/exp/constraints"
 	"log"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -96,6 +97,11 @@ func (tokenProvider *TokenProvider) openAndStartSessionWithToken(botToken string
 	return false
 }
 
+// logger returns a logger tagged for this component and guild.
+func (tokenProvider *TokenProvider) logger(guildID string) *slog.Logger {
+	return slog.Default().With("component", "tokenprovider", "guild", guildID)
+}
+
 func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[string]struct{}) (*discordgo.Session, string) {
 	tokenProvider.sessionLock.RLock()
 	defer tokenProvider.sessionLock.RUnlock()
@@ -107,7 +113,7 @@ func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[
 			if tokenProvider.IncrAndTestGuildTokenComboLock(guildID, hToken) {
 				return sess, hToken
 			} else {
-				log.Println("Secondary token is potentially rate-limited. Skipping")
+				tokenProvider.logger(guildID).Debug("secondary token near rate limit; skipping", "token", hToken)
 			}
 		}
 	}
@@ -124,12 +130,13 @@ func mapHasEntry[T constraints.Ordered, K any](dict map[T]K, key T) bool {
 }
 
 func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hashToken string) bool {
+	l := tokenProvider.logger(guildID).With("token", hashToken)
 	i, err := tokenProvider.client.Incr(context.Background(), rediskey.GuildTokenLock(guildID, hashToken)).Result()
 	if err != nil {
-		log.Println(err)
+		l.Error("failed to increment token usage counter", "err", err)
 	}
 	usable := i < tokenProvider.maxRequests5Seconds
-	log.Printf("Token/capture %s on guild %s is at count %d. Using?: %v", hashToken, guildID, i, usable)
+	l.Debug("token usage checked", "count", i, "usable", usable)
 	if !usable {
 		return false
 	}
@@ -137,7 +144,7 @@ func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hash
 	// set the expiry only if the mute/deafen was successful, because we want to preserve any existing blacklist expiries
 	err = tokenProvider.client.Expire(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), time.Second*5).Err()
 	if err != nil {
-		log.Println(err)
+		l.Error("failed to set token usage expiry", "err", err)
 	}
 
 	return true
@@ -160,6 +167,8 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	if voicelock != nil {
 		defer voicelock.Release(context.Background())
 	}
+	l := tokenProvider.logger(guildID).With("code", connectCode)
+	start := time.Now()
 
 	gid, gerr := strconv.ParseUint(guildID, 10, 64)
 	if gerr != nil {
@@ -212,14 +221,13 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 						mdsc.Capture++
 						mu.Unlock()
 					} else {
-						log.Printf("Applying mute=%v, deaf=%v using primary bot\n", req.Mute, req.Deaf)
+						l.Debug("applying voice change via primary bot", "user", userIDStr, "mute", req.Mute, "deaf", req.Deaf)
 						err := task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userIDStr, req.Mute, req.Deaf)
 						if err != nil {
 							mu.Lock()
 							latestErr = err
 							mu.Unlock()
-							log.Println("Error on primary bot:")
-							log.Println(err)
+							l.Error("primary bot voice change failed", "user", userIDStr, "err", err)
 						} else {
 							mu.Lock()
 							mdsc.Official++
@@ -244,6 +252,14 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	// note, this should probably be more systematic on startup, not when a mute/deafen task comes in. But this is a
 	// context in which we already have the guildID, successful tokens, AND the premium limit...
 	go tokenProvider.verifyBotMembership(guildID, limit, uniqueTokensUsed)
+
+	summary := l.With("users", len(request.Users), "worker", mdsc.Worker, "capture", mdsc.Capture,
+		"official", mdsc.Official, "rate_limited", mdsc.RateLimit, "elapsed", time.Since(start))
+	if latestErr != nil {
+		summary.Warn("voice changes issued with errors", "err", latestErr)
+	} else {
+		summary.Info("voice changes issued")
+	}
 
 	return latestErr
 }

@@ -2,6 +2,7 @@ package bot
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,6 +99,16 @@ func TestProcessJob_LobbyToTasks_StartsMatchAndMutesLinkedPlayers(t *testing.T) 
 	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
 	if len(deps.voice.all()) != 1 {
 		t.Fatalf("repeating the same phase should be a no-op, got %d requests", len(deps.voice.all()))
+	}
+
+	// every line the game path logged is attributable to this game
+	for _, line := range strings.Split(strings.TrimSpace(deps.logs.String()), "\n") {
+		if !strings.Contains(line, "guild="+scenarioGuild) || !strings.Contains(line, "code="+scenarioConnectCode) {
+			t.Errorf("log line missing game identifiers: %s", line)
+		}
+	}
+	if logs := deps.logs.String(); !strings.Contains(logs, `msg="phase changed"`) || !strings.Contains(logs, "from=LOBBY to=TASKS") {
+		t.Errorf("expected a phase change log line, got:\n%s", deps.logs.String())
 	}
 }
 

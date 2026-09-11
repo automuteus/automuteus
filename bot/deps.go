@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
@@ -108,11 +109,25 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 	bot.guilds = sess.State
 	bot.metrics = redisMetrics{client: redisInterface.client}
 	bot.sleep = time.Sleep
+	bot.log = slog.Default()
 }
 
 // SetTokenProvider installs the provider used to issue mute/deafen requests.
 func (bot *Bot) SetTokenProvider(tp *tokenprovider.TokenProvider) {
 	bot.voice = tp
+}
+
+// gameLog returns a logger carrying the identifiers of the game a request refers to, so that log lines from
+// concurrent games can be told apart.
+func (bot *Bot) gameLog(gsr GameStateRequest) *slog.Logger {
+	l := bot.log.With("guild", gsr.GuildID)
+	if gsr.ConnectCode != "" {
+		l = l.With("code", gsr.ConnectCode)
+	}
+	if gsr.VoiceChannel != "" {
+		l = l.With("voice_channel", gsr.VoiceChannel)
+	}
+	return l
 }
 
 // premiumTier resolves the effective premium tier for a guild, treating expired premium as free.

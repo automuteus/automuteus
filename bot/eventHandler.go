@@ -15,7 +15,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -24,8 +24,6 @@ import (
 type EndGameMessage bool
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
-	log.Println("Started Redis Subscription worker for " + connectCode)
-
 	notify := task.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
@@ -34,6 +32,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 		GuildID:     guildID,
 		ConnectCode: connectCode,
 	}
+	gl := bot.gameLog(dgsRequest)
+	gl.Info("subscribed to capture events")
 
 	// indicate to the broker that we're online and ready to start processing messages
 	task.Ack(ctx, bot.RedisInterface.client, connectCode)
@@ -51,17 +51,17 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				// Do not consume queued game events while settings are unavailable.
 				sett, settingsErr := bot.settings.LoadGuildSettings(ctx, guildID)
 				if settingsErr != nil {
-					log.Println(settingsErr)
+					gl.Error("failed to load guild settings", "err", settingsErr)
 					break
 				}
 				job, err := task.PopJob(ctx, bot.RedisInterface.client, connectCode)
 				if errors.Is(err, redis.Nil) {
 					break
 				} else if err != nil {
-					log.Println(err)
+					gl.Error("failed to pop capture job", "err", err)
 					break
 				}
-				log.Printf("Popped job of type %d w/ payload %s\n", job.JobType, job.Payload.(string))
+				gl.Info("capture event received", "type", job.JobType.String(), "payload", job.Payload)
 				bot.refreshGameLiveness(connectCode)
 				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
 
@@ -84,10 +84,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 		case <-timer.C:
 			timer.Stop()
-			log.Printf("Killing game w/ code %s after %d seconds of inactivity!\n", connectCode, bot.captureTimeout)
+			gl.Warn("ending game after capture inactivity", "timeout_seconds", bot.captureTimeout)
 			err := notify.Close()
 			if err != nil {
-				log.Println(err)
+				gl.Error("failed to close capture subscription", "err", err)
 			}
 			go bot.forceEndGame(dgsRequest)
 			bot.ChannelsMapLock.Lock()
@@ -96,10 +96,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 			return
 		case <-endGameChannel:
-			log.Println("Redis subscriber received kill signal, closing all pubsubs")
+			gl.Info("end-game signal received; closing capture subscription")
 			err := notify.Close()
 			if err != nil {
-				log.Println(err)
+				gl.Error("failed to close capture subscription", "err", err)
 			}
 			bot.forceEndGame(dgsRequest)
 			return
@@ -112,6 +112,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 // This is the entry point for driving the bot with spoofed capture events: it has no dependency on the Redis job queue.
 func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier premium.Tier, dgsRequest GameStateRequest) (correlatedUserID string) {
 	payload, _ := job.Payload.(string)
+	gl := bot.gameLog(dgsRequest)
 
 	switch job.JobType {
 	case task.ConnectionJob:
@@ -130,7 +131,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		var lobby game.Lobby
 		err := json.Unmarshal([]byte(payload), &lobby)
 		if err != nil {
-			log.Println(err)
+			gl.Error("malformed lobby payload", "err", err)
 			break
 		}
 
@@ -138,7 +139,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 	case task.StateJob:
 		num, err := strconv.ParseInt(payload, 10, 64)
 		if err != nil {
-			log.Println(err)
+			gl.Error("malformed phase payload", "err", err)
 			break
 		}
 
@@ -147,7 +148,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		var player game.Player
 		err := json.Unmarshal([]byte(payload), &player)
 		if err != nil {
-			log.Println(err)
+			gl.Error("malformed player payload", "err", err)
 			break
 		}
 		if player.Color > 17 || player.Color < 0 {
@@ -175,9 +176,10 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		var gameOverResult game.Gameover
 		err := json.Unmarshal([]byte(payload), &gameOverResult)
 		if err != nil {
-			log.Println(err)
+			gl.Error("malformed gameover payload", "err", err)
 			break
 		}
+		gl.Info("game over", "reason", gameOverResult.GameOverReason)
 
 		// we only need a read-only state for making the game summary message
 		dgs := bot.store.GetReadOnlyDiscordGameState(dgsRequest)
@@ -211,7 +213,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 				}
 			}
-			go dumpGameToPostgres(*dgs, bot.recorder, gameOverResult)
+			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult)
 
 			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
 			// read-only). This means the original msg is refreshed, not the gameover message
@@ -234,6 +236,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 
 // recordGameEvent stores a capture event against the active match, if there is one.
 func (bot *Bot) recordGameEvent(dgsRequest GameStateRequest, userID string, ge storage.PostgresGameEvent) {
+	gl := bot.gameLog(dgsRequest)
 	dgs := bot.store.GetReadOnlyDiscordGameState(dgsRequest)
 	if dgs == nil || dgs.MatchID <= 0 || dgs.MatchStartUnix <= 0 {
 		return
@@ -242,17 +245,17 @@ func (bot *Bot) recordGameEvent(dgsRequest GameStateRequest, userID string, ge s
 	if userID != "" {
 		num, err := strconv.ParseUint(userID, 10, 64)
 		if err != nil {
-			log.Println(err)
+			gl.Error("malformed user id for game event", "user", userID, "err", err)
 			ge.UserID = nil
 		} else {
 			ge.UserID = &num
 		}
-		log.Printf("Adding postgres event with user id %d\n", ge.UserID)
 	}
+	gl.Debug("recording game event", "match", ge.GameID, "type", task.JobType(ge.EventType).String(), "user", userID)
 
 	err := bot.recorder.AddEvent(&ge)
 	if err != nil {
-		log.Println(err)
+		gl.Error("failed to record game event", "err", err)
 	}
 }
 
@@ -293,6 +296,7 @@ func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
 
 func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest, premTier premium.Tier) (bool, string, *GameState, error) {
 	var err error
+	gl := bot.gameLog(dgsRequest)
 	if player.Name != "" {
 		lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
 		for lock == nil {
@@ -304,7 +308,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 		if player.Disconnected || player.Action == game.LEFT {
 			if player.Disconnected {
-				log.Println("I detected that " + player.Name + " disconnected, I'm purging their player data!")
+				gl.Info("player disconnected; purging player data", "player", player.Name)
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
 			_, _, data := dgs.GameData.UpdatePlayer(player)
@@ -331,7 +335,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 		updated, isAliveUpdated, data := dgs.GameData.UpdatePlayer(player)
 		switch {
 		case player.Action == game.JOINED:
-			log.Println("Detected a player joined, refreshing User data mappings")
+			gl.Info("player joined", "player", player.Name, "color", player.Color)
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
 				var uids map[string]interface{}
@@ -352,7 +356,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 					bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 					return true, userID, dgs, err
 				}
-				log.Println("NOT updating the discord status message; would leak info")
+				gl.Debug("skipping status message update during tasks; would leak info", "player", player.Name)
 				return false, userID, dgs, err
 			}
 			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
@@ -379,13 +383,15 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 		return
 	}
 	dgs.Linked = true
+	gl := bot.gameLog(dgsRequest)
+	gl.Info("phase changed", "from", game.PhaseNames[oldPhase], "to", game.PhaseNames[phase])
 	// if we started a new game
 	if oldPhase == game.LOBBY && phase == game.TASKS {
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
-		gameID := startGameInPostgres(*dgs, bot.recorder)
+		gameID := startGameInPostgres(gl, *dgs, bot.recorder)
 		dgs.MatchID = int64(gameID)
-		log.Printf("New match has begun. ID %d and starttime %d\n", gameID, matchStart)
+		gl.Info("match started", "match", gameID, "start_unix", matchStart)
 	}
 
 	bot.store.SetDiscordGameState(dgs, lock)
@@ -394,7 +400,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 		err := bot.applyToAll(dgs, premTier, false, false)
 		if err != nil {
-			log.Println("Error in unmuting all users when returning to menu ", err)
+			gl.Error("failed to unmute all users on return to menu", "err", err)
 		}
 		// on a gameover event from the capture, it's like going to the lobby; use that delay
 	case game.GAMEOVER:
@@ -441,13 +447,13 @@ func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgs
 	bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 }
 
-func startGameInPostgres(dgs GameState, psql GameRecorder) uint64 {
+func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint64 {
 	if dgs.MatchStartUnix < 0 {
 		return 0
 	}
 	gid, err := strconv.ParseUint(dgs.GuildID, 10, 64)
 	if err != nil {
-		log.Println(err)
+		gl.Error("invalid guild id", "err", err)
 		return 0
 	}
 	pgame := &storage.PostgresGame{
@@ -460,14 +466,14 @@ func startGameInPostgres(dgs GameState, psql GameRecorder) uint64 {
 	}
 	i, err := psql.AddInitialGame(pgame)
 	if err != nil {
-		log.Println(err)
+		gl.Error("failed to record match start", "err", err)
 	}
 	return i
 }
 
-func dumpGameToPostgres(dgs GameState, psql GameRecorder, gameOver game.Gameover) {
+func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
-		log.Println("dgs match id or start time is <0; not dumping game to Postgres")
+		gl.Debug("no active match; not recording game result")
 		return
 	}
 	end := time.Now().Unix()
@@ -483,24 +489,24 @@ func dumpGameToPostgres(dgs GameState, psql GameRecorder, gameOver game.Gameover
 		if v.GetPlayerName() != amongus.UnlinkedPlayerName {
 			inGameData, found := dgs.GameData.GetByName(v.GetPlayerName())
 			if !found {
-				log.Println("No game data found for that player")
+				gl.Warn("no in-game data for linked player", "player", v.GetPlayerName())
 				continue
 			}
 
 			uid, err := strconv.ParseUint(v.User.UserID, 10, 64)
 			if err != nil {
-				log.Println(err)
+				gl.Error("invalid user id", "user", v.User.UserID, "err", err)
 				continue
 			}
 			gid, err := strconv.ParseUint(dgs.GuildID, 10, 64)
 			if err != nil {
-				log.Println(err)
+				gl.Error("invalid guild id", "err", err)
 				continue
 			}
 
 			puser, err := psql.EnsureUserExists(uid)
 			if err != nil || puser == nil {
-				log.Println(err)
+				gl.Error("failed to ensure user exists", "user", uid, "err", err)
 				continue
 			}
 
@@ -529,10 +535,10 @@ func dumpGameToPostgres(dgs GameState, psql GameRecorder, gameOver game.Gameover
 			})
 		}
 	}
-	log.Printf("Game %d has been completed and recorded in postgres\n", dgs.MatchID)
-
 	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
 	if err != nil {
-		log.Println(err)
+		gl.Error("failed to record match result", "match", dgs.MatchID, "err", err)
+		return
 	}
+	gl.Info("match recorded", "match", dgs.MatchID, "players", len(userGames), "reason", gameOver.GameOverReason)
 }
