@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/locale"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v8"
 	"io"
 	"log"
 	"math/rand"
@@ -114,20 +116,11 @@ func discordMainWrapper() error {
 	}
 
 	var redisClient bot.RedisInterface
-	var storageInterface storage.StorageInterface
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASS")
 	if redisAddr != "" {
 		err := redisClient.Init(storage.RedisParameters{
-			Addr:     redisAddr,
-			Username: "",
-			Password: redisPassword,
-		})
-		if err != nil {
-			log.Println(err)
-		}
-		err = storageInterface.Init(storage.RedisParameters{
 			Addr:     redisAddr,
 			Username: "",
 			Password: redisPassword,
@@ -162,15 +155,25 @@ func discordMainWrapper() error {
 		return err
 	}
 
+	defer psql.Pool.Close()
 	if !isOfficial {
-		go func() {
-			err := psql.ExecFromString(postgresFileContents)
-			if err != nil {
-				log.Println("Exiting with fatal error when attempting to execute postgres.sql:")
-				log.Fatal(err)
-			}
-		}()
+		if err := psql.ExecFromString(postgresFileContents); err != nil {
+			return fmt.Errorf("apply base Postgres schema: %w", err)
+		}
 	}
+	// Settings schema is independent of the base statistics schema and applies
+	// synchronously for both official and self-hosted deployments.
+	schemaCtx, cancelSchema := context.WithTimeout(context.Background(), time.Minute)
+	err = storage.ApplyGuildSettingsSchema(schemaCtx, psql.Pool)
+	cancelSchema()
+	if err != nil {
+		return fmt.Errorf("apply guild settings schema: %w", err)
+	}
+	// Settings that are still in Redis from older versions are moved to
+	// Postgres the first time each guild is read.
+	legacySettings := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
+	defer legacySettings.Close()
+	storageInterface := storage.NewPostgresStorage(psql.Pool, legacySettings)
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -205,7 +208,7 @@ func discordMainWrapper() error {
 
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, &storageInterface, &psql, logPath)
+		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}

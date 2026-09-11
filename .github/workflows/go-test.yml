@@ -12,6 +12,30 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: settings-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_POSTGRES_URL: postgres://postgres:settings-test@localhost:5432/postgres?sslmode=disable
+      TEST_REDIS_ADDR: localhost:6379
     steps:
       - name: Checkout
         uses: actions/checkout@v4

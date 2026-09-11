@@ -141,7 +141,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	defer server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
 	defer interactionLock.Release(ctx)
 
-	sett := bot.StorageInterface.GetGuildSettings(i.GuildID)
+	sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, i.GuildID)
+	if settingsErr != nil {
+		log.Println(settingsErr)
+		return &discordgo.InteractionResponse{Type: discordgo.InteractionResponseChannelMessageWithSource, Data: &discordgo.InteractionResponseData{Content: "Unable to load guild settings. Please try again.", Flags: discordgo.MessageFlagsEphemeral}}
+	}
 
 	// TODO respond properly for commands that *can* be performed in DMs. Such as minimal stats queries, help, info, etc
 	// NOTE: difference between i.Member.User (Server/Guild chat) vs i.User (DMs)

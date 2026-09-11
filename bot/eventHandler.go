@@ -47,6 +47,12 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 			// anytime we get a notification message, continue pulling messages off the list until there are no more
 			for {
+				// Do not consume queued game events while settings are unavailable.
+				sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, guildID)
+				if settingsErr != nil {
+					log.Println(settingsErr)
+					break
+				}
 				job, err := task.PopJob(ctx, bot.RedisInterface.client, connectCode)
 				if errors.Is(err, redis.Nil) {
 					break
@@ -66,7 +72,6 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 					Payload:   job.Payload.(string),
 				}
 				correlatedUserID := ""
-				sett := bot.StorageInterface.GetGuildSettings(guildID)
 
 				switch job.JobType {
 				case task.ConnectionJob:
@@ -101,7 +106,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 						break
 					}
 
-					bot.processTransition(game.Phase(num), dgsRequest)
+					bot.processTransition(game.Phase(num), dgsRequest, sett)
 				case task.PlayerJob:
 					var player game.Player
 					err = json.Unmarshal([]byte(job.Payload.(string)), &player)
@@ -351,8 +356,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 	return false, "", nil, nil
 }
 
-func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest) {
-	sett := bot.StorageInterface.GetGuildSettings(dgsRequest.GuildID)
+func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest, sett *settings.GuildSettings) {
 	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
 	for lock == nil {
 		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)

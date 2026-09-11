@@ -12,6 +12,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -250,7 +251,7 @@ func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
 // GetGuildSettings godoc
 // @Summary Get Guild Settings
 // @Schemes GET
-// @Description Get the settings for a given guild
+// @Description Get the settings for a given guild. Guilds that never changed a setting get the defaults.
 // @Security BasicAuth
 // @Tags guild
 // @Accept json
@@ -258,8 +259,7 @@ func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
 // @Param guildID query string true "Guild ID"
 // @Success 200 {object} settings.GuildSettings
 // @Failure 400 {string} HttpError
-// @Failure 404 {string} HttpError
-// @Failure 500 {object} nil
+// @Failure 503 {string} HttpError
 // @Router /guild/settings [get]
 func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -272,15 +272,15 @@ func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
 			return
 		}
 
-		exists := bot.StorageInterface.GuildSettingsExists(guildID)
-		if !exists {
-			c.JSON(http.StatusBadRequest, HttpError{
-				StatusCode: http.StatusNotFound,
-				Error:      "No settings found for that GuildID",
+		settings, err := bot.StorageInterface.LoadGuildSettings(c.Request.Context(), guildID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{
+				StatusCode: http.StatusServiceUnavailable,
+				Error:      "Unable to load guild settings",
 			})
 			return
 		}
-		settings := bot.StorageInterface.GetGuildSettings(guildID)
 		c.JSON(http.StatusOK, settings)
 	}
 }
