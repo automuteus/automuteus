@@ -1,6 +1,6 @@
 # goreleaser is only used to create the GitHub release page with a changelog.
 # No binaries are published: every component ships as a container image
-# (automuteus/automuteus and automuteus/galactus, built by .github/workflows/docker.yml).
+# (automuteus/automuteus, automuteus/galactus and automuteus/api, built by .github/workflows/docker.yml).
 version: 2
 
 builds:
@@ -23,3 +23,4 @@ release:
     ## Container images
     - `automuteus/automuteus:{{ .Version }}`
     - `automuteus/galactus:{{ .Version }}`
+    - `automuteus/api:{{ .Version }}`

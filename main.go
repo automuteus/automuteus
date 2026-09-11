@@ -2,17 +2,8 @@ package main
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/bot/command"
-	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/capture"
-	"github.com/automuteus/automuteus/v8/pkg/locale"
-	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 	"io"
 	"log"
 	"math/rand"
@@ -24,19 +15,25 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
+	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
+	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v8"
+
 	"github.com/automuteus/automuteus/v8/storage"
 
 	"github.com/automuteus/automuteus/v8/bot"
 )
 
 var (
-	version = "v8.1.0"
+	version = "v9.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
-
-//go:embed storage/postgres.sql
-var postgresFileContents string
 
 const (
 	DefaultURL                   = "http://localhost:8123"
@@ -156,18 +153,12 @@ func discordMainWrapper() error {
 	}
 
 	defer psql.Pool.Close()
-	if !isOfficial {
-		if err := psql.ExecFromString(postgresFileContents); err != nil {
-			return fmt.Errorf("apply base Postgres schema: %w", err)
-		}
-	}
-	// Settings schema is independent of the base statistics schema and applies
-	// synchronously for both official and self-hosted deployments.
+	// The API and bot can start concurrently against a fresh self-hosted DB.
 	schemaCtx, cancelSchema := context.WithTimeout(context.Background(), time.Minute)
-	err = storage.ApplyGuildSettingsSchema(schemaCtx, psql.Pool)
+	err = storage.ApplySchemas(schemaCtx, psql.Pool, isOfficial)
 	cancelSchema()
 	if err != nil {
-		return fmt.Errorf("apply guild settings schema: %w", err)
+		return err
 	}
 	// Settings that are still in Redis from older versions are moved to
 	// Postgres the first time each guild is read.
@@ -224,8 +215,6 @@ func discordMainWrapper() error {
 	server.GlobalReady = true
 
 	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
-
-	go bots[0].StartAPIServer("5000")
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}

@@ -1,113 +1,18 @@
+basePath: /
 definitions:
-  amongus.GameData:
-    properties:
-      map:
-        $ref: '#/definitions/game.PlayMap'
-      phase:
-        $ref: '#/definitions/game.Phase'
-      playerData:
-        additionalProperties:
-          $ref: '#/definitions/amongus.PlayerData'
-        description: indexed by amongusname
-        type: object
-      region:
-        type: string
-      room:
-        type: string
-    type: object
-  amongus.PlayerData:
-    properties:
-      color:
-        type: integer
-      isAlive:
-        type: boolean
-      name:
-        type: string
-    type: object
-  bot.GameState:
-    properties:
-      amongUsData:
-        $ref: '#/definitions/amongus.GameData'
-      connectCode:
-        type: string
-      gameStateMessage:
-        $ref: '#/definitions/bot.GameStateMessage'
-      guildID:
-        type: string
-      linked:
-        type: boolean
-      matchID:
-        type: integer
-      matchStartUnix:
-        type: integer
-      running:
-        type: boolean
-      subscribed:
-        type: boolean
-      userData:
-        $ref: '#/definitions/bot.UserDataSet'
-      voiceChannel:
-        type: string
-    type: object
-  bot.GameStateMessage:
-    properties:
-      creationTimeUnix:
-        type: integer
-      leaderID:
-        type: string
-      messageChannelID:
-        type: string
-      messageID:
-        type: string
-    type: object
-  bot.HttpError:
+  api.HttpError:
     properties:
       error:
         type: string
       statusCode:
         type: integer
     type: object
-  bot.RoomCodeResponse:
-    properties:
-      connectCode:
-        type: string
-      roomCode:
-        type: string
-    type: object
-  bot.User:
-    properties:
-      Nick:
-        type: string
-      UserID:
-        type: string
-      UserName:
-        type: string
-    type: object
-  bot.UserData:
-    properties:
-      PlayerName:
-        type: string
-      ShouldBeDeaf:
-        type: boolean
-      ShouldBeMute:
-        type: boolean
-      User:
-        $ref: '#/definitions/bot.User'
-    type: object
-  bot.UserDataSet:
-    additionalProperties:
-      $ref: '#/definitions/bot.UserData'
-    type: object
-  command.BotInfo:
+  api.Info:
     properties:
       activeGames:
         type: integer
       commit:
         type: string
-      shardCount:
-        type: integer
-      shardID:
-        type: integer
       totalGames:
         type: integer
       totalGuilds:
@@ -115,6 +20,13 @@ definitions:
       totalUsers:
         type: integer
       version:
+        type: string
+    type: object
+  api.RoomCodeResponse:
+    properties:
+      connectCode:
+        type: string
+      roomCode:
         type: string
     type: object
   discordgo.ApplicationCommand:
@@ -288,42 +200,6 @@ definitions:
           for the delay
         type: object
     type: object
-  game.Phase:
-    enum:
-    - 0
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
-    type: integer
-    x-enum-varnames:
-    - LOBBY
-    - TASKS
-    - DISCUSS
-    - MENU
-    - GAMEOVER
-    - UNINITIALIZED
-  game.PlayMap:
-    enum:
-    - 0
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
-    - 10
-    type: integer
-    x-enum-comments:
-      DLEKS: Skeld backwards
-    x-enum-varnames:
-    - SKELD
-    - MIRA
-    - POLUS
-    - DLEKS
-    - AIRSHIP
-    - FUNGLE
-    - EMPTYMAP
   game.VoiceRules:
     properties:
       deafRules:
@@ -401,6 +277,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: AutoMuteUs API, served independently of Discord bot shards.
+  title: AutoMuteUs
+  version: dev
 paths:
   /bot/commands:
     get:
@@ -430,7 +309,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/command.BotInfo'
+            $ref: '#/definitions/api.Info'
       summary: Get Bot Info
       tags:
       - bot
@@ -452,19 +331,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bot.RoomCodeResponse'
+            $ref: '#/definitions/api.RoomCodeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/bot.HttpError'
+            $ref: '#/definitions/api.HttpError'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/bot.HttpError'
+            $ref: '#/definitions/api.HttpError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/bot.HttpError'
+            $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
       summary: Get Room Code
@@ -490,13 +369,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Stored game state, using the bot's JSON representation
           schema:
-            $ref: '#/definitions/bot.GameState'
+            additionalProperties: true
+            type: object
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/api.HttpError'
         "500":
           description: Internal Server Error
       security:
@@ -525,11 +405,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/api.HttpError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/bot.HttpError'
+            $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
       summary: Get Guild Premium
@@ -557,11 +437,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/api.HttpError'
         "503":
           description: Service Unavailable
           schema:
-            type: string
+            $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
       summary: Get Guild Settings
@@ -571,11 +451,14 @@ paths:
     get:
       description: Return html that open AmongUsCapture
       produces:
-      - '{string} string "text/html"'
+      - text/html
       responses:
         "200":
           description: text/html
           schema:
             type: string
       summary: Get AmongUsCapture
+securityDefinitions:
+  BasicAuth:
+    type: basic
 swagger: "2.0"

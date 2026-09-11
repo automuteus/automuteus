@@ -5,6 +5,9 @@
     <a href="https://github.com/automuteus/automuteus/actions?query=build" alt="Build Status">
         <img src="https://github.com/automuteus/automuteus/workflows/build/badge.svg" />
     </a>
+    <a href="https://codecov.io/gh/automuteus/automuteus" alt="Code Coverage">
+        <img src="https://codecov.io/gh/automuteus/automuteus/graph/badge.svg" />
+    </a>
     <a href="https://github.com/automuteus/automuteus/releases/latest">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/automuteus/automuteus" >
     </a>
@@ -138,16 +141,63 @@ Please refer to the instructions on [automuteus/deploy](https://github.com/autom
 
 ## Repository layout
 
-This repository builds two binaries:
+This repository builds three service binaries:
 
 * **AutoMuteUs** (`main.go`): the Discord bot itself. Published as `automuteus/automuteus` on Docker Hub.
 * **Galactus** (`cmd/galactus`): the socket.io broker that capture clients connect to. It relays game events to
   the bot over Redis, so the bot can be upgraded or restarted without severing capture connections. Published as
   `automuteus/galactus` on Docker Hub (`Dockerfile.galactus`).
+* **API** (`cmd/api`): HTTP endpoints for the website, settings, game state, and capture links.
+  Published as `automuteus/api` (`Dockerfile.api`), using the same release tag and commit as the bot and Galactus.
 
 ```sh
 go build .               # bot
 go build ./cmd/galactus  # broker
+go build ./cmd/api       # HTTP API
+```
+
+### Upgrading: standalone API
+
+The bot no longer serves HTTP on port 5000. Run the new API image against the
+same Redis and Postgres instances, and route existing API traffic to it. It needs
+no Discord bot token or gateway connection. Routes and Basic Auth are unchanged.
+`/bot/info` reports the API build's version/commit and the shared guild, game and
+user counts. It no longer includes `shardID` or `shardCount`, since the API is not
+tied to a shard; the bot's `/info` Discord command continues to describe its own shard.
+
+Start the API, verify `/ready`, and switch the API Service/reverse proxy before
+rolling out bot images that remove the embedded API. Compose users should update
+the sibling `deploy` repository, stop the old bot container to release its public
+port, then recreate the stack; the existing public `API_PORT` mapping now belongs
+to the `api` service. Use a release that publishes
+all three images. The API and bot can initialize a fresh self-hosted database in
+either order; schema application is serialized and idempotent. Official mode
+continues to expect an existing statistics schema.
+
+The API uses the same guild-settings reader as the bot, including lazy migration
+of old Redis records. Game state is returned directly from the shared Redis JSON.
+Bot health checks and Prometheus endpoints remain on the bot.
+
+### API environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REDIS_ADDR` | yes | Shared Redis address, using DB 0. |
+| `REDIS_USER`, `REDIS_PASS` | no | Redis credentials, when applicable. |
+| `POSTGRES_ADDR`, `POSTGRES_USER`, `POSTGRES_PASS` | yes | Shared Postgres connection settings. |
+| `API_PORT` | no | Executable's listening port; defaults to `5000`. Compose maps its host `API_PORT` to container `SERVICE_PORT`. |
+| `API_SERVER_URL` | no | Public API URL for Swagger; defaults to `http://localhost`. Also retain this on bots for capture links. |
+| `API_ADMIN_PASS` | no | Existing Basic Auth password for user `admin`; defaults to `automuteus`. |
+| `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
+| `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
+
+`/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
+on the API port. The process drains HTTP requests on SIGTERM/SIGINT.
+
+Regenerate Swagger documentation with the generator matching the Go dependency:
+
+```sh
+CGO_ENABLED=0 go run github.com/swaggo/swag/cmd/swag@v1.8.10 init -g cmd/api/main.go --parseDependency true --parseInternal
 ```
 
 ### Upgrading: guild settings moved from Redis to Postgres

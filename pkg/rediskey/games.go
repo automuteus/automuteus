@@ -11,32 +11,27 @@ import (
 
 const TotalGameExpiration = time.Minute * 5
 
-func GetTotalGames(ctx context.Context, client *redis.Client) int64 {
-	v, err := client.Get(ctx, TotalGames).Int64()
-	if err == nil {
-		return v
-	}
-	return NotFound
+// ActiveGameTimeoutSeconds is shared by bot liveness tracking and API counts.
+const ActiveGameTimeoutSeconds = 900
+
+// CountTotalGames is shared by the bot's /info command and the HTTP API so both
+// report the same cached figure.
+func CountTotalGames(ctx context.Context, client *redis.Client, pool *pgxpool.Pool) (int64, error) {
+	return cachedCount(ctx, client, pool, TotalGames, "SELECT COUNT(*) FROM games WHERE start_time != -1 AND end_time != -1", TotalGameExpiration)
+}
+
+// CountActiveGames counts games that reported activity within the last secs seconds.
+func CountActiveGames(ctx context.Context, client *redis.Client, secs int64) (int64, error) {
+	now := time.Now()
+	before := now.Add(-(time.Second * time.Duration(secs)))
+	return client.ZCount(ctx, ActiveGamesZSet, fmt.Sprintf("%d", before.Unix()), fmt.Sprintf("%d", now.Unix())).Result()
 }
 
 func GetActiveGames(ctx context.Context, client *redis.Client, secs int64) int64 {
-	now := time.Now()
-	before := now.Add(-(time.Second * time.Duration(secs)))
-	count, err := client.ZCount(ctx, ActiveGamesZSet, fmt.Sprintf("%d", before.Unix()), fmt.Sprintf("%d", now.Unix())).Result()
+	count, err := CountActiveGames(ctx, client, secs)
 	if err != nil {
 		log.Println(err)
 		return 0
 	}
 	return count
-}
-
-func RefreshTotalGames(ctx context.Context, client *redis.Client, pool *pgxpool.Pool) int64 {
-	v := queryTotalGames(ctx, pool)
-	if v != NotFound {
-		err := client.Set(ctx, TotalGames, v, TotalGameExpiration).Err()
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	return v
 }

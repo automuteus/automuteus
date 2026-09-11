@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "AutoMuteUs API, served independently of Discord bot shards.",
+        "title": "AutoMuteUs",
+        "contact": {},
+        "version": "dev"
     },
+    "basePath": "/",
     "paths": {
         "/bot/commands": {
             "get": {
@@ -47,7 +51,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/command.BotInfo"
+                            "$ref": "#/definitions/api.Info"
                         }
                     }
                 }
@@ -84,25 +88,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bot.RoomCodeResponse"
+                            "$ref": "#/definitions/api.RoomCodeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/bot.HttpError"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/bot.HttpError"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/bot.HttpError"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     }
                 }
@@ -144,15 +148,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Stored game state, using the bot's JSON representation",
                         "schema": {
-                            "$ref": "#/definitions/bot.GameState"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     },
                     "500": {
@@ -198,13 +203,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/bot.HttpError"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     }
                 }
@@ -247,13 +252,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/api.HttpError"
                         }
                     }
                 }
@@ -263,7 +268,7 @@
             "get": {
                 "description": "Return html that open AmongUsCapture",
                 "produces": [
-                    "{string} string \"text/html\""
+                    "text/html"
                 ],
                 "summary": "Get AmongUsCapture",
                 "responses": {
@@ -278,100 +283,7 @@
         }
     },
     "definitions": {
-        "amongus.GameData": {
-            "type": "object",
-            "properties": {
-                "map": {
-                    "$ref": "#/definitions/game.PlayMap"
-                },
-                "phase": {
-                    "$ref": "#/definitions/game.Phase"
-                },
-                "playerData": {
-                    "description": "indexed by amongusname",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/amongus.PlayerData"
-                    }
-                },
-                "region": {
-                    "type": "string"
-                },
-                "room": {
-                    "type": "string"
-                }
-            }
-        },
-        "amongus.PlayerData": {
-            "type": "object",
-            "properties": {
-                "color": {
-                    "type": "integer"
-                },
-                "isAlive": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "bot.GameState": {
-            "type": "object",
-            "properties": {
-                "amongUsData": {
-                    "$ref": "#/definitions/amongus.GameData"
-                },
-                "connectCode": {
-                    "type": "string"
-                },
-                "gameStateMessage": {
-                    "$ref": "#/definitions/bot.GameStateMessage"
-                },
-                "guildID": {
-                    "type": "string"
-                },
-                "linked": {
-                    "type": "boolean"
-                },
-                "matchID": {
-                    "type": "integer"
-                },
-                "matchStartUnix": {
-                    "type": "integer"
-                },
-                "running": {
-                    "type": "boolean"
-                },
-                "subscribed": {
-                    "type": "boolean"
-                },
-                "userData": {
-                    "$ref": "#/definitions/bot.UserDataSet"
-                },
-                "voiceChannel": {
-                    "type": "string"
-                }
-            }
-        },
-        "bot.GameStateMessage": {
-            "type": "object",
-            "properties": {
-                "creationTimeUnix": {
-                    "type": "integer"
-                },
-                "leaderID": {
-                    "type": "string"
-                },
-                "messageChannelID": {
-                    "type": "string"
-                },
-                "messageID": {
-                    "type": "string"
-                }
-            }
-        },
-        "bot.HttpError": {
+        "api.HttpError": {
             "type": "object",
             "properties": {
                 "error": {
@@ -382,55 +294,7 @@
                 }
             }
         },
-        "bot.RoomCodeResponse": {
-            "type": "object",
-            "properties": {
-                "connectCode": {
-                    "type": "string"
-                },
-                "roomCode": {
-                    "type": "string"
-                }
-            }
-        },
-        "bot.User": {
-            "type": "object",
-            "properties": {
-                "Nick": {
-                    "type": "string"
-                },
-                "UserID": {
-                    "type": "string"
-                },
-                "UserName": {
-                    "type": "string"
-                }
-            }
-        },
-        "bot.UserData": {
-            "type": "object",
-            "properties": {
-                "PlayerName": {
-                    "type": "string"
-                },
-                "ShouldBeDeaf": {
-                    "type": "boolean"
-                },
-                "ShouldBeMute": {
-                    "type": "boolean"
-                },
-                "User": {
-                    "$ref": "#/definitions/bot.User"
-                }
-            }
-        },
-        "bot.UserDataSet": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/bot.UserData"
-            }
-        },
-        "command.BotInfo": {
+        "api.Info": {
             "type": "object",
             "properties": {
                 "activeGames": {
@@ -438,12 +302,6 @@
                 },
                 "commit": {
                     "type": "string"
-                },
-                "shardCount": {
-                    "type": "integer"
-                },
-                "shardID": {
-                    "type": "integer"
                 },
                 "totalGames": {
                     "type": "integer"
@@ -455,6 +313,17 @@
                     "type": "integer"
                 },
                 "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RoomCodeResponse": {
+            "type": "object",
+            "properties": {
+                "connectCode": {
+                    "type": "string"
+                },
+                "roomCode": {
                     "type": "string"
                 }
             }
@@ -687,49 +556,6 @@
                 }
             }
         },
-        "game.Phase": {
-            "type": "integer",
-            "enum": [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5
-            ],
-            "x-enum-varnames": [
-                "LOBBY",
-                "TASKS",
-                "DISCUSS",
-                "MENU",
-                "GAMEOVER",
-                "UNINITIALIZED"
-            ]
-        },
-        "game.PlayMap": {
-            "type": "integer",
-            "enum": [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                10
-            ],
-            "x-enum-comments": {
-                "DLEKS": "Skeld backwards"
-            },
-            "x-enum-varnames": [
-                "SKELD",
-                "MIRA",
-                "POLUS",
-                "DLEKS",
-                "AIRSHIP",
-                "FUNGLE",
-                "EMPTYMAP"
-            ]
-        },
         "game.VoiceRules": {
             "type": "object",
             "properties": {
@@ -838,6 +664,11 @@
                     "$ref": "#/definitions/game.VoiceRules"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "basic"
         }
     }
 }
