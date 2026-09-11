@@ -37,7 +37,7 @@ func loadFixture(t *testing.T) []byte {
 	return data
 }
 
-// TestGuildSettings_DecodeV8Fixture decodes a settings blob exactly the way storage.GetGuildSettings does (into a
+// TestGuildSettings_DecodeV8Fixture decodes a settings blob exactly the way the storage package's legacy Redis reader does (into a
 // zero-value struct, not MakeGuildSettings) and checks every field made it through. If this fails after a struct
 // change, existing guilds' settings in Redis would be silently altered on the next read.
 func TestGuildSettings_DecodeV8Fixture(t *testing.T) {

@@ -150,6 +150,14 @@ go build .               # bot
 go build ./cmd/galactus  # broker
 ```
 
+### Upgrading: guild settings moved from Redis to Postgres
+
+Guild settings are now stored in Postgres instead of Redis. No manual step is
+needed: each guild's settings are moved the first time the new version reads
+them. Guilds that are never read again can be moved with the optional sweep in
+`cmd/migrate-guild-settings`. See
+[storage/GUILD_SETTINGS_MIGRATION.md](storage/GUILD_SETTINGS_MIGRATION.md).
+
 ### Galactus environment variables
 
 | Variable      | Required | Description                                                                   |

@@ -30,7 +30,11 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		premTier = prem
 	}
 
-	sett := bot.StorageInterface.GetGuildSettings(m.GuildID)
+	sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, m.GuildID)
+	if settingsErr != nil {
+		log.Println(settingsErr)
+		return
+	}
 	gsr := GameStateRequest{
 		GuildID:      m.GuildID,
 		VoiceChannel: m.ChannelID,

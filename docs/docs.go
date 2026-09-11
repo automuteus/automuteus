@@ -229,7 +229,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Get the settings for a given guild",
+                "description": "Get the settings for a given guild. Guilds that never changed a setting get the defaults.",
                 "consumes": [
                     "application/json"
                 ],
@@ -262,14 +262,11 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "type": "string"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
                     }
                 }
             }

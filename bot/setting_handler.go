@@ -77,9 +77,12 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 		// TODO need to consider if the settings are too long? Is that possible?
 		return fmt.Sprintf("```JSON\n%s\n```", jBytes)
 	case setting.Reset:
-		sett = settings.MakeGuildSettings()
-		sendMsg = "Resetting guild settings to default values"
-		isValid = true
+		// A guild with no stored settings uses the defaults, so reset is a delete.
+		if err := bot.StorageInterface.DeleteGuildSettings(guildID); err != nil {
+			log.Println(err)
+			return "Unable to save guild settings. Please try again."
+		}
+		return "Resetting guild settings to default values"
 	case setting.List:
 		fallthrough
 	default:
@@ -90,6 +93,7 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 		err := bot.StorageInterface.SetGuildSettings(guildID, sett)
 		if err != nil {
 			log.Println(err)
+			return "Unable to save guild settings. Please try again."
 		}
 	}
 	return sendMsg
