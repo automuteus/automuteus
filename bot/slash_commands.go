@@ -351,7 +351,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			bot.RedisInterface.SetDiscordGameState(dgs, lock)
 			// if we paused the game, unmute/undeafen all players
 			if !dgs.Running {
-				err = bot.applyToAll(dgs, false, false)
+				err = bot.applyToAll(dgs, bot.premiumTier(i.GuildID), false, false)
 			}
 			bot.DispatchRefreshOrEdit(dgs, gsr, sett)
 			if err != nil {
@@ -374,7 +374,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				delete(bot.EndGameChannels, dgs.ConnectCode)
 
-				err = bot.applyToAll(dgs, false, false)
+				err = bot.applyToAll(dgs, bot.premiumTier(i.GuildID), false, false)
 				if err != nil {
 					return command.PrivateErrorResponse(command.End.Name, err, sett)
 				}
@@ -526,7 +526,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				// admins can always unmute no matter what
 				if isAdmin {
-					err = bot.applyToSingle(&dgs, id, false, false)
+					err = bot.applyToSingle(&dgs, bot.premiumTier(i.GuildID), id, false, false)
 					if err != nil {
 						return command.PrivateErrorResponse(command.Unmute, err, sett)
 					}
@@ -542,7 +542,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 						// no game is happening in this voice channel, so we're safe to unmute
 						if bot.RedisInterface.getDiscordGameStateKey(gsr) == "" {
-							err = bot.applyToSingle(&dgs, id, false, false)
+							err = bot.applyToSingle(&dgs, bot.premiumTier(i.GuildID), id, false, false)
 							if err != nil {
 								return command.PrivateErrorResponse(command.Unmute, err, sett)
 							}
@@ -557,7 +557,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			} else if action == command.UnmuteAll {
 				dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 				if dgs != nil {
-					err = bot.applyToAll(dgs, false, false)
+					err = bot.applyToAll(dgs, bot.premiumTier(i.GuildID), false, false)
 					if err != nil {
 						return command.PrivateErrorResponse(command.UnmuteAll, err, sett)
 					}

@@ -42,7 +42,16 @@ type Bot struct {
 
 	PrimarySession *discordgo.Session
 
-	TokenProvider *tokenprovider.TokenProvider
+	// seams used by the game-event path; see deps.go
+	store         GameStateStore
+	settings      SettingsSource
+	voice         VoiceModifier
+	premiumSource PremiumSource
+	recorder      GameRecorder
+	discord       DiscordClient
+	guilds        GuildReader
+	metrics       RequestMetrics
+	sleep         func(time.Duration)
 
 	TopGGClient *dbl.Client
 
@@ -89,6 +98,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		logPath:           logPath,
 		captureTimeout:    GameTimeoutSeconds,
 	}
+	bot.useProductionDeps(dg, redisInterface, storageInterface, psql)
 	dg.LogLevel = discordgo.LogInformational
 	installDiscordgoLogger()
 
@@ -209,9 +219,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				GuildID:     m.Guild.ID,
 				ConnectCode: connCode,
 			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 			for lock == nil {
-				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+				lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 			}
 			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
@@ -219,7 +229,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 				dgs.Subscribed = true
 
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.store.SetDiscordGameState(dgs, lock)
 
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
@@ -245,18 +255,18 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	// lock because we don't want anyone else modifying while we delete
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 	}
 
-	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
+	deleted := dgs.DeleteGameStateMsg(bot.discord, true)
 	if deleted {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 
 	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
@@ -264,7 +274,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	bot.RedisInterface.DeleteDiscordGameState(dgs)
 }
 
-func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
+func MessageDeleteWorker(s DiscordClient, msgChannelID, msgID string, waitDur time.Duration) {
 	log.Printf("Message worker is sleeping for %s before deleting message", waitDur.String())
 	time.Sleep(waitDur)
 	err := s.ChannelMessageDelete(msgChannelID, msgID)
@@ -274,9 +284,9 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 }
 
 func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) bool {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 	}
 
 	// don't try to edit this message, because we're about to delete it
@@ -288,16 +298,16 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 		return false // no-op; no active game to refresh
 	}
 
-	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, false) // delete the old message
-	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+	deleted := dgs.DeleteGameStateMsg(bot.discord, false) // delete the old message
+	created := dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 	// if for whatever reason the message failed to create, this would catch it
 	return dgs.GameStateMsg.Exists()
 }

@@ -2,10 +2,10 @@ package bot
 
 import (
 	"context"
+	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/task"
-	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"strconv"
@@ -20,12 +20,7 @@ const (
 	DeadPriority  HandlePriority = 2
 )
 
-func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) error {
-	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
-	premTier := premium.FreeTier
-	if !premium.IsExpired(prem, days) {
-		premTier = prem
-	}
+func (bot *Bot) applyToSingle(dgs *GameState, premTier premium.Tier, userID string, mute, deaf bool) error {
 	uid, _ := strconv.ParseUint(userID, 10, 64)
 	req := task.UserModifyRequest{
 		Premium: premTier,
@@ -38,11 +33,11 @@ func (bot *Bot) applyToSingle(dgs *GameState, userID string, mute, deaf bool) er
 		},
 	}
 	// nil lock because this is an override; we don't care about legitimately obtaining the lock
-	return bot.TokenProvider.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+	return bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 }
 
-func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
-	g, err := bot.PrimarySession.State.Guild(dgs.GuildID)
+func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf bool) error {
+	g, err := bot.guilds.Guild(dgs.GuildID)
 	if err != nil {
 		return err
 	}
@@ -54,7 +49,7 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 		if err != nil {
 			// the User doesn't exist in our userdata cache; add them
 			added := false
-			userData, added = dgs.checkCacheAndAddUser(g, bot.PrimarySession, voiceState.UserID)
+			userData, added = dgs.checkCacheAndAddUser(g, bot.discord, voiceState.UserID)
 			if !added {
 				continue
 			}
@@ -77,17 +72,12 @@ func (bot *Bot) applyToAll(dgs *GameState, mute, deaf bool) error {
 		}
 	}
 	if len(users) > 0 {
-		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
-		premTier := premium.FreeTier
-		if !premium.IsExpired(prem, days) {
-			premTier = prem
-		}
 		req := task.UserModifyRequest{
 			Premium: premTier,
 			Users:   users,
 		}
 		// nil lock because this is an override; we don't care about legitimately obtaining the lock
-		return bot.TokenProvider.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+		return bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
 	}
 	return nil
 }
@@ -155,14 +145,14 @@ func computeVoiceChanges(dgs *GameState, sett *settings.GuildSettings, voiceStat
 }
 
 // handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.GuildSettings, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier premium.Tier, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
 
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 	}
 
-	g, err := sess.State.Guild(dgs.GuildID)
+	g, err := bot.guilds.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
 		lock.Release(ctx)
@@ -172,29 +162,23 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 	// make sure every member currently in voice is in our user cache before deciding on changes
 	for _, voiceState := range g.VoiceStates {
 		if _, err := dgs.GetUser(voiceState.UserID); err != nil {
-			dgs.checkCacheAndAddUser(g, sess, voiceState.UserID)
+			dgs.checkCacheAndAddUser(g, bot.discord, voiceState.UserID)
 		}
 	}
 
 	users, priorityRequests := computeVoiceChanges(dgs, sett, g.VoiceStates, handlePriority)
 
 	// we relinquish the lock while we wait
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 
-	voiceLock := bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
+	voiceLock := bot.store.LockVoiceChanges(dgs.ConnectCode, time.Second*time.Duration(delay+1))
 
 	if delay > 0 {
 		log.Printf("Sleeping for %d seconds before applying changes to users\n", delay)
-		time.Sleep(time.Second * time.Duration(delay))
+		bot.sleep(time.Second * time.Duration(delay))
 	}
 
 	if dgs.Running && len(users) > 0 {
-		prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, dgs.GuildID, "")
-		premTier := premium.FreeTier
-		if !premium.IsExpired(prem, days) {
-			premTier = prem
-		}
-
 		if priorityRequests > 0 {
 			req := task.UserModifyRequest{
 				Premium: premTier,
@@ -235,6 +219,6 @@ func (bot *Bot) handleTrackedMembers(sess *discordgo.Session, sett *settings.Gui
 	}
 }
 
-func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserModifyRequest, lock *redislock.Lock) error {
-	return bot.TokenProvider.ModifyUsers(guildID, connectCode, req, lock)
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserModifyRequest, lock lock.Lock) error {
+	return bot.voice.ModifyUsers(guildID, connectCode, req, lock)
 }

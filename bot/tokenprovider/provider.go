@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/automuteus/automuteus/v8/pkg/token"
-	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/exp/constraints"
@@ -156,7 +156,7 @@ const DefaultMaxWorkers = 8
 
 var UnresponsiveCaptureBlacklistDuration = time.Minute * time.Duration(5)
 
-func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock *redislock.Lock) error {
+func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock lock.Lock) error {
 	if voicelock != nil {
 		defer voicelock.Release(context.Background())
 	}
@@ -177,7 +177,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 		RateLimit: 0,
 	}
 	uniqueTokensUsed := make(map[string]struct{})
-	lock := sync.Mutex{}
+	mu := sync.Mutex{}
 	tokenLock := sync.RWMutex{}
 
 	var latestErr error
@@ -198,9 +198,9 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 					}
 				}
 				if hToken != "" {
-					lock.Lock()
+					mu.Lock()
 					mdsc.Worker++
-					lock.Unlock()
+					mu.Unlock()
 
 					tokenLock.Lock()
 					uniqueTokensUsed[hToken] = struct{}{}
@@ -208,22 +208,22 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 				} else {
 					success := tokenProvider.attemptOnCaptureBot(guildID, connectCode, gid, req)
 					if success {
-						lock.Lock()
+						mu.Lock()
 						mdsc.Capture++
-						lock.Unlock()
+						mu.Unlock()
 					} else {
 						log.Printf("Applying mute=%v, deaf=%v using primary bot\n", req.Mute, req.Deaf)
 						err := task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userIDStr, req.Mute, req.Deaf)
 						if err != nil {
-							lock.Lock()
+							mu.Lock()
 							latestErr = err
-							lock.Unlock()
+							mu.Unlock()
 							log.Println("Error on primary bot:")
 							log.Println(err)
 						} else {
-							lock.Lock()
+							mu.Lock()
 							mdsc.Official++
-							lock.Unlock()
+							mu.Unlock()
 						}
 					}
 				}

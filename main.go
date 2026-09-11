@@ -208,7 +208,7 @@ func discordMainWrapper() error {
 	// initialize the token provider using the first shard's redis client and primary session
 	bots[0].InitTokenProvider(tokenProvider)
 	for i := 0; i < len(shards); i++ {
-		bots[i].TokenProvider = tokenProvider
+		bots[i].SetTokenProvider(tokenProvider)
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
 	// indicate to Kubernetes that we're ready to start receiving traffic

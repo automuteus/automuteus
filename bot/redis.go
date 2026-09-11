@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/bsm/redislock"
@@ -89,7 +90,7 @@ type GameStateRequest struct {
 	ConnectCode  string
 }
 
-func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) *redislock.Lock {
+func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur time.Duration) lock.Lock {
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(ctx, rediskey.VoiceChangesForGameCodeLock(connectCode), dur, &redislock.Options{
 		RetryStrategy: redislock.LimitRetry(redislock.LinearBackoff(time.Millisecond*LinearBackoffMs), MaxRetries),
@@ -120,7 +121,7 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 	return dgs
 }
 
-func (redisInterface RedisInterface) GetDiscordGameStateAndLockRetries(gsr GameStateRequest, retries int) (*redislock.Lock, *GameState) {
+func (redisInterface RedisInterface) GetDiscordGameStateAndLockRetries(gsr GameStateRequest, retries int) (lock.Lock, *GameState) {
 	lock, state := redisInterface.GetDiscordGameStateAndLock(gsr)
 	var i int
 	for lock == nil && i < retries {
@@ -130,7 +131,7 @@ func (redisInterface RedisInterface) GetDiscordGameStateAndLockRetries(gsr GameS
 	return lock, state
 }
 
-func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (*redislock.Lock, *GameState) {
+func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRequest) (lock.Lock, *GameState) {
 	key := redisInterface.getDiscordGameStateKey(gsr)
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(ctx, key+":lock", time.Millisecond*LockTimeoutMs, &redislock.Options{
@@ -185,7 +186,7 @@ func (redisInterface *RedisInterface) CheckPointer(pointer string) string {
 	return key
 }
 
-func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock *redislock.Lock) {
+func (redisInterface *RedisInterface) SetDiscordGameState(data *GameState, lock lock.Lock) {
 	if data == nil {
 		if lock != nil {
 			lock.Release(ctx)
@@ -433,7 +434,7 @@ func (redisInterface *RedisInterface) setUsernameOrUserIDMappings(guildID, key s
 	return err
 }
 
-func (redisInterface *RedisInterface) LockSnowflake(snowflake string) *redislock.Lock {
+func (redisInterface *RedisInterface) LockSnowflake(snowflake string) lock.Lock {
 	locker := redislock.New(redisInterface.client)
 	lock, err := locker.Obtain(ctx, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs, nil)
 	if errors.Is(err, redislock.ErrNotObtained) {

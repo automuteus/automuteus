@@ -9,6 +9,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/pkg/task"
@@ -48,7 +49,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			// anytime we get a notification message, continue pulling messages off the list until there are no more
 			for {
 				// Do not consume queued game events while settings are unavailable.
-				sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, guildID)
+				sett, settingsErr := bot.settings.LoadGuildSettings(ctx, guildID)
 				if settingsErr != nil {
 					log.Println(settingsErr)
 					break
@@ -64,159 +65,20 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 				bot.refreshGameLiveness(connectCode)
 				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
 
-				gameEvent := storage.PostgresGameEvent{
-					GameID:    -1,
-					UserID:    nil,
-					EventTime: int32(time.Now().Unix()),
-					EventType: int16(job.JobType),
-					Payload:   job.Payload.(string),
-				}
-				correlatedUserID := ""
+				// resolve premium once per job; every mute/deafen issued while handling it uses the same tier
+				premTier := bot.premiumTier(guildID)
 
-				switch job.JobType {
-				case task.ConnectionJob:
-					lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					for lock == nil {
-						lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-					}
-					if job.Payload == "true" {
-						dgs.Linked = true
-					} else {
-						dgs.Linked = false
-					}
-					dgs.ConnectCode = connectCode
-					bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				correlatedUserID := bot.processJob(job, sett, premTier, dgsRequest)
 
-					bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
-					bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
-
-				case task.LobbyJob:
-					var lobby game.Lobby
-					err = json.Unmarshal([]byte(job.Payload.(string)), &lobby)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					bot.processLobby(sett, lobby, dgsRequest)
-				case task.StateJob:
-					num, err := strconv.ParseInt(job.Payload.(string), 10, 64)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					bot.processTransition(game.Phase(num), dgsRequest, sett)
-				case task.PlayerJob:
-					var player game.Player
-					err = json.Unmarshal([]byte(job.Payload.(string)), &player)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-					if player.Color > 17 || player.Color < 0 {
-						break
-					}
-
-					shouldHandleTracked, userID, readOnlyDgs, err := bot.processPlayer(sett, player, dgsRequest)
-					if shouldHandleTracked {
-						bot.handleTrackedMembers(bot.PrimarySession, sett, 0, NoPriority, dgsRequest)
-					}
-					if err != nil {
-						bot.PrimarySession.ChannelMessageSend(readOnlyDgs.GameStateMsg.MessageChannelID, sett.LocalizeMessage(&i18n.Message{
-							ID:    "processplayer.error",
-							Other: "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?",
-						},
-							map[string]interface{}{
-								"User":         discord.MentionByUserID(userID),
-								"VoiceChannel": discord.MentionByChannelID(readOnlyDgs.VoiceChannel),
-							},
-						))
-						server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
-					}
-					correlatedUserID = userID
-				case task.GameOverJob:
-					var gameOverResult game.Gameover
-					// log.Println("Successfully identified game over event:")
-					// log.Println(job.Payload)
-					err := json.Unmarshal([]byte(job.Payload.(string)), &gameOverResult)
-					if err != nil {
-						log.Println(err)
-						break
-					}
-
-					// we only need a read-only state for making the game summary message
-					dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
-					if dgs != nil {
-						delTime := sett.GetDeleteGameSummaryMinutes()
-						if delTime != 0 {
-							winners := getWinners(*dgs, gameOverResult)
-							buf := bytes.NewBuffer([]byte{})
-							for i, v := range winners {
-								roleStr := "Crewmate"
-								if v.role == game.ImposterRole {
-									roleStr = "Imposter"
-								}
-								buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
-								if i < len(winners)-1 {
-									buf.WriteRune(',')
-								} else {
-									buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
-								}
-							}
-							embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
-							channelID := dgs.GameStateMsg.MessageChannelID
-							if sett.GetMatchSummaryChannelID() != "" {
-								channelID = sett.GetMatchSummaryChannelID()
-							}
-							msg, err := bot.PrimarySession.ChannelMessageSendEmbed(channelID, embed)
-							if delTime > 0 && err == nil {
-								server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
-								go MessageDeleteWorker(bot.PrimarySession, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
-							} else if err == nil {
-								server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
-							}
-						}
-						go dumpGameToPostgres(*dgs, bot.PostgresInterface, gameOverResult)
-
-						// refresh the game message if the setting is marked (it is not locked, the previous dgs is
-						// read-only). This means the original msg is refreshed, not the gameover message
-						if sett.AutoRefresh {
-							bot.RefreshGameStateMessage(dgsRequest, sett)
-						}
-
-						// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
-						lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-						for lock == nil {
-							lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
-						}
-						dgs.MatchID = -1
-						dgs.MatchStartUnix = -1
-						bot.RedisInterface.SetDiscordGameState(dgs, lock)
-					}
-				}
 				if job.JobType != task.ConnectionJob {
-					go func(userID string, ge storage.PostgresGameEvent) {
-						dgs := bot.RedisInterface.GetReadOnlyDiscordGameState(dgsRequest)
-						if dgs != nil && dgs.MatchID > 0 && dgs.MatchStartUnix > 0 {
-							ge.GameID = dgs.MatchID
-							if userID != "" {
-								num, err := strconv.ParseUint(userID, 10, 64)
-								if err != nil {
-									log.Println(err)
-									ge.UserID = nil
-								} else {
-									ge.UserID = &num
-								}
-								log.Printf("Adding postgres event with user id %d\n", ge.UserID)
-							}
-
-							err := bot.PostgresInterface.AddEvent(&ge)
-							if err != nil {
-								log.Println(err)
-							}
-						}
-					}(correlatedUserID, gameEvent)
+					gameEvent := storage.PostgresGameEvent{
+						GameID:    -1,
+						UserID:    nil,
+						EventTime: int32(time.Now().Unix()),
+						EventType: int16(job.JobType),
+						Payload:   job.Payload.(string),
+					}
+					go bot.recordGameEvent(dgsRequest, correlatedUserID, gameEvent)
 				}
 			}
 
@@ -242,6 +104,155 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			bot.forceEndGame(dgsRequest)
 			return
 		}
+	}
+}
+
+// processJob applies a single capture event to the game identified by dgsRequest, issuing whatever mutes, message
+// edits, and match-history writes it implies. It returns the Discord user ID the event was correlated with, if any.
+// This is the entry point for driving the bot with spoofed capture events: it has no dependency on the Redis job queue.
+func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier premium.Tier, dgsRequest GameStateRequest) (correlatedUserID string) {
+	payload, _ := job.Payload.(string)
+
+	switch job.JobType {
+	case task.ConnectionJob:
+		lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
+		for lock == nil {
+			lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
+		}
+		dgs.Linked = payload == "true"
+		dgs.ConnectCode = dgsRequest.ConnectCode
+		bot.store.SetDiscordGameState(dgs, lock)
+
+		bot.handleTrackedMembers(sett, premTier, 0, NoPriority, dgsRequest)
+		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
+
+	case task.LobbyJob:
+		var lobby game.Lobby
+		err := json.Unmarshal([]byte(payload), &lobby)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+
+		bot.processLobby(sett, lobby, dgsRequest)
+	case task.StateJob:
+		num, err := strconv.ParseInt(payload, 10, 64)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+
+		bot.processTransition(game.Phase(num), dgsRequest, sett, premTier)
+	case task.PlayerJob:
+		var player game.Player
+		err := json.Unmarshal([]byte(payload), &player)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		if player.Color > 17 || player.Color < 0 {
+			break
+		}
+
+		shouldHandleTracked, userID, readOnlyDgs, err := bot.processPlayer(sett, player, dgsRequest, premTier)
+		if shouldHandleTracked {
+			bot.handleTrackedMembers(sett, premTier, 0, NoPriority, dgsRequest)
+		}
+		if err != nil {
+			bot.discord.ChannelMessageSend(readOnlyDgs.GameStateMsg.MessageChannelID, sett.LocalizeMessage(&i18n.Message{
+				ID:    "processplayer.error",
+				Other: "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?",
+			},
+				map[string]interface{}{
+					"User":         discord.MentionByUserID(userID),
+					"VoiceChannel": discord.MentionByChannelID(readOnlyDgs.VoiceChannel),
+				},
+			))
+			bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
+		}
+		correlatedUserID = userID
+	case task.GameOverJob:
+		var gameOverResult game.Gameover
+		err := json.Unmarshal([]byte(payload), &gameOverResult)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+
+		// we only need a read-only state for making the game summary message
+		dgs := bot.store.GetReadOnlyDiscordGameState(dgsRequest)
+		if dgs != nil {
+			delTime := sett.GetDeleteGameSummaryMinutes()
+			if delTime != 0 {
+				winners := getWinners(*dgs, gameOverResult)
+				buf := bytes.NewBuffer([]byte{})
+				for i, v := range winners {
+					roleStr := "Crewmate"
+					if v.role == game.ImposterRole {
+						roleStr = "Imposter"
+					}
+					buf.WriteString(fmt.Sprintf("<@%s>", v.userID))
+					if i < len(winners)-1 {
+						buf.WriteRune(',')
+					} else {
+						buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
+					}
+				}
+				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+				channelID := dgs.GameStateMsg.MessageChannelID
+				if sett.GetMatchSummaryChannelID() != "" {
+					channelID = sett.GetMatchSummaryChannelID()
+				}
+				msg, err := bot.discord.ChannelMessageSendEmbed(channelID, embed)
+				if delTime > 0 && err == nil {
+					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)
+					go MessageDeleteWorker(bot.discord, msg.ChannelID, msg.ID, time.Minute*time.Duration(delTime))
+				} else if err == nil {
+					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
+				}
+			}
+			go dumpGameToPostgres(*dgs, bot.recorder, gameOverResult)
+
+			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
+			// read-only). This means the original msg is refreshed, not the gameover message
+			if sett.AutoRefresh {
+				bot.RefreshGameStateMessage(dgsRequest, sett)
+			}
+
+			// now we need to fetch the state again (AFTER refreshing) to mark the game as complete/
+			lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
+			for lock == nil {
+				lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
+			}
+			dgs.MatchID = -1
+			dgs.MatchStartUnix = -1
+			bot.store.SetDiscordGameState(dgs, lock)
+		}
+	}
+	return correlatedUserID
+}
+
+// recordGameEvent stores a capture event against the active match, if there is one.
+func (bot *Bot) recordGameEvent(dgsRequest GameStateRequest, userID string, ge storage.PostgresGameEvent) {
+	dgs := bot.store.GetReadOnlyDiscordGameState(dgsRequest)
+	if dgs == nil || dgs.MatchID <= 0 || dgs.MatchStartUnix <= 0 {
+		return
+	}
+	ge.GameID = dgs.MatchID
+	if userID != "" {
+		num, err := strconv.ParseUint(userID, 10, 64)
+		if err != nil {
+			log.Println(err)
+			ge.UserID = nil
+		} else {
+			ge.UserID = &num
+		}
+		log.Printf("Adding postgres event with user id %d\n", ge.UserID)
+	}
+
+	err := bot.recorder.AddEvent(&ge)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -280,16 +291,16 @@ func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
 	return winners
 }
 
-func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest) (bool, string, *GameState, error) {
+func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, dgsRequest GameStateRequest, premTier premium.Tier) (bool, string, *GameState, error) {
 	var err error
 	if player.Name != "" {
-		lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+		lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
 		for lock == nil {
-			lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+			lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
 		}
 		dgs.Linked = true
 
-		defer bot.RedisInterface.SetDiscordGameState(dgs, lock)
+		defer bot.store.SetDiscordGameState(dgs, lock)
 
 		if player.Disconnected || player.Action == game.LEFT {
 			if player.Disconnected {
@@ -302,10 +313,10 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			// try pairing via the cached usernames
 			if userID == "" {
 				var uids map[string]interface{}
-				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			} else {
-				err = bot.applyToSingle(dgs, userID, false, false)
+				err = bot.applyToSingle(dgs, premTier, userID, false, false)
 			}
 
 			dgs.GameData.ClearPlayerData(player.Name)
@@ -324,7 +335,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
 				var uids map[string]interface{}
-				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
@@ -333,7 +344,7 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 			userID := dgs.AttemptPairingByMatchingNames(data)
 			if userID == "" {
 				var uids map[string]interface{}
-				uids, err = bot.RedisInterface.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
+				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
 				userID = dgs.AttemptPairingByUserIDs(data, uids)
 			}
 			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
@@ -356,10 +367,10 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 	return false, "", nil, nil
 }
 
-func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest, sett *settings.GuildSettings) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest, sett *settings.GuildSettings, premTier premium.Tier) {
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
 	oldPhase := dgs.GameData.UpdatePhase(phase)
@@ -372,16 +383,16 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 	if oldPhase == game.LOBBY && phase == game.TASKS {
 		matchStart := time.Now().Unix()
 		dgs.MatchStartUnix = matchStart
-		gameID := startGameInPostgres(*dgs, bot.PostgresInterface)
+		gameID := startGameInPostgres(*dgs, bot.recorder)
 		dgs.MatchID = int64(gameID)
 		log.Printf("New match has begun. ID %d and starttime %d\n", gameID, matchStart)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 	switch phase {
 	case game.MENU:
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
-		err := bot.applyToAll(dgs, false, false)
+		err := bot.applyToAll(dgs, premTier, false, false)
 		if err != nil {
 			log.Println("Error in unmuting all users when returning to menu ", err)
 		}
@@ -391,7 +402,7 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 		fallthrough
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, NoPriority, dgsRequest)
+		bot.handleTrackedMembers(sett, premTier, delay, NoPriority, dgsRequest)
 
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
@@ -403,12 +414,12 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 			priority = NoPriority
 		}
 
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, priority, dgsRequest)
+		bot.handleTrackedMembers(sett, premTier, delay, priority, dgsRequest)
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(bot.PrimarySession, sett, delay, DeadPriority, dgsRequest)
+		bot.handleTrackedMembers(sett, premTier, delay, DeadPriority, dgsRequest)
 
 		if sett.AutoRefresh {
 			bot.RefreshGameStateMessage(dgsRequest, sett)
@@ -419,18 +430,18 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 }
 
 func (bot *Bot) processLobby(sett *settings.GuildSettings, lobby game.Lobby, dgsRequest GameStateRequest) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(dgsRequest)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
 	}
 
 	dgs.GameData.SetRoomRegionMap(lobby.LobbyCode, lobby.Region.ToString(), lobby.PlayMap)
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 
 	bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 }
 
-func startGameInPostgres(dgs GameState, psql *storage.PsqlInterface) uint64 {
+func startGameInPostgres(dgs GameState, psql GameRecorder) uint64 {
 	if dgs.MatchStartUnix < 0 {
 		return 0
 	}
@@ -454,7 +465,7 @@ func startGameInPostgres(dgs GameState, psql *storage.PsqlInterface) uint64 {
 	return i
 }
 
-func dumpGameToPostgres(dgs GameState, psql *storage.PsqlInterface, gameOver game.Gameover) {
+func dumpGameToPostgres(dgs GameState, psql GameRecorder, gameOver game.Gameover) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
 		log.Println("dgs match id or start time is <0; not dumping game to Postgres")
 		return

@@ -1,0 +1,131 @@
+package bot
+
+import (
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/task"
+	"github.com/bwmarrin/discordgo"
+)
+
+// These tests drive the bot's game logic with spoofed inputs (capture jobs and Discord gateway events) against the
+// in-memory fakes in fakes_test.go, and assert on the mutes, messages, and match records the bot produces.
+
+const (
+	scenarioGuild       = "1"
+	scenarioConnectCode = "ABCDEFGH"
+	scenarioTextChannel = "500"
+)
+
+// runningGame seeds the store with a running game in the given phase whose status message already exists, and
+// registers the guild (with the given voice states) in the cached Discord state.
+func runningGame(deps *testDeps, phase game.Phase, voiceStates ...*discordgo.VoiceState) *GameState {
+	dgs := voiceTestState(phase)
+	dgs.GameStateMsg = GameStateMessage{
+		MessageID:        "status-msg",
+		MessageChannelID: scenarioTextChannel,
+		LeaderID:         "10",
+		CreationTimeUnix: time.Now().Unix(),
+	}
+	if err := deps.guilds.GuildAdd(&discordgo.Guild{ID: scenarioGuild, VoiceStates: voiceStates}); err != nil {
+		panic(err)
+	}
+	return dgs
+}
+
+func phaseJob(phase game.Phase) task.Job {
+	return task.Job{JobType: task.StateJob, Payload: strconv.Itoa(int(phase))}
+}
+
+func TestProcessJob_LobbyToTasks_StartsMatchAndMutesLinkedPlayers(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	dgs := runningGame(deps, game.LOBBY, inChannel("10", trackedChannel), inChannel("11", trackedChannel), inChannel("12", otherChannel))
+	addLinkedUser(dgs, "10", "alice", true, false, false)
+	addLinkedUser(dgs, "11", "bob", true, false, false)
+	addLinkedUser(dgs, "12", "carol", true, false, false) // linked, but sitting in a different voice channel
+	deps.store.put(dgs)
+
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+
+	// state advanced and a match record was opened
+	got := deps.store.get()
+	if got.GameData.GetPhase() != game.TASKS {
+		t.Fatalf("phase = %v, want TASKS", got.GameData.GetPhase())
+	}
+	if got.MatchID != 1 || got.MatchStartUnix <= 0 {
+		t.Fatalf("match not started: id=%d start=%d", got.MatchID, got.MatchStartUnix)
+	}
+	if len(deps.recorder.games) != 1 || deps.recorder.games[0].ConnectCode != scenarioConnectCode {
+		t.Fatalf("recorder games = %+v", deps.recorder.games)
+	}
+
+	// the configured lobby->tasks delay was honored (without actually sleeping)
+	wantDelay := time.Second * time.Duration(sett.GetDelay(game.LOBBY, game.TASKS))
+	if len(deps.sleeps) != 1 || deps.sleeps[0] != wantDelay {
+		t.Fatalf("sleeps = %v, want [%v]", deps.sleeps, wantDelay)
+	}
+
+	// exactly one batch of mutes went out, covering only the linked users in the tracked channel
+	reqs := deps.voice.all()
+	if len(reqs) != 1 {
+		t.Fatalf("voice requests = %d, want 1: %+v", len(reqs), reqs)
+	}
+	wantMute, wantDeaf := sett.GetVoiceState(true, true, game.TASKS)
+	if len(reqs[0].Users) != 2 {
+		t.Fatalf("users muted = %+v, want alice and bob only", reqs[0].Users)
+	}
+	for _, id := range []uint64{10, 11} {
+		u, ok := findChange(reqs[0].Users, id)
+		if !ok || u.Mute != wantMute || u.Deaf != wantDeaf {
+			t.Errorf("user %d: got (%v, mute=%v, deaf=%v), want (found, mute=%v, deaf=%v)", id, ok, u.Mute, u.Deaf, wantMute, wantDeaf)
+		}
+	}
+	if _, ok := findChange(reqs[0].Users, 12); ok {
+		t.Errorf("carol is in another channel and should not have been touched")
+	}
+
+	// the bot remembered what it asked Discord to do, so a repeat produces no further changes
+	if u, _ := got.GetUser("10"); u.ShouldBeMute != wantMute || u.ShouldBeDeaf != wantDeaf {
+		t.Errorf("stored intent for alice = (mute=%v, deaf=%v), want (%v, %v)", u.ShouldBeMute, u.ShouldBeDeaf, wantMute, wantDeaf)
+	}
+	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+	if len(deps.voice.all()) != 1 {
+		t.Fatalf("repeating the same phase should be a no-op, got %d requests", len(deps.voice.all()))
+	}
+}
+
+func TestVoiceStateChange_JoiningTrackedChannelMidGameMutesLinkedUser(t *testing.T) {
+	bot, deps := newTestBot(t)
+
+	dgs := runningGame(deps, game.TASKS, inChannel("10", trackedChannel))
+	addLinkedUser(dgs, "10", "alice", true, true, true)
+	addLinkedUser(dgs, "11", "bob", true, false, false) // linked, currently not in any voice channel
+	deps.store.put(dgs)
+
+	// bob joins the tracked channel while tasks are underway
+	bot.handleVoiceStateChange(nil, &discordgo.VoiceStateUpdate{VoiceState: &discordgo.VoiceState{
+		GuildID:   scenarioGuild,
+		ChannelID: trackedChannel,
+		UserID:    "11",
+		SessionID: "sess",
+	}})
+
+	wantMute, wantDeaf := deps.settings.GetVoiceState(true, true, game.TASKS)
+	reqs := deps.voice.all()
+	if len(reqs) != 1 || len(reqs[0].Users) != 1 {
+		t.Fatalf("voice requests = %+v, want exactly one change for bob", reqs)
+	}
+	if u := reqs[0].Users[0]; u.UserID != 11 || u.Mute != wantMute || u.Deaf != wantDeaf {
+		t.Fatalf("change = %+v, want user 11 mute=%v deaf=%v", u, wantMute, wantDeaf)
+	}
+	if u, _ := deps.store.get().GetUser("11"); u.ShouldBeMute != wantMute || u.ShouldBeDeaf != wantDeaf {
+		t.Errorf("stored intent for bob not updated: %+v", u)
+	}
+}
