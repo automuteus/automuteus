@@ -4,14 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/bot/command"
-	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/capture"
-	"github.com/automuteus/automuteus/v8/pkg/locale"
-	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 	"io"
 	"log"
 	"math/rand"
@@ -23,13 +15,22 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/bot/command"
+	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
+	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
+	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v8"
+
 	"github.com/automuteus/automuteus/v8/storage"
 
 	"github.com/automuteus/automuteus/v8/bot"
 )
 
 var (
-	version = "v8.1.0"
+	version = "v9.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
