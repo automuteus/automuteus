@@ -1,0 +1,31 @@
+# Build from the repository root: docker build -f Dockerfile.api .
+FROM --platform=${BUILDPLATFORM} golang:1.27-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
+# hadolint ignore=DL3018
+RUN apk add --no-cache git
+WORKDIR /src
+COPY ./go.mod ./go.sum ./
+RUN go mod download
+RUN go install github.com/swaggo/swag/cmd/swag@v1.8.10
+COPY ./ ./
+RUN CGO_ENABLED=0 swag init -g cmd/api/main.go --parseDependency true --parseInternal
+# Same tag and commit versioning as Dockerfile and Dockerfile.galactus.
+# hadolint ignore=SC2155
+RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && \
+    export COMMIT=$(git rev-parse --short HEAD) && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -installsuffix 'static' \
+    -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
+    -o /api ./cmd/api
+
+FROM alpine:3.24 AS final
+RUN addgroup -g 1000 api && \
+    adduser -HD -u 1000 -G api api && \
+    mkdir -p /app && chown api:api /app
+USER api
+WORKDIR /app
+COPY --from=builder /api /app/api
+EXPOSE 5000
+ENV GIN_MODE=release
+ENTRYPOINT ["./api"]

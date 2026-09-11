@@ -4,10 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"log"
 	"math/rand"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -22,43 +22,8 @@ func generateConnectCode(guildID string) string {
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 }
 
-var urlregex = regexp.MustCompile(`^http(?P<secure>s?)://(?P<host>[\w.-]+)(?::(?P<port>\d+))?/?$`)
-
 func formCaptureURL(url, connectCode string) (hyperlink, apiHyperlink, minimalURL string) {
-	if match := urlregex.FindStringSubmatch(url); match != nil {
-		secure := match[urlregex.SubexpIndex("secure")] == "s"
-		host := match[urlregex.SubexpIndex("host")]
-		port := ":" + match[urlregex.SubexpIndex("port")]
-
-		if port == ":" {
-			if secure {
-				port = ":443"
-			} else {
-				port = ":80"
-			}
-		}
-
-		insecure := "?insecure"
-		protocol := "http://"
-		if secure {
-			insecure = ""
-			protocol = "https://"
-		}
-
-		hostAPI := os.Getenv("API_SERVER_URL")
-		if hostAPI == "" {
-			hostAPI = "http://localhost"
-		}
-
-		hyperlink = fmt.Sprintf("aucapture://%s%s/%s%s", host, port, connectCode, insecure)
-		apiHyperlink = fmt.Sprintf("%s/open/link?connectCode=%s", hostAPI, connectCode)
-		minimalURL = fmt.Sprintf("%s%s%s", protocol, host, port)
-	} else {
-		hyperlink = "Invalid HOST provided (should resemble something like `http://localhost:8123`)"
-		apiHyperlink = "Invalid API Link"
-		minimalURL = "Invalid HOST provided"
-	}
-	return
+	return capture.FormCaptureURL(url, os.Getenv("API_SERVER_URL"), connectCode)
 }
 
 func sendEmbedWithComponents(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {

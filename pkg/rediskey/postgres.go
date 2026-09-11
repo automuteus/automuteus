@@ -2,24 +2,27 @@ package rediskey
 
 import (
 	"context"
-	"github.com/georgysavva/scany/pgxscan"
+	"errors"
+	"time"
+
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func queryTotalUsers(ctx context.Context, pool *pgxpool.Pool) int64 {
-	var r []int64
-	err := pgxscan.Select(ctx, pool, &r, "SELECT COUNT(*) FROM users")
-	if err != nil || len(r) < 1 {
-		return NotFound
+// cachedCount returns the value cached under key, or runs query against
+// Postgres and caches the result for ttl when the key is missing. A failure to
+// write the cache is not an error; the count itself is still valid.
+func cachedCount(ctx context.Context, client *redis.Client, pool *pgxpool.Pool, key, query string, ttl time.Duration) (int64, error) {
+	value, err := client.Get(ctx, key).Int64()
+	if err == nil {
+		return value, nil
 	}
-	return r[0]
-}
-
-func queryTotalGames(ctx context.Context, pool *pgxpool.Pool) int64 {
-	var r []int64
-	err := pgxscan.Select(ctx, pool, &r, "SELECT COUNT (*) FROM games WHERE start_time != -1 AND end_time != -1")
-	if err != nil || len(r) < 1 {
-		return NotFound
+	if !errors.Is(err, redis.Nil) {
+		return 0, err
 	}
-	return r[0]
+	if err = pool.QueryRow(ctx, query).Scan(&value); err != nil {
+		return 0, err
+	}
+	client.Set(ctx, key, value, ttl)
+	return value, nil
 }

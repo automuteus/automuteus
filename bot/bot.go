@@ -303,17 +303,17 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 }
 
 func (bot *Bot) getInfo() command.BotInfo {
-	totalGuilds := rediskey.GetGuildCounter(context.Background(), bot.RedisInterface.client)
-	activeGames := rediskey.GetActiveGames(context.Background(), bot.RedisInterface.client, GameTimeoutSeconds)
+	ctx := context.Background()
+	totalGuilds := rediskey.GetGuildCounter(ctx, bot.RedisInterface.client)
+	activeGames := rediskey.GetActiveGames(ctx, bot.RedisInterface.client, GameTimeoutSeconds)
 
-	totalUsers := rediskey.GetTotalUsers(context.Background(), bot.RedisInterface.client)
-	if totalUsers == rediskey.NotFound {
-		totalUsers = rediskey.RefreshTotalUsers(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	totalUsers, err := rediskey.CountTotalUsers(ctx, bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	if err != nil {
+		log.Println(err)
 	}
-
-	totalGames := rediskey.GetTotalGames(context.Background(), bot.RedisInterface.client)
-	if totalGames == rediskey.NotFound {
-		totalGames = rediskey.RefreshTotalGames(context.Background(), bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	totalGames, err := rediskey.CountTotalGames(ctx, bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	if err != nil {
+		log.Println(err)
 	}
 	return command.BotInfo{
 		Version:     bot.version,

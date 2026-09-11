@@ -51,15 +51,6 @@ func (psqlInterface *PsqlInterface) Init(addr string) error {
 	return nil
 }
 
-func (psqlInterface *PsqlInterface) ExecFromString(postgresFileContents string) error {
-	tag, err := psqlInterface.Pool.Exec(context.Background(), postgresFileContents)
-	if err != nil {
-		return err
-	}
-	log.Println(tag.String())
-	return nil
-}
-
 func insertGuild(conn PgxIface, guildID uint64, guildName string) error {
 	_, err := conn.Exec(context.Background(), "INSERT INTO guilds VALUES ($1, $2, 0);", guildID, guildName)
 	return err

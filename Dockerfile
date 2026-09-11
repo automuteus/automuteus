@@ -11,13 +11,9 @@ WORKDIR /src
 # and will therefore be cached for speeding up the next build
 COPY ./go.mod ./go.sum ./
 RUN go mod download
-# Install the swag tool that generates swagger docs from the source code
-RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
 
 # Import the code from the context.
 COPY ./ ./
-# Generate API documentation
-RUN CGO_ENABLED=0 swag init --parseDependency true
 
 # Build the executable to `/app`. Mark the build as statically linked.
 # hadolint ignore=SC2155
@@ -47,8 +43,6 @@ WORKDIR /app
 COPY --from=builder /app /app
 COPY ./locales/ /app/locales
 
-# Port used for AMU API
-EXPOSE 5000
 # Port used for health/liveliness checks
 EXPOSE 8080
 # Port used for prometheus metrics

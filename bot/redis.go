@@ -23,7 +23,7 @@ const MaxRetries = 10
 const SnowflakeLockMs = 3000
 
 // 15 minute timeout
-const GameTimeoutSeconds = 900
+const GameTimeoutSeconds = rediskey.ActiveGameTimeoutSeconds
 
 type RedisInterface struct {
 	client *redis.Client

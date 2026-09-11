@@ -11,25 +11,10 @@ import (
 
 const TotalUsersExpiration = time.Minute * 5
 
-const NotFound = -1
-
-func GetTotalUsers(ctx context.Context, client *redis.Client) int64 {
-	v, err := client.Get(ctx, TotalUsers).Int64()
-	if err == nil {
-		return v
-	}
-	return NotFound
-}
-
-func RefreshTotalUsers(ctx context.Context, client *redis.Client, pool *pgxpool.Pool) int64 {
-	v := queryTotalUsers(ctx, pool)
-	if v != NotFound {
-		err := client.Set(ctx, TotalUsers, v, TotalUsersExpiration).Err()
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	return v
+// CountTotalUsers is shared by the bot's /info command and the HTTP API so both
+// report the same cached figure.
+func CountTotalUsers(ctx context.Context, client *redis.Client, pool *pgxpool.Pool) (int64, error) {
+	return cachedCount(ctx, client, pool, TotalUsers, "SELECT COUNT(*) FROM users", TotalUsersExpiration)
 }
 
 func GetCachedUserInfo(ctx context.Context, client *redis.Client, userID, guildID string) string {

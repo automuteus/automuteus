@@ -1,12 +1,16 @@
-package bot
+package api
 
 import (
+	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/docs"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	swaggerFiles "github.com/swaggo/files"
@@ -14,26 +18,62 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"strings"
+	"time"
 )
 
 //go:embed templates/link.tmpl
 var linkTemplateFileContents string
 
-func (bot *Bot) StartAPIServer(port string) {
+// Info is the /bot/info response. Unlike the Discord /info command, the API is
+// not tied to a shard, so no shard fields are reported.
+type Info struct {
+	Version     string `json:"version"`
+	Commit      string `json:"commit"`
+	TotalGuilds int64  `json:"totalGuilds"`
+	ActiveGames int64  `json:"activeGames"`
+	TotalUsers  int64  `json:"totalUsers"`
+	TotalGames  int64  `json:"totalGames"`
+}
+
+// Store is the shared data needed by the HTTP API. No Discord session is used.
+type Store interface {
+	Info(context.Context) (Info, error)
+	GameState(context.Context, string, string) (json.RawMessage, error)
+	RoomCode(context.Context, string) (string, error)
+	Settings(context.Context, string) (*settings.GuildSettings, error)
+	Premium(context.Context, string) (premium.PremiumRecord, error)
+	Ping(context.Context) error
+}
+
+type Config struct {
+	Version       string
+	Commit        string
+	ServerURL     string
+	AdminPassword string
+	CaptureHost   string
+	Official      bool
+}
+
+func NewRouter(config Config, store Store) *gin.Engine {
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	})
 
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Title = "AutoMuteUs"
-	docs.SwaggerInfo.Version = bot.version
+	docs.SwaggerInfo.Version = config.Version
 	docs.SwaggerInfo.Description = "AutoMuteUs Bot API"
 	var schemes []string
-	host := os.Getenv("API_SERVER_URL")
+	host := config.ServerURL
 	if host == "" {
 		host = "http://localhost"
 	}
-	adminPassword := os.Getenv("API_ADMIN_PASS")
+	adminPassword := config.AdminPassword
 	if adminPassword == "" {
 		adminPassword = "automuteus"
 	}
@@ -48,7 +88,7 @@ func (bot *Bot) StartAPIServer(port string) {
 	docs.SwaggerInfo.Schemes = schemes
 
 	botGroup := r.Group("/bot")
-	botGroup.GET("/info", handleGetInfo(bot))
+	botGroup.GET("/info", handleGetInfo(store))
 	botGroup.GET("/commands", handleGetCommands())
 
 	// TODO in the future, I'd like this to receive a Discord Access Token
@@ -57,51 +97,64 @@ func (bot *Bot) StartAPIServer(port string) {
 	gameGroup := r.Group("/game", gin.BasicAuth(gin.Accounts{
 		"admin": adminPassword,
 	}))
-	gameGroup.GET("/state", handleGetGameState(bot))
-	gameGroup.GET("/roomcode", handleGetRoomCode(bot))
+	gameGroup.GET("/state", handleGetGameState(store))
+	gameGroup.GET("/roomcode", handleGetRoomCode(store))
 
 	// TODO same as above, but we also need to check the User's permissions within the server in question
 	// (aka if user is not a bot admin for a guild, they can't change that guild's settings)
 	guildGroup := r.Group("/guild", gin.BasicAuth(gin.Accounts{
 		"admin": adminPassword,
 	}))
-	guildGroup.GET("/settings", handleGetGuildSettings(bot))
-	guildGroup.GET("/premium", handleGetGuildPremium(bot))
+	guildGroup.GET("/settings", handleGetGuildSettings(store))
+	guildGroup.GET("/premium", handleGetGuildPremium(store))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	r.GET("/open/link", handleGetOpenAmongUsCapture(bot))
+	r.GET("/open/link", handleGetOpenAmongUsCapture(config))
+	r.GET("/live", func(c *gin.Context) { c.Status(http.StatusOK) })
+	r.GET("/ready", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		if err := store.Ping(ctx); err != nil {
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "API dependencies unavailable"})
+			return
+		}
+		c.Status(http.StatusOK)
+	})
 
 	// TODO add endpoints for notable player information, like total games played, num wins, etc
 
 	// TODO properly configure CORS -_-
-	r.Run(":" + port)
+	return r
 }
 
 // BotInfo godoc
 // @Summary Get Bot Info
-// @Schemes GET
 // @Description Get basic information about the bot
 // @Tags bot
 // @Accept json
 // @Produce json
-// @Success 200 {object} command.BotInfo
+// @Success 200 {object} Info
 // @Router /bot/info [get]
-func handleGetInfo(bot *Bot) func(c *gin.Context) {
+func handleGetInfo(store Store) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		info := bot.getInfo()
+		info, err := store.Info(c.Request.Context())
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to load bot information"})
+			return
+		}
 		c.JSON(http.StatusOK, info)
 	}
 }
 
 // BotCommands godoc
 // @Summary Get Bot Commands
-// @Schemes GET
 // @Description Get all Discord commands that the bot implements
 // @Tags bot
 // @Accept json
 // @Produce json
-// @Success 200 {object} []discordgo.ApplicationCommand
+// @Success 200 {array} discordgo.ApplicationCommand
 // @Router /bot/commands [get]
 func handleGetCommands() func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -111,12 +164,11 @@ func handleGetCommands() func(c *gin.Context) {
 
 // Open AmongUsCapture
 // @Summary Get AmongUsCapture
-// @Schemes GET
 // @Description Return html that open AmongUsCapture
-// @Produce {string} string "text/html"
+// @Produce html
 // @Success 200 {string} string "text/html"
 // @Router /open/link [get]
-func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
+func handleGetOpenAmongUsCapture(config Config) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		connectCode := c.Query("connectCode")
 		if len(connectCode) != 8 {
@@ -126,7 +178,7 @@ func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
 			})
 			return
 		}
-		hyperlink, _, _ := formCaptureURL(bot.url, connectCode)
+		hyperlink, _, _ := capture.FormCaptureURL(config.CaptureHost, config.ServerURL, connectCode)
 		t, err := template.New("template").Parse(linkTemplateFileContents)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, HttpError{
@@ -135,6 +187,7 @@ func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
 			})
 			return
 		}
+		c.Header("Content-Type", "text/html; charset=utf-8")
 		err = t.Execute(c.Writer, map[string]string{
 			"URL": hyperlink,
 		})
@@ -150,7 +203,6 @@ func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
 
 // GetGameState godoc
 // @Summary Get Game State
-// @Schemes GET
 // @Description Get the current state of a running game
 // @Security BasicAuth
 // @Tags game
@@ -158,11 +210,11 @@ func handleGetOpenAmongUsCapture(bot *Bot) func(c *gin.Context) {
 // @Produce json
 // @Param guildID query string true "Guild ID"
 // @Param connectCode query string true "Connect Code"
-// @Success 200 {object} GameState
-// @Failure 400 {string} HttpError
+// @Success 200 {object} map[string]interface{} "Stored game state, using the bot's JSON representation"
+// @Failure 400 {object} HttpError
 // @Failure 500 {object} nil
 // @Router /game/state [get]
-func handleGetGameState(bot *Bot) func(c *gin.Context) {
+func handleGetGameState(store Store) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		guildID := c.Query("guildID")
 		if discord.ValidateSnowflake(guildID) != nil {
@@ -180,12 +232,8 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 			})
 			return
 		}
-		gsr := GameStateRequest{
-			GuildID:     guildID,
-			ConnectCode: connectCode,
-		}
-		key := bot.RedisInterface.getDiscordGameStateKey(gsr)
-		if key == "" {
+		state, err := store.GameState(c.Request.Context(), guildID, connectCode)
+		if errors.Is(err, redis.Nil) {
 			c.JSON(http.StatusBadRequest, HttpError{
 				StatusCode: http.StatusBadRequest,
 				Error:      "no game status found with those details",
@@ -193,8 +241,8 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 			return
 		}
 
-		state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
-		if state == nil {
+		if err != nil {
+			log.Println(err)
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
@@ -204,7 +252,6 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 
 // GetRoomCode godoc
 // @Summary Get Room Code
-// @Schemes GET
 // @Description Get the Among Us room code most recently reported by the capture client for a connect code
 // @Security BasicAuth
 // @Tags game
@@ -216,7 +263,7 @@ func handleGetGameState(bot *Bot) func(c *gin.Context) {
 // @Failure 404 {object} HttpError
 // @Failure 500 {object} HttpError
 // @Router /game/roomcode [get]
-func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
+func handleGetRoomCode(store Store) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		connectCode := c.Query("connectCode")
 		if len(connectCode) != 8 {
@@ -227,7 +274,7 @@ func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
 			return
 		}
 
-		roomCode, err := bot.RedisInterface.GetRoomCode(connectCode)
+		roomCode, err := store.RoomCode(c.Request.Context(), connectCode)
 		if errors.Is(err, redis.Nil) {
 			c.JSON(http.StatusNotFound, HttpError{
 				StatusCode: http.StatusNotFound,
@@ -250,7 +297,6 @@ func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
 
 // GetGuildSettings godoc
 // @Summary Get Guild Settings
-// @Schemes GET
 // @Description Get the settings for a given guild. Guilds that never changed a setting get the defaults.
 // @Security BasicAuth
 // @Tags guild
@@ -258,10 +304,10 @@ func handleGetRoomCode(bot *Bot) func(c *gin.Context) {
 // @Produce json
 // @Param guildID query string true "Guild ID"
 // @Success 200 {object} settings.GuildSettings
-// @Failure 400 {string} HttpError
-// @Failure 503 {string} HttpError
+// @Failure 400 {object} HttpError
+// @Failure 503 {object} HttpError
 // @Router /guild/settings [get]
-func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
+func handleGetGuildSettings(store Store) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		guildID := c.Query("guildID")
 		if discord.ValidateSnowflake(guildID) != nil {
@@ -272,7 +318,7 @@ func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
 			return
 		}
 
-		settings, err := bot.StorageInterface.LoadGuildSettings(c.Request.Context(), guildID)
+		settings, err := store.Settings(c.Request.Context(), guildID)
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusServiceUnavailable, HttpError{
@@ -287,7 +333,6 @@ func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
 
 // GetGuildPremium godoc
 // @Summary Get Guild Premium
-// @Schemes GET
 // @Description Get the premium status for a given guild
 // @Security BasicAuth
 // @Tags guild
@@ -295,10 +340,10 @@ func handleGetGuildSettings(bot *Bot) func(c *gin.Context) {
 // @Produce json
 // @Param guildID query string true "Guild ID"
 // @Success 200 {object} premium.PremiumRecord
-// @Failure 400 {string} HttpError
+// @Failure 400 {object} HttpError
 // @Failure 500 {object} HttpError
 // @Router /guild/premium [get]
-func handleGetGuildPremium(bot *Bot) func(c *gin.Context) {
+func handleGetGuildPremium(store Store) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		guildID := c.Query("guildID")
 		if discord.ValidateSnowflake(guildID) != nil {
@@ -309,7 +354,7 @@ func handleGetGuildPremium(bot *Bot) func(c *gin.Context) {
 			return
 		}
 
-		tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, guildID, "")
+		record, err := store.Premium(c.Request.Context(), guildID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, HttpError{
 				StatusCode: http.StatusInternalServerError,
@@ -317,10 +362,7 @@ func handleGetGuildPremium(bot *Bot) func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, premium.PremiumRecord{
-			Tier: tier,
-			Days: days,
-		})
+		c.JSON(http.StatusOK, record)
 	}
 }
 
