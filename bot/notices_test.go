@@ -188,12 +188,22 @@ func TestHandleNotice_ExpiringNoticeSchedulesARefresh(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
 	expiresIn := 10 * time.Minute
+	expired := make(chan struct{})
+	var expireOnce sync.Once
+	expire := func() { expireOnce.Do(func() { close(expired) }) }
+	t.Cleanup(expire)
+	bot.sleep = func(d time.Duration) {
+		deps.recordSleep(d)
+		if d > expiresIn-time.Minute {
+			<-expired
+		}
+	}
 	n := &notice.Notice{Severity: notice.Warning, Message: "brief", ExpiresAt: time.Now().Add(expiresIn).Unix()}
 	deps.notices.set(n)
 
 	bot.handleNotice(n)
 
-	// one edit now (banner appears) and one after the notice lapses (banner disappears); the wait is recorded, not slept
+	// Hold the expiry refresh until the initial edit completes, so deferred edits cannot coalesce them.
 	eventually(t, "the deferred refresh to have been scheduled", func() bool {
 		for _, d := range deps.slept() {
 			if d > expiresIn-time.Minute && d <= expiresIn {
@@ -202,8 +212,29 @@ func TestHandleNotice_ExpiringNoticeSchedulesARefresh(t *testing.T) {
 		}
 		return false
 	})
+	eventually(t, "the initial status message edit", func() bool { return deps.discord.editCount() == 1 })
+	deps.discord.mu.Lock()
+	initial := deps.discord.edits[0]
+	deps.discord.mu.Unlock()
+	if len(initial.Embeds) == 0 || len(initial.Embeds[0].Fields) == 0 ||
+		!strings.Contains(initial.Embeds[0].Fields[0].Name, "WARNING") ||
+		initial.Embeds[0].Fields[0].Value != "**brief**" {
+		t.Fatalf("initial edit should contain the warning banner: %+v", initial)
+	}
 	deps.notices.set(nil)
+	expire()
 	eventually(t, "two status message edits", func() bool { return deps.discord.editCount() == 2 })
+	deps.discord.mu.Lock()
+	refreshed := deps.discord.edits[1]
+	deps.discord.mu.Unlock()
+	if len(refreshed.Embeds) == 0 {
+		t.Fatal("expiry refresh should contain a status embed")
+	}
+	for _, field := range refreshed.Embeds[0].Fields {
+		if strings.Contains(field.Name, "WARNING") || field.Value == "**brief**" {
+			t.Errorf("expiry refresh still contains the warning banner: %+v", field)
+		}
+	}
 }
 
 func TestListenForNotices_DeliversPublishedNoticesToHandler(t *testing.T) {

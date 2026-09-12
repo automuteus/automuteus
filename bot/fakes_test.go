@@ -377,7 +377,7 @@ func newTestBot(t *testing.T) (*Bot, *testDeps) {
 		discord:            deps.discord,
 		guilds:             deps.guilds,
 		metrics:            deps.metrics,
-		sleep:              func(d time.Duration) { deps.sleeps = append(deps.sleeps, d) },
+		sleep:              deps.recordSleep,
 		log:                slog.New(slog.NewTextHandler(deps.logs, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
 	return bot, deps
