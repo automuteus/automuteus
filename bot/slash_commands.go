@@ -304,13 +304,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 				bot.RedisInterface.RefreshActiveGame(dgs.GuildID, dgs.ConnectCode)
 
-				killChan := make(chan EndGameMessage)
-
-				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
+				killChan := make(chan EndGameMessage, 1)
 
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
+				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
 
 				hyperlink, apiHyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
 
@@ -374,7 +373,9 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.NoGameResponse(sett)
 				}
 
-				bot.stopGame(gsr, "ended by "+i.Member.User.ID, "")
+				if err := bot.stopGame(gsr, "ended by "+i.Member.User.ID, ""); err != nil {
+					return command.PrivateErrorResponse(command.End.Name, err, sett)
+				}
 				return command.PrivateResponse(ThumbsUp)
 			}
 			return command.DeadlockGameStateResponse(command.End.Name, sett)

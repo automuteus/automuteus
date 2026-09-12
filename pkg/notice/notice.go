@@ -122,7 +122,16 @@ func Active(ctx context.Context, client *redis.Client) (*Notice, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Decode(b)
+	n, err := Decode(b)
+	if err != nil {
+		return nil, err
+	}
+	// ExpiresAt is also the bot's refresh deadline. Redis's relative TTL can outlive that whole-second
+	// timestamp, so key existence alone must not keep the banner (or the maintenance lockout) active.
+	if n.ExpiresAt > 0 && n.ExpiresAt <= time.Now().Unix() {
+		return nil, nil
+	}
+	return n, nil
 }
 
 // Subscribe returns a subscription to notice messages. Callers must Close it.

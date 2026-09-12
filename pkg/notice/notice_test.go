@@ -2,6 +2,7 @@ package notice
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"testing"
 	"time"
@@ -70,6 +71,43 @@ func TestRaiseWithoutTTLPersists(t *testing.T) {
 	got, _ := Active(ctx, client)
 	if got == nil || got.ExpiresAt != 0 {
 		t.Fatalf("active = %+v", got)
+	}
+}
+
+func TestActiveHonorsDeclaredExpiryBeforeRedisTTL(t *testing.T) {
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { client.Close() })
+	ctx := context.Background()
+	now := time.Now().Unix()
+	for _, tc := range []struct {
+		name      string
+		severity  Severity
+		expiresAt int64
+		active    bool
+	}{
+		{"warning at deadline", Warning, now, false},
+		{"critical at deadline", Critical, now, false},
+		{"past deadline", Info, now - 1, false},
+		{"future deadline", Warning, now + 60, true},
+		{"no deadline", Critical, 0, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(Notice{Severity: tc.severity, Message: "maintenance", ExpiresAt: tc.expiresAt})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := client.Set(ctx, rediskey.ActiveNotice, b, time.Minute).Err(); err != nil {
+				t.Fatal(err)
+			}
+			n, err := Active(ctx, client)
+			if err != nil || (n != nil) != tc.active {
+				t.Errorf("active = %+v, err = %v, want active = %v", n, err, tc.active)
+			}
+			if !mr.Exists(rediskey.ActiveNotice) {
+				t.Fatal("test requires the Redis key to still exist")
+			}
+		})
 	}
 }
 

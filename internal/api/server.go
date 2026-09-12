@@ -393,7 +393,7 @@ const maxNoticeMessageLength = 500
 
 func requireConfiguredPassword(config Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if config.AdminPassword == "" {
+		if config.AdminPassword == "" || config.AdminPassword == "automuteus" {
 			c.AbortWithStatusJSON(http.StatusForbidden, HttpError{
 				StatusCode: http.StatusForbidden,
 				Error:      "set API_ADMIN_PASS to a non-default value to manage notices",

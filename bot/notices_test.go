@@ -77,13 +77,17 @@ func TestHandleNotice_CriticalEndsEveryGameOnTheShard(t *testing.T) {
 	bot, deps := newTestBot(t)
 	first, _ := seedTwoMatches(t, bot, deps)
 
-	// stand in for the first game's capture subscriber: on the end signal it deletes the game, as the real one does
+	// Stand in for the first game's capture subscriber, which completes cleanup before acknowledging the stop.
 	kill := make(chan EndGameMessage)
 	bot.EndGameChannels[scenarioConnectCode] = kill
 	done := make(chan struct{})
 	go func() {
-		<-kill
-		bot.forceEndGame(first)
+		end := <-kill
+		err := bot.completeGame(first, end.reason, end.message)
+		bot.ChannelsMapLock.Lock()
+		delete(bot.EndGameChannels, scenarioConnectCode)
+		bot.ChannelsMapLock.Unlock()
+		end.done <- err
 		close(done)
 	}()
 

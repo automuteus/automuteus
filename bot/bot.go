@@ -235,8 +235,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			}
 			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
-				killChan := make(chan EndGameMessage)
-				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
+				killChan := make(chan EndGameMessage, 1)
 				dgs.Subscribed = true
 
 				bot.store.SetDiscordGameState(dgs, lock)
@@ -244,6 +243,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
+				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 			}
 			lock.Release(ctx)
 		}
@@ -394,10 +394,12 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 
 func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
+		bot.ChannelsMapLock.RLock()
+		v, ok := bot.EndGameChannels[dgs.ConnectCode]
+		bot.ChannelsMapLock.RUnlock()
+		if ok {
+			v <- EndGameMessage{}
 		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
 
 		dgs.Reset()
 	} else {

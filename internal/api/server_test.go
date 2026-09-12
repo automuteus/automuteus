@@ -221,3 +221,18 @@ func TestNoticeEndpointsRefuseDefaultPassword(t *testing.T) {
 		t.Errorf("get under default password: %d", w.Code)
 	}
 }
+
+func TestNoticeEndpointsRefuseExplicitDefaultPassword(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	s := &fakeStore{}
+	r := NewRouter(Config{AdminPassword: "automuteus"}, s)
+	for _, method := range []string{http.MethodPost, http.MethodDelete} {
+		w := adminRequest(t, r, method, "/admin/notice", `{"severity":"critical","message":"x"}`, "automuteus")
+		if w.Code != http.StatusForbidden {
+			t.Errorf("%s with explicitly configured default password: got %d, want 403", method, w.Code)
+		}
+	}
+	if s.calls != 0 {
+		t.Errorf("default password reached the store %d times", s.calls)
+	}
+}
