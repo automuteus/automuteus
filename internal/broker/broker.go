@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/go-redis/redis/v8"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -31,7 +33,15 @@ type Broker struct {
 
 	ackKillChannels map[string]chan bool
 	connectionsLock sync.RWMutex
+
+	// DrainDelay is how long Shutdown waits, after failing readiness and refusing new clients, before announcing
+	// the shutdown. It gives the orchestrator time to stop routing new capture connections here.
+	DrainDelay time.Duration
+	draining   atomic.Bool
 }
+
+// Draining reports whether the broker has begun shutting down and is refusing new capture clients.
+func (broker *Broker) Draining() bool { return broker.draining.Load() }
 
 func NewBroker(redisAddr, redisUser, redisPass string) *Broker {
 	rdb := redis.NewClient(&redis.Options{
@@ -88,6 +98,12 @@ func (broker *Broker) Start(port string) {
 	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
 		log.Printf("Received connection code: \"%s\"", msg)
 
+		if broker.Draining() {
+			// shutting down; the client will reconnect to a healthy replica
+			log.Println("Refusing capture client while draining")
+			s.Close()
+			return
+		}
 		if len(msg) != ConnectCodeLength {
 			s.Close()
 		} else {
@@ -249,9 +265,50 @@ func (broker *Broker) Start(port string) {
 	router.HandleFunc("/", func(w http.ResponseWriter, request *http.Request) {
 		w.Write([]byte("I'm Alive!"))
 	})
+	// readiness fails as soon as shutdown begins, so the orchestrator stops sending new capture clients here
+	router.HandleFunc("/ready", func(w http.ResponseWriter, request *http.Request) {
+		if broker.Draining() {
+			http.Error(w, "draining", http.StatusServiceUnavailable)
+			return
+		}
+		w.Write([]byte("Ready"))
+	})
 	router.Handle("/socket.io/", server)
 	log.Printf("Message broker is running on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
+}
+
+// Shutdown tells every bot shard that capture connections are about to be severed, so they end running games and
+// unmute everyone, and withdraws the capture-ready flags for this broker's clients. Call it on SIGTERM, before exiting.
+func (broker *Broker) Shutdown(ctx context.Context) error {
+	// stop taking new clients first, then give the orchestrator a moment to notice before announcing; a client
+	// that connected in that window would otherwise get a capture-ready flag that outlives this process
+	broker.draining.Store(true)
+	if broker.DrainDelay > 0 {
+		log.Printf("Draining for %s before announcing shutdown", broker.DrainDelay)
+		select {
+		case <-time.After(broker.DrainDelay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	broker.connectionsLock.RLock()
+	codes := make([]string, 0, len(broker.connections))
+	for _, code := range broker.connections {
+		codes = append(codes, code)
+	}
+	broker.connectionsLock.RUnlock()
+
+	for _, code := range codes {
+		if err := broker.client.Del(ctx, rediskey.CaptureMuteReady(code)).Err(); err != nil {
+			log.Println(err)
+		}
+	}
+	// Only this broker's clients are affected: other replicas keep serving their games, and new games are not
+	// blocked. A platform-wide outage should be announced through the admin API instead.
+	log.Printf("Announcing shutdown to bots; %d capture clients connected", len(codes))
+	return notice.AnnounceShutdown(ctx, broker.client, codes)
 }
 
 // refreshCaptureReady extends the capture-ready flag for a connect code, if the client has established it.

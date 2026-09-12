@@ -232,7 +232,7 @@ func StatsFromGameAndEvents(pgame *PostgresGame, events []*PostgresGameEvent) Ga
 func (psqlInterface *PsqlInterface) NumGamesPlayedOnGuild(guildID string) int64 {
 	gid, _ := strconv.ParseInt(guildID, 10, 64)
 	var r int64
-	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1;", gid)
+	err := pgxscan.Get(context.Background(), psqlInterface.Pool, &r, "SELECT COUNT(*) FROM games WHERE guild_id=$1 AND end_time != -1 AND win_type != $2;", gid, int16(game.Aborted))
 	if err != nil {
 		return -1
 	}

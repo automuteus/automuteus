@@ -10,6 +10,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -54,6 +55,10 @@ type Bot struct {
 	metrics       RequestMetrics
 	sleep         func(time.Duration)
 	log           *slog.Logger
+	notices       NoticeSource
+
+	// games this shard is subscribed to, keyed by connect code; guarded by ChannelsMapLock
+	activeGameRequests map[string]GameStateRequest
 
 	TopGGClient *dbl.Client
 
@@ -91,14 +96,15 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		EndGameChannels:   make(map[string]chan EndGameMessage),
-		ChannelsMapLock:   sync.RWMutex{},
-		PrimarySession:    dg,
-		RedisInterface:    redisInterface,
-		StorageInterface:  storageInterface,
-		PostgresInterface: psql,
-		logPath:           logPath,
-		captureTimeout:    GameTimeoutSeconds,
+		EndGameChannels:    make(map[string]chan EndGameMessage),
+		activeGameRequests: make(map[string]GameStateRequest),
+		ChannelsMapLock:    sync.RWMutex{},
+		PrimarySession:     dg,
+		RedisInterface:     redisInterface,
+		StorageInterface:   storageInterface,
+		PostgresInterface:  psql,
+		logPath:            logPath,
+		captureTimeout:     GameTimeoutSeconds,
 	}
 	bot.useProductionDeps(dg, redisInterface, storageInterface, psql)
 	dg.LogLevel = discordgo.LogWarning
@@ -128,6 +134,8 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	}
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
+
+	go bot.listenForNotices(notice.Subscribe(ctx, redisInterface.client))
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
@@ -227,8 +235,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 			}
 			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
-				killChan := make(chan EndGameMessage)
-				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
+				killChan := make(chan EndGameMessage, 1)
 				dgs.Subscribed = true
 
 				bot.store.SetDiscordGameState(dgs, lock)
@@ -236,6 +243,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
+				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 			}
 			lock.Release(ctx)
 		}
@@ -270,10 +278,10 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	bot.store.SetDiscordGameState(dgs, lock)
 
-	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
+	bot.store.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
 	// Note, this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
-	bot.RedisInterface.DeleteDiscordGameState(dgs)
+	bot.store.DeleteDiscordGameState(dgs)
 }
 
 func MessageDeleteWorker(s DiscordClient, msgChannelID, msgID string, waitDur time.Duration) {
@@ -386,10 +394,12 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 
 func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
+		bot.ChannelsMapLock.RLock()
+		v, ok := bot.EndGameChannels[dgs.ConnectCode]
+		bot.ChannelsMapLock.RUnlock()
+		if ok {
+			v <- EndGameMessage{}
 		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
 
 		dgs.Reset()
 	} else {

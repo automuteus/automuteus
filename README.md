@@ -187,17 +187,47 @@ Bot health checks and Prometheus endpoints remain on the bot.
 | `POSTGRES_ADDR`, `POSTGRES_USER`, `POSTGRES_PASS` | yes | Shared Postgres connection settings. |
 | `API_PORT` | no | Executable's listening port; defaults to `5000`. Compose maps its host `API_PORT` to container `SERVICE_PORT`. |
 | `API_SERVER_URL` | no | Public API URL for Swagger; defaults to `http://localhost`. Also retain this on bots for capture links. |
-| `API_ADMIN_PASS` | no | Existing Basic Auth password for user `admin`; defaults to `automuteus`. |
+| `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Raising or clearing platform notices requires a non-default value. |
+| `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
 | `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
 
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
 on the API port. The process drains HTTP requests on SIGTERM/SIGINT.
 
+### Platform notices
+
+Operators can show a banner on every running game's status message, or end every
+game, through `/admin/notice` (Basic Auth as `admin`, non-default `API_ADMIN_PASS`):
+
+```sh
+# warn players; games keep running; the banner stays until you DELETE the notice
+curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
+  -H 'Content-Type: application/json' \
+  -d '{"severity":"warning","message":"Database maintenance in progress; expect some lag."}'
+
+# end every running game (players are unmuted, matches recorded as aborted) and block /new until cleared
+curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
+  -H 'Content-Type: application/json' \
+  -d '{"severity":"critical","message":"AutoMuteUs is going down for maintenance."}'
+
+curl -u admin:$API_ADMIN_PASS $API/admin/notice            # show the active notice
+curl -u admin:$API_ADMIN_PASS -X DELETE $API/admin/notice  # clear it
+```
+
+Galactus announces its own shutdown on SIGTERM, naming the games whose capture
+clients were connected to that replica, so rolling restarts only end the games
+that actually lose their capture connection; no notice is raised. Preview how the banners look
+in a channel of your choice without running the bot:
+
+```sh
+go run ./cmd/embedpreview -webhook <discord webhook url> -severity warning -message "Expect some lag"
+```
+
 Regenerate Swagger documentation with the generator matching the Go dependency:
 
 ```sh
-CGO_ENABLED=0 go run github.com/swaggo/swag/cmd/swag@v1.8.10 init -g cmd/api/main.go --parseDependency true --parseInternal
+CGO_ENABLED=0 go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 ```
 
 ### Upgrading: guild settings moved from Redis to Postgres
@@ -216,6 +246,13 @@ them. Guilds that are never read again can be moved with the optional sweep in
 | `BROKER_PORT` | no       | Port to listen on for capture-client socket connections. Defaults to `8123`.  |
 | `REDIS_USER`  | no       | Username to authenticate with Redis, if applicable.                           |
 | `REDIS_PASS`  | no       | Password to authenticate with Redis, if applicable.                           |
+| `DRAIN_SECONDS` | no     | Seconds to keep serving after SIGTERM, refusing new capture clients, before telling the bots to end this replica's games. Defaults to `5`. Keep well under the orchestrator's termination grace period. |
+| `LOG_FORMAT`, `LOG_LEVEL` | no | Same logging switches as the bot and API. |
+
+`/` is the liveness endpoint. `/ready` returns 503 from the moment Galactus receives
+SIGTERM, so point readiness probes at it to stop routing new capture clients to a
+replica that is shutting down. The container runs the binary as PID 1 (exec-form
+`ENTRYPOINT`) so the signal is delivered directly; keep it that way.
 
 # Similar Projects
 

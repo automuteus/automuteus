@@ -6,6 +6,12 @@ const EventsNamespace = "automuteus:capture:events"
 const JobNamespace = "automuteus:jobs:"
 
 const TotalUsers = "automuteus:users:total"
+
+// NoticeChannel carries platform notices (see pkg/notice) to every bot shard.
+const NoticeChannel = "automuteus:notices"
+
+// ActiveNotice holds the notice currently shown to players, if any.
+const ActiveNotice = "automuteus:notices:active"
 const TotalGames = "automuteus:games:total"
 
 func ActiveGamesForGuild(guildID string) string {

@@ -55,7 +55,7 @@ var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) dispatchEdit(s DiscordClient, me *discordgo.MessageEmbed) (newEdit bool) {
+func (dgs GameState) dispatchEdit(s DiscordClient, sleep func(time.Duration), me *discordgo.MessageEmbed) (newEdit bool) {
 	if !ValidFields(me) {
 		return false
 	}
@@ -64,7 +64,7 @@ func (dgs GameState) dispatchEdit(s DiscordClient, me *discordgo.MessageEmbed) (
 
 	// if it isn't found, then start the worker to wait to start it (this is a UNIQUE edit)
 	if _, ok := DeferredEdits[dgs.GameStateMsg.MessageID]; !ok {
-		go deferredEditWorker(s, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
+		go deferredEditWorker(s, sleep, dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
 		newEdit = true
 	}
 	// whether or not it's found, replace the contents with the new message
@@ -96,8 +96,8 @@ func RemovePendingDGSEdit(messageID string) {
 	DeferredEditsLock.Unlock()
 }
 
-func deferredEditWorker(s DiscordClient, channelID, messageID string) {
-	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
+func deferredEditWorker(s DiscordClient, sleep func(time.Duration), channelID, messageID string) {
+	sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
 	me := DeferredEdits[messageID]
@@ -136,7 +136,7 @@ func (bot *Bot) DispatchRefreshOrEdit(readOnlyDgs *GameState, dgsRequest GameSta
 	if readOnlyDgs.shouldRefresh() {
 		bot.RefreshGameStateMessage(dgsRequest, sett)
 	} else {
-		edited := readOnlyDgs.dispatchEdit(bot.discord, bot.gameStateResponse(readOnlyDgs, sett))
+		edited := readOnlyDgs.dispatchEdit(bot.discord, bot.sleep, bot.gameStateResponse(readOnlyDgs, sett))
 		if edited {
 			bot.metrics.RecordDiscordRequests(server.MessageEdit, 1)
 		}

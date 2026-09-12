@@ -8,6 +8,128 @@
     },
     "basePath": "/",
     "paths": {
+        "/admin/notice": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the active platform notice",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/notice.Notice"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Shows a banner on every game status message until cleared. A critical notice also ends every\nrunning game (unmuting everyone, recording the matches as aborted) and blocks /new while active.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Raise a platform notice",
+                "parameters": [
+                    {
+                        "description": "Notice",
+                        "name": "notice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.NoticeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/notice.Notice"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Clear the active platform notice",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/bot/commands": {
             "get": {
                 "description": "Get all Discord commands that the bot implements",
@@ -317,6 +439,20 @@
                 }
             }
         },
+        "api.NoticeRequest": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Database maintenance in progress; expect some lag."
+                },
+                "severity": {
+                    "description": "Severity is warning or critical. Critical ends every running game and blocks new ones.",
+                    "type": "string",
+                    "example": "warning"
+                }
+            }
+        },
         "api.RoomCodeResponse": {
             "type": "object",
             "properties": {
@@ -470,6 +606,7 @@
         },
         "discordgo.ApplicationCommandOptionType": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 1,
                 2,
@@ -499,6 +636,7 @@
         },
         "discordgo.ApplicationCommandType": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 1,
                 2,
@@ -579,6 +717,31 @@
                 }
             }
         },
+        "notice.Notice": {
+            "type": "object",
+            "properties": {
+                "issuedAt": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "severity": {
+                    "$ref": "#/definitions/notice.Severity"
+                }
+            }
+        },
+        "notice.Severity": {
+            "type": "string",
+            "enum": [
+                "warning",
+                "critical"
+            ],
+            "x-enum-varnames": [
+                "Warning",
+                "Critical"
+            ]
+        },
         "premium.PremiumRecord": {
             "type": "object",
             "properties": {
@@ -592,6 +755,7 @@
         },
         "premium.Tier": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 0,
                 1,

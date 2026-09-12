@@ -31,6 +31,8 @@ type GameStateStore interface {
 	LockVoiceChanges(connectCode string, dur time.Duration) lock.Lock
 	LockSnowflake(snowflake string) lock.Lock
 	GetUsernameOrUserIDMappings(guildID, key string) (map[string]any, error)
+	RemoveOldGame(guildID, connectCode string)
+	DeleteDiscordGameState(dgs *GameState)
 }
 
 // VoiceModifier applies mute/deafen changes to Discord users.
@@ -49,6 +51,7 @@ type GameRecorder interface {
 	EnsureUserExists(userID uint64) (*storageutils.PostgresUser, error)
 	UpdateGameAndPlayers(gameID int64, winType int16, endTime int64, players []*storageutils.PostgresUserGame) error
 	AddEvent(event *storageutils.PostgresGameEvent) error
+	AbortGame(gameID int64, endTime int64) error
 }
 
 // DiscordClient is the slice of the Discord REST API the game path uses to send, edit, and delete messages, and to
@@ -108,6 +111,7 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 	bot.discord = sess
 	bot.guilds = sess.State
 	bot.metrics = redisMetrics{client: redisInterface.client}
+	bot.notices = redisNotices{client: redisInterface.client}
 	bot.sleep = time.Sleep
 	bot.log = slog.Default()
 }

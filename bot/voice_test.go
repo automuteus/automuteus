@@ -28,7 +28,13 @@ func voiceTestState(phase game.Phase) *GameState {
 // addLinkedUser adds a Discord user linked to an in-game player of the given aliveness, with the given current
 // (believed) mute/deaf state.
 func addLinkedUser(dgs *GameState, userID, playerName string, alive, currentMute, currentDeaf bool) {
-	dgs.GameData.PlayerData[playerName] = amongus.PlayerData{Color: game.Red, Name: playerName, IsAlive: alive}
+	addLinkedUserWithColor(dgs, userID, playerName, game.Red, alive, currentMute, currentDeaf)
+}
+
+// addLinkedUserWithColor is addLinkedUser with an explicit in-game color. Players in one game must have distinct
+// colors for the status embed to be valid, as they always do in a real match.
+func addLinkedUserWithColor(dgs *GameState, userID, playerName string, color int, alive, currentMute, currentDeaf bool) {
+	dgs.GameData.PlayerData[playerName] = amongus.PlayerData{Color: color, Name: playerName, IsAlive: alive}
 	dgs.UserData[userID] = UserData{
 		User:         User{UserID: userID, UserName: playerName},
 		ShouldBeMute: currentMute,

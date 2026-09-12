@@ -17,6 +17,7 @@ import (
 	"github.com/automuteus/automuteus/v8/bot/setting"
 	redis_common "github.com/automuteus/automuteus/v8/common"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
@@ -275,6 +276,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return command.InsufficientPermissionsResponse(sett)
 			}
 
+			if n := bot.activeNotice(); n != nil && n.Severity == notice.Critical {
+				return command.NewResponse(command.NewMaintenance, command.NewInfo{Notice: n.Message}, sett)
+			}
+
 			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)
 			if voiceChannelID == "" {
 				return command.NewResponse(command.NewNoVoiceChannel, command.NewInfo{}, sett)
@@ -299,13 +304,12 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 				bot.RedisInterface.RefreshActiveGame(dgs.GuildID, dgs.ConnectCode)
 
-				killChan := make(chan EndGameMessage)
-
-				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
+				killChan := make(chan EndGameMessage, 1)
 
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
+				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
 
 				hyperlink, apiHyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
 
@@ -369,13 +373,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.NoGameResponse(sett)
 				}
 
-				if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-					v <- true
-				}
-				delete(bot.EndGameChannels, dgs.ConnectCode)
-
-				err = bot.applyToAll(dgs, bot.premiumTier(i.GuildID), false, false)
-				if err != nil {
+				if err := bot.stopGame(gsr, "ended by "+i.Member.User.ID, ""); err != nil {
 					return command.PrivateErrorResponse(command.End.Name, err, sett)
 				}
 				return command.PrivateResponse(ThumbsUp)

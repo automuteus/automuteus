@@ -21,12 +21,18 @@ import (
 	"time"
 )
 
-type EndGameMessage bool
+type EndGameMessage struct {
+	reason  string
+	message string
+	done    chan error
+}
 
 func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGameChannel chan EndGameMessage) {
 	notify := task.Subscribe(ctx, bot.RedisInterface.client, connectCode)
 
 	timer := time.NewTimer(time.Second * time.Duration(bot.captureTimeout))
+	defer timer.Stop()
+	defer notify.Close()
 
 	dgsRequest := GameStateRequest{
 		GuildID:     guildID,
@@ -34,6 +40,29 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	}
 	gl := bot.gameLog(dgsRequest)
 	gl.Info("subscribed to capture events")
+	bot.trackGame(dgsRequest)
+	defer bot.untrackGame(connectCode)
+	var endRequest *EndGameMessage
+	var endErr error
+	defer func() {
+		bot.ChannelsMapLock.Lock()
+		if bot.EndGameChannels[connectCode] == endGameChannel {
+			delete(bot.EndGameChannels, connectCode)
+		}
+		bot.ChannelsMapLock.Unlock()
+		if endRequest != nil && endRequest.done != nil {
+			endRequest.done <- endErr
+		}
+	}()
+	finish := func(end EndGameMessage) {
+		endRequest = &end
+		if end.reason == "" {
+			// The existing /new replacement path only requests deletion of the old game.
+			bot.forceEndGame(dgsRequest)
+		} else {
+			endErr = bot.completeGame(dgsRequest, end.reason, end.message)
+		}
+	}
 
 	// indicate to the broker that we're online and ready to start processing messages
 	task.Ack(ctx, bot.RedisInterface.client, connectCode)
@@ -48,6 +77,13 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 
 			// anytime we get a notification message, continue pulling messages off the list until there are no more
 			for {
+				// A queued stop takes priority over the next job, even if capture keeps publishing events.
+				select {
+				case end := <-endGameChannel:
+					finish(end)
+					return
+				default:
+				}
 				// Do not consume queued game events while settings are unavailable.
 				sett, settingsErr := bot.settings.LoadGuildSettings(ctx, guildID)
 				if settingsErr != nil {
@@ -89,19 +125,16 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			if err != nil {
 				gl.Error("failed to close capture subscription", "err", err)
 			}
-			go bot.forceEndGame(dgsRequest)
-			bot.ChannelsMapLock.Lock()
-			delete(bot.EndGameChannels, connectCode)
-			bot.ChannelsMapLock.Unlock()
+			bot.endInactiveGame(dgsRequest)
 
 			return
-		case <-endGameChannel:
+		case end := <-endGameChannel:
 			gl.Info("end-game signal received; closing capture subscription")
 			err := notify.Close()
 			if err != nil {
 				gl.Error("failed to close capture subscription", "err", err)
 			}
-			bot.forceEndGame(dgsRequest)
+			finish(end)
 			return
 		}
 	}
@@ -232,6 +265,12 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		}
 	}
 	return correlatedUserID
+}
+
+// endInactiveGame ends a game whose capture went quiet: players are unmuted, the match is aborted, and the game is
+// deleted.
+func (bot *Bot) endInactiveGame(dgsRequest GameStateRequest) {
+	bot.completeGame(dgsRequest, "capture inactivity", "")
 }
 
 // recordGameEvent stores a capture event against the active match, if there is one.
