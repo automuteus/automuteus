@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
@@ -17,7 +18,7 @@ import (
 	"time"
 )
 
-const ConnectCodeLength = 8
+const ConnectCodeLength = capture.ConnectCodeLength
 
 type Broker struct {
 	client *redis.Client
@@ -81,7 +82,7 @@ func (broker *Broker) Start(port string) {
 		log.Println("connected:", s.ID())
 		return nil
 	})
-	server.OnEvent("/", "connectCode", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.ConnectCodeEvent, func(s socketio.Conn, msg string) {
 		log.Printf("Received connection code: \"%s\"", msg)
 
 		if len(msg) != ConnectCodeLength {
@@ -103,7 +104,7 @@ func (broker *Broker) Start(port string) {
 	})
 
 	// only join the room for the connect code once we ensure that the bot actually connects with a valid discord session
-	server.OnEvent("/", "botID", func(s socketio.Conn, msg int64) {
+	server.OnEvent("/", capture.BotIDEvent, func(s socketio.Conn, msg int64) {
 		log.Printf("Received bot ID: \"%d\"", msg)
 
 		broker.connectionsLock.RLock()
@@ -120,19 +121,19 @@ func (broker *Broker) Start(port string) {
 		broker.connectionsLock.RUnlock()
 	})
 
-	server.OnEvent("/", "taskFailed", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.TaskFailedEvent, func(s socketio.Conn, msg string) {
 		log.Printf("Received failure for task ID: \"%s\"", msg)
 
 		broker.client.Publish(context.Background(), rediskey.CompleteTask(msg), "false")
 	})
 
-	server.OnEvent("/", "taskComplete", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.TaskCompleteEvent, func(s socketio.Conn, msg string) {
 		log.Printf("Received success for task ID: \"%s\"", msg)
 
 		broker.client.Publish(context.Background(), rediskey.CompleteTask(msg), "true")
 	})
 
-	server.OnEvent("/", "lobby", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.LobbyEvent, func(s socketio.Conn, msg string) {
 		log.Println("lobby:", msg)
 
 		// validation
@@ -157,7 +158,7 @@ func (broker *Broker) Start(port string) {
 			broker.connectionsLock.RUnlock()
 		}
 	})
-	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.StateEvent, func(s socketio.Conn, msg string) {
 		log.Println("phase received from capture: ", msg)
 		_, err := strconv.Atoi(msg)
 		if err != nil {
@@ -177,7 +178,7 @@ func (broker *Broker) Start(port string) {
 			broker.connectionsLock.RUnlock()
 		}
 	})
-	server.OnEvent("/", "player", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.PlayerEvent, func(s socketio.Conn, msg string) {
 		log.Println("player received from capture: ", msg)
 
 		broker.connectionsLock.RLock()
@@ -193,7 +194,7 @@ func (broker *Broker) Start(port string) {
 		}
 		broker.connectionsLock.RUnlock()
 	})
-	server.OnEvent("/", "gameover", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", capture.GameOverEvent, func(s socketio.Conn, msg string) {
 		broker.connectionsLock.RLock()
 		if cCode, ok := broker.connections[s.ID()]; ok {
 			err := task.PushJob(context.Background(), broker.client, cCode, task.GameOverJob, msg)

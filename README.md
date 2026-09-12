@@ -217,6 +217,13 @@ them. Guilds that are never read again can be moved with the optional sweep in
 | `REDIS_USER`  | no       | Username to authenticate with Redis, if applicable.                           |
 | `REDIS_PASS`  | no       | Password to authenticate with Redis, if applicable.                           |
 
+### Capture mock development client
+
+Run `go run ./cmd/capture-mock` to send simulated capture events to Galactus.
+Paste a connect code or capture link from `/new`, then send lobby, phase, player,
+and gameover events interactively. See [the capture mock guide](cmd/capture-mock/README.md)
+for connection settings and usage.
+
 # Similar Projects
 
 - [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).
