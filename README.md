@@ -254,6 +254,13 @@ SIGTERM, so point readiness probes at it to stop routing new capture clients to 
 replica that is shutting down. The container runs the binary as PID 1 (exec-form
 `ENTRYPOINT`) so the signal is delivered directly; keep it that way.
 
+### Capture mock development client
+
+Run `go run ./cmd/capture-mock` to send simulated capture events to Galactus.
+Paste a connect code or capture link from `/new`, then send lobby, phase, player,
+and gameover events interactively. See [the capture mock guide](cmd/capture-mock/README.md)
+for connection settings and usage.
+
 # Similar Projects
 
 - [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).

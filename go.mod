@@ -12,6 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.8.0
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/mux v1.8.0
+	github.com/hesh915/go-socket.io-client v0.0.0-20200925034401-83ee73793ba4
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/nicksnyder/go-i18n/v2 v2.2.1
@@ -69,11 +70,13 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
+	github.com/zhouhui8915/engine.io-go v0.0.0-20150910083302-02ea08f0971f // indirect
 	go.opentelemetry.io/otel v0.19.0 // indirect
 	go.opentelemetry.io/otel/metric v0.19.0 // indirect
 	go.opentelemetry.io/otel/trace v0.19.0 // indirect

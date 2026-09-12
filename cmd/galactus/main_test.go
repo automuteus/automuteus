@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"syscall"
 	"testing"
@@ -23,6 +24,9 @@ import (
 // signal Kubernetes and docker stop send, and checks that a critical notice reaches the bots and the process exits
 // cleanly within a typical termination grace period.
 func TestSIGTERMAnnouncesShutdown(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not support sending SIGTERM with os.Process.Signal")
+	}
 	if testing.Short() {
 		t.Skip("builds and runs the galactus binary")
 	}
