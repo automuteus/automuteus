@@ -14,6 +14,8 @@ const (
 	NewSuccess NewStatus = iota
 	NewNoVoiceChannel
 	NewLockout
+	// NewMaintenance means a critical platform notice is active and no games may start.
+	NewMaintenance
 )
 
 type NewInfo struct {
@@ -22,6 +24,7 @@ type NewInfo struct {
 	ApiHyperlink string
 	ConnectCode  string
 	ActiveGames  int64
+	Notice       string
 }
 
 var New = discordgo.ApplicationCommand{
@@ -50,6 +53,14 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 				"Current Games: {{.Games}}",
 		}, map[string]interface{}{
 			"Games": fmt.Sprintf("%d/%d", info.ActiveGames, DefaultMaxActiveGames),
+		})
+		flags = discordgo.MessageFlags(0) // public message
+	case NewMaintenance:
+		content = sett.LocalizeMessage(&i18n.Message{
+			ID:    "commands.new.maintenance",
+			Other: "🛑 **AutoMuteUs can't start games right now.**\n{{.Notice}}\nPlease try again in a few minutes.",
+		}, map[string]interface{}{
+			"Notice": info.Notice,
 		})
 		flags = discordgo.MessageFlags(0) // public message
 

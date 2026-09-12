@@ -10,6 +10,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -19,6 +20,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/top-gg/go-dbl"
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"sync"
@@ -42,7 +44,21 @@ type Bot struct {
 
 	PrimarySession *discordgo.Session
 
-	TokenProvider *tokenprovider.TokenProvider
+	// seams used by the game-event path; see deps.go
+	store         GameStateStore
+	settings      SettingsSource
+	voice         VoiceModifier
+	premiumSource PremiumSource
+	recorder      GameRecorder
+	discord       DiscordClient
+	guilds        GuildReader
+	metrics       RequestMetrics
+	sleep         func(time.Duration)
+	log           *slog.Logger
+	notices       NoticeSource
+
+	// games this shard is subscribed to, keyed by connect code; guarded by ChannelsMapLock
+	activeGameRequests map[string]GameStateRequest
 
 	TopGGClient *dbl.Client
 
@@ -80,16 +96,18 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		ConnsToGames: make(map[string]string),
 		StatusEmojis: emptyStatusEmojis(),
 
-		EndGameChannels:   make(map[string]chan EndGameMessage),
-		ChannelsMapLock:   sync.RWMutex{},
-		PrimarySession:    dg,
-		RedisInterface:    redisInterface,
-		StorageInterface:  storageInterface,
-		PostgresInterface: psql,
-		logPath:           logPath,
-		captureTimeout:    GameTimeoutSeconds,
+		EndGameChannels:    make(map[string]chan EndGameMessage),
+		activeGameRequests: make(map[string]GameStateRequest),
+		ChannelsMapLock:    sync.RWMutex{},
+		PrimarySession:     dg,
+		RedisInterface:     redisInterface,
+		StorageInterface:   storageInterface,
+		PostgresInterface:  psql,
+		logPath:            logPath,
+		captureTimeout:     GameTimeoutSeconds,
 	}
-	dg.LogLevel = discordgo.LogInformational
+	bot.useProductionDeps(dg, redisInterface, storageInterface, psql)
+	dg.LogLevel = discordgo.LogWarning
 	installDiscordgoLogger()
 
 	dg.AddHandler(bot.handleVoiceStateChange)
@@ -116,6 +134,8 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	}
 
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
+
+	go bot.listenForNotices(notice.Subscribe(ctx, redisInterface.client))
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
@@ -209,21 +229,21 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				GuildID:     m.Guild.ID,
 				ConnectCode: connCode,
 			}
-			lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+			lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 			for lock == nil {
-				lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+				lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 			}
 			if dgs != nil && dgs.ConnectCode != "" {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
-				killChan := make(chan EndGameMessage)
-				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
+				killChan := make(chan EndGameMessage, 1)
 				dgs.Subscribed = true
 
-				bot.RedisInterface.SetDiscordGameState(dgs, lock)
+				bot.store.SetDiscordGameState(dgs, lock)
 
 				bot.ChannelsMapLock.Lock()
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
+				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 			}
 			lock.Release(ctx)
 		}
@@ -245,26 +265,26 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 
 func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 	// lock because we don't want anyone else modifying while we delete
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 	}
 
-	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, true)
+	deleted := dgs.DeleteGameStateMsg(bot.discord, true)
 	if deleted {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 
-	bot.RedisInterface.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
+	bot.store.RemoveOldGame(dgs.GuildID, dgs.ConnectCode)
 
 	// Note, this shouldn't be necessary with the TTL of the keys, but it can't hurt to clean up...
-	bot.RedisInterface.DeleteDiscordGameState(dgs)
+	bot.store.DeleteDiscordGameState(dgs)
 }
 
-func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitDur time.Duration) {
+func MessageDeleteWorker(s DiscordClient, msgChannelID, msgID string, waitDur time.Duration) {
 	log.Printf("Message worker is sleeping for %s before deleting message", waitDur.String())
 	time.Sleep(waitDur)
 	err := s.ChannelMessageDelete(msgChannelID, msgID)
@@ -274,9 +294,9 @@ func MessageDeleteWorker(s *discordgo.Session, msgChannelID, msgID string, waitD
 }
 
 func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.GuildSettings) bool {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 	for lock == nil {
-		lock, dgs = bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+		lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
 	}
 
 	// don't try to edit this message, because we're about to delete it
@@ -288,16 +308,16 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 		return false // no-op; no active game to refresh
 	}
 
-	deleted := dgs.DeleteGameStateMsg(bot.PrimarySession, false) // delete the old message
-	created := dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+	deleted := dgs.DeleteGameStateMsg(bot.discord, false) // delete the old message
+	created := dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 2)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 	// if for whatever reason the message failed to create, this would catch it
 	return dgs.GameStateMsg.Exists()
 }
@@ -374,10 +394,12 @@ func getTrackingChannel(guild *discordgo.Guild, userID string) string {
 
 func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64) {
 	if dgs.GameStateMsg.Exists() {
-		if v, ok := bot.EndGameChannels[dgs.ConnectCode]; ok {
-			v <- true
+		bot.ChannelsMapLock.RLock()
+		v, ok := bot.EndGameChannels[dgs.ConnectCode]
+		bot.ChannelsMapLock.RUnlock()
+		if ok {
+			v <- EndGameMessage{}
 		}
-		delete(bot.EndGameChannels, dgs.ConnectCode)
 
 		dgs.Reset()
 	} else {

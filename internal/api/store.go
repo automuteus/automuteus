@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
@@ -26,6 +27,18 @@ type DataStore struct {
 
 func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStore {
 	return &DataStore{redis: client, postgres: pool, settings: storage.NewPostgresStorage(pool, client), config: config}
+}
+
+func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {
+	return notice.Active(ctx, s.redis)
+}
+
+func (s *DataStore) RaiseNotice(ctx context.Context, n notice.Notice) error {
+	return notice.Raise(ctx, s.redis, n)
+}
+
+func (s *DataStore) ClearNotice(ctx context.Context) error {
+	return notice.Clear(ctx, s.redis)
 }
 
 func (s *DataStore) Ping(ctx context.Context) error {

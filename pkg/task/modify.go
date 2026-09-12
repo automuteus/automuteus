@@ -1,12 +1,11 @@
 package task
 
 import (
-	"crypto/sha256"
+	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/bwmarrin/discordgo"
-	"time"
 )
 
 type UserModify struct {
@@ -27,18 +26,18 @@ type ModifyTask struct {
 	TaskID     string      `json:"taskID"`
 }
 
-const IDLength = 10
-
+// NewModifyTask builds a mute/deafen task with a random ID, so that acks for distinct tasks can never be confused
+// even when the same user is modified repeatedly in quick succession.
 func NewModifyTask(guildID, userID uint64, params PatchParams) ModifyTask {
-	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%d", guildID)))
-	h.Write([]byte(fmt.Sprintf("%d", userID)))
-	h.Write([]byte(fmt.Sprintf("%d", time.Now().Unix())))
+	var id [8]byte
+	if _, err := rand.Read(id[:]); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
 	return ModifyTask{
 		GuildID:    guildID,
 		UserID:     userID,
 		Parameters: params,
-		TaskID:     hex.EncodeToString(h.Sum(nil))[0:IDLength],
+		TaskID:     hex.EncodeToString(id[:]),
 	}
 }
 

@@ -51,7 +51,7 @@ func (dgs *GameState) Reset() {
 	dgs.GameData = amongus.NewGameData()
 }
 
-func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s *discordgo.Session, userID string) (UserData, bool) {
+func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s DiscordClient, userID string) (UserData, bool) {
 	if g == nil {
 		return UserData{}, false
 	}

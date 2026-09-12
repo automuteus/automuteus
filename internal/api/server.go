@@ -5,10 +5,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/docs"
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/gin-gonic/gin"
@@ -44,6 +46,9 @@ type Store interface {
 	Settings(context.Context, string) (*settings.GuildSettings, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
 	Ping(context.Context) error
+	ActiveNotice(context.Context) (*notice.Notice, error)
+	RaiseNotice(context.Context, notice.Notice) error
+	ClearNotice(context.Context) error
 }
 
 type Config struct {
@@ -107,6 +112,15 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	}))
 	guildGroup.GET("/settings", handleGetGuildSettings(store))
 	guildGroup.GET("/premium", handleGetGuildPremium(store))
+
+	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
+	// notices requires an explicitly configured admin password; the default password is refused.
+	adminGroup := r.Group("/admin", gin.BasicAuth(gin.Accounts{
+		"admin": adminPassword,
+	}))
+	adminGroup.GET("/notice", handleGetNotice(store))
+	adminGroup.POST("/notice", requireConfiguredPassword(config), handlePostNotice(store))
+	adminGroup.DELETE("/notice", requireConfiguredPassword(config), handleDeleteNotice(store))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -363,6 +377,111 @@ func handleGetGuildPremium(store Store) func(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, record)
+	}
+}
+
+// NoticeRequest is the body of POST /admin/notice. The notice stays active until DELETE /admin/notice.
+type NoticeRequest struct {
+	// Severity is warning or critical. Critical ends every running game and blocks new ones.
+	Severity string `json:"severity" example:"warning"`
+	Message  string `json:"message" example:"Database maintenance in progress; expect some lag."`
+}
+
+const maxNoticeMessageLength = 500
+
+func requireConfiguredPassword(config Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if config.AdminPassword == "" || config.AdminPassword == "automuteus" {
+			c.AbortWithStatusJSON(http.StatusForbidden, HttpError{
+				StatusCode: http.StatusForbidden,
+				Error:      "set API_ADMIN_PASS to a non-default value to manage notices",
+			})
+		}
+	}
+}
+
+// @Summary Get the active platform notice
+// @Tags admin
+// @Produce json
+// @Success 200 {object} notice.Notice
+// @Failure 404 {object} HttpError
+// @Failure 503 {object} HttpError
+// @Security BasicAuth
+// @Router /admin/notice [get]
+func handleGetNotice(store Store) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		n, err := store.ActiveNotice(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "notice storage unavailable"})
+			return
+		}
+		if n == nil {
+			c.JSON(http.StatusNotFound, HttpError{StatusCode: http.StatusNotFound, Error: "no active notice"})
+			return
+		}
+		c.JSON(http.StatusOK, n)
+	}
+}
+
+// @Summary Raise a platform notice
+// @Description Shows a banner on every game status message until cleared. A critical notice also ends every
+// @Description running game (unmuting everyone, recording the matches as aborted) and blocks /new while active.
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param notice body NoticeRequest true "Notice"
+// @Success 200 {object} notice.Notice
+// @Failure 400 {object} HttpError
+// @Failure 403 {object} HttpError
+// @Failure 503 {object} HttpError
+// @Security BasicAuth
+// @Router /admin/notice [post]
+func handlePostNotice(store Store) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var req NoticeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid notice body"})
+			return
+		}
+		sev := notice.Severity(strings.ToLower(req.Severity))
+		msg := strings.TrimSpace(req.Message)
+		switch {
+		case !sev.Valid():
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "severity must be warning or critical"})
+			return
+		case msg == "" || len(msg) > maxNoticeMessageLength:
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: fmt.Sprintf("message must be 1-%d characters", maxNoticeMessageLength)})
+			return
+		}
+		n := notice.Notice{Severity: sev, Message: msg}
+		if err := store.RaiseNotice(c.Request.Context(), n); err != nil {
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "failed to raise notice"})
+			return
+		}
+		active, err := store.ActiveNotice(c.Request.Context())
+		if err != nil || active == nil {
+			c.JSON(http.StatusOK, n)
+			return
+		}
+		c.JSON(http.StatusOK, active)
+	}
+}
+
+// @Summary Clear the active platform notice
+// @Tags admin
+// @Produce json
+// @Success 204
+// @Failure 403 {object} HttpError
+// @Failure 503 {object} HttpError
+// @Security BasicAuth
+// @Router /admin/notice [delete]
+func handleDeleteNotice(store Store) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		if err := store.ClearNotice(c.Request.Context()); err != nil {
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "failed to clear notice"})
+			return
+		}
+		c.Status(http.StatusNoContent)
 	}
 }
 
