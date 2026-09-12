@@ -1,0 +1,39 @@
+# Dependabot keeps Go modules, GitHub Actions, and Docker base images current.
+# It replaces the earlier Renovate config, which had stopped running.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # one PR for all routine bumps; majors still arrive individually so they get a proper look
+      go-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+
+  # Dockerfile, Dockerfile.api, and Dockerfile.galactus at the repo root (golang and alpine base images)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      base-images:
+        patterns: ["*"]
+    commit-message:
+      prefix: docker
