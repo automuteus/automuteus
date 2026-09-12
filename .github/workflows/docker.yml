@@ -5,6 +5,8 @@ on:
     branches:
       - '**'
       - '!l10n_master'
+      # Dependabot pushes get no repository secrets, so the DockerHub login can never succeed there.
+      - '!dependabot/**'
     tags:
       - '*.*.*'
       - '!v*.*.*' # don't push tags prefixed with `v`
