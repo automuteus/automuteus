@@ -2,13 +2,11 @@ package bot
 
 import (
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"log"
 	"strconv"
 	"time"
 
-	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/task"
-	"github.com/bsm/redislock"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,22 +15,16 @@ import (
 // relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 // the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
-	snowFlakeLock := bot.RedisInterface.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
+	snowFlakeLock := bot.store.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	// couldn't obtain lock; bail bail bail!
 	if snowFlakeLock == nil {
 		return
 	}
 	defer snowFlakeLock.Release(ctx)
 
-	prem, days, _ := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, nil, m.GuildID, "")
-	premTier := premium.FreeTier
-	if !premium.IsExpired(prem, days) {
-		premTier = prem
-	}
-
-	sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, m.GuildID)
+	sett, settingsErr := bot.settings.LoadGuildSettings(ctx, m.GuildID)
 	if settingsErr != nil {
-		log.Println(settingsErr)
+		bot.log.Error("failed to load guild settings", "guild", m.GuildID, "err", settingsErr)
 		return
 	}
 	gsr := GameStateRequest{
@@ -40,21 +32,22 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		VoiceChannel: m.ChannelID,
 	}
 
-	stateLock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(gsr)
+	stateLock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
 	if stateLock == nil {
 		return
 	}
 	defer stateLock.Release(ctx)
+	gl := bot.gameLog(GameStateRequest{GuildID: m.GuildID, ConnectCode: dgs.ConnectCode, VoiceChannel: m.ChannelID})
 
-	var voiceLock *redislock.Lock
+	var voiceLock lock.Lock
 	if dgs.ConnectCode != "" {
-		voiceLock = bot.RedisInterface.LockVoiceChanges(dgs.ConnectCode, time.Second)
+		voiceLock = bot.store.LockVoiceChanges(dgs.ConnectCode, time.Second)
 		if voiceLock == nil {
 			return
 		}
 	}
 
-	g, err := s.State.Guild(dgs.GuildID)
+	g, err := bot.guilds.Guild(dgs.GuildID)
 
 	if err != nil || g == nil {
 		return
@@ -93,9 +86,10 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 		dgs.UpdateUserData(m.UserID, userData)
 
 		if dgs.Running {
+			gl.Info("voice state changed; applying voice change", "user", m.UserID, "mute", mute, "deaf", deaf)
 			uid, _ := strconv.ParseUint(m.UserID, 10, 64)
 			req := task.UserModifyRequest{
-				Premium: premTier,
+				Premium: bot.premiumTier(m.GuildID),
 				Users: []task.UserModify{
 					{
 						UserID: uid,
@@ -104,30 +98,30 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 					},
 				},
 			}
-			err = bot.TokenProvider.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			err = bot.voice.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
-				log.Println("error received from galactus for modifyUsers: ", err.Error())
+				gl.Error("failed to apply voice change", "user", m.UserID, "err", err)
 			}
 		}
 	}
-	bot.RedisInterface.SetDiscordGameState(dgs, stateLock)
+	bot.store.SetDiscordGameState(dgs, stateLock)
 }
 
 func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, userID string, sett *settings.GuildSettings, g *discordgo.Guild, connCode string) {
-	lock, dgs := bot.RedisInterface.GetDiscordGameStateAndLock(GameStateRequest{
+	lock, dgs := bot.store.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     guildID,
 		TextChannel: textChannelID,
 		ConnectCode: connCode,
 	})
 	if lock == nil {
-		log.Println("Couldn't obtain lock for DGS on game start...")
+		bot.log.Warn("could not lock game state on game start", "guild", guildID, "code", connCode)
 		return
 	}
 	dgs.GameData.Reset()
 
 	dgs.UnlinkAllUsers()
 	dgs.VoiceChannel = ""
-	dgs.DeleteGameStateMsg(bot.PrimarySession, true)
+	dgs.DeleteGameStateMsg(bot.discord, true)
 
 	dgs.Running = true
 
@@ -135,13 +129,13 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		dgs.VoiceChannel = voiceChannelID
 		for _, v := range g.VoiceStates {
 			if v.ChannelID == voiceChannelID {
-				dgs.checkCacheAndAddUser(g, bot.PrimarySession, v.UserID)
+				dgs.checkCacheAndAddUser(g, bot.discord, v.UserID)
 			}
 		}
 	}
 
-	_ = dgs.CreateMessage(bot.PrimarySession, bot.gameStateResponse(dgs, sett), textChannelID, userID)
+	_ = dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), textChannelID, userID)
 
 	// release the lock
-	bot.RedisInterface.SetDiscordGameState(dgs, lock)
+	bot.store.SetDiscordGameState(dgs, lock)
 }

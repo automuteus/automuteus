@@ -4,15 +4,16 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/automuteus/automuteus/v8/pkg/token"
-	"github.com/bsm/redislock"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/exp/constraints"
 	"log"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -36,6 +37,18 @@ type TokenProvider struct {
 	maxRequests5Seconds int64
 	sessionLock         sync.RWMutex
 	taskTimeoutMs       time.Duration
+
+	// applyPrimary, when set, replaces the Discord API call the primary bot makes to mute/deafen a user. Tests use
+	// it to observe the fallback path without a live session.
+	applyPrimary func(guildID, userID string, mute, deaf bool) error
+}
+
+// applyWithPrimary mutes/deafens a user with the primary bot's own session.
+func (tokenProvider *TokenProvider) applyWithPrimary(guildID, userID string, mute, deaf bool) error {
+	if tokenProvider.applyPrimary != nil {
+		return tokenProvider.applyPrimary(guildID, userID, mute, deaf)
+	}
+	return task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userID, mute, deaf)
 }
 
 func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout time.Duration, maxReq int64) *TokenProvider {
@@ -96,6 +109,11 @@ func (tokenProvider *TokenProvider) openAndStartSessionWithToken(botToken string
 	return false
 }
 
+// logger returns a logger tagged for this component and guild.
+func (tokenProvider *TokenProvider) logger(guildID string) *slog.Logger {
+	return slog.Default().With("component", "tokenprovider", "guild", guildID)
+}
+
 func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[string]struct{}) (*discordgo.Session, string) {
 	tokenProvider.sessionLock.RLock()
 	defer tokenProvider.sessionLock.RUnlock()
@@ -103,11 +121,8 @@ func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[
 	for hToken, sess := range tokenProvider.activeSessions {
 		// if we have already used this token successfully, or haven't set any restrictions
 		if hTokenSubset == nil || mapHasEntry(hTokenSubset, hToken) {
-			// if this token isn't potentially rate-limited
-			if tokenProvider.IncrAndTestGuildTokenComboLock(guildID, hToken) {
+			if tokenProvider.tokenUsable(guildID, hToken, sess) {
 				return sess, hToken
-			} else {
-				log.Println("Secondary token is potentially rate-limited. Skipping")
 			}
 		}
 	}
@@ -123,49 +138,45 @@ func mapHasEntry[T constraints.Ordered, K any](dict map[T]K, key T) bool {
 	return ok
 }
 
+// IncrAndTestGuildTokenComboLock counts a request against the capture client's per-guild budget and reports whether
+// it was within the limit. Bot-owned tokens do not use this; discordgo tracks their real buckets from response headers.
 func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hashToken string) bool {
+	l := tokenProvider.logger(guildID).With("token", hashToken)
 	i, err := tokenProvider.client.Incr(context.Background(), rediskey.GuildTokenLock(guildID, hashToken)).Result()
 	if err != nil {
-		log.Println(err)
+		l.Error("failed to increment token usage counter", "err", err)
 	}
 	usable := i < tokenProvider.maxRequests5Seconds
-	log.Printf("Token/capture %s on guild %s is at count %d. Using?: %v", hashToken, guildID, i, usable)
+	l.Debug("token usage checked", "count", i, "usable", usable)
 	if !usable {
 		return false
 	}
 
-	// set the expiry only if the mute/deafen was successful, because we want to preserve any existing blacklist expiries
 	err = tokenProvider.client.Expire(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), time.Second*5).Err()
 	if err != nil {
-		log.Println(err)
+		l.Error("failed to set token usage expiry", "err", err)
 	}
 
 	return true
-}
-
-// BlacklistTokenForDuration sets a guild token (or connect code ala capture bot) to the maximum value allowed before
-// attempting other non-rate-limited mute/deafen methods.
-// NOTE: this will manifest as the capture/token in question appearing like it "has been used <maxnum> times" in logs,
-// even if this is not technically accurate. A more accurate approach would probably use a totally separate Redis key,
-// as opposed to this approach, which simply uses the ratelimiting counter key(s) to achieve blacklisting
-func (tokenProvider *TokenProvider) BlacklistTokenForDuration(guildID, hashToken string, duration time.Duration) error {
-	return tokenProvider.client.Set(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), tokenProvider.maxRequests5Seconds, duration).Err()
 }
 
 const DefaultMaxWorkers = 8
 
 var UnresponsiveCaptureBlacklistDuration = time.Minute * time.Duration(5)
 
-func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock *redislock.Lock) error {
+func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock lock.Lock) error {
 	if voicelock != nil {
 		defer voicelock.Release(context.Background())
 	}
+	l := tokenProvider.logger(guildID).With("code", connectCode)
+	start := time.Now()
 
 	gid, gerr := strconv.ParseUint(guildID, 10, 64)
 	if gerr != nil {
 		return gerr
 	}
 	limit := PremiumBotConstraints[request.Premium]
+	capture := tokenProvider.newCaptureRoute(guildID, connectCode, l)
 
 	tasksChannel := make(chan task.UserModify, len(request.Users))
 	wg := sync.WaitGroup{}
@@ -177,7 +188,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 		RateLimit: 0,
 	}
 	uniqueTokensUsed := make(map[string]struct{})
-	lock := sync.Mutex{}
+	mu := sync.Mutex{}
 	tokenLock := sync.RWMutex{}
 
 	var latestErr error
@@ -198,32 +209,40 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 					}
 				}
 				if hToken != "" {
-					lock.Lock()
+					mu.Lock()
 					mdsc.Worker++
-					lock.Unlock()
+					mu.Unlock()
 
 					tokenLock.Lock()
 					uniqueTokensUsed[hToken] = struct{}{}
 					tokenLock.Unlock()
 				} else {
-					success := tokenProvider.attemptOnCaptureBot(guildID, connectCode, gid, req)
-					if success {
-						lock.Lock()
+					result := captureFailed
+					if capture.usable() {
+						result = tokenProvider.attemptOnCaptureBot(capture, gid, req)
+					}
+					switch result {
+					case captureApplied:
+						mu.Lock()
 						mdsc.Capture++
-						lock.Unlock()
-					} else {
-						log.Printf("Applying mute=%v, deaf=%v using primary bot\n", req.Mute, req.Deaf)
-						err := task.ApplyMuteDeaf(tokenProvider.primarySession, guildID, userIDStr, req.Mute, req.Deaf)
+						mu.Unlock()
+					case captureRateLimited:
+						mu.Lock()
+						mdsc.RateLimit++
+						mu.Unlock()
+						fallthrough
+					default:
+						l.Debug("applying voice change via primary bot", "user", userIDStr, "mute", req.Mute, "deaf", req.Deaf)
+						err := tokenProvider.applyWithPrimary(guildID, userIDStr, req.Mute, req.Deaf)
 						if err != nil {
-							lock.Lock()
+							mu.Lock()
 							latestErr = err
-							lock.Unlock()
-							log.Println("Error on primary bot:")
-							log.Println(err)
+							mu.Unlock()
+							l.Error("primary bot voice change failed", "user", userIDStr, "err", err)
 						} else {
-							lock.Lock()
+							mu.Lock()
 							mdsc.Official++
-							lock.Unlock()
+							mu.Unlock()
 						}
 					}
 				}
@@ -244,6 +263,14 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	// note, this should probably be more systematic on startup, not when a mute/deafen task comes in. But this is a
 	// context in which we already have the guildID, successful tokens, AND the premium limit...
 	go tokenProvider.verifyBotMembership(guildID, limit, uniqueTokensUsed)
+
+	summary := l.With("users", len(request.Users), "worker", mdsc.Worker, "capture", mdsc.Capture,
+		"official", mdsc.Official, "rate_limited", mdsc.RateLimit, "elapsed", time.Since(start))
+	if latestErr != nil {
+		summary.Warn("voice changes issued with errors", "err", latestErr)
+	} else {
+		summary.Info("voice changes issued")
+	}
 
 	return latestErr
 }

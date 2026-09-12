@@ -4,11 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"log"
 	"math/rand"
 	"os"
 	"strings"
+
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -18,7 +19,7 @@ func generateConnectCode(guildID string) string {
 	h.Write([]byte(guildID))
 
 	// add some randomness
-	h.Write([]byte(fmt.Sprintf("%f", rand.Float64())))
+	fmt.Fprintf(h, "%f", rand.Float64())
 	return strings.ToUpper(hex.EncodeToString(h.Sum(nil))[0:8])
 }
 
@@ -26,7 +27,7 @@ func formCaptureURL(url, connectCode string) (hyperlink, apiHyperlink, minimalUR
 	return capture.FormCaptureURL(url, os.Getenv("API_SERVER_URL"), connectCode)
 }
 
-func sendEmbedWithComponents(s *discordgo.Session, channelID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {
+func sendEmbedWithComponents(s DiscordClient, channelID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {
 	complexMsg := discordgo.MessageSend{
 		Content:         "",
 		Embeds:          nil,
@@ -45,7 +46,7 @@ func sendEmbedWithComponents(s *discordgo.Session, channelID string, message *di
 	return msg
 }
 
-func editMessageEmbed(s *discordgo.Session, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
+func editMessageEmbed(s DiscordClient, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
 	me := discordgo.NewMessageEdit(channelID, messageID).SetEmbed(message)
 	msg, err := s.ChannelMessageEditComplex(me)
 	if err != nil {

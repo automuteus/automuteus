@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/BurntSushi/toml v1.1.0
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/bsm/redislock v0.7.1
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/georgysavva/scany v0.2.7
@@ -67,6 +68,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/otel v0.19.0 // indirect
 	go.opentelemetry.io/otel/metric v0.19.0 // indirect
 	go.opentelemetry.io/otel/trace v0.19.0 // indirect

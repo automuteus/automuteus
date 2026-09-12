@@ -1,8 +1,9 @@
 package bot
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"runtime"
 	"strings"
 	"sync"
@@ -15,6 +16,14 @@ import (
 // becomes occupied) that the bot has no use for, and each one would otherwise be logged with its full JSON payload.
 const unknownEventPrefix = "unknown event:"
 
+// droppedPrefixes are discordgo messages that dump an entire gateway event (as a Go literal with the raw JSON rendered
+// byte by byte) on every reconnect. The reconnect itself is reported by other messages; these add only noise.
+var droppedPrefixes = []string{
+	unknownEventPrefix,
+	"Expected READY/RESUMED, instead got:",
+	"First Packet:",
+}
+
 var installDiscordgoLoggerOnce sync.Once
 
 // installDiscordgoLogger routes discordgo's logging through discordgoLogger. It is safe to call multiple times
@@ -25,8 +34,9 @@ func installDiscordgoLogger() {
 	})
 }
 
-// discordgoLogger mirrors discordgo's default log format exactly, except that "unknown event" warnings are dropped.
-// Session log levels are still respected: discordgo only calls this for messages at or below the session's LogLevel.
+// discordgoLogger forwards discordgo's log messages to the default slog logger, tagged with the library and the
+// source location inside it. Session log levels are still respected: discordgo only calls this for messages at or
+// below the session's LogLevel.
 func discordgoLogger(msgL, caller int, format string, a ...interface{}) {
 	if shouldDropDiscordgoMessage(msgL, format) {
 		return
@@ -42,11 +52,36 @@ func discordgoLogger(msgL, caller int, format string, a ...interface{}) {
 	fns := strings.Split(name, ".")
 	name = fns[len(fns)-1]
 
-	msg := fmt.Sprintf(format, a...)
+	msg := strings.TrimSpace(fmt.Sprintf(format, a...))
 
-	log.Printf("[DG%d] %s:%d:%s() %s\n", msgL, file, line, name, msg)
+	slog.Default().Log(context.Background(), discordgoLevel(msgL), msg,
+		"component", "discordgo",
+		"source", fmt.Sprintf("%s:%d:%s()", file, line, name),
+	)
+}
+
+func discordgoLevel(msgL int) slog.Level {
+	switch msgL {
+	case discordgo.LogError:
+		return slog.LevelError
+	case discordgo.LogWarning:
+		return slog.LevelWarn
+	case discordgo.LogInformational:
+		return slog.LevelInfo
+	default:
+		return slog.LevelDebug
+	}
 }
 
 func shouldDropDiscordgoMessage(msgL int, format string) bool {
-	return msgL == discordgo.LogWarning && strings.HasPrefix(format, unknownEventPrefix)
+	for _, prefix := range droppedPrefixes {
+		if strings.HasPrefix(format, prefix) {
+			// the unknown-event message is only dropped at its usual warning level; the event dumps are dropped at
+			// any level since they appear at both warning and informational
+			if prefix != unknownEventPrefix || msgL == discordgo.LogWarning {
+				return true
+			}
+		}
+	}
+	return false
 }

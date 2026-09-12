@@ -2,7 +2,7 @@ package bot
 
 import (
 	"bytes"
-	"log"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -22,6 +22,8 @@ func TestShouldDropDiscordgoMessage(t *testing.T) {
 		{"error level", discordgo.LogError, "error closing websocket, %s", false},
 		{"informational", discordgo.LogInformational, "called", false},
 		{"unknown event text at error level", discordgo.LogError, unknown, false},
+		{"resume event dump", discordgo.LogWarning, "Expected READY/RESUMED, instead got:\n%#v\n", true},
+		{"first packet dump", discordgo.LogInformational, "First Packet:\n%#v\n", true},
 	}
 	for _, c := range cases {
 		if got := shouldDropDiscordgoMessage(c.level, c.format); got != c.drop {
@@ -32,9 +34,9 @@ func TestShouldDropDiscordgoMessage(t *testing.T) {
 
 func TestDiscordgoLoggerOutput(t *testing.T) {
 	var buf bytes.Buffer
-	prev := log.Writer()
-	log.SetOutput(&buf)
-	defer log.SetOutput(prev)
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(prev)
 
 	// discordgo calls Logger through its msglog helper, so callers are offset by one frame relative to a
 	// direct call. A direct call with caller=0 therefore resolves to this test function.
@@ -45,13 +47,9 @@ func TestDiscordgoLoggerOutput(t *testing.T) {
 
 	discordgoLogger(discordgo.LogWarning, 0, "something %s", "bad")
 	out := buf.String()
-	if !strings.HasPrefix(out[strings.Index(out, "["):], "[DG1] ") {
-		t.Errorf("missing discordgo level prefix: %q", out)
-	}
-	if !strings.Contains(out, "something bad") {
-		t.Errorf("message not passed through: %q", out)
-	}
-	if !strings.Contains(out, "discordgo_logging_test.go") {
-		t.Errorf("caller should resolve to the message source, got %q", out)
+	for _, want := range []string{"level=WARN", `msg="something bad"`, "component=discordgo", "discordgo_logging_test.go"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q: %q", want, out)
+		}
 	}
 }

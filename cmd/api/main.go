@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/internal/api"
+	"github.com/automuteus/automuteus/v8/pkg/logging"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/go-redis/redis/v8"
@@ -63,6 +64,7 @@ func configFromEnv(getenv func(string) string) (config, error) {
 // @BasePath /
 // @securityDefinitions.basic BasicAuth
 func main() {
+	logging.Setup(os.Stdout)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if err := run(ctx); err != nil {

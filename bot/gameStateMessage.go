@@ -1,10 +1,11 @@
 package bot
 
 import (
-	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"sync"
 	"time"
+
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,7 +34,7 @@ func (gsm *GameStateMessage) Exists() bool {
 	return gsm.MessageID != "" && gsm.MessageChannelID != ""
 }
 
-func (dgs *GameState) DeleteGameStateMsg(s *discordgo.Session, reset bool) bool {
+func (dgs *GameState) DeleteGameStateMsg(s DiscordClient, reset bool) bool {
 	retValue := false
 	if dgs.GameStateMsg.Exists() {
 		err := s.ChannelMessageDelete(dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.MessageID)
@@ -54,7 +55,7 @@ var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) dispatchEdit(s *discordgo.Session, me *discordgo.MessageEmbed) (newEdit bool) {
+func (dgs GameState) dispatchEdit(s DiscordClient, me *discordgo.MessageEmbed) (newEdit bool) {
 	if !ValidFields(me) {
 		return false
 	}
@@ -74,7 +75,7 @@ func (dgs GameState) dispatchEdit(s *discordgo.Session, me *discordgo.MessageEmb
 
 func (dgs GameState) shouldRefresh() bool {
 	// discord dictates that we can't edit messages that are older than 1 hour
-	return (time.Now().Sub(time.Unix(dgs.GameStateMsg.CreationTimeUnix, 0))) > time.Hour
+	return (time.Since(time.Unix(dgs.GameStateMsg.CreationTimeUnix, 0))) > time.Hour
 }
 
 func ValidFields(me *discordgo.MessageEmbed) bool {
@@ -95,7 +96,7 @@ func RemovePendingDGSEdit(messageID string) {
 	DeferredEditsLock.Unlock()
 }
 
-func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
+func deferredEditWorker(s DiscordClient, channelID, messageID string) {
 	time.Sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
@@ -108,7 +109,7 @@ func deferredEditWorker(s *discordgo.Session, channelID, messageID string) {
 	}
 }
 
-func (dgs *GameState) CreateMessage(s *discordgo.Session, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
+func (dgs *GameState) CreateMessage(s DiscordClient, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -135,9 +136,9 @@ func (bot *Bot) DispatchRefreshOrEdit(readOnlyDgs *GameState, dgsRequest GameSta
 	if readOnlyDgs.shouldRefresh() {
 		bot.RefreshGameStateMessage(dgsRequest, sett)
 	} else {
-		edited := readOnlyDgs.dispatchEdit(bot.PrimarySession, bot.gameStateResponse(readOnlyDgs, sett))
+		edited := readOnlyDgs.dispatchEdit(bot.discord, bot.gameStateResponse(readOnlyDgs, sett))
 		if edited {
-			server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageEdit, 1)
+			bot.metrics.RecordDiscordRequests(server.MessageEdit, 1)
 		}
 	}
 }

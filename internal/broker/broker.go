@@ -19,6 +19,10 @@ import (
 
 const ConnectCodeLength = 8
 
+// CaptureReadyTTL bounds how long the bot will believe a capture client can apply mutes after the client goes quiet.
+// It is refreshed on every event the client sends and cleared on disconnect.
+const CaptureReadyTTL = time.Minute * 15
+
 type Broker struct {
 	client *redis.Client
 
@@ -110,6 +114,10 @@ func (broker *Broker) Start(port string) {
 		if code, ok := broker.connections[s.ID()]; ok {
 			// this socket is now listening for mutes that can be applied via that connect code
 			s.Join(code)
+			err := broker.client.Set(context.Background(), rediskey.CaptureMuteReady(code), "1", CaptureReadyTTL).Err()
+			if err != nil {
+				log.Println(err)
+			}
 			killChan := broker.ackKillChannels[s.ID()]
 			if killChan != nil {
 				go broker.TasksListener(server, code, killChan)
@@ -153,6 +161,7 @@ func (broker *Broker) Start(port string) {
 				} else {
 					log.Printf("Updated room code %s for connect code %s in Redis", lobby.LobbyCode, cCode)
 				}
+				broker.refreshCaptureReady(cCode)
 			}
 			broker.connectionsLock.RUnlock()
 		}
@@ -173,6 +182,7 @@ func (broker *Broker) Start(port string) {
 				if !errors.Is(err, redis.Nil) && err != nil {
 					log.Println(err)
 				}
+				broker.refreshCaptureReady(cCode)
 			}
 			broker.connectionsLock.RUnlock()
 		}
@@ -190,6 +200,7 @@ func (broker *Broker) Start(port string) {
 			if !errors.Is(err, redis.Nil) && err != nil {
 				log.Println(err)
 			}
+			broker.refreshCaptureReady(cCode)
 		}
 		broker.connectionsLock.RUnlock()
 	})
@@ -216,6 +227,10 @@ func (broker *Broker) Start(port string) {
 				log.Println(err)
 			}
 			server.ClearRoom("/", cCode)
+			err = broker.client.Del(context.Background(), rediskey.CaptureMuteReady(cCode)).Err()
+			if err != nil {
+				log.Println(err)
+			}
 		}
 		broker.connectionsLock.RUnlock()
 
@@ -237,6 +252,14 @@ func (broker *Broker) Start(port string) {
 	router.Handle("/socket.io/", server)
 	log.Printf("Message broker is running on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
+}
+
+// refreshCaptureReady extends the capture-ready flag for a connect code, if the client has established it.
+func (broker *Broker) refreshCaptureReady(connCode string) {
+	err := broker.client.Expire(context.Background(), rediskey.CaptureMuteReady(connCode), CaptureReadyTTL).Err()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		log.Println(err)
+	}
 }
 
 // anytime a bot "acks", then push a notification

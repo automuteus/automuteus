@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/automuteus/automuteus/v8/internal/broker"
+	"github.com/automuteus/automuteus/v8/pkg/logging"
 )
 
 // version and commit are overridden via -ldflags at build time (see Dockerfile.galactus).
@@ -18,6 +19,7 @@ var (
 const DefaultBrokerPort = "8123"
 
 func main() {
+	logging.Setup(os.Stdout)
 	log.Println("galactus " + version + "-" + commit)
 
 	redisAddr := os.Getenv("REDIS_ADDR")
