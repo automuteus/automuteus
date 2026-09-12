@@ -74,13 +74,13 @@ func TestSIGTERMAnnouncesShutdown(t *testing.T) {
 
 	select {
 	case msg := <-sub.Channel():
-		n, err := notice.Decode([]byte(msg.Payload))
-		if err != nil || n.Severity != notice.Critical || n.Source != "galactus" {
-			t.Fatalf("published notice = %+v, %v", n, err)
+		e, err := notice.DecodeEvent([]byte(msg.Payload))
+		if err != nil || e.Shutdown == nil || e.NoticeChanged {
+			t.Fatalf("published event = %+v, %v", e, err)
 		}
-		// no capture clients were connected, so the notice must be targeted at nothing rather than platform-wide
-		if !n.Targeted() || len(n.ConnectCodes) != 0 {
-			t.Fatalf("notice with no clients should target no games, got %+v", n.ConnectCodes)
+		// no capture clients were connected, so the shutdown names no games
+		if len(e.Shutdown.ConnectCodes) != 0 {
+			t.Fatalf("shutdown with no clients should name no games, got %+v", e.Shutdown.ConnectCodes)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatalf("no notice published after SIGTERM; output:\n%s", output.String())
@@ -98,7 +98,7 @@ func TestSIGTERMAnnouncesShutdown(t *testing.T) {
 	}
 
 	if active, err := notice.Active(ctx, client); err != nil || active != nil {
-		t.Fatalf("a targeted shutdown must not leave a platform-wide active notice, got %+v, %v", active, err)
+		t.Fatalf("a shutdown must not leave a platform-wide active notice, got %+v, %v", active, err)
 	}
 }
 

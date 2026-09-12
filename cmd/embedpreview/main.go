@@ -34,7 +34,7 @@ func run() error {
 		webhook  = flag.String("webhook", "", "Discord webhook URL to post through (no bot token needed)")
 		token    = flag.String("token", os.Getenv("DISCORD_BOT_TOKEN"), "bot token to post with (or DISCORD_BOT_TOKEN); requires -channel")
 		channel  = flag.String("channel", "", "channel ID to post to when using -token")
-		severity = flag.String("severity", "", "render every embed with an active notice of this severity: info, warning, or critical")
+		severity = flag.String("severity", "", "render every embed with an active notice of this severity: warning or critical")
 		message  = flag.String("message", "This is a preview notice.", "notice text to render when -severity is set")
 		only     = flag.String("only", "", "comma-separated preview names to send (default: all)")
 		list     = flag.Bool("list", false, "print the preview names and exit")
@@ -45,9 +45,9 @@ func run() error {
 	if *severity != "" {
 		sev := notice.Severity(strings.ToLower(*severity))
 		if !sev.Valid() {
-			return errors.New("severity must be info, warning, or critical")
+			return errors.New("severity must be warning or critical")
 		}
-		n = &notice.Notice{Severity: sev, Message: *message, Source: "embedpreview"}
+		n = &notice.Notice{Severity: sev, Message: *message}
 	}
 
 	previews := bot.PreviewEmbeds(settings.MakeGuildSettings(), n)

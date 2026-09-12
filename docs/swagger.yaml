@@ -28,15 +28,10 @@ definitions:
         example: Database maintenance in progress; expect some lag.
         type: string
       severity:
-        description: Severity is one of info, warning, or critical. Critical ends
-          every running game and blocks new ones.
+        description: Severity is warning or critical. Critical ends every running
+          game and blocks new ones.
         example: warning
         type: string
-      ttlSeconds:
-        description: TTLSeconds is how long the notice stays active; 0 keeps it until
-          cleared.
-        example: 600
-        type: integer
     type: object
   api.RoomCodeResponse:
     properties:
@@ -235,44 +230,19 @@ definitions:
     type: object
   notice.Notice:
     properties:
-      cleared:
-        description: Cleared is set on the message published when an operator clears
-          the active notice early.
-        type: boolean
-      connectCodes:
-        description: |-
-          ConnectCodes, when non-nil, limits a critical notice to those games: only they are ended, the notice is not
-          stored as active, and new games are not blocked. A nil value means the whole platform. An empty, non-nil
-          slice is a targeted notice that affects no games (Galactus shutting down with no clients connected).
-        items:
-          type: string
-        type: array
-      expiresAt:
-        description: ExpiresAt is the unix time the notice stops being active, or
-          0 if it stays until cleared.
-        type: integer
       issuedAt:
         type: integer
       message:
         type: string
-      messageId:
-        description: MessageID, when set, names a message the bot knows how to translate;
-          Message is then the English fallback.
-        type: string
       severity:
         $ref: '#/definitions/notice.Severity'
-      source:
-        description: Source identifies who raised the notice, e.g. "galactus" or "admin-api".
-        type: string
     type: object
   notice.Severity:
     enum:
-    - info
     - warning
     - critical
     type: string
     x-enum-varnames:
-    - Info
     - Warning
     - Critical
   premium.PremiumRecord:
@@ -387,8 +357,8 @@ paths:
       consumes:
       - application/json
       description: |-
-        Shows a banner on every game status message. A critical notice also ends every running game (unmuting
-        everyone, recording the matches as aborted) and blocks /new while active.
+        Shows a banner on every game status message until cleared. A critical notice also ends every
+        running game (unmuting everyone, recording the matches as aborted) and blocks /new while active.
       parameters:
       - description: Notice
         in: body

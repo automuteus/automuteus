@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
@@ -27,13 +26,10 @@ func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
 	s.calls++
 	return s.notice, s.err
 }
-func (s *fakeStore) RaiseNotice(_ context.Context, n notice.Notice, ttl time.Duration) error {
+func (s *fakeStore) RaiseNotice(_ context.Context, n notice.Notice) error {
 	s.calls++
 	if s.err != nil {
 		return s.err
-	}
-	if ttl > 0 {
-		n.ExpiresAt = time.Now().Add(ttl).Unix()
 	}
 	s.notice = &n
 	return nil
@@ -174,8 +170,8 @@ func TestNoticeEndpoints(t *testing.T) {
 	for _, body := range []string{
 		`not json`,
 		`{"severity":"loud","message":"x"}`,
+		`{"severity":"info","message":"x"}`,
 		`{"severity":"warning","message":"   "}`,
-		`{"severity":"warning","message":"x","ttlSeconds":-1}`,
 		`{"severity":"warning","message":"` + strings.Repeat("a", 501) + `"}`,
 	} {
 		if w := adminRequest(t, r, http.MethodPost, "/admin/notice", body, "test-password"); w.Code != 400 {
@@ -186,8 +182,8 @@ func TestNoticeEndpoints(t *testing.T) {
 		t.Fatal("invalid requests raised a notice")
 	}
 
-	w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"severity":"Warning","message":" DB maintenance ","ttlSeconds":600}`, "test-password")
-	if w.Code != 200 || s.notice == nil || s.notice.Severity != notice.Warning || s.notice.Message != "DB maintenance" || s.notice.Source != "admin-api" || s.notice.ExpiresAt == 0 {
+	w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"severity":"Warning","message":" DB maintenance "}`, "test-password")
+	if w.Code != 200 || s.notice == nil || s.notice.Severity != notice.Warning || s.notice.Message != "DB maintenance" {
 		t.Fatalf("raise: %d %s; stored %+v", w.Code, w.Body, s.notice)
 	}
 	if w := adminRequest(t, r, http.MethodGet, "/admin/notice", "", "test-password"); w.Code != 200 || !strings.Contains(w.Body.String(), `"severity":"warning"`) {

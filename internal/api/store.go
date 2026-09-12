@@ -1,8 +1,6 @@
 package api
 
 import (
-	"time"
-
 	"bytes"
 	"context"
 	"encoding/json"
@@ -35,8 +33,8 @@ func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {
 	return notice.Active(ctx, s.redis)
 }
 
-func (s *DataStore) RaiseNotice(ctx context.Context, n notice.Notice, ttl time.Duration) error {
-	return notice.Raise(ctx, s.redis, n, ttl)
+func (s *DataStore) RaiseNotice(ctx context.Context, n notice.Notice) error {
+	return notice.Raise(ctx, s.redis, n)
 }
 
 func (s *DataStore) ClearNotice(ctx context.Context) error {

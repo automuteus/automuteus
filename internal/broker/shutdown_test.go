@@ -44,17 +44,17 @@ func TestShutdown_WithdrawsCaptureReadyAndRaisesCriticalNotice(t *testing.T) {
 			t.Errorf("capture-ready flag for %s still set", code)
 		}
 	}
-	// targeted at this broker's clients, so it is published but never becomes the platform-wide active notice
+	// a shutdown is an event about specific games, never a platform-wide notice that would block new games
 	if active, err := notice.Active(ctx, observer); err != nil || active != nil {
-		t.Fatalf("active notice = %+v, %v; a targeted shutdown notice must not block new games platform-wide", active, err)
+		t.Fatalf("active notice = %+v, %v; a shutdown must not become a platform-wide notice", active, err)
 	}
 	msg := <-sub.Channel()
-	published, err := notice.Decode([]byte(msg.Payload))
-	if err != nil || published.Severity != notice.Critical || published.Source != "galactus" || published.MessageID != notice.GalactusShutdownMessageID {
+	published, err := notice.DecodeEvent([]byte(msg.Payload))
+	if err != nil || published.Shutdown == nil || published.NoticeChanged {
 		t.Fatalf("published = %+v, %v", published, err)
 	}
-	if !published.Targeted() || !published.Targets("ABCDEFGH") || !published.Targets("IJKLMNOP") || published.Targets("QRSTUVWX") {
-		t.Fatalf("published notice should target exactly this broker's clients: %+v", published.ConnectCodes)
+	if codes := codeSet(published.Shutdown.ConnectCodes); len(codes) != 2 || !codes["ABCDEFGH"] || !codes["IJKLMNOP"] {
+		t.Fatalf("shutdown should name exactly this broker's clients: %v", published.Shutdown.ConnectCodes)
 	}
 }
 
@@ -93,12 +93,12 @@ func TestShutdown_OnlyAffectsThisBrokersClients(t *testing.T) {
 		}
 	}
 	msg := <-sub.Channel()
-	published, err := notice.Decode([]byte(msg.Payload))
-	if err != nil {
-		t.Fatal(err)
+	published, err := notice.DecodeEvent([]byte(msg.Payload))
+	if err != nil || published.Shutdown == nil {
+		t.Fatalf("published = %+v, %v", published, err)
 	}
-	if !published.Targeted() || !published.Targets("AAAAAAAA") || published.Targets("BBBBBBBB") || published.Targets("CCCCCCCC") {
-		t.Errorf("notice should name only the shut-down broker's game, got %v", published.ConnectCodes)
+	if codes := codeSet(published.Shutdown.ConnectCodes); len(codes) != 1 || !codes["AAAAAAAA"] {
+		t.Errorf("shutdown should name only the shut-down broker's game, got %v", published.Shutdown.ConnectCodes)
 	}
 	if b.Draining() {
 		t.Error("the other broker should keep accepting clients")
@@ -108,4 +108,12 @@ func TestShutdown_OnlyAffectsThisBrokersClients(t *testing.T) {
 		t.Fatalf("unexpected second notice: %s", extra.Payload)
 	case <-time.After(100 * time.Millisecond):
 	}
+}
+
+func codeSet(codes []string) map[string]bool {
+	set := map[string]bool{}
+	for _, c := range codes {
+		set[c] = true
+	}
+	return set
 }

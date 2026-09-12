@@ -14,10 +14,11 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-// Platform notices (pkg/notice) reach the bot two ways: the active notice is read whenever a game status message is
+// Platform events (pkg/notice) reach the bot two ways: the active notice is read whenever a game status message is
 // rendered, so it appears as a banner on every status message while it is active; and each shard listens for
-// published notices so it can react immediately, by refreshing status messages or, for critical notices, ending
-// every game it runs.
+// published events so it can react immediately. A notice change makes the shard re-read the active notice and
+// either refresh status messages or, if it is critical, end every game. A shutdown ends the games whose capture
+// connections a Galactus replica is about to sever.
 
 // NoticeSource reads the active platform notice.
 type NoticeSource interface {
@@ -32,6 +33,8 @@ func (r redisNotices) Active(ctx context.Context) (*notice.Notice, error) {
 	return notice.Active(ctx, r.client)
 }
 
+var _ NoticeSource = redisNotices{}
+
 // activeNotice returns the current platform notice, or nil. Errors are logged and treated as no notice, so a Redis
 // hiccup never blocks a status message.
 func (bot *Bot) activeNotice() *notice.Notice {
@@ -43,117 +46,100 @@ func (bot *Bot) activeNotice() *notice.Notice {
 	return n
 }
 
-// noticeText returns the notice's message in the guild's language when the bot knows the message by ID, and the
-// text carried in the notice otherwise (operator-written notices are free text and are shown as written).
-func noticeText(sett *settings.GuildSettings, n *notice.Notice) string {
-	switch n.MessageID {
-	case notice.GalactusShutdownMessageID:
-		return sett.LocalizeMessage(&i18n.Message{
-			ID:    "notices.galactus.shutdown",
-			Other: "The AutoMuteUs capture service is restarting for maintenance.",
-		})
-	}
-	return n.Message
-}
-
 // applyNotice adds a prominent banner for n to a game status embed and tints the embed by severity.
 func applyNotice(embed *discordgo.MessageEmbed, n *notice.Notice, sett *settings.GuildSettings) {
-	if embed == nil || n == nil || n.Cleared {
+	if embed == nil || n == nil {
 		return
 	}
 	var name string
-	switch n.Severity {
-	case notice.Critical:
+	if n.Severity == notice.Critical {
 		name = sett.LocalizeMessage(&i18n.Message{
 			ID:    "notices.banner.critical",
 			Other: "🛑 CRITICAL NOTICE",
 		})
 		embed.Color = discord.RED
-	case notice.Warning:
+	} else {
 		name = sett.LocalizeMessage(&i18n.Message{
 			ID:    "notices.banner.warning",
 			Other: "⚠️ WARNING",
 		})
 		embed.Color = discord.YELLOW
-	default:
-		name = sett.LocalizeMessage(&i18n.Message{
-			ID:    "notices.banner.info",
-			Other: "ℹ️ NOTICE",
-		})
 	}
 	banner := &discordgo.MessageEmbedField{
 		Name:   name,
-		Value:  "**" + noticeText(sett, n) + "**",
+		Value:  "**" + n.Message + "**",
 		Inline: false,
 	}
 	embed.Fields = append([]*discordgo.MessageEmbedField{banner}, embed.Fields...)
 }
 
-// listenForNotices reacts to published notices until the subscription is closed. It is started once per shard.
+// listenForNotices reacts to published events until the subscription is closed. It is started once per shard.
 func (bot *Bot) listenForNotices(sub *redis.PubSub) {
 	for msg := range sub.Channel() {
-		n, err := notice.Decode([]byte(msg.Payload))
+		e, err := notice.DecodeEvent([]byte(msg.Payload))
 		if err != nil {
-			bot.log.Error("malformed notice", "err", err)
+			bot.log.Error("malformed platform event", "err", err)
 			continue
 		}
-		bot.handleNotice(n)
+		bot.handleEvent(e)
 	}
 }
 
-// handleNotice applies a notice to every game this shard is running: critical notices end them, everything else
-// refreshes their status messages so the banner appears (or disappears) promptly.
-func (bot *Bot) handleNotice(n *notice.Notice) {
+// handleEvent applies a platform event to the games this shard runs.
+func (bot *Bot) handleEvent(e *notice.Event) {
 	games := bot.activeGames()
-	l := bot.log.With("severity", n.Severity, "source", n.Source, "cleared", n.Cleared, "games", len(games))
-	if n.Cleared {
-		l.Info("platform notice cleared")
-	} else {
-		l.Info("platform notice received", "message", n.Message)
-	}
-
-	// a notice that expires on its own is never followed by a cleared message, so schedule a refresh for when it
-	// lapses; otherwise idle games would keep showing the banner until their next edit
-	if !n.Cleared && !n.Targeted() && n.ExpiresAt > 0 {
-		if until := time.Until(time.Unix(n.ExpiresAt, 0)); until > 0 {
-			go func() {
-				bot.sleep(until)
-				bot.refreshActiveGames()
-			}()
+	switch {
+	case e.Shutdown != nil:
+		affected := make(map[string]bool, len(e.Shutdown.ConnectCodes))
+		for _, code := range e.Shutdown.ConnectCodes {
+			affected[code] = true
 		}
-	}
-
-	forEachGame(games, func(gsr GameStateRequest) {
-		critical := n.Severity == notice.Critical && !n.Cleared
-		if critical && !n.Targets(gsr.ConnectCode) {
-			return
-		}
-		sett, err := bot.settings.LoadGuildSettings(ctx, gsr.GuildID)
-		if err != nil {
-			bot.gameLog(gsr).Error("failed to load guild settings for notice", "err", err)
-			if !critical {
-				return
+		var mine []GameStateRequest
+		for _, gsr := range games {
+			if affected[gsr.ConnectCode] {
+				mine = append(mine, gsr)
 			}
-			// Emergency cleanup must not depend on loading localization settings.
-			sett = settings.MakeGuildSettings()
 		}
-		if critical {
-			text := sett.LocalizeMessage(&i18n.Message{
-				ID:    "notices.critical.gameEnded",
-				Other: "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\n{{.Message}}\nRun `/new` to start again once the notice is over.",
-			}, map[string]interface{}{"Message": noticeText(sett, n)})
-			bot.stopGame(gsr, "critical platform notice", text)
+		bot.log.Info("capture service shutdown announced", "affected", len(mine), "games", len(games))
+		forEachGame(mine, func(gsr GameStateRequest) {
+			sett := bot.settingsForCleanup(gsr)
+			bot.stopGame(gsr, "capture service shutdown", sett.LocalizeMessage(&i18n.Message{
+				ID:    "notices.shutdown.gameEnded",
+				Other: "🛑 **The AutoMuteUs capture service is restarting, so this game has been ended and everyone has been unmuted.**\nRun `/new` in a minute to start again.",
+			}))
+		})
+
+	case e.NoticeChanged:
+		n := bot.activeNotice()
+		if n != nil && n.Severity == notice.Critical {
+			bot.log.Info("critical notice active; ending all games", "message", n.Message, "games", len(games))
+			forEachGame(games, func(gsr GameStateRequest) {
+				sett := bot.settingsForCleanup(gsr)
+				bot.stopGame(gsr, "critical platform notice", sett.LocalizeMessage(&i18n.Message{
+					ID:    "notices.critical.gameEnded",
+					Other: "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\n{{.Message}}\nRun `/new` to start again once the notice is over.",
+				}, map[string]interface{}{"Message": n.Message}))
+			})
 			return
 		}
-		dgs := bot.store.GetReadOnlyDiscordGameState(gsr)
-		if dgs == nil || !dgs.GameStateMsg.Exists() {
-			return
-		}
-		bot.DispatchRefreshOrEdit(dgs, gsr, sett)
-	})
+		bot.log.Info("platform notice changed; refreshing status messages", "active", n != nil, "games", len(games))
+		bot.refreshActiveGames()
+	}
 }
 
-// refreshActiveGames re-renders the status message of every game this shard runs, e.g. after a notice lapses.
+// settingsForCleanup loads a guild's settings, falling back to defaults: ending a game and unmuting players must
+// not depend on the settings store being reachable.
+func (bot *Bot) settingsForCleanup(gsr GameStateRequest) *settings.GuildSettings {
+	sett, err := bot.settings.LoadGuildSettings(ctx, gsr.GuildID)
+	if err != nil {
+		bot.gameLog(gsr).Error("failed to load guild settings; using defaults for cleanup", "err", err)
+		return settings.MakeGuildSettings()
+	}
+	return sett
+}
+
+// refreshActiveGames re-renders the status message of every game this shard runs, so a banner appears or disappears
+// promptly.
 func (bot *Bot) refreshActiveGames() {
 	forEachGame(bot.activeGames(), func(gsr GameStateRequest) {
 		sett, err := bot.settings.LoadGuildSettings(ctx, gsr.GuildID)
@@ -166,9 +152,9 @@ func (bot *Bot) refreshActiveGames() {
 	})
 }
 
-// noticeWorkers bounds how many games a shard acts on at once when applying a notice. Each game's work is a few
-// Discord requests paced by discordgo's per-guild buckets plus, for critical notices, a wait on its capture
-// subscriber, so doing them concurrently makes a notice take about as long as the slowest game instead of the sum.
+// noticeWorkers bounds how many games a shard acts on at once when applying an event. Each game's work is a few
+// Discord requests paced by discordgo's per-guild buckets plus, when ending, a wait on its capture subscriber, so
+// doing them concurrently makes an event take about as long as the slowest game instead of the sum.
 const noticeWorkers = 8
 
 // forEachGame runs fn for every game with at most noticeWorkers in flight, and returns when all are done.
@@ -244,7 +230,7 @@ func (bot *Bot) finishGame(dgs *GameState, reason, message string) error {
 // stopGame asks the capture subscriber to stop between jobs, then perform the final unmute and cleanup.
 // A slow subscriber keeps its queued request; deleting its state from here could race with a pending mute.
 func (bot *Bot) stopGame(gsr GameStateRequest, reason, message string) error {
-	// Slash commands resolve a game by channel, whereas notices already carry its connect code.
+	// Slash commands resolve a game by channel, whereas events already carry its connect code.
 	dgs := bot.store.GetReadOnlyDiscordGameState(gsr)
 	if dgs == nil {
 		return nil
@@ -290,7 +276,3 @@ func (bot *Bot) completeGame(gsr GameStateRequest, reason, message string) error
 	bot.forceEndGame(gsr)
 	return err
 }
-
-var _ NoticeSource = redisNotices{}
-
-var _ NoticeSource = redisNotices{}

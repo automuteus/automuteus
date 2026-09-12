@@ -22,8 +22,8 @@ const (
 	secondVoiceChannel = "910"
 )
 
-// seedMatch puts a running game in the tasks phase in the store, with a match record open and two linked players
-// muted and deafened in its voice channel, and registers it as a game this shard is subscribed to.
+// seedMatch puts a running game in the tasks phase in the store, with a match record open and the given players
+// linked, muted and deafened in its voice channel, and registers it as a game this shard is subscribed to.
 func seedMatch(t *testing.T, bot *Bot, deps *testDeps, code, textChannel, voiceChannel string, users ...string) GameStateRequest {
 	t.Helper()
 	dgs := NewDiscordGameState(scenarioGuild)
@@ -32,7 +32,7 @@ func seedMatch(t *testing.T, bot *Bot, deps *testDeps, code, textChannel, voiceC
 	dgs.Linked = true
 	dgs.VoiceChannel = voiceChannel
 	dgs.GameData.UpdatePhase(game.TASKS)
-	dgs.MatchID = int64(len(code)) // any positive id; distinct per code length is not needed
+	dgs.MatchID = int64(len(code))
 	dgs.MatchStartUnix = time.Now().Unix()
 	dgs.GameStateMsg = GameStateMessage{MessageID: "status-" + code, MessageChannelID: textChannel, LeaderID: users[0], CreationTimeUnix: time.Now().Unix()}
 
@@ -73,32 +73,50 @@ func unmutedUsers(deps *testDeps) map[uint64]bool {
 	return users
 }
 
-func TestHandleNotice_CriticalEndsEveryGameOnTheShard(t *testing.T) {
-	bot, deps := newTestBot(t)
-	first, _ := seedTwoMatches(t, bot, deps)
+// postedIn returns the content of the last message sent to a channel.
+func postedIn(deps *testDeps, channelID string) string {
+	deps.discord.mu.Lock()
+	defer deps.discord.mu.Unlock()
+	var content string
+	for _, m := range deps.discord.sent {
+		if m.ChannelID == channelID {
+			content = m.Content
+		}
+	}
+	return content
+}
 
-	// Stand in for the first game's capture subscriber, which completes cleanup before acknowledging the stop.
-	kill := make(chan EndGameMessage)
-	bot.EndGameChannels[scenarioConnectCode] = kill
+// standInSubscriber plays the capture subscriber for a game: on the end request it completes cleanup and
+// acknowledges, as the real one does.
+func standInSubscriber(bot *Bot, gsr GameStateRequest) <-chan struct{} {
+	kill := make(chan EndGameMessage, 1)
+	bot.EndGameChannels[gsr.ConnectCode] = kill
 	done := make(chan struct{})
 	go func() {
 		end := <-kill
-		err := bot.completeGame(first, end.reason, end.message)
+		err := bot.completeGame(gsr, end.reason, end.message)
 		bot.ChannelsMapLock.Lock()
-		delete(bot.EndGameChannels, scenarioConnectCode)
+		delete(bot.EndGameChannels, gsr.ConnectCode)
 		bot.ChannelsMapLock.Unlock()
 		end.done <- err
 		close(done)
 	}()
+	return done
+}
 
-	bot.handleNotice(&notice.Notice{Severity: notice.Critical, Message: "platform going down", Source: "admin-api"})
+func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
+	bot, deps := newTestBot(t)
+	first, _ := seedTwoMatches(t, bot, deps)
+	done := standInSubscriber(bot, first)
+
+	deps.notices.set(&notice.Notice{Severity: notice.Critical, Message: "platform going down"})
+	bot.handleEvent(&notice.Event{NoticeChanged: true})
 
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("capture subscriber was never signalled to end the game")
+		t.Fatal("capture subscriber was never asked to end the game")
 	}
-
 	if got := deps.recorder.aborted; len(got) != 2 {
 		t.Errorf("aborted matches = %v, want both", got)
 	}
@@ -112,58 +130,55 @@ func TestHandleNotice_CriticalEndsEveryGameOnTheShard(t *testing.T) {
 			t.Errorf("game %s should have been deleted", code)
 		}
 	}
-	posted := map[string]bool{}
-	for _, m := range deps.discord.sent {
-		if strings.Contains(m.Content, "platform going down") {
-			posted[m.ChannelID] = true
+	for _, ch := range []string{scenarioTextChannel, secondTextChannel} {
+		if !strings.Contains(postedIn(deps, ch), "platform going down") {
+			t.Errorf("end-of-game message with the notice missing from channel %s", ch)
 		}
-	}
-	if !posted[scenarioTextChannel] || !posted[secondTextChannel] {
-		t.Errorf("end-of-game message missing from a game channel: %v", posted)
 	}
 	if _, ok := bot.EndGameChannels[scenarioConnectCode]; ok {
 		t.Error("end channel should have been removed")
 	}
 }
 
-func TestHandleNotice_TargetedCriticalOnlyEndsListedGames(t *testing.T) {
+func TestHandleEvent_ShutdownOnlyEndsListedGames(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedTwoMatches(t, bot, deps)
 
-	bot.handleNotice(&notice.Notice{Severity: notice.Critical, Message: "unrelated", ConnectCodes: []string{"QRSTUVWX"}})
+	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{"QRSTUVWX"}}})
 	if n := len(deps.voice.all()); n != 0 {
-		t.Fatalf("a notice targeted at another game issued %d voice changes", n)
+		t.Fatalf("a shutdown naming another game issued %d voice changes", n)
+	}
+	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{}}})
+	if n := len(deps.voice.all()); n != 0 {
+		t.Fatalf("a shutdown naming no games issued %d voice changes", n)
 	}
 
-	bot.handleNotice(&notice.Notice{Severity: notice.Critical, Message: "restarting", MessageID: notice.GalactusShutdownMessageID, ConnectCodes: []string{"QRSTUVWX", secondConnectCode}})
+	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{"QRSTUVWX", secondConnectCode}}})
 
 	if deps.store.getCode(secondConnectCode) != nil {
-		t.Error("targeted game should have been ended")
+		t.Error("game whose capture is going away should have been ended")
 	}
 	if got := deps.store.getCode(scenarioConnectCode); got == nil || !got.Running {
-		t.Error("game not named by the notice should be untouched")
+		t.Error("game not named by the shutdown should be untouched")
 	}
 	unmuted := unmutedUsers(deps)
 	if !unmuted[20] || !unmuted[21] || unmuted[10] || unmuted[11] {
 		t.Errorf("unmuted users = %v, want exactly 20 and 21", unmuted)
 	}
-	var posted string
-	for _, m := range deps.discord.sent {
-		if m.ChannelID == secondTextChannel {
-			posted = m.Content
-		}
+	if posted := postedIn(deps, secondTextChannel); !strings.Contains(posted, "capture service is restarting") {
+		t.Errorf("end message should explain the capture restart, got %q", posted)
 	}
-	if !strings.Contains(posted, "capture service is restarting") {
-		t.Errorf("end message should carry the localized shutdown text, got %q", posted)
+	if posted := postedIn(deps, scenarioTextChannel); posted != "" {
+		t.Errorf("unaffected game got a message: %q", posted)
 	}
 }
 
-func TestHandleNotice_WarningRefreshesStatusMessagesAndLeavesGamesRunning(t *testing.T) {
+func TestHandleEvent_WarningRefreshesStatusMessagesAndLeavesGamesRunning(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedTwoMatches(t, bot, deps)
 	deps.notices.set(&notice.Notice{Severity: notice.Warning, Message: "expect some lag"})
 
-	bot.handleNotice(&notice.Notice{Severity: notice.Warning, Message: "expect some lag"})
+	bot.handleEvent(&notice.Event{NoticeChanged: true})
 
 	// both status messages get edited (after the deferred-edit delay, which is recorded rather than slept)
 	eventually(t, "two status message edits", func() bool { return deps.discord.editCount() == 2 })
@@ -171,7 +186,7 @@ func TestHandleNotice_WarningRefreshesStatusMessagesAndLeavesGamesRunning(t *tes
 	edits := append([]*discordgo.MessageEdit(nil), deps.discord.edits...)
 	deps.discord.mu.Unlock()
 	for _, e := range edits {
-		if e.Embeds == nil || len(e.Embeds) == 0 || len(e.Embeds[0].Fields) == 0 || !strings.Contains(e.Embeds[0].Fields[0].Name, "WARNING") {
+		if len(e.Embeds) == 0 || len(e.Embeds[0].Fields) == 0 || !strings.Contains(e.Embeds[0].Fields[0].Name, "WARNING") {
 			t.Errorf("edited embed lacks the warning banner: %+v", e.Embeds)
 		}
 	}
@@ -188,60 +203,25 @@ func TestHandleNotice_WarningRefreshesStatusMessagesAndLeavesGamesRunning(t *tes
 	}
 }
 
-func TestHandleNotice_ExpiringNoticeSchedulesARefresh(t *testing.T) {
+func TestHandleEvent_ClearedRefreshesStatusMessagesWithoutBanner(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
-	expiresIn := 10 * time.Minute
-	expired := make(chan struct{})
-	var expireOnce sync.Once
-	expire := func() { expireOnce.Do(func() { close(expired) }) }
-	t.Cleanup(expire)
-	bot.sleep = func(d time.Duration) {
-		deps.recordSleep(d)
-		if d > expiresIn-time.Minute {
-			<-expired
-		}
-	}
-	n := &notice.Notice{Severity: notice.Warning, Message: "brief", ExpiresAt: time.Now().Add(expiresIn).Unix()}
-	deps.notices.set(n)
+	deps.notices.set(nil) // the operator has already deleted the active notice
 
-	bot.handleNotice(n)
+	bot.handleEvent(&notice.Event{NoticeChanged: true})
 
-	// Hold the expiry refresh until the initial edit completes, so deferred edits cannot coalesce them.
-	eventually(t, "the deferred refresh to have been scheduled", func() bool {
-		for _, d := range deps.slept() {
-			if d > expiresIn-time.Minute && d <= expiresIn {
-				return true
-			}
-		}
-		return false
-	})
-	eventually(t, "the initial status message edit", func() bool { return deps.discord.editCount() == 1 })
+	eventually(t, "a status message edit", func() bool { return deps.discord.editCount() == 1 })
 	deps.discord.mu.Lock()
-	initial := deps.discord.edits[0]
+	edit := deps.discord.edits[0]
 	deps.discord.mu.Unlock()
-	if len(initial.Embeds) == 0 || len(initial.Embeds[0].Fields) == 0 ||
-		!strings.Contains(initial.Embeds[0].Fields[0].Name, "WARNING") ||
-		initial.Embeds[0].Fields[0].Value != "**brief**" {
-		t.Fatalf("initial edit should contain the warning banner: %+v", initial)
-	}
-	deps.notices.set(nil)
-	expire()
-	eventually(t, "two status message edits", func() bool { return deps.discord.editCount() == 2 })
-	deps.discord.mu.Lock()
-	refreshed := deps.discord.edits[1]
-	deps.discord.mu.Unlock()
-	if len(refreshed.Embeds) == 0 {
-		t.Fatal("expiry refresh should contain a status embed")
-	}
-	for _, field := range refreshed.Embeds[0].Fields {
-		if strings.Contains(field.Name, "WARNING") || field.Value == "**brief**" {
-			t.Errorf("expiry refresh still contains the warning banner: %+v", field)
+	for _, f := range edit.Embeds[0].Fields {
+		if strings.Contains(f.Name, "WARNING") || strings.Contains(f.Name, "CRITICAL") {
+			t.Errorf("refresh after clear still shows a banner: %+v", f)
 		}
 	}
 }
 
-func TestListenForNotices_DeliversPublishedNoticesToHandler(t *testing.T) {
+func TestListenForNotices_DeliversPublishedEventsToHandler(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
 
@@ -255,12 +235,12 @@ func TestListenForNotices_DeliversPublishedNoticesToHandler(t *testing.T) {
 	defer sub.Close()
 	go bot.listenForNotices(sub)
 
-	if err := notice.Raise(ctx, client, notice.Notice{Severity: notice.Critical, Message: "restarting", ConnectCodes: []string{scenarioConnectCode}}, 0); err != nil {
+	if err := notice.AnnounceShutdown(ctx, client, []string{scenarioConnectCode}); err != nil {
 		t.Fatal(err)
 	}
-	eventually(t, "the game to be ended by the published notice", func() bool { return deps.store.getCode(scenarioConnectCode) == nil })
+	eventually(t, "the game to be ended by the published shutdown", func() bool { return deps.store.getCode(scenarioConnectCode) == nil })
 	if !unmutedUsers(deps)[10] {
-		t.Error("published notice did not reach the handler: user 10 still muted")
+		t.Error("published shutdown did not reach the handler: user 10 still muted")
 	}
 }
 
@@ -275,13 +255,10 @@ func TestGameStateResponse_ShowsActiveNoticeBanner(t *testing.T) {
 		name      string
 		n         *notice.Notice
 		wantTitle string
-		wantText  string
 		wantColor int
 	}{
-		{"critical", &notice.Notice{Severity: notice.Critical, Message: "going down"}, "CRITICAL", "going down", discord.RED},
-		{"warning", &notice.Notice{Severity: notice.Warning, Message: "degraded"}, "WARNING", "degraded", discord.YELLOW},
-		{"info", &notice.Notice{Severity: notice.Info, Message: "v9 is out"}, "NOTICE", "v9 is out", 0},
-		{"localized by id", &notice.Notice{Severity: notice.Critical, Message: "fallback", MessageID: notice.GalactusShutdownMessageID}, "CRITICAL", "capture service is restarting", discord.RED},
+		{"critical", &notice.Notice{Severity: notice.Critical, Message: "going down"}, "CRITICAL", discord.RED},
+		{"warning", &notice.Notice{Severity: notice.Warning, Message: "degraded"}, "WARNING", discord.YELLOW},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -291,21 +268,17 @@ func TestGameStateResponse_ShowsActiveNoticeBanner(t *testing.T) {
 				t.Fatal("no fields on embed")
 			}
 			banner := embed.Fields[0]
-			if !strings.Contains(banner.Name, c.wantTitle) || !strings.Contains(banner.Value, c.wantText) || banner.Inline {
-				t.Errorf("banner = %+v, want full-width %s containing %q", banner, c.wantTitle, c.wantText)
+			if !strings.Contains(banner.Name, c.wantTitle) || !strings.Contains(banner.Value, c.n.Message) || banner.Inline {
+				t.Errorf("banner = %+v, want full-width %s containing %q", banner, c.wantTitle, c.n.Message)
 			}
-			if c.wantColor != 0 && embed.Color != c.wantColor {
+			if embed.Color != c.wantColor {
 				t.Errorf("color = %d, want %d", embed.Color, c.wantColor)
 			}
 		})
 	}
 
-	deps.notices.set(&notice.Notice{Cleared: true})
-	if embed := bot.gameStateResponse(dgs, sett); len(embed.Fields) > 0 && strings.Contains(embed.Fields[0].Name, "NOTICE") {
-		t.Error("cleared notice still rendered a banner")
-	}
 	deps.notices.set(nil)
-	if embed := bot.gameStateResponse(dgs, sett); len(embed.Fields) > 0 && strings.Contains(embed.Fields[0].Name, "NOTICE") {
+	if embed := bot.gameStateResponse(dgs, sett); len(embed.Fields) > 0 && (strings.Contains(embed.Fields[0].Name, "WARNING") || strings.Contains(embed.Fields[0].Name, "CRITICAL")) {
 		t.Error("no notice still rendered a banner")
 	}
 }
@@ -348,7 +321,6 @@ func TestForEachGame_RunsConcurrentlyWithABound(t *testing.T) {
 	if peak > noticeWorkers || peak < 2 {
 		t.Errorf("peak concurrency = %d, want between 2 and %d", peak, noticeWorkers)
 	}
-	// 20 games at 20ms each: serial would be 400ms, 8 workers should finish in about 60ms
 	if elapsed := time.Since(start); elapsed > 200*time.Millisecond {
 		t.Errorf("took %v, expected the pool to overlap the work", elapsed)
 	}

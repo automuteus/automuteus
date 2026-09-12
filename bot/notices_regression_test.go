@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -13,7 +12,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/go-redis/redis/v8"
@@ -25,11 +23,11 @@ func (unavailableNoticeSettings) LoadGuildSettings(context.Context, string) (*se
 	return nil, errors.New("settings unavailable")
 }
 
-func TestHandleNotice_CriticalCleansUpWithoutSettings(t *testing.T) {
+func TestHandleEvent_ShutdownCleansUpWithoutSettings(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedTwoMatches(t, bot, deps)
 	bot.settings = unavailableNoticeSettings{}
-	bot.handleNotice(&notice.Notice{Severity: notice.Critical, Message: "maintenance", ConnectCodes: []string{scenarioConnectCode}})
+	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{scenarioConnectCode}}})
 	if deps.store.getCode(scenarioConnectCode) != nil {
 		t.Error("targeted game survived the critical notice when settings were unavailable")
 	}
@@ -42,35 +40,8 @@ func TestHandleNotice_CriticalCleansUpWithoutSettings(t *testing.T) {
 	if users := unmutedUsers(deps); !users[10] || !users[11] || users[20] || users[21] {
 		t.Errorf("unmuted users = %v, want exactly 10 and 11", users)
 	}
-	if len(deps.discord.sent) != 1 || !strings.Contains(deps.discord.sent[0].Content, "maintenance") {
+	if len(deps.discord.sent) != 1 || !strings.Contains(deps.discord.sent[0].Content, "capture service is restarting") {
 		t.Errorf("missing fallback end message: %+v", deps.discord.sent)
-	}
-}
-
-func TestGameStateResponse_ExpiredNoticeWithRemainingRedisTTL(t *testing.T) {
-	bot, deps := newTestBot(t)
-	gsr := seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
-	mr := miniredis.RunT(t)
-	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	t.Cleanup(func() { client.Close() })
-	bot.notices = redisNotices{client: client}
-	// At the whole-second refresh deadline, the original relative Redis TTL can still have time left.
-	n := notice.Notice{Severity: notice.Warning, Message: "brief", ExpiresAt: time.Now().Unix()}
-	b, err := json.Marshal(n)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := client.Set(context.Background(), rediskey.ActiveNotice, b, time.Minute).Err(); err != nil {
-		t.Fatal(err)
-	}
-	if !mr.Exists(rediskey.ActiveNotice) {
-		t.Fatal("test requires an expired notice still present in Redis")
-	}
-	embed := bot.gameStateResponse(deps.store.GetReadOnlyDiscordGameState(gsr), deps.settings)
-	for _, field := range embed.Fields {
-		if strings.Contains(field.Name, "WARNING") || strings.Contains(field.Value, "brief") {
-			t.Errorf("expired warning remains in status embed: %+v", field)
-		}
 	}
 }
 

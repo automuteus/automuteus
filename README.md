@@ -201,10 +201,10 @@ Operators can show a banner on every running game's status message, or end every
 game, through `/admin/notice` (Basic Auth as `admin`, non-default `API_ADMIN_PASS`):
 
 ```sh
-# warn players; games keep running; banner disappears after 10 minutes or on DELETE
+# warn players; games keep running; the banner stays until you DELETE the notice
 curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
   -H 'Content-Type: application/json' \
-  -d '{"severity":"warning","message":"Database maintenance in progress; expect some lag.","ttlSeconds":600}'
+  -d '{"severity":"warning","message":"Database maintenance in progress; expect some lag."}'
 
 # end every running game (players are unmuted, matches recorded as aborted) and block /new until cleared
 curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
@@ -215,9 +215,9 @@ curl -u admin:$API_ADMIN_PASS $API/admin/notice            # show the active not
 curl -u admin:$API_ADMIN_PASS -X DELETE $API/admin/notice  # clear it
 ```
 
-Galactus raises its own critical notice on SIGTERM, limited to the games whose
-capture clients were connected to that replica, so rolling restarts only end the
-games that actually lose their capture connection. Preview how the banners look
+Galactus announces its own shutdown on SIGTERM, naming the games whose capture
+clients were connected to that replica, so rolling restarts only end the games
+that actually lose their capture connection; no notice is raised. Preview how the banners look
 in a channel of your choice without running the bot:
 
 ```sh

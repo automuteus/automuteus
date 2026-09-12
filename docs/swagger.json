@@ -49,7 +49,7 @@
                         "BasicAuth": []
                     }
                 ],
-                "description": "Shows a banner on every game status message. A critical notice also ends every running game (unmuting\neveryone, recording the matches as aborted) and blocks /new while active.",
+                "description": "Shows a banner on every game status message until cleared. A critical notice also ends every\nrunning game (unmuting everyone, recording the matches as aborted) and blocks /new while active.",
                 "consumes": [
                     "application/json"
                 ],
@@ -447,14 +447,9 @@
                     "example": "Database maintenance in progress; expect some lag."
                 },
                 "severity": {
-                    "description": "Severity is one of info, warning, or critical. Critical ends every running game and blocks new ones.",
+                    "description": "Severity is warning or critical. Critical ends every running game and blocks new ones.",
                     "type": "string",
                     "example": "warning"
-                },
-                "ttlSeconds": {
-                    "description": "TTLSeconds is how long the notice stays active; 0 keeps it until cleared.",
-                    "type": "integer",
-                    "example": 600
                 }
             }
         },
@@ -725,49 +720,24 @@
         "notice.Notice": {
             "type": "object",
             "properties": {
-                "cleared": {
-                    "description": "Cleared is set on the message published when an operator clears the active notice early.",
-                    "type": "boolean"
-                },
-                "connectCodes": {
-                    "description": "ConnectCodes, when non-nil, limits a critical notice to those games: only they are ended, the notice is not\nstored as active, and new games are not blocked. A nil value means the whole platform. An empty, non-nil\nslice is a targeted notice that affects no games (Galactus shutting down with no clients connected).",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "expiresAt": {
-                    "description": "ExpiresAt is the unix time the notice stops being active, or 0 if it stays until cleared.",
-                    "type": "integer"
-                },
                 "issuedAt": {
                     "type": "integer"
                 },
                 "message": {
                     "type": "string"
                 },
-                "messageId": {
-                    "description": "MessageID, when set, names a message the bot knows how to translate; Message is then the English fallback.",
-                    "type": "string"
-                },
                 "severity": {
                     "$ref": "#/definitions/notice.Severity"
-                },
-                "source": {
-                    "description": "Source identifies who raised the notice, e.g. \"galactus\" or \"admin-api\".",
-                    "type": "string"
                 }
             }
         },
         "notice.Severity": {
             "type": "string",
             "enum": [
-                "info",
                 "warning",
                 "critical"
             ],
             "x-enum-varnames": [
-                "Info",
                 "Warning",
                 "Critical"
             ]

@@ -2,50 +2,76 @@ package notice
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
 )
 
-func TestRaiseActiveClear(t *testing.T) {
+func setup(t *testing.T) (*miniredis.Miniredis, *redis.Client, *redis.PubSub) {
+	t.Helper()
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	ctx := context.Background()
-
-	sub := Subscribe(ctx, client)
-	if _, err := sub.Receive(ctx); err != nil {
+	sub := Subscribe(context.Background(), client)
+	if _, err := sub.Receive(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	defer sub.Close()
+	t.Cleanup(func() { sub.Close(); client.Close() })
+	return mr, client, sub
+}
 
-	if err := Raise(ctx, client, Notice{Severity: "bogus", Message: "x"}, 0); err != ErrInvalid {
-		t.Fatalf("invalid severity accepted: %v", err)
+func receive(t *testing.T, sub *redis.PubSub) *Event {
+	t.Helper()
+	select {
+	case m := <-sub.Channel():
+		e, err := DecodeEvent([]byte(m.Payload))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return e
+	case <-time.After(2 * time.Second):
+		t.Fatal("no event published")
 	}
-	if err := Raise(ctx, client, Notice{Severity: Warning}, 0); err != ErrInvalid {
-		t.Fatalf("empty message accepted: %v", err)
+	return nil
+}
+
+func TestRaiseActiveClear(t *testing.T) {
+	mr, client, sub := setup(t)
+	ctx := context.Background()
+
+	for _, bad := range []Notice{{Severity: "info", Message: "x"}, {Severity: "loud", Message: "x"}, {Severity: Warning}} {
+		if err := Raise(ctx, client, bad); err != ErrInvalid {
+			t.Errorf("Raise(%+v) = %v, want ErrInvalid", bad, err)
+		}
 	}
 	if n, err := Active(ctx, client); err != nil || n != nil {
 		t.Fatalf("expected no active notice, got %+v, %v", n, err)
 	}
 
-	if err := Raise(ctx, client, Notice{Severity: Warning, Message: "db maintenance", Source: "test"}, time.Minute); err != nil {
+	if err := Raise(ctx, client, Notice{Severity: Warning, Message: "db maintenance"}); err != nil {
 		t.Fatal(err)
 	}
 	got, err := Active(ctx, client)
-	if err != nil || got == nil || got.Severity != Warning || got.Message != "db maintenance" || got.ExpiresAt == 0 {
+	if err != nil || got == nil || got.Severity != Warning || got.Message != "db maintenance" || got.IssuedAt == 0 {
 		t.Fatalf("active = %+v, %v", got, err)
 	}
-	if ttl := mr.TTL(rediskey.ActiveNotice); ttl <= 0 || ttl > time.Minute {
-		t.Fatalf("active notice ttl = %v, want about a minute", ttl)
+	if ttl := mr.TTL(rediskey.ActiveNotice); ttl != 0 {
+		t.Fatalf("notices must stay until cleared; ttl = %v", ttl)
 	}
-	msg := receive(t, sub)
-	if msg.Severity != Warning || msg.Cleared {
-		t.Fatalf("published = %+v", msg)
+	if e := receive(t, sub); !e.NoticeChanged || e.Shutdown != nil {
+		t.Fatalf("published = %+v", e)
 	}
+
+	// raising again replaces the active notice
+	if err := Raise(ctx, client, Notice{Severity: Critical, Message: "going down"}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := Active(ctx, client); got == nil || got.Severity != Critical {
+		t.Fatalf("active after replace = %+v", got)
+	}
+	receive(t, sub)
 
 	if err := Clear(ctx, client); err != nil {
 		t.Fatal(err)
@@ -53,113 +79,44 @@ func TestRaiseActiveClear(t *testing.T) {
 	if n, _ := Active(ctx, client); n != nil {
 		t.Fatalf("notice still active after clear: %+v", n)
 	}
-	if msg := receive(t, sub); !msg.Cleared {
-		t.Fatalf("expected a cleared message, got %+v", msg)
+	if e := receive(t, sub); !e.NoticeChanged {
+		t.Fatalf("expected a notice-changed event on clear, got %+v", e)
 	}
 }
 
-func TestRaiseWithoutTTLPersists(t *testing.T) {
-	mr := miniredis.RunT(t)
-	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+func TestAnnounceShutdownIsPublishedButNeverStored(t *testing.T) {
+	_, client, sub := setup(t)
 	ctx := context.Background()
-	if err := Raise(ctx, client, Notice{Severity: Info, Message: "hello"}, 0); err != nil {
-		t.Fatal(err)
-	}
-	if ttl := mr.TTL(rediskey.ActiveNotice); ttl != 0 {
-		t.Fatalf("expected no expiry, got %v", ttl)
-	}
-	got, _ := Active(ctx, client)
-	if got == nil || got.ExpiresAt != 0 {
-		t.Fatalf("active = %+v", got)
-	}
-}
 
-func TestActiveHonorsDeclaredExpiryBeforeRedisTTL(t *testing.T) {
-	mr := miniredis.RunT(t)
-	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	t.Cleanup(func() { client.Close() })
-	ctx := context.Background()
-	now := time.Now().Unix()
-	for _, tc := range []struct {
-		name      string
-		severity  Severity
-		expiresAt int64
-		active    bool
-	}{
-		{"warning at deadline", Warning, now, false},
-		{"critical at deadline", Critical, now, false},
-		{"past deadline", Info, now - 1, false},
-		{"future deadline", Warning, now + 60, true},
-		{"no deadline", Critical, 0, true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			b, err := json.Marshal(Notice{Severity: tc.severity, Message: "maintenance", ExpiresAt: tc.expiresAt})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := client.Set(ctx, rediskey.ActiveNotice, b, time.Minute).Err(); err != nil {
-				t.Fatal(err)
-			}
-			n, err := Active(ctx, client)
-			if err != nil || (n != nil) != tc.active {
-				t.Errorf("active = %+v, err = %v, want active = %v", n, err, tc.active)
-			}
-			if !mr.Exists(rediskey.ActiveNotice) {
-				t.Fatal("test requires the Redis key to still exist")
-			}
-		})
-	}
-}
-
-func receive(t *testing.T, sub *redis.PubSub) *Notice {
-	t.Helper()
-	select {
-	case m := <-sub.Channel():
-		n, err := Decode([]byte(m.Payload))
-		if err != nil {
-			t.Fatal(err)
-		}
-		return n
-	case <-time.After(2 * time.Second):
-		t.Fatal("no notice published")
-	}
-	return nil
-}
-
-func TestTargetedNoticeIsPublishedButNotStored(t *testing.T) {
-	mr := miniredis.RunT(t)
-	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	ctx := context.Background()
-	sub := Subscribe(ctx, client)
-	if _, err := sub.Receive(ctx); err != nil {
-		t.Fatal(err)
-	}
-	defer sub.Close()
-
-	n := Notice{Severity: Critical, Message: "restarting", ConnectCodes: []string{"ABCDEFGH"}}
-	if err := Raise(ctx, client, n, time.Minute); err != nil {
+	if err := AnnounceShutdown(ctx, client, []string{"ABCDEFGH", "IJKLMNOP"}); err != nil {
 		t.Fatal(err)
 	}
 	if active, _ := Active(ctx, client); active != nil {
-		t.Fatalf("targeted notice was stored as active: %+v", active)
+		t.Fatalf("shutdown was stored as a notice: %+v", active)
 	}
-	got := receive(t, sub)
-	if !got.Targeted() || !got.Targets("ABCDEFGH") || got.Targets("OTHER123") {
-		t.Fatalf("published = %+v", got)
+	e := receive(t, sub)
+	if e.Shutdown == nil || len(e.Shutdown.ConnectCodes) != 2 || e.NoticeChanged {
+		t.Fatalf("published = %+v", e)
 	}
 
-	// an empty but non-nil list survives the round trip as targeted
-	if err := Raise(ctx, client, Notice{Severity: Critical, Message: "x", ConnectCodes: []string{}}, 0); err != nil {
+	// a replica with no clients still announces, with an empty (not null) list
+	if err := AnnounceShutdown(ctx, client, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := receive(t, sub); !got.Targeted() || got.Targets("ABCDEFGH") {
-		t.Fatalf("empty targeted notice = %+v", got)
+	if e := receive(t, sub); e.Shutdown == nil || e.Shutdown.ConnectCodes == nil || len(e.Shutdown.ConnectCodes) != 0 {
+		t.Fatalf("empty shutdown = %+v", e)
 	}
-	// and a platform-wide notice stays platform-wide
-	if err := Raise(ctx, client, Notice{Severity: Warning, Message: "x"}, 0); err != nil {
-		t.Fatal(err)
+}
+
+func TestDecodeEventRejectsMalformedEvents(t *testing.T) {
+	for _, raw := range []string{`{}`, `{"noticeChanged":true,"shutdown":{"connectCodes":[]}}`, `{"noticeChanged":false}`} {
+		if e, err := DecodeEvent([]byte(raw)); err != ErrInvalidEvent {
+			t.Errorf("DecodeEvent(%s) = %+v, %v; want ErrInvalidEvent", raw, e, err)
+		}
 	}
-	if got := receive(t, sub); got.Targeted() || !got.Targets("anything") {
-		t.Fatalf("platform notice = %+v", got)
+	for _, raw := range []string{`{"noticeChanged":true}`, `{"shutdown":{"connectCodes":["ABCDEFGH"]}}`} {
+		if _, err := DecodeEvent([]byte(raw)); err != nil {
+			t.Errorf("DecodeEvent(%s): %v", raw, err)
+		}
 	}
 }

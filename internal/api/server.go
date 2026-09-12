@@ -47,7 +47,7 @@ type Store interface {
 	Premium(context.Context, string) (premium.PremiumRecord, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
-	RaiseNotice(context.Context, notice.Notice, time.Duration) error
+	RaiseNotice(context.Context, notice.Notice) error
 	ClearNotice(context.Context) error
 }
 
@@ -380,13 +380,11 @@ func handleGetGuildPremium(store Store) func(c *gin.Context) {
 	}
 }
 
-// NoticeRequest is the body of POST /admin/notice.
+// NoticeRequest is the body of POST /admin/notice. The notice stays active until DELETE /admin/notice.
 type NoticeRequest struct {
-	// Severity is one of info, warning, or critical. Critical ends every running game and blocks new ones.
+	// Severity is warning or critical. Critical ends every running game and blocks new ones.
 	Severity string `json:"severity" example:"warning"`
 	Message  string `json:"message" example:"Database maintenance in progress; expect some lag."`
-	// TTLSeconds is how long the notice stays active; 0 keeps it until cleared.
-	TTLSeconds int64 `json:"ttlSeconds" example:"600"`
 }
 
 const maxNoticeMessageLength = 500
@@ -426,8 +424,8 @@ func handleGetNotice(store Store) func(c *gin.Context) {
 }
 
 // @Summary Raise a platform notice
-// @Description Shows a banner on every game status message. A critical notice also ends every running game (unmuting
-// @Description everyone, recording the matches as aborted) and blocks /new while active.
+// @Description Shows a banner on every game status message until cleared. A critical notice also ends every
+// @Description running game (unmuting everyone, recording the matches as aborted) and blocks /new while active.
 // @Tags admin
 // @Accept json
 // @Produce json
@@ -449,17 +447,14 @@ func handlePostNotice(store Store) func(c *gin.Context) {
 		msg := strings.TrimSpace(req.Message)
 		switch {
 		case !sev.Valid():
-			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "severity must be info, warning, or critical"})
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "severity must be warning or critical"})
 			return
 		case msg == "" || len(msg) > maxNoticeMessageLength:
 			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: fmt.Sprintf("message must be 1-%d characters", maxNoticeMessageLength)})
 			return
-		case req.TTLSeconds < 0:
-			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "ttlSeconds must not be negative"})
-			return
 		}
-		n := notice.Notice{Severity: sev, Message: msg, Source: "admin-api"}
-		if err := store.RaiseNotice(c.Request.Context(), n, time.Duration(req.TTLSeconds)*time.Second); err != nil {
+		n := notice.Notice{Severity: sev, Message: msg}
+		if err := store.RaiseNotice(c.Request.Context(), n); err != nil {
 			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "failed to raise notice"})
 			return
 		}

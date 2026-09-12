@@ -25,13 +25,6 @@ const ConnectCodeLength = 8
 // It is refreshed on every event the client sends and cleared on disconnect.
 const CaptureReadyTTL = time.Minute * 15
 
-// ShutdownNoticeTTL is passed when raising the shutdown notice; since the notice is targeted it is never stored, so
-// this only documents intent.
-const ShutdownNoticeTTL = 2 * time.Minute
-
-// ShutdownMessage is the English text of the shutdown notice; the bot localizes it by MessageID.
-const ShutdownMessage = "The AutoMuteUs capture service is restarting for maintenance."
-
 type Broker struct {
 	client *redis.Client
 
@@ -312,16 +305,10 @@ func (broker *Broker) Shutdown(ctx context.Context) error {
 			log.Println(err)
 		}
 	}
-	// The notice is targeted at this broker's clients only: other replicas keep serving their games, and new games
-	// are not blocked. A platform-wide outage should be announced through the admin API instead.
+	// Only this broker's clients are affected: other replicas keep serving their games, and new games are not
+	// blocked. A platform-wide outage should be announced through the admin API instead.
 	log.Printf("Announcing shutdown to bots; %d capture clients connected", len(codes))
-	return notice.Raise(ctx, broker.client, notice.Notice{
-		Severity:     notice.Critical,
-		Message:      ShutdownMessage,
-		MessageID:    notice.GalactusShutdownMessageID,
-		Source:       "galactus",
-		ConnectCodes: codes,
-	}, ShutdownNoticeTTL)
+	return notice.AnnounceShutdown(ctx, broker.client, codes)
 }
 
 // refreshCaptureReady extends the capture-ready flag for a connect code, if the client has established it.
