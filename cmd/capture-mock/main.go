@@ -31,7 +31,7 @@ func run() error {
 			return p.err
 		}
 		var err error
-		host, code, err = parseConnection(input, os.Getenv("GALACTUS_HOST"))
+		host, code, err = parseConnection(input)
 		if err == nil {
 			break
 		}

@@ -7,37 +7,40 @@ import (
 )
 
 func TestParseConnection(t *testing.T) {
-	for _, tc := range []struct{ name, input, host, wantHost, wantCode string }{
-		{"bare code", " abcdefgh ", "", defaultHost, "ABCDEFGH"},
-		{"configured host", "ABCDEFGH", "https://broker.example:443/", "https://broker.example:443", "ABCDEFGH"},
-		{"local link", "aucapture://localhost:8123/abcdefgh?insecure", "", defaultHost, "ABCDEFGH"},
-		{"secure link overrides host", "aucapture://broker.example:443/ABCDEFGH", defaultHost, "https://broker.example:443", "ABCDEFGH"},
-		{"IPv6", "aucapture://[::1]:8123/ABCDEFGH?insecure", "", "http://[::1]:8123", "ABCDEFGH"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			host, code, err := parseConnection(tc.input, tc.host)
-			if err != nil || host != tc.wantHost || code != tc.wantCode {
-				t.Fatalf("got (%q, %q, %v), want (%q, %q, nil)", host, code, err, tc.wantHost, tc.wantCode)
-			}
-		})
+	// The former override must have no effect, even for a bare code.
+	t.Setenv("GALACTUS_HOST", "https://live.example:443")
+	link, _, _ := capture.FormCaptureURL("http://localhost:8123", "", "ABCDEFGH")
+	for _, input := range []string{" abcdefgh ", "aucapture://localhost:8123/abcdefgh?insecure", link} {
+		host, code, err := parseConnection(input)
+		if err != nil || host != "http://localhost:8123" || code != "ABCDEFGH" {
+			t.Errorf("input %q: got (%q, %q, %v), want local host and ABCDEFGH", input, host, code, err)
+		}
 	}
-	for _, host := range []string{"http://localhost:8123", "https://broker.example", "https://broker.example:8443"} {
-		link, _, _ := capture.FormCaptureURL(host, "", "ABCDEFGH")
-		if _, code, err := parseConnection(link, ""); err != nil || code != "ABCDEFGH" {
-			t.Errorf("cannot parse generated link %q: code=%q, err=%v", link, code, err)
+}
+
+func TestParseConnectionRejectsNonLocalEndpoints(t *testing.T) {
+	for _, input := range []string{
+		"aucapture://live.example:8123/ABCDEFGH?insecure",
+		"aucapture://live.example:443/ABCDEFGH",
+		"aucapture://localhost:9999/ABCDEFGH?insecure",
+		"aucapture://localhost/ABCDEFGH?insecure",
+		"aucapture://localhost:8123/ABCDEFGH",
+		"aucapture://localhost:8123/ABCDEFGH?insecure=false",
+		"aucapture://localhost.evil.example:8123/ABCDEFGH?insecure",
+		"aucapture://localhost:8123@live.example:8123/ABCDEFGH?insecure",
+		"aucapture://127.0.0.1:8123/ABCDEFGH?insecure",
+		"aucapture://[::1]:8123/ABCDEFGH?insecure",
+	} {
+		if _, _, err := parseConnection(input); err == nil {
+			t.Errorf("accepted endpoint override %q", input)
 		}
 	}
 }
 
 func TestParseConnectionRejectsInvalidInput(t *testing.T) {
-	for _, input := range []string{"", "SHORT", "TOOLONG99", "ABCD EFG", "ABCD/EFG", "aucapture://localhost/", "aucapture://localhost/ABCDEFGH/", "aucapture:///ABCDEFGH", "http://localhost/ABCDEFGH", "aucapture://user:pass@localhost/ABCDEFGH", "aucapture://localhost/ABCDEFGH#fragment", "aucapture://localhost/ABCDEFGH?insecure;%", "aucapture://localhost/ABCDEFGH?other=true", "aucapture://localhost:bad/ABCDEFGH"} {
-		if _, _, err := parseConnection(input, ""); err == nil {
+	for _, input := range []string{"", "SHORT", "TOOLONG99", "ABCD EFG", "ABCD/EFG", "aucapture://localhost:8123/?insecure", "aucapture://localhost:8123/ABCDEFGH/?insecure", "aucapture:///ABCDEFGH", "http://localhost:8123/ABCDEFGH", "aucapture://user:pass@localhost:8123/ABCDEFGH?insecure", "aucapture://localhost:8123/ABCDEFGH?insecure#fragment", "aucapture://localhost:8123/ABCDEFGH?insecure;%", "aucapture://localhost:8123/ABCDEFGH?insecure&other=true", "aucapture://localhost:bad/ABCDEFGH"} {
+		if _, _, err := parseConnection(input); err == nil {
 			t.Errorf("accepted invalid input %q", input)
-		}
-	}
-	for _, host := range []string{"localhost:8123", "ftp://localhost", "http://", "http://user:pass@localhost", "http://localhost/path", "http://localhost?query=1", "http://localhost#fragment"} {
-		if _, _, err := parseConnection("ABCDEFGH", host); err == nil {
-			t.Errorf("accepted invalid host %q", host)
 		}
 	}
 }

@@ -8,10 +8,12 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 )
 
-const defaultHost = "http://localhost:8123"
+// Intentionally fixed in source: this development tool should not make it easy
+// to impersonate a capture client against a live deployment.
+const galactusHost = "http://localhost:8123"
 
-// A capture link supplies its own endpoint. GALACTUS_HOST is used for bare codes.
-func parseConnection(input, host string) (string, string, error) {
+// Links validate the local endpoint; they never select the connection target.
+func parseConnection(input string) (string, string, error) {
 	code := strings.TrimSpace(input)
 	if strings.Contains(code, "://") {
 		link, err := url.Parse(code)
@@ -27,24 +29,14 @@ func parseConnection(input, host string) (string, string, error) {
 				return "", "", fmt.Errorf("unsupported capture link parameter %q", key)
 			}
 		}
-		scheme := "https"
-		if query.Has("insecure") {
-			scheme = "http"
+		if link.Host != "localhost:8123" || !query.Has("insecure") || query.Get("insecure") != "" {
+			return "", "", fmt.Errorf("capture mock only accepts local links: aucapture://localhost:8123/CODE?insecure")
 		}
-		host = scheme + "://" + link.Host
 		code = strings.TrimPrefix(link.Path, "/")
 	}
 	code = strings.ToUpper(code)
 	if len(code) != capture.ConnectCodeLength || strings.ContainsAny(code, "/?# \\ \t\r\n") {
 		return "", "", fmt.Errorf("connect code must be %d characters with no whitespace or URL separators", capture.ConnectCodeLength)
 	}
-	host = strings.TrimSpace(host)
-	if host == "" {
-		host = defaultHost
-	}
-	endpoint, err := url.Parse(host)
-	if err != nil || (endpoint.Scheme != "http" && endpoint.Scheme != "https") || endpoint.Hostname() == "" || endpoint.User != nil || endpoint.RawQuery != "" || endpoint.Fragment != "" || (endpoint.Path != "" && endpoint.Path != "/") {
-		return "", "", fmt.Errorf("Galactus host must be an http(s)://host[:port] URL")
-	}
-	return strings.TrimRight(host, "/"), code, nil
+	return galactusHost, code, nil
 }

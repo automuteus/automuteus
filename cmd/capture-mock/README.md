@@ -14,9 +14,10 @@ Start your development bot and Galactus with their shared Redis instance, create
 a game with `/new`, and paste its **connect code** or `aucapture://` link at the
 prompt. The connect code is distinct from the Among Us lobby code.
 
-For a bare connect code, `GALACTUS_HOST` selects the broker and defaults to
-`http://localhost:8123`. A capture link supplies its own host and port, uses HTTPS
-by default, and uses HTTP when `?insecure` is present.
+The broker is intentionally fixed to `http://localhost:8123` in source. There is
+no environment variable or command-line override. Capture links must use
+`aucapture://localhost:8123/CODE?insecure`; remote hosts, other ports, and secure
+links are rejected. This adds friction against using the mock on live games.
 
 Choose `L` to send lobby details, `S` for a phase, `P` for a player event, `G` for
 gameover, or `Q` to quit. Numbered menus use the current game definitions; blank
