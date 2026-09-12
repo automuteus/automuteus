@@ -121,11 +121,8 @@ func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[
 	for hToken, sess := range tokenProvider.activeSessions {
 		// if we have already used this token successfully, or haven't set any restrictions
 		if hTokenSubset == nil || mapHasEntry(hTokenSubset, hToken) {
-			// if this token isn't potentially rate-limited
-			if tokenProvider.IncrAndTestGuildTokenComboLock(guildID, hToken) {
+			if tokenProvider.tokenUsable(guildID, hToken, sess) {
 				return sess, hToken
-			} else {
-				tokenProvider.logger(guildID).Debug("secondary token near rate limit; skipping", "token", hToken)
 			}
 		}
 	}
@@ -141,6 +138,8 @@ func mapHasEntry[T constraints.Ordered, K any](dict map[T]K, key T) bool {
 	return ok
 }
 
+// IncrAndTestGuildTokenComboLock counts a request against the capture client's per-guild budget and reports whether
+// it was within the limit. Bot-owned tokens do not use this; discordgo tracks their real buckets from response headers.
 func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hashToken string) bool {
 	l := tokenProvider.logger(guildID).With("token", hashToken)
 	i, err := tokenProvider.client.Incr(context.Background(), rediskey.GuildTokenLock(guildID, hashToken)).Result()
@@ -153,22 +152,12 @@ func (tokenProvider *TokenProvider) IncrAndTestGuildTokenComboLock(guildID, hash
 		return false
 	}
 
-	// set the expiry only if the mute/deafen was successful, because we want to preserve any existing blacklist expiries
 	err = tokenProvider.client.Expire(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), time.Second*5).Err()
 	if err != nil {
 		l.Error("failed to set token usage expiry", "err", err)
 	}
 
 	return true
-}
-
-// BlacklistTokenForDuration sets a guild token (or connect code ala capture bot) to the maximum value allowed before
-// attempting other non-rate-limited mute/deafen methods.
-// NOTE: this will manifest as the capture/token in question appearing like it "has been used <maxnum> times" in logs,
-// even if this is not technically accurate. A more accurate approach would probably use a totally separate Redis key,
-// as opposed to this approach, which simply uses the ratelimiting counter key(s) to achieve blacklisting
-func (tokenProvider *TokenProvider) BlacklistTokenForDuration(guildID, hashToken string, duration time.Duration) error {
-	return tokenProvider.client.Set(context.Background(), rediskey.GuildTokenLock(guildID, hashToken), tokenProvider.maxRequests5Seconds, duration).Err()
 }
 
 const DefaultMaxWorkers = 8
@@ -187,6 +176,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 		return gerr
 	}
 	limit := PremiumBotConstraints[request.Premium]
+	capture := tokenProvider.newCaptureRoute(guildID, connectCode, l)
 
 	tasksChannel := make(chan task.UserModify, len(request.Users))
 	wg := sync.WaitGroup{}
@@ -227,12 +217,21 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 					uniqueTokensUsed[hToken] = struct{}{}
 					tokenLock.Unlock()
 				} else {
-					success := tokenProvider.attemptOnCaptureBot(guildID, connectCode, gid, req)
-					if success {
+					result := captureFailed
+					if capture.usable() {
+						result = tokenProvider.attemptOnCaptureBot(capture, gid, req)
+					}
+					switch result {
+					case captureApplied:
 						mu.Lock()
 						mdsc.Capture++
 						mu.Unlock()
-					} else {
+					case captureRateLimited:
+						mu.Lock()
+						mdsc.RateLimit++
+						mu.Unlock()
+						fallthrough
+					default:
 						l.Debug("applying voice change via primary bot", "user", userIDStr, "mute", req.Mute, "deaf", req.Deaf)
 						err := tokenProvider.applyWithPrimary(guildID, userIDStr, req.Mute, req.Deaf)
 						if err != nil {

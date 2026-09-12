@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,13 +15,14 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
+	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
 )
 
-// These tests pin down how ModifyUsers behaves when the capture client cannot apply mutes, which is the common case
-// for any game whose capture app has no bot token configured. The behavior they assert (every user still ends up
-// muted, via the primary bot) must survive changes to how quickly and cheaply that fallback is reached, which is what
-// the benchmarks below measure.
+// These tests pin down how ModifyUsers routes mute/deafen requests between the capture client and the bot's own
+// tokens, and in particular what happens when the capture client cannot apply mutes, which is the common case for
+// any game whose capture app has no bot token configured. Every user must end up muted regardless; the benchmarks
+// measure how quickly and cheaply that happens.
 
 const (
 	testGuild = "1"
@@ -91,10 +93,17 @@ func (p *primaryRecorder) count() int {
 	return len(p.calls)
 }
 
+func (p *primaryRecorder) reset() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls = nil
+}
+
 type harness struct {
 	tp      *TokenProvider
 	redis   *miniredis.Miniredis
-	client  *redis.Client
+	client  *redis.Client // the provider's client; commands are counted
+	admin   *redis.Client // for test setup; commands are not counted
 	cmds    *commandCounter
 	primary *primaryRecorder
 }
@@ -108,36 +117,44 @@ func newHarness(tb testing.TB, ackTimeout time.Duration) *harness {
 
 	mr := miniredis.RunT(tb)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	tb.Cleanup(func() { _ = client.Close() })
+	admin := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	tb.Cleanup(func() { _ = client.Close(); _ = admin.Close() })
 	cmds := &commandCounter{}
 	client.AddHook(cmds)
 
 	primary := &primaryRecorder{}
-	// the per-game rate limit is not what these tests exercise; make it effectively unlimited
+	// the per-game rate limit is not what most of these tests exercise; make it effectively unlimited
 	tp := NewTokenProvider(client, nil, ackTimeout, 1<<40)
 	tp.applyPrimary = primary.apply
-	return &harness{tp: tp, redis: mr, client: client, cmds: cmds, primary: primary}
+	return &harness{tp: tp, redis: mr, client: client, admin: admin, cmds: cmds, primary: primary}
 }
 
-// startFakeCaptureClient plays the role of galactus plus a capture app that acks every task: it listens for tasks
-// published for the connect code and immediately reports each one complete. It uses its own client so its own
-// commands are not counted.
+// captureReady does what galactus does when a capture client reports it can apply mutes.
+func (h *harness) captureReady(tb testing.TB) {
+	tb.Helper()
+	if err := h.admin.Set(context.Background(), rediskey.CaptureMuteReady(testCode), "1", time.Hour).Err(); err != nil {
+		tb.Fatal(err)
+	}
+}
+
+// startFakeCaptureClient plays the role of galactus plus a capture app that acks every task: it marks itself ready,
+// listens for tasks published for the connect code, and immediately reports each one complete.
 func (h *harness) startFakeCaptureClient(tb testing.TB) {
 	tb.Helper()
-	client := redis.NewClient(&redis.Options{Addr: h.redis.Addr()})
-	sub := client.Subscribe(context.Background(), rediskey.TasksList(testCode))
+	h.captureReady(tb)
+	sub := h.admin.Subscribe(context.Background(), rediskey.TasksList(testCode))
 	// make sure the subscription is live before returning
 	if _, err := sub.Receive(context.Background()); err != nil {
 		tb.Fatal(err)
 	}
-	tb.Cleanup(func() { _ = sub.Close(); _ = client.Close() })
+	tb.Cleanup(func() { _ = sub.Close() })
 	go func() {
 		for msg := range sub.Channel() {
 			var mt task.ModifyTask
 			if err := json.Unmarshal([]byte(msg.Payload), &mt); err != nil {
 				continue
 			}
-			client.Publish(context.Background(), rediskey.CompleteTask(mt.TaskID), "true")
+			h.admin.Publish(context.Background(), rediskey.CompleteTask(mt.TaskID), "true")
 		}
 	}()
 }
@@ -150,9 +167,29 @@ func batch(n int) task.UserModifyRequest {
 	return req
 }
 
+func TestModifyUsers_NoCaptureClient_GoesStraightToPrimary(t *testing.T) {
+	const ackTimeout = 20 * time.Millisecond
+	h := newHarness(t, ackTimeout)
+
+	start := time.Now()
+	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+		t.Fatalf("ModifyUsers: %v", err)
+	}
+	if got := h.primary.count(); got != 6 {
+		t.Fatalf("primary bot applied %d mutes, want 6", got)
+	}
+	if n := h.cmds.get("publish"); n != 0 {
+		t.Errorf("published %d capture tasks with no capture client, want 0", n)
+	}
+	if elapsed := time.Since(start); elapsed >= ackTimeout {
+		t.Errorf("took %v; should not wait on an ack when no capture client can apply mutes", elapsed)
+	}
+}
+
 func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing.T) {
 	const ackTimeout = 20 * time.Millisecond
 	h := newHarness(t, ackTimeout)
+	h.captureReady(t) // the client claimed it can mute, but never acks
 
 	// first batch of the game: the capture path is tried and found unresponsive
 	start := time.Now()
@@ -169,6 +206,9 @@ func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing
 	}
 	if elapsed := time.Since(start); elapsed < ackTimeout {
 		t.Errorf("first batch returned in %v, before the %v ack timeout; capture path was not actually tried", elapsed, ackTimeout)
+	}
+	if n := h.cmds.get("set"); n != 1 {
+		t.Errorf("blacklist written %d times for one unresponsive client, want exactly 1", n)
 	}
 
 	// second batch: the capture client is now known to be unresponsive, so no task is published and nothing waits
@@ -201,13 +241,73 @@ func TestModifyUsers_ResponsiveCapture_UsesCaptureClientNotPrimary(t *testing.T)
 	if n := h.cmds.get("publish"); n != 3 {
 		t.Errorf("published %d capture tasks, want 3", n)
 	}
-	if _, err := h.client.Get(context.Background(), rediskey.GuildTokenLock(testGuild, testCode)).Result(); err != nil {
-		t.Errorf("expected a usage counter for the capture client, got %v", err)
+	if n := h.cmds.get("set"); n != 0 {
+		t.Errorf("blacklist written %d times for a working client, want 0", n)
+	}
+}
+
+func TestModifyUsers_CaptureRateLimit_DefersToPrimaryWithoutBlacklisting(t *testing.T) {
+	h := newHarness(t, time.Second)
+	h.startFakeCaptureClient(t)
+	h.tp.maxRequests5Seconds = 2
+
+	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+		t.Fatalf("ModifyUsers: %v", err)
+	}
+	// the capture client got at most its budget; everyone else went to the primary bot; nothing was blacklisted
+	published := h.cmds.get("publish")
+	if published < 1 || published > 2 {
+		t.Errorf("published %d capture tasks, want 1 or 2 under a budget of 2", published)
+	}
+	if got := h.primary.count(); got != 6-published {
+		t.Errorf("primary bot applied %d mutes, want %d", got, 6-published)
+	}
+	if n := h.cmds.get("set"); n != 0 {
+		t.Errorf("rate limiting should not blacklist, but wrote the blacklist %d times", n)
+	}
+}
+
+func TestTokenUsable_FollowsDiscordBucketAndBlacklist(t *testing.T) {
+	h := newHarness(t, time.Second)
+	sess, err := discordgo.New("Bot fake")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bucketID := discordgo.EndpointGuildMember(testGuild, "")
+
+	if !h.tp.tokenUsable(testGuild, "tok", sess) {
+		t.Fatal("a fresh session should be usable")
+	}
+
+	// simulate Discord's response headers reporting the guild-member bucket exhausted for a while
+	bucket := sess.Ratelimiter.LockBucket(bucketID)
+	if err := bucket.Release(http.Header{
+		"X-Ratelimit-Remaining":   []string{"0"},
+		"X-Ratelimit-Reset-After": []string{"5"},
+		"Date":                    []string{time.Now().UTC().Format(http.TimeFormat)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if h.tp.tokenUsable(testGuild, "tok", sess) {
+		t.Error("session with an exhausted bucket should not be usable")
+	}
+	if !h.tp.tokenUsable("2", "tok", sess) {
+		t.Error("buckets are per guild; the same session should be usable for another guild")
+	}
+
+	// a fresh session that has been blacklisted for this guild is also not usable
+	sess2, _ := discordgo.New("Bot fake2")
+	if err := h.tp.BlacklistTokenForDuration(testGuild, "tok2", time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	if h.tp.tokenUsable(testGuild, "tok2", sess2) {
+		t.Error("blacklisted token should not be usable")
 	}
 }
 
 // Benchmarks. The interesting numbers are ns/op (how long a batch blocks the game loop), publishes/op (capture tasks
-// sent into the void), and blacklists/op (redundant blacklist writes). Compare before/after with benchstat.
+// sent to a client that will never act on them), and blacklists/op (redundant blacklist writes). Compare
+// before/after with benchstat.
 
 func reportRedisMetrics(b *testing.B, h *harness) {
 	b.ReportMetric(float64(h.cmds.get("publish"))/float64(b.N), "publishes/op")
@@ -215,9 +315,9 @@ func reportRedisMetrics(b *testing.B, h *harness) {
 	b.ReportMetric(float64(h.primary.count())/float64(b.N), "primary/op")
 }
 
-// BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch measures the first mute batch of a game whose capture client
-// never acks: every iteration starts with a fresh Redis, so nothing is blacklisted yet.
-func BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch(b *testing.B) {
+// BenchmarkModifyUsers_NoCaptureClient_FirstBatch measures the first mute batch of a game whose capture app has no bot
+// token, the common case. Every iteration starts with a fresh Redis.
+func BenchmarkModifyUsers_NoCaptureClient_FirstBatch(b *testing.B) {
 	h := newHarness(b, 5*time.Millisecond)
 	req := batch(6)
 	for b.Loop() {
@@ -231,16 +331,34 @@ func BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch(b *testing.B) {
 	reportRedisMetrics(b, h)
 }
 
+// BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch measures the first mute batch of a game whose capture client
+// claimed it can mute but never acks. Every iteration starts with a fresh Redis, so nothing is blacklisted yet.
+func BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch(b *testing.B) {
+	h := newHarness(b, 5*time.Millisecond)
+	req := batch(6)
+	for b.Loop() {
+		b.StopTimer()
+		h.redis.FlushAll()
+		h.captureReady(b)
+		b.StartTimer()
+		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+	reportRedisMetrics(b, h)
+}
+
 // BenchmarkModifyUsers_UnresponsiveCapture_Blacklisted measures every later batch in that same game, once the capture
 // client has been blacklisted.
 func BenchmarkModifyUsers_UnresponsiveCapture_Blacklisted(b *testing.B) {
 	h := newHarness(b, 5*time.Millisecond)
+	h.captureReady(b)
 	req := batch(6)
 	if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 		b.Fatal(err)
 	}
 	h.cmds.reset()
-	h.primary.calls = nil
+	h.primary.reset()
 	for b.Loop() {
 		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 			b.Fatal(err)

@@ -38,7 +38,7 @@ var (
 
 const (
 	DefaultURL                   = "http://localhost:8123"
-	DefaultMaxRequests5Sec int64 = 7
+	DefaultMaxRequests5Sec int64 = 5 // Discord allows ~10 member modifications per 10s per guild
 )
 
 type registeredCommand struct {
