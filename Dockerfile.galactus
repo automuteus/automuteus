@@ -46,5 +46,7 @@ COPY --from=builder /app /app/galactus
 # Port used for capture clients to connect and report game events
 EXPOSE 8123
 
-# Run the compiled binary.
+# Run the compiled binary. Exec form is required: the binary must be PID 1 so that it receives SIGTERM directly and
+# can announce its shutdown to the bots (see cmd/galactus/main.go) before the orchestrator's grace period ends.
+STOPSIGNAL SIGTERM
 ENTRYPOINT ["./galactus"]

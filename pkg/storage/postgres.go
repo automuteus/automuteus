@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
@@ -396,7 +397,8 @@ func (psqlInterface *PsqlInterface) GetGamesForGuild(guildID uint64) ([]*Postgre
 
 func getGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresGame, error) {
 	var games []*PostgresGame
-	err := pgxscan.Select(context.Background(), conn, &games, "SELECT * FROM games WHERE guild_id = $1;", guildID)
+	// aborted matches (ended before a result) are excluded, as they are from statistics
+	err := pgxscan.Select(context.Background(), conn, &games, "SELECT * FROM games WHERE guild_id = $1 AND win_type != $2;", guildID, int16(game.Aborted))
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +419,7 @@ func getGameEventsForGuild(conn PgxIface, guildID uint64) ([]*PostgresGameEvent,
 	err := pgxscan.Select(context.Background(), conn, &r, "SELECT event_id, user_id, game_events.game_id, event_time, event_type, payload "+
 		"FROM game_events "+
 		"INNER JOIN games gg ON gg.game_id = game_events.game_id "+
-		"WHERE gg.guild_id = $1", guildID)
+		"WHERE gg.guild_id = $1 AND gg.win_type != $2", guildID, int16(game.Aborted))
 	if err != nil {
 		return nil, err
 	}
@@ -509,6 +511,16 @@ func (psqlInterface *PsqlInterface) UpdateGameAndPlayers(gameID int64, winType i
 	}
 
 	return nil
+}
+
+// AbortGame marks a match as ended without a result. It is excluded from statistics.
+func (psqlInterface *PsqlInterface) AbortGame(gameID int64, endTime int64) error {
+	conn, err := psqlInterface.Pool.Acquire(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	return updateGame(conn.Conn(), gameID, int16(game.Aborted), endTime)
 }
 
 func (psqlInterface *PsqlInterface) Close() {

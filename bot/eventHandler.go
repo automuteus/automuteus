@@ -34,6 +34,8 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	}
 	gl := bot.gameLog(dgsRequest)
 	gl.Info("subscribed to capture events")
+	bot.trackGame(dgsRequest)
+	defer bot.untrackGame(connectCode)
 
 	// indicate to the broker that we're online and ready to start processing messages
 	task.Ack(ctx, bot.RedisInterface.client, connectCode)
@@ -89,10 +91,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			if err != nil {
 				gl.Error("failed to close capture subscription", "err", err)
 			}
-			go bot.forceEndGame(dgsRequest)
 			bot.ChannelsMapLock.Lock()
 			delete(bot.EndGameChannels, connectCode)
 			bot.ChannelsMapLock.Unlock()
+			go bot.endInactiveGame(dgsRequest)
 
 			return
 		case <-endGameChannel:
@@ -232,6 +234,15 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		}
 	}
 	return correlatedUserID
+}
+
+// endInactiveGame ends a game whose capture went quiet: players are unmuted, the match is aborted, and the game is
+// deleted.
+func (bot *Bot) endInactiveGame(dgsRequest GameStateRequest) {
+	if dgs := bot.store.GetReadOnlyDiscordGameState(dgsRequest); dgs != nil {
+		bot.finishGame(dgs, "capture inactivity", "")
+	}
+	bot.forceEndGame(dgsRequest)
 }
 
 // recordGameEvent stores a capture event against the active match, if there is one.

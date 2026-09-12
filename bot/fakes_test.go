@@ -13,6 +13,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/lock"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	storageutils "github.com/automuteus/automuteus/v8/pkg/storage"
@@ -28,16 +29,17 @@ type fakeLock struct{}
 
 func (fakeLock) Release(context.Context) error { return nil }
 
-// memoryStore holds a single game's state. Reads hand back a JSON round-tripped copy, mirroring the Redis-backed
-// store's behavior, so a caller that forgets to write its changes back will not see them on the next read.
+// memoryStore holds games keyed by connect code. Reads hand back a JSON round-tripped copy, mirroring the
+// Redis-backed store's behavior, so a caller that forgets to write its changes back will not see them on the next
+// read. Lookups resolve the way the Redis store's pointers do: by connect code, then text channel, then voice channel.
 type memoryStore struct {
 	mu       sync.Mutex
-	state    []byte
+	states   map[string][]byte
 	mappings map[string]map[string]interface{}
 }
 
 func newMemoryStore() *memoryStore {
-	return &memoryStore{mappings: map[string]map[string]interface{}{}}
+	return &memoryStore{states: map[string][]byte{}, mappings: map[string]map[string]interface{}{}}
 }
 
 func (m *memoryStore) put(dgs *GameState) {
@@ -46,28 +48,80 @@ func (m *memoryStore) put(dgs *GameState) {
 		panic(err)
 	}
 	m.mu.Lock()
-	m.state = b
+	m.states[dgs.ConnectCode] = b
 	m.mu.Unlock()
 }
 
-func (m *memoryStore) get() *GameState {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.state == nil {
-		return nil
-	}
+func decodeState(b []byte) *GameState {
 	var dgs GameState
-	if err := json.Unmarshal(m.state, &dgs); err != nil {
+	if err := json.Unmarshal(b, &dgs); err != nil {
 		panic(err)
 	}
 	return &dgs
 }
 
-func (m *memoryStore) GetDiscordGameStateAndLock(GameStateRequest) (lock.Lock, *GameState) {
-	return fakeLock{}, m.get()
+// get returns the only stored game, for tests that seed exactly one. It panics if there are several.
+func (m *memoryStore) get() *GameState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	switch len(m.states) {
+	case 0:
+		return nil
+	case 1:
+		for _, b := range m.states {
+			return decodeState(b)
+		}
+	}
+	panic("memoryStore.get with several games stored; use getCode")
 }
 
-func (m *memoryStore) GetReadOnlyDiscordGameState(GameStateRequest) *GameState { return m.get() }
+func (m *memoryStore) getCode(connectCode string) *GameState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if b, ok := m.states[connectCode]; ok {
+		return decodeState(b)
+	}
+	return nil
+}
+
+func (m *memoryStore) find(gsr GameStateRequest) *GameState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if b, ok := m.states[gsr.ConnectCode]; ok && gsr.ConnectCode != "" {
+		return decodeState(b)
+	}
+	for _, b := range m.states {
+		dgs := decodeState(b)
+		if gsr.TextChannel != "" && dgs.GameStateMsg.MessageChannelID == gsr.TextChannel {
+			return dgs
+		}
+		if gsr.VoiceChannel != "" && dgs.VoiceChannel == gsr.VoiceChannel {
+			return dgs
+		}
+	}
+	return nil
+}
+
+func (m *memoryStore) GetDiscordGameStateAndLock(gsr GameStateRequest) (lock.Lock, *GameState) {
+	dgs := m.find(gsr)
+	if dgs == nil {
+		// like the Redis store, a locked fetch creates an empty state if none exists
+		dgs = NewDiscordGameState(gsr.GuildID)
+	}
+	return fakeLock{}, dgs
+}
+
+func (m *memoryStore) RemoveOldGame(string, string) {}
+
+func (m *memoryStore) DeleteDiscordGameState(dgs *GameState) {
+	m.mu.Lock()
+	delete(m.states, dgs.ConnectCode)
+	m.mu.Unlock()
+}
+
+func (m *memoryStore) GetReadOnlyDiscordGameState(gsr GameStateRequest) *GameState {
+	return m.find(gsr)
+}
 
 func (m *memoryStore) SetDiscordGameState(dgs *GameState, _ lock.Lock) {
 	if dgs != nil {
@@ -115,6 +169,7 @@ type fakeRecorder struct {
 	games   []*storageutils.PostgresGame
 	events  []*storageutils.PostgresGameEvent
 	updates []int64
+	aborted []int64
 }
 
 func (f *fakeRecorder) AddInitialGame(g *storageutils.PostgresGame) (uint64, error) {
@@ -132,6 +187,13 @@ func (f *fakeRecorder) UpdateGameAndPlayers(gameID int64, _ int16, _ int64, _ []
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.updates = append(f.updates, gameID)
+	return nil
+}
+
+func (f *fakeRecorder) AbortGame(gameID int64, _ int64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.aborted = append(f.aborted, gameID)
 	return nil
 }
 
@@ -195,6 +257,12 @@ func (f *fakeDiscord) ChannelMessageDelete(channelID, messageID string, _ ...dis
 	return nil
 }
 
+func (f *fakeDiscord) editCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.edits)
+}
+
 func (f *fakeDiscord) GuildMember(_, userID string, _ ...discordgo.RequestOption) (*discordgo.Member, error) {
 	if m, ok := f.members[userID]; ok {
 		return m, nil
@@ -206,6 +274,23 @@ type fakeSettings struct{ sett *settings.GuildSettings }
 
 func (f fakeSettings) LoadGuildSettings(context.Context, string) (*settings.GuildSettings, error) {
 	return f.sett, nil
+}
+
+type fakeNotices struct {
+	mu sync.Mutex
+	n  *notice.Notice
+}
+
+func (f *fakeNotices) Active(context.Context) (*notice.Notice, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.n, nil
+}
+
+func (f *fakeNotices) set(n *notice.Notice) {
+	f.mu.Lock()
+	f.n = n
+	f.mu.Unlock()
 }
 
 type fakeMetrics struct {
@@ -231,8 +316,36 @@ type testDeps struct {
 	guilds   *discordgo.State
 	metrics  *fakeMetrics
 	settings *settings.GuildSettings
-	sleeps   []time.Duration
+	notices  *fakeNotices
 	logs     *bytes.Buffer
+
+	sleepMu sync.Mutex
+	sleeps  []time.Duration
+}
+
+func (d *testDeps) recordSleep(dur time.Duration) {
+	d.sleepMu.Lock()
+	d.sleeps = append(d.sleeps, dur)
+	d.sleepMu.Unlock()
+}
+
+func (d *testDeps) slept() []time.Duration {
+	d.sleepMu.Lock()
+	defer d.sleepMu.Unlock()
+	return append([]time.Duration(nil), d.sleeps...)
+}
+
+// eventually polls cond for up to a second.
+func eventually(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", what)
 }
 
 // newTestBot returns a Bot wired entirely to in-memory fakes. Delays requested by the mute path are recorded in
@@ -247,22 +360,25 @@ func newTestBot(t *testing.T) (*Bot, *testDeps) {
 		guilds:   discordgo.NewState(),
 		metrics:  &fakeMetrics{},
 		settings: settings.MakeGuildSettings(),
+		notices:  &fakeNotices{},
 		logs:     &bytes.Buffer{},
 	}
 	bot := &Bot{
-		StatusEmojis:    emptyStatusEmojis(),
-		EndGameChannels: map[string]chan EndGameMessage{},
-		captureTimeout:  GameTimeoutSeconds,
-		store:           deps.store,
-		settings:        fakeSettings{sett: deps.settings},
-		voice:           deps.voice,
-		premiumSource:   fakePremium{tier: premium.FreeTier},
-		recorder:        deps.recorder,
-		discord:         deps.discord,
-		guilds:          deps.guilds,
-		metrics:         deps.metrics,
-		sleep:           func(d time.Duration) { deps.sleeps = append(deps.sleeps, d) },
-		log:             slog.New(slog.NewTextHandler(deps.logs, &slog.HandlerOptions{Level: slog.LevelDebug})),
+		StatusEmojis:       emptyStatusEmojis(),
+		EndGameChannels:    map[string]chan EndGameMessage{},
+		activeGameRequests: map[string]GameStateRequest{},
+		notices:            deps.notices,
+		captureTimeout:     GameTimeoutSeconds,
+		store:              deps.store,
+		settings:           fakeSettings{sett: deps.settings},
+		voice:              deps.voice,
+		premiumSource:      fakePremium{tier: premium.FreeTier},
+		recorder:           deps.recorder,
+		discord:            deps.discord,
+		guilds:             deps.guilds,
+		metrics:            deps.metrics,
+		sleep:              func(d time.Duration) { deps.sleeps = append(deps.sleeps, d) },
+		log:                slog.New(slog.NewTextHandler(deps.logs, &slog.HandlerOptions{Level: slog.LevelDebug})),
 	}
 	return bot, deps
 }

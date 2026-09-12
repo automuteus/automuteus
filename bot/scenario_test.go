@@ -69,8 +69,8 @@ func TestProcessJob_LobbyToTasks_StartsMatchAndMutesLinkedPlayers(t *testing.T) 
 
 	// the configured lobby->tasks delay was honored (without actually sleeping)
 	wantDelay := time.Second * time.Duration(sett.GetDelay(game.LOBBY, game.TASKS))
-	if len(deps.sleeps) != 1 || deps.sleeps[0] != wantDelay {
-		t.Fatalf("sleeps = %v, want [%v]", deps.sleeps, wantDelay)
+	if slept := deps.slept(); len(slept) != 1 || slept[0] != wantDelay {
+		t.Fatalf("sleeps = %v, want [%v]", slept, wantDelay)
 	}
 
 	// exactly one batch of mutes went out, covering only the linked users in the tracked channel
