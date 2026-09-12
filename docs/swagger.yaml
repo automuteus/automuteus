@@ -22,6 +22,22 @@ definitions:
       version:
         type: string
     type: object
+  api.NoticeRequest:
+    properties:
+      message:
+        example: Database maintenance in progress; expect some lag.
+        type: string
+      severity:
+        description: Severity is one of info, warning, or critical. Critical ends
+          every running game and blocks new ones.
+        example: warning
+        type: string
+      ttlSeconds:
+        description: TTLSeconds is how long the notice stays active; 0 keeps it until
+          cleared.
+        example: 600
+        type: integer
+    type: object
   api.RoomCodeResponse:
     properties:
       connectCode:
@@ -138,6 +154,7 @@ definitions:
     - 9
     - 10
     - 11
+    format: int32
     type: integer
     x-enum-varnames:
     - ApplicationCommandOptionSubCommand
@@ -156,6 +173,7 @@ definitions:
     - 1
     - 2
     - 3
+    format: int32
     type: integer
     x-enum-varnames:
     - ChatApplicationCommand
@@ -215,6 +233,48 @@ definitions:
           type: object
         type: object
     type: object
+  notice.Notice:
+    properties:
+      cleared:
+        description: Cleared is set on the message published when an operator clears
+          the active notice early.
+        type: boolean
+      connectCodes:
+        description: |-
+          ConnectCodes, when non-nil, limits a critical notice to those games: only they are ended, the notice is not
+          stored as active, and new games are not blocked. A nil value means the whole platform. An empty, non-nil
+          slice is a targeted notice that affects no games (Galactus shutting down with no clients connected).
+        items:
+          type: string
+        type: array
+      expiresAt:
+        description: ExpiresAt is the unix time the notice stops being active, or
+          0 if it stays until cleared.
+        type: integer
+      issuedAt:
+        type: integer
+      message:
+        type: string
+      messageId:
+        description: MessageID, when set, names a message the bot knows how to translate;
+          Message is then the English fallback.
+        type: string
+      severity:
+        $ref: '#/definitions/notice.Severity'
+      source:
+        description: Source identifies who raised the notice, e.g. "galactus" or "admin-api".
+        type: string
+    type: object
+  notice.Severity:
+    enum:
+    - info
+    - warning
+    - critical
+    type: string
+    x-enum-varnames:
+    - Info
+    - Warning
+    - Critical
   premium.PremiumRecord:
     properties:
       days:
@@ -230,6 +290,7 @@ definitions:
     - 3
     - 4
     - 5
+    format: int32
     type: integer
     x-enum-varnames:
     - FreeTier
@@ -281,6 +342,84 @@ info:
   title: AutoMuteUs
   version: dev
 paths:
+  /admin/notice:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      summary: Clear the active platform notice
+      tags:
+      - admin
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notice.Notice'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      summary: Get the active platform notice
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Shows a banner on every game status message. A critical notice also ends every running game (unmuting
+        everyone, recording the matches as aborted) and blocks /new while active.
+      parameters:
+      - description: Notice
+        in: body
+        name: notice
+        required: true
+        schema:
+          $ref: '#/definitions/api.NoticeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notice.Notice'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      summary: Raise a platform notice
+      tags:
+      - admin
   /bot/commands:
     get:
       consumes:
