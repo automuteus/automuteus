@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"strings"
 	"sync"
 	"testing"
@@ -138,6 +139,9 @@ func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 	if _, ok := bot.EndGameChannels[scenarioConnectCode]; ok {
 		t.Error("end channel should have been removed")
 	}
+	if got := deps.metrics.endedBy(server.EndReasonCriticalNotice); got != 2 {
+		t.Errorf("games ended for a critical notice = %d, want 2", got)
+	}
 }
 
 func TestHandleEvent_ShutdownOnlyEndsListedGames(t *testing.T) {
@@ -170,6 +174,9 @@ func TestHandleEvent_ShutdownOnlyEndsListedGames(t *testing.T) {
 	}
 	if posted := postedIn(deps, scenarioTextChannel); posted != "" {
 		t.Errorf("unaffected game got a message: %q", posted)
+	}
+	if got := deps.metrics.endedBy(server.EndReasonCaptureShutdown); got != 1 {
+		t.Errorf("games ended for a capture shutdown = %d, want 1", got)
 	}
 }
 
@@ -298,6 +305,12 @@ func TestEndInactiveGame_UnmutesAndAborts(t *testing.T) {
 	}
 	if deps.store.get() != nil {
 		t.Error("game state should have been deleted")
+	}
+	if got := deps.metrics.endedBy(server.EndReasonInactivity); got != 1 {
+		t.Errorf("games ended for inactivity = %d, want 1", got)
+	}
+	if got := deps.metrics.cleanupFailed(server.CleanupUnmute); got != 0 {
+		t.Errorf("unmute cleanup failures = %d, want 0 when the unmute succeeded", got)
 	}
 }
 

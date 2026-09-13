@@ -52,7 +52,7 @@ type Bot struct {
 	recorder      GameRecorder
 	discord       DiscordClient
 	guilds        GuildReader
-	metrics       RequestMetrics
+	metrics       Metrics
 	sleep         func(time.Duration)
 	log           *slog.Logger
 	notices       NoticeSource
@@ -174,10 +174,6 @@ func (bot *Bot) InitTokenProvider(tp *tokenprovider.TokenProvider) {
 	tp.Init(bot.RedisInterface.client, bot.PrimarySession)
 }
 
-func (bot *Bot) StartMetricsServer(nodeID string) error {
-	return server.PrometheusMetricsServer(bot.RedisInterface.client, nodeID, "2112")
-}
-
 func (bot *Bot) Close() {
 	bot.PrimarySession.Close()
 	bot.RedisInterface.Close()
@@ -273,7 +269,7 @@ func (bot *Bot) forceEndGame(gsr GameStateRequest) {
 
 	deleted := dgs.DeleteGameStateMsg(bot.discord, true)
 	if deleted {
-		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
+		bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
 	bot.store.SetDiscordGameState(dgs, lock)
@@ -312,9 +308,9 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	created := dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
-		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)
+		bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)
 	} else if deleted || created {
-		go bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
+		bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	}
 
 	bot.store.SetDiscordGameState(dgs, lock)

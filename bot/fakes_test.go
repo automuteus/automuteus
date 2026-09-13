@@ -294,8 +294,12 @@ func (f *fakeNotices) set(n *notice.Notice) {
 }
 
 type fakeMetrics struct {
-	mu     sync.Mutex
-	counts map[server.EventType]int64
+	mu              sync.Mutex
+	counts          map[server.EventType]int64
+	activeGames     int
+	started         int
+	ended           map[server.EndReason]int
+	cleanupFailures map[server.CleanupStep]int
 }
 
 func (f *fakeMetrics) RecordDiscordRequests(t server.EventType, n int64) {
@@ -305,6 +309,48 @@ func (f *fakeMetrics) RecordDiscordRequests(t server.EventType, n int64) {
 		f.counts = map[server.EventType]int64{}
 	}
 	f.counts[t] += n
+}
+
+func (f *fakeMetrics) SetActiveGames(n int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.activeGames = n
+}
+
+func (f *fakeMetrics) RecordGameStarted() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.started++
+}
+
+func (f *fakeMetrics) RecordGameEnded(reason server.EndReason) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.ended == nil {
+		f.ended = map[server.EndReason]int{}
+	}
+	f.ended[reason]++
+}
+
+func (f *fakeMetrics) RecordCleanupFailure(step server.CleanupStep) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.cleanupFailures == nil {
+		f.cleanupFailures = map[server.CleanupStep]int{}
+	}
+	f.cleanupFailures[step]++
+}
+
+func (f *fakeMetrics) endedBy(reason server.EndReason) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.ended[reason]
+}
+
+func (f *fakeMetrics) cleanupFailed(step server.CleanupStep) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.cleanupFailures[step]
 }
 
 // testDeps bundles the fakes so a test can inspect what the bot did.

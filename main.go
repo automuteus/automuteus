@@ -215,7 +215,11 @@ func discordMainWrapper() error {
 	// indicate to Kubernetes that we're ready to start receiving traffic
 	server.GlobalReady = true
 
-	go bots[0].StartMetricsServer(os.Getenv("SCW_NODE_ID"))
+	go func() {
+		if err := server.PrometheusMetricsServer("2112"); err != nil {
+			log.Printf("Metrics server stopped: %v", err)
+		}
+	}()
 
 	// empty string entry = global
 	slashCommandGuildIds := []string{""}

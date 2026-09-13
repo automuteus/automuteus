@@ -139,7 +139,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 	if interactionLock == nil {
 		return nil
 	}
-	defer server.RecordDiscordRequests(bot.RedisInterface.client, server.MessageCreateDelete, 1)
+	defer bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 	defer interactionLock.Release(ctx)
 
 	sett, settingsErr := bot.StorageInterface.LoadGuildSettings(ctx, i.GuildID)
@@ -310,6 +310,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
+				bot.metrics.RecordGameStarted()
 
 				hyperlink, apiHyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
 
@@ -373,7 +374,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 					return command.NoGameResponse(sett)
 				}
 
-				if err := bot.stopGame(gsr, "ended by "+i.Member.User.ID, ""); err != nil {
+				bot.gameLog(gsr).Info("game end requested", "user", i.Member.User.ID)
+				if err := bot.stopGame(gsr, server.EndReasonManual, ""); err != nil {
 					return command.PrivateErrorResponse(command.End.Name, err, sett)
 				}
 				return command.PrivateResponse(ThumbsUp)

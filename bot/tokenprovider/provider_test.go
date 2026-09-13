@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // These tests pin down how ModifyUsers routes mute/deafen requests between the capture client and the bot's own
@@ -106,6 +108,7 @@ type harness struct {
 	admin   *redis.Client // for test setup; commands are not counted
 	cmds    *commandCounter
 	primary *primaryRecorder
+	metrics *prometheus.Registry // the provider's own registry, so tests can read what it recorded
 }
 
 func newHarness(tb testing.TB, ackTimeout time.Duration) *harness {
@@ -126,7 +129,64 @@ func newHarness(tb testing.TB, ackTimeout time.Duration) *harness {
 	// the per-game rate limit is not what most of these tests exercise; make it effectively unlimited
 	tp := NewTokenProvider(client, nil, ackTimeout, 1<<40)
 	tp.applyPrimary = primary.apply
-	return &harness{tp: tp, redis: mr, client: client, admin: admin, cmds: cmds, primary: primary}
+	registry := prometheus.NewRegistry()
+	tp.metrics = server.NewMetrics(registry)
+	return &harness{tp: tp, redis: mr, client: client, admin: admin, cmds: cmds, primary: primary, metrics: registry}
+}
+
+// counter reads one series of a counter family from the harness registry.
+func (h *harness) counter(tb testing.TB, family string, labels map[string]string) float64 {
+	tb.Helper()
+	families, err := h.metrics.Gather()
+	if err != nil {
+		tb.Fatal(err)
+	}
+	for _, f := range families {
+		if f.GetName() != family {
+			continue
+		}
+	next:
+		for _, m := range f.Metric {
+			if len(m.GetLabel()) != len(labels) {
+				continue
+			}
+			for _, l := range m.GetLabel() {
+				if labels[l.GetName()] != l.GetValue() {
+					continue next
+				}
+			}
+			return m.GetCounter().GetValue()
+		}
+		tb.Fatalf("%s has no series with labels %v", family, labels)
+	}
+	tb.Fatalf("metric family %s not registered", family)
+	return 0
+}
+
+func (h *harness) voiceChanges(tb testing.TB, route server.VoiceRoute, outcome string) float64 {
+	tb.Helper()
+	return h.counter(tb, "automuteus_voice_changes_total", map[string]string{"route": string(route), "outcome": outcome})
+}
+
+func (h *harness) captureTasks(tb testing.TB, result server.CaptureTaskResult) float64 {
+	tb.Helper()
+	return h.counter(tb, "automuteus_capture_mute_tasks_total", map[string]string{"result": string(result)})
+}
+
+// batchesObserved returns how many ModifyUsers batches the duration histogram has recorded.
+func (h *harness) batchesObserved(tb testing.TB) uint64 {
+	tb.Helper()
+	families, err := h.metrics.Gather()
+	if err != nil {
+		tb.Fatal(err)
+	}
+	for _, f := range families {
+		if f.GetName() == "automuteus_mute_batch_duration_seconds" {
+			return f.Metric[0].GetHistogram().GetSampleCount()
+		}
+	}
+	tb.Fatal("mute batch histogram not registered")
+	return 0
 }
 
 // captureReady does what galactus does when a capture client reports it can apply mutes.
@@ -181,6 +241,20 @@ func TestModifyUsers_NoCaptureClient_GoesStraightToPrimary(t *testing.T) {
 	if n := h.cmds.get("publish"); n != 0 {
 		t.Errorf("published %d capture tasks with no capture client, want 0", n)
 	}
+	if n := h.cmds.get("incr") + h.cmds.get("incrby"); n != 0 {
+		t.Errorf("mute batch issued %d Redis counter writes; metrics should stay in memory", n)
+	}
+	if got := h.voiceChanges(t, server.VoiceRoutePrimary, "applied"); got != float64(h.primary.count()) {
+		t.Errorf("voice changes applied by primary = %v, want %d", got, h.primary.count())
+	}
+	for _, result := range []server.CaptureTaskResult{server.CaptureTaskApplied, server.CaptureTaskThrottled, server.CaptureTaskUnacked, server.CaptureTaskError} {
+		if got := h.captureTasks(t, result); got != 0 {
+			t.Errorf("capture tasks %s = %v; nothing should be counted when no capture client can mute", result, got)
+		}
+	}
+	if got := h.batchesObserved(t); got != 1 {
+		t.Errorf("mute batch durations observed = %d, want 1", got)
+	}
 	if elapsed := time.Since(start); elapsed >= ackTimeout {
 		t.Errorf("took %v; should not wait on an ack when no capture client can apply mutes", elapsed)
 	}
@@ -210,6 +284,16 @@ func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing
 	if n := h.cmds.get("set"); n != 1 {
 		t.Errorf("blacklist written %d times for one unresponsive client, want exactly 1", n)
 	}
+	unacked := h.captureTasks(t, server.CaptureTaskUnacked)
+	if unacked < 1 || unacked > 6 {
+		t.Errorf("unacked capture tasks = %v, want between 1 and 6", unacked)
+	}
+	if got := h.voiceChanges(t, server.VoiceRoutePrimary, "applied"); got != 6 {
+		t.Errorf("final outcome primary/applied = %v, want 6: every user still ends up muted by the primary bot", got)
+	}
+	if got := h.voiceChanges(t, server.VoiceRouteCapture, "applied"); got != 0 {
+		t.Errorf("final outcome capture/applied = %v, want 0", got)
+	}
 
 	// second batch: the capture client is now known to be unresponsive, so no task is published and nothing waits
 	h.cmds.reset()
@@ -225,6 +309,12 @@ func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing
 	}
 	if elapsed := time.Since(start); elapsed >= ackTimeout {
 		t.Errorf("second batch took %v, should not wait on the ack timeout once blacklisted", elapsed)
+	}
+	if got := h.captureTasks(t, server.CaptureTaskUnacked); got != unacked {
+		t.Errorf("unacked capture tasks grew from %v to %v; a blacklisted client must not be counted as attempted", unacked, got)
+	}
+	if got := h.batchesObserved(t); got != 2 {
+		t.Errorf("mute batch durations observed = %d, want 2", got)
 	}
 }
 
@@ -243,6 +333,15 @@ func TestModifyUsers_ResponsiveCapture_UsesCaptureClientNotPrimary(t *testing.T)
 	}
 	if n := h.cmds.get("set"); n != 0 {
 		t.Errorf("blacklist written %d times for a working client, want 0", n)
+	}
+	if got := h.voiceChanges(t, server.VoiceRouteCapture, "applied"); got != 3 {
+		t.Errorf("final outcome capture/applied = %v, want 3", got)
+	}
+	if got := h.captureTasks(t, server.CaptureTaskApplied); got != 3 {
+		t.Errorf("capture tasks applied = %v, want 3", got)
+	}
+	if got := h.voiceChanges(t, server.VoiceRoutePrimary, "applied") + h.voiceChanges(t, server.VoiceRoutePrimary, "failed"); got != 0 {
+		t.Errorf("primary outcomes = %v, want 0 when the capture client handles everyone", got)
 	}
 }
 
@@ -264,6 +363,15 @@ func TestModifyUsers_CaptureRateLimit_DefersToPrimaryWithoutBlacklisting(t *test
 	}
 	if n := h.cmds.get("set"); n != 0 {
 		t.Errorf("rate limiting should not blacklist, but wrote the blacklist %d times", n)
+	}
+	if got := h.captureTasks(t, server.CaptureTaskThrottled); got != float64(6-published) {
+		t.Errorf("throttled capture tasks = %v, want %d (one per user deferred to the primary bot)", got, 6-published)
+	}
+	if got := h.counter(t, "automuteus_discord_operations_total", map[string]string{"type": "rate_limited"}); got != 0 {
+		t.Errorf("rate_limited = %v; proactive capture throttling is not a Discord rate limit", got)
+	}
+	if got := h.voiceChanges(t, server.VoiceRoutePrimary, "applied") + h.voiceChanges(t, server.VoiceRouteCapture, "applied"); got != 6 {
+		t.Errorf("total applied outcomes = %v, want one per user", got)
 	}
 }
 
