@@ -63,6 +63,10 @@ func configFromEnv(getenv func(string) string) (config, error) {
 // @description AutoMuteUs API, served independently of Discord bot shards.
 // @BasePath /
 // @securityDefinitions.basic BasicAuth
+// @securityDefinitions.apikey DiscordBearer
+// @in header
+// @name Authorization
+// @description Discord OAuth access token: Bearer <token>; requires identify and guilds.
 func main() {
 	logging.Setup(os.Stdout)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

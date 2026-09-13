@@ -149,7 +149,6 @@ definitions:
     - 9
     - 10
     - 11
-    format: int32
     type: integer
     x-enum-varnames:
     - ApplicationCommandOptionSubCommand
@@ -168,7 +167,6 @@ definitions:
     - 1
     - 2
     - 3
-    format: int32
     type: integer
     x-enum-varnames:
     - ChatApplicationCommand
@@ -260,7 +258,6 @@ definitions:
     - 3
     - 4
     - 5
-    format: int32
     type: integer
     x-enum-varnames:
     - FreeTier
@@ -426,13 +423,18 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get the Among Us room code most recently reported by the capture
-        client for a connect code
+      description: Bearer callers must supply guildID and receive only roomCode from
+        the verified game snapshot. Basic Auth uses the legacy global lookup and returns
+        connectCode too.
       parameters:
       - description: Connect Code
         in: query
         name: connectCode
         required: true
+        type: string
+      - description: Guild ID (required for bearer authentication)
+        in: query
+        name: guildID
         type: string
       produces:
       - application/json
@@ -455,6 +457,7 @@ paths:
             $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
+      - DiscordBearer: []
       summary: Get Room Code
       tags:
       - game
@@ -462,7 +465,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get the current state of a running game
+      description: Get the current state of a running game. Bearer callers receive
+        MemberGameState; platform Basic Auth receives the stored document.
       parameters:
       - description: Guild ID
         in: query
@@ -490,6 +494,7 @@ paths:
           description: Internal Server Error
       security:
       - BasicAuth: []
+      - DiscordBearer: []
       summary: Get Game State
       tags:
       - game
@@ -521,6 +526,7 @@ paths:
             $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
+      - DiscordBearer: []
       summary: Get Guild Premium
       tags:
       - guild
@@ -553,6 +559,7 @@ paths:
             $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
+      - DiscordBearer: []
       summary: Get Guild Settings
       tags:
       - guild
@@ -570,4 +577,10 @@ paths:
 securityDefinitions:
   BasicAuth:
     type: basic
+  DiscordBearer:
+    description: 'Discord OAuth access token: Bearer <token>; requires identify and
+      guilds.'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
