@@ -11,15 +11,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 )
-
-func RecordDiscordRequestsByCounts(client *redis.Client, counts task.MuteDeafenSuccessCounts) {
-	server.RecordDiscordRequests(client, server.MuteDeafenOfficial, counts.Official)
-	server.RecordDiscordRequests(client, server.MuteDeafenWorker, counts.Worker)
-	server.RecordDiscordRequests(client, server.MuteDeafenCapture, counts.Capture)
-	server.RecordDiscordRequests(client, server.InvalidRequest, counts.RateLimit)
-}
 
 // isBlacklisted reports whether a token (or the capture client, keyed by connect code) was recently marked unusable
 // for the guild.
@@ -61,6 +53,7 @@ func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID str
 			err := task.ApplyMuteDeaf(sess, guildID, userID, request.Mute, request.Deaf)
 			if err != nil {
 				l.Error("secondary bot voice change failed", "token", hToken, "err", err)
+				tokenProvider.metrics.RecordWorkerFailure()
 
 				// don't attempt this token for this guild for another 5 minutes
 				err = tokenProvider.BlacklistTokenForDuration(guildID, hToken, UnresponsiveCaptureBlacklistDuration)
@@ -132,9 +125,11 @@ func (route *captureRoute) markDead() {
 type captureResult int
 
 const (
-	captureApplied captureResult = iota
+	captureUnavailable captureResult = iota // no capture client able to mute; nothing was attempted
+	captureApplied
 	captureRateLimited
-	captureFailed
+	captureUnacked // the task was sent but never acknowledged
+	captureFailed  // the task could not be sent
 )
 
 // attemptOnCaptureBot asks the capture client to apply the change and waits for its ack.
@@ -144,6 +139,7 @@ func (tokenProvider *TokenProvider) attemptOnCaptureBot(route *captureRoute, gid
 	// so we stop sending before Discord starts refusing
 	if !tokenProvider.IncrAndTestGuildTokenComboLock(route.guildID, route.connectCode) {
 		l.Debug("capture client near rate limit; deferring to bot tokens")
+		tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskThrottled)
 		return captureRateLimited
 	}
 
@@ -154,6 +150,7 @@ func (tokenProvider *TokenProvider) attemptOnCaptureBot(route *captureRoute, gid
 	jBytes, err := json.Marshal(taskObj)
 	if err != nil {
 		l.Error("failed to marshal capture task", "err", err)
+		tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskError)
 		return captureFailed
 	}
 
@@ -163,12 +160,14 @@ func (tokenProvider *TokenProvider) attemptOnCaptureBot(route *captureRoute, gid
 	if _, err = pubsub.Receive(context.Background()); err != nil {
 		l.Error("failed to subscribe for capture task ack", "err", err)
 		_ = pubsub.Close()
+		tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskError)
 		return captureFailed
 	}
 	err = tokenProvider.client.Publish(context.Background(), rediskey.TasksList(route.connectCode), jBytes).Err()
 	if err != nil {
 		l.Error("failed to publish capture task", "err", err)
 		_ = pubsub.Close()
+		tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskError)
 		return captureFailed
 	}
 
@@ -176,8 +175,10 @@ func (tokenProvider *TokenProvider) attemptOnCaptureBot(route *captureRoute, gid
 	go tokenProvider.waitForAck(pubsub, acked)
 	if <-acked {
 		l.Debug("voice change applied via capture client")
+		tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskApplied)
 		return captureApplied
 	}
 	route.markDead()
-	return captureFailed
+	tokenProvider.metrics.RecordCaptureTask(server.CaptureTaskUnacked)
+	return captureUnacked
 }

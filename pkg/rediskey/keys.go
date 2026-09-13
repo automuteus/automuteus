@@ -46,10 +46,6 @@ func VoiceChangesForGameCodeLock(connectCode string) string {
 	return "automuteus:voice:game:" + connectCode + ":lock"
 }
 
-func RequestsByType(typeStr string) string {
-	return "automuteus:requests:type:" + typeStr
-}
-
 func CompleteTask(taskID string) string {
 	return "automuteus:tasks:complete:ack:" + taskID
 }

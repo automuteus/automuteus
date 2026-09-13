@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
@@ -41,6 +42,9 @@ type TokenProvider struct {
 	// applyPrimary, when set, replaces the Discord API call the primary bot makes to mute/deafen a user. Tests use
 	// it to observe the fallback path without a live session.
 	applyPrimary func(guildID, userID string, mute, deaf bool) error
+
+	// metrics receives voice-change outcomes and batch timings; production uses server.DefaultMetrics.
+	metrics *server.Metrics
 }
 
 // applyWithPrimary mutes/deafens a user with the primary bot's own session.
@@ -59,6 +63,7 @@ func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout
 		maxRequests5Seconds: maxReq,
 		sessionLock:         sync.RWMutex{},
 		taskTimeoutMs:       taskTimeout,
+		metrics:             server.DefaultMetrics,
 	}
 }
 
@@ -212,12 +217,13 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 					mu.Lock()
 					mdsc.Worker++
 					mu.Unlock()
+					tokenProvider.metrics.RecordVoiceChange(server.VoiceRouteWorker, true)
 
 					tokenLock.Lock()
 					uniqueTokensUsed[hToken] = struct{}{}
 					tokenLock.Unlock()
 				} else {
-					result := captureFailed
+					result := captureUnavailable
 					if capture.usable() {
 						result = tokenProvider.attemptOnCaptureBot(capture, gid, req)
 					}
@@ -226,6 +232,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 						mu.Lock()
 						mdsc.Capture++
 						mu.Unlock()
+						tokenProvider.metrics.RecordVoiceChange(server.VoiceRouteCapture, true)
 					case captureRateLimited:
 						mu.Lock()
 						mdsc.RateLimit++
@@ -244,6 +251,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 							mdsc.Official++
 							mu.Unlock()
 						}
+						tokenProvider.metrics.RecordVoiceChange(server.VoiceRoutePrimary, err == nil)
 					}
 				}
 				wg.Done()
@@ -258,14 +266,15 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	wg.Wait()
 	close(tasksChannel)
 
-	RecordDiscordRequestsByCounts(tokenProvider.client, mdsc)
+	elapsed := time.Since(start)
+	tokenProvider.metrics.ObserveMuteBatch(elapsed)
 
 	// note, this should probably be more systematic on startup, not when a mute/deafen task comes in. But this is a
 	// context in which we already have the guildID, successful tokens, AND the premium limit...
 	go tokenProvider.verifyBotMembership(guildID, limit, uniqueTokensUsed)
 
 	summary := l.With("users", len(request.Users), "worker", mdsc.Worker, "capture", mdsc.Capture,
-		"official", mdsc.Official, "rate_limited", mdsc.RateLimit, "elapsed", time.Since(start))
+		"official", mdsc.Official, "capture_throttled", mdsc.RateLimit, "elapsed", elapsed)
 	if latestErr != nil {
 		summary.Warn("voice changes issued with errors", "err", latestErr)
 	} else {

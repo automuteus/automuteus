@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"errors"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"strings"
 	"sync"
 	"testing"
@@ -71,8 +72,17 @@ func TestStopGame_StopsStateBeforeUnmutingAndReportsFailure(t *testing.T) {
 			t.Error("game must be marked stopped before sending the final unmute")
 		}
 	}}
-	if err := bot.stopGame(gsr, "maintenance", ""); !errors.Is(err, deps.voice.err) {
+	if err := bot.stopGame(gsr, server.EndReasonCriticalNotice, ""); !errors.Is(err, deps.voice.err) {
 		t.Errorf("stop error = %v, want the unmute failure", err)
+	}
+	if got := deps.metrics.cleanupFailed(server.CleanupUnmute); got != 1 {
+		t.Errorf("unmute cleanup failures = %d, want 1", got)
+	}
+	if got := deps.metrics.cleanupFailed(server.CleanupRecordMatch) + deps.metrics.cleanupFailed(server.CleanupNotify); got != 0 {
+		t.Errorf("other cleanup steps succeeded but %d were counted as failed", got)
+	}
+	if got := deps.metrics.endedBy(server.EndReasonCriticalNotice); got != 1 {
+		t.Errorf("games ended for a critical notice = %d, want 1 even though unmute failed", got)
 	}
 }
 
@@ -123,7 +133,7 @@ func TestStopGame_DelayedCaptureMuteFinishesBeforeFinalUnmute(t *testing.T) {
 		default:
 		}
 		select {
-		case stop <- EndGameMessage{reason: "test cleanup"}:
+		case stop <- EndGameMessage{reason: "test cleanup"}: // unknown reasons are counted as "other"
 		default:
 		}
 		select {

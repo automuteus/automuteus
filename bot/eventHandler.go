@@ -22,7 +22,7 @@ import (
 )
 
 type EndGameMessage struct {
-	reason  string
+	reason  server.EndReason // empty means "delete the old game only", as /new does when replacing one
 	message string
 	done    chan error
 }
@@ -59,6 +59,7 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 		if end.reason == "" {
 			// The existing /new replacement path only requests deletion of the old game.
 			bot.forceEndGame(dgsRequest)
+			bot.metrics.RecordGameEnded(server.EndReasonReplaced)
 		} else {
 			endErr = bot.completeGame(dgsRequest, end.reason, end.message)
 		}
@@ -270,7 +271,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 // endInactiveGame ends a game whose capture went quiet: players are unmuted, the match is aborted, and the game is
 // deleted.
 func (bot *Bot) endInactiveGame(dgsRequest GameStateRequest) {
-	bot.completeGame(dgsRequest, "capture inactivity", "")
+	bot.completeGame(dgsRequest, server.EndReasonInactivity, "")
 }
 
 // recordGameEvent stores a capture event against the active match, if there is one.

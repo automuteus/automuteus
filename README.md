@@ -195,6 +195,58 @@ Bot health checks and Prometheus endpoints remain on the bot.
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
 on the API port. The process drains HTTP requests on SIGTERM/SIGINT.
 
+### Bot metrics
+
+Each bot process serves Prometheus metrics at `/metrics` on port `2112`. Every metric
+measures activity across the shards in that process, starts at zero, and resets when the
+process restarts. Prometheus supplies the `job` and `instance` labels when scraping each
+replica directly. Labels are fixed, small sets; guild IDs, user IDs, connect codes, and
+error text stay in the logs.
+
+Voice changes:
+
+- `automuteus_voice_changes_total{route, outcome}`: the final outcome for each user in a
+  mute/deafen batch, after fallbacks. `route` is `worker` (premium worker token),
+  `capture` (the capture client's own token), or `primary` (the bot's token);
+  `outcome` is `applied` or `failed`. Only the primary route can be the final failure.
+- `automuteus_worker_voice_failures_total`: worker-token attempts that failed and fell
+  back to another route.
+- `automuteus_capture_mute_tasks_total{result}`: tasks handed to capture clients.
+  `applied` was acknowledged, `throttled` was withheld by the bot to protect the client's
+  rate limit, `unacked` timed out (and blacklisted the client), and `error` could not be
+  sent. Games with no capture client able to mute are not counted here at all; that is a
+  normal condition.
+- `automuteus_mute_batch_duration_seconds`: histogram of wall time per mute/deafen batch.
+
+Games:
+
+- `automuteus_active_games`: games whose capture events this process is subscribed to.
+- `automuteus_games_started_total`: games started with `/new`.
+- `automuteus_games_ended_total{reason}`: `manual` (`/end`), `replaced` (`/new` over an
+  existing game), `inactivity` (capture went quiet), `capture_shutdown`,
+  `critical_notice`, or `other`.
+- `automuteus_game_cleanup_failures_total{step}`: end-of-game steps that failed:
+  `unmute` (players may have been left muted), `record_match` (match not marked aborted),
+  or `notify` (end-of-game message not posted).
+
+Message activity, `automuteus_discord_operations_total{type}`, is a set of coarse
+counters: `message_create_delete`, `message_edit`, and `rate_limited`. These reflect
+existing instrumentation (message edits are counted when scheduled, for example) and are
+not an exact HTTP request or successful-response count. `rate_limited` counts only
+rate-limit responses reported by Discord to the primary session; the bot's own capture
+throttling is reported under `automuteus_capture_mute_tasks_total{result="throttled"}`
+instead. Go runtime and process metrics are also exposed by the default Prometheus
+registry.
+
+Recording metrics uses in-memory counters and makes no Redis requests. This replaces
+`discord_requests_by_node_and_type` and its `nodeID` label; `SCW_NODE_ID` is no longer
+used. The derived `official_request` category is removed, `invalid_request` is renamed
+to `rate_limited`, and the `mute_deafen_official`, `mute_deafen_worker`, and
+`mute_deafen_capture` types are replaced by `automuteus_voice_changes_total`. Old
+`automuteus:requests:type:*` Redis counters are no longer read or updated. Capture clients' own Discord requests, and the bot's HTTP traffic in
+general, are not yet measured. A metrics scraper and dashboards are not bundled with the
+bot yet.
+
 ### Platform notices
 
 Operators can show a banner on every running game's status message, or end every

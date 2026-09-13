@@ -54,7 +54,7 @@ func (bot *Bot) refreshGameLiveness(code string) {
 
 func (bot *Bot) rateLimitEventCallback(_ *discordgo.Session, rl *discordgo.RateLimit) {
 	log.Println(rl.Message)
-	server.RecordDiscordRequests(bot.RedisInterface.client, server.InvalidRequest, 1)
+	bot.metrics.RecordDiscordRequests(server.RateLimited, 1)
 }
 
 func (redisInterface *RedisInterface) AddUniqueGuildCounter(guildID string) {

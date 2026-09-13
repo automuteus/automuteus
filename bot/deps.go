@@ -14,7 +14,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 	"github.com/top-gg/go-dbl"
 )
 
@@ -76,9 +75,13 @@ type SettingsSource interface {
 	LoadGuildSettings(ctx context.Context, guildID string) (*settings.GuildSettings, error)
 }
 
-// RequestMetrics records how many Discord API requests the bot has issued, by type.
-type RequestMetrics interface {
+// Metrics receives the bot's Prometheus observations: Discord activity, game lifecycle, and cleanup failures.
+type Metrics interface {
 	RecordDiscordRequests(requestType server.EventType, num int64)
+	SetActiveGames(n int)
+	RecordGameStarted()
+	RecordGameEnded(reason server.EndReason)
+	RecordCleanupFailure(step server.CleanupStep)
 }
 
 // Compile-time checks that the production types satisfy the seams.
@@ -89,18 +92,9 @@ var (
 	_ GameRecorder   = (*storageutils.PsqlInterface)(nil)
 	_ DiscordClient  = (*discordgo.Session)(nil)
 	_ GuildReader    = (*discordgo.State)(nil)
-	_ RequestMetrics = redisMetrics{}
+	_ Metrics        = (*server.Metrics)(nil)
 	_ SettingsSource = (*storage.StorageInterface)(nil)
 )
-
-// redisMetrics adapts the package-level metrics recorder to RequestMetrics.
-type redisMetrics struct {
-	client *redis.Client
-}
-
-func (m redisMetrics) RecordDiscordRequests(requestType server.EventType, num int64) {
-	server.RecordDiscordRequests(m.client, requestType, num)
-}
 
 // useProductionDeps points every seam at the real infrastructure.
 func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface) {
@@ -110,7 +104,7 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 	bot.premiumSource = psql
 	bot.discord = sess
 	bot.guilds = sess.State
-	bot.metrics = redisMetrics{client: redisInterface.client}
+	bot.metrics = server.DefaultMetrics
 	bot.notices = redisNotices{client: redisInterface.client}
 	bot.sleep = time.Sleep
 	bot.log = slog.Default()
