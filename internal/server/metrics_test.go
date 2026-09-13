@@ -120,19 +120,19 @@ func TestMetricsGameLifecycleAndCleanupLabelsAreFixed(t *testing.T) {
 
 	metrics.RecordGameStarted()
 	metrics.RecordGameStarted()
-	metrics.SetActiveGames(2)
+	metrics.AddActiveGames(2)
 	metrics.RecordGameEnded(EndReasonManual)
 	metrics.RecordGameEnded(EndReasonInactivity)
 	metrics.RecordGameEnded(EndReason("ended by 12345")) // free text must not become a new series
 	metrics.RecordGameEnded("")
-	metrics.SetActiveGames(0)
+	metrics.AddActiveGames(-2)
 	metrics.RecordCleanupFailure(CleanupUnmute)
 
 	if got := testutil.ToFloat64(metrics.gamesStarted); got != 2 {
 		t.Errorf("games started = %v, want 2", got)
 	}
 	if got := testutil.ToFloat64(metrics.activeGames); got != 0 {
-		t.Errorf("active games = %v, want 0 after the last SetActiveGames", got)
+		t.Errorf("active games = %v, want 0 after both games ended", got)
 	}
 	ended := counterValues(t, registry, "automuteus_games_ended_total", "reason")
 	wantEnded := map[string]float64{"manual": 1, "inactivity": 1, "other": 2, "replaced": 0, "capture_shutdown": 0, "critical_notice": 0}
