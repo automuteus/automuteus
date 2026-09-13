@@ -52,6 +52,8 @@ type Store interface {
 }
 
 type Config struct {
+	// GuildVerifier is injectable for tests; nil uses Discord HTTPS endpoints.
+	GuildVerifier GuildVerifier
 	Version       string
 	Commit        string
 	ServerURL     string
@@ -96,22 +98,16 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	botGroup.GET("/info", handleGetInfo(store))
 	botGroup.GET("/commands", handleGetCommands())
 
-	// TODO in the future, I'd like this to receive a Discord Access Token
-	// that way, any user that is logged in via Discord (not only through the web UI)
-	// can get info about a game going on in a guild that they're a member of...
-	gameGroup := r.Group("/game", gin.BasicAuth(gin.Accounts{
-		"admin": adminPassword,
-	}))
+	verifier := config.GuildVerifier
+	if verifier == nil {
+		verifier = newDiscordVerifier()
+	}
+	gameGroup := r.Group("/game", guildAuthentication(config, verifier, ReadGame))
 	gameGroup.GET("/state", handleGetGameState(store))
 	gameGroup.GET("/roomcode", handleGetRoomCode(store))
-
-	// TODO same as above, but we also need to check the User's permissions within the server in question
-	// (aka if user is not a bot admin for a guild, they can't change that guild's settings)
-	guildGroup := r.Group("/guild", gin.BasicAuth(gin.Accounts{
-		"admin": adminPassword,
-	}))
-	guildGroup.GET("/settings", handleGetGuildSettings(store))
-	guildGroup.GET("/premium", handleGetGuildPremium(store))
+	guildGroup := r.Group("/guild")
+	guildGroup.GET("/settings", guildAuthentication(config, verifier, ReadSettings), handleGetGuildSettings(store))
+	guildGroup.GET("/premium", guildAuthentication(config, verifier, ReadPremium), handleGetGuildPremium(store))
 
 	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
 	// notices requires an explicitly configured admin password; the default password is refused.
@@ -217,8 +213,9 @@ func handleGetOpenAmongUsCapture(config Config) func(c *gin.Context) {
 
 // GetGameState godoc
 // @Summary Get Game State
-// @Description Get the current state of a running game
+// @Description Get the current state of a running game. Bearer callers receive MemberGameState; platform Basic Auth receives the stored document.
 // @Security BasicAuth
+// @Security DiscordBearer
 // @Tags game
 // @Accept json
 // @Produce json
@@ -260,18 +257,29 @@ func handleGetGameState(store Store) func(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
+		if c.GetBool(memberRequestKey) {
+			view, err := memberGameState(state, guildID, connectCode)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, HttpError{StatusCode: 500, Error: "Invalid stored game state"})
+				return
+			}
+			c.JSON(http.StatusOK, view)
+			return
+		}
 		c.JSON(http.StatusOK, state)
 	}
 }
 
 // GetRoomCode godoc
 // @Summary Get Room Code
-// @Description Get the Among Us room code most recently reported by the capture client for a connect code
+// @Description Bearer callers must supply guildID and receive only roomCode from the verified game snapshot. Basic Auth uses the legacy global lookup and returns connectCode too.
 // @Security BasicAuth
+// @Security DiscordBearer
 // @Tags game
 // @Accept json
 // @Produce json
 // @Param connectCode query string true "Connect Code"
+// @Param guildID query string false "Guild ID (required for bearer authentication)"
 // @Success 200 {object} RoomCodeResponse
 // @Failure 400 {object} HttpError
 // @Failure 404 {object} HttpError
@@ -288,6 +296,31 @@ func handleGetRoomCode(store Store) func(c *gin.Context) {
 			return
 		}
 
+		if c.GetBool(memberRequestKey) {
+			// Bind the connect code to the authorized guild before accessing the
+			// global room-code key. A code alone is not proof of membership.
+			state, err := store.GameState(c.Request.Context(), c.Query("guildID"), connectCode)
+			if errors.Is(err, redis.Nil) {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			if err != nil {
+				c.Status(http.StatusServiceUnavailable)
+				return
+			}
+			if _, err := memberGameState(state, c.Query("guildID"), connectCode); err != nil {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			roomCode, err := memberRoomCode(state)
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			// Use the same verified snapshot, avoiding a second global-key lookup.
+			c.JSON(http.StatusOK, map[string]string{"roomCode": roomCode})
+			return
+		}
 		roomCode, err := store.RoomCode(c.Request.Context(), connectCode)
 		if errors.Is(err, redis.Nil) {
 			c.JSON(http.StatusNotFound, HttpError{
@@ -313,6 +346,7 @@ func handleGetRoomCode(store Store) func(c *gin.Context) {
 // @Summary Get Guild Settings
 // @Description Get the settings for a given guild. Guilds that never changed a setting get the defaults.
 // @Security BasicAuth
+// @Security DiscordBearer
 // @Tags guild
 // @Accept json
 // @Produce json
@@ -349,6 +383,7 @@ func handleGetGuildSettings(store Store) func(c *gin.Context) {
 // @Summary Get Guild Premium
 // @Description Get the premium status for a given guild
 // @Security BasicAuth
+// @Security DiscordBearer
 // @Tags guild
 // @Accept json
 // @Produce json

@@ -178,6 +178,9 @@ The API uses the same guild-settings reader as the bot, including lazy migration
 of old Redis records. Game state is returned directly from the shared Redis JSON.
 Bot health checks and Prometheus endpoints remain on the bot.
 
+User-facing read endpoints also accept Discord OAuth bearer tokens with guild membership checks.
+See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response differences, and Next.js integration.
+
 ### API environment variables
 
 | Variable | Required | Description |
@@ -187,7 +190,7 @@ Bot health checks and Prometheus endpoints remain on the bot.
 | `POSTGRES_ADDR`, `POSTGRES_USER`, `POSTGRES_PASS` | yes | Shared Postgres connection settings. |
 | `API_PORT` | no | Executable's listening port; defaults to `5000`. Compose maps its host `API_PORT` to container `SERVICE_PORT`. |
 | `API_SERVER_URL` | no | Public API URL for Swagger; defaults to `http://localhost`. Also retain this on bots for capture links. |
-| `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Raising or clearing platform notices requires a non-default value. |
+| `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Game/guild access and raising or clearing platform notices require a non-default value. |
 | `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
 | `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
