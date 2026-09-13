@@ -177,15 +177,19 @@ func forEachGame(games []GameStateRequest, fn func(GameStateRequest)) {
 // trackGame / untrackGame / activeGames maintain the set of games this shard is subscribed to, keyed by connect code.
 func (bot *Bot) trackGame(gsr GameStateRequest) {
 	bot.ChannelsMapLock.Lock()
+	if _, exists := bot.activeGameRequests[gsr.ConnectCode]; !exists {
+		bot.metrics.AddActiveGames(1)
+	}
 	bot.activeGameRequests[gsr.ConnectCode] = gsr
-	bot.metrics.SetActiveGames(len(bot.activeGameRequests))
 	bot.ChannelsMapLock.Unlock()
 }
 
 func (bot *Bot) untrackGame(connectCode string) {
 	bot.ChannelsMapLock.Lock()
-	delete(bot.activeGameRequests, connectCode)
-	bot.metrics.SetActiveGames(len(bot.activeGameRequests))
+	if _, exists := bot.activeGameRequests[connectCode]; exists {
+		delete(bot.activeGameRequests, connectCode)
+		bot.metrics.AddActiveGames(-1)
+	}
 	bot.ChannelsMapLock.Unlock()
 }
 
