@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/automuteus/automuteus/v8/pkg/capture"
@@ -60,12 +61,12 @@ func run() error {
 	if err := client.Emit(capture.ConnectCodeEvent, code); err != nil {
 		return fmt.Errorf("send connect code: %w", err)
 	}
-	log.Print("Connect code sent; ready to send events")
+	log.Print("Connect code sent")
 	interrupted := make(chan os.Signal, 1)
 	signal.Notify(interrupted, os.Interrupt)
 	defer signal.Stop(interrupted)
 	done := make(chan error, 1)
-	go func() { done <- commandLoop(p, &session{client: client}) }()
+	go func() { done <- menuLoop(p, &session{client: client}) }()
 	select {
 	case err := <-done:
 		return err
@@ -76,9 +77,56 @@ func run() error {
 	}
 }
 
+// menuLoop offers the scripted scenarios, with the manual event loop as an
+// escape hatch for anything a scenario does not cover.
+func menuLoop(p *prompts, s *session) error {
+	you := p.text("Name of the player you will link to (your Discord name auto-links)", "Player One")
+	if p.err != nil {
+		return p.err
+	}
+	for {
+		fmt.Fprintln(p.out, "\nScenarios:")
+		for i, sc := range scenarios {
+			fmt.Fprintf(p.out, "  %d %s: %s\n", i+1, sc.name, sc.description)
+		}
+		fmt.Fprintln(p.out, "  M Send events manually\n  Q Quit")
+		n := 0
+		for n == 0 {
+			choice := p.text("Scenario", "1")
+			if p.err != nil {
+				return p.err
+			}
+			switch strings.ToUpper(choice) {
+			case "Q":
+				return nil
+			case "M":
+				if err := commandLoop(p, s); err != nil {
+					return err
+				}
+				n = -1
+			default:
+				n, _ = strconv.Atoi(choice)
+				if n < 1 || n > len(scenarios) {
+					fmt.Fprintln(p.out, "Choose a scenario number, M, or Q.")
+					n = 0
+				}
+			}
+		}
+		if n < 0 {
+			continue
+		}
+		results, err := runScenario(p, s, scenarios[n-1], you)
+		report(p.out, scenarios[n-1], results, err)
+		if err != nil && !errors.Is(err, errAborted) {
+			return err
+		}
+	}
+}
+
+// commandLoop sends individual events chosen field by field; Q returns to the menu.
 func commandLoop(p *prompts, s *session) error {
 	for {
-		command := p.text("L Lobby / S State / P Player / G Gameover / Q Quit", "")
+		command := p.text("L Lobby / S State / P Player / G Gameover / Q Back", "")
 		if p.err != nil {
 			return p.err
 		}

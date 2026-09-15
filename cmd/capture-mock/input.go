@@ -80,3 +80,23 @@ func (p *prompts) boolean(label string, def bool) bool {
 	}
 	return def
 }
+
+// observe asks whether a checkpoint was seen in Discord. quit reports that the
+// operator wants to stop the scenario rather than answer.
+func (p *prompts) observe(label string) (observed, quit bool) {
+	fmt.Fprintf(p.out, "?? %s\n", label)
+	for p.err == nil {
+		switch strings.ToLower(p.text("Observed? y/n, or q to stop the scenario", "")) {
+		case "y", "yes":
+			return true, false
+		case "n", "no":
+			return false, false
+		case "q", "quit":
+			return false, true
+		}
+		if p.err == nil {
+			fmt.Fprintln(p.out, "Enter y, n, or q.")
+		}
+	}
+	return false, false
+}
