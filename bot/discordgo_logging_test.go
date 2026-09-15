@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -20,7 +21,20 @@ func TestShouldDropDiscordgoMessage(t *testing.T) {
 		{"unknown event warning", discordgo.LogWarning, unknown, true},
 		{"other warning", discordgo.LogWarning, "error unmarshalling %s event, %s", false},
 		{"error level", discordgo.LogError, "error closing websocket, %s", false},
-		{"informational", discordgo.LogInformational, "called", false},
+		{"bookkeeping: called", discordgo.LogInformational, "called", true},
+		{"bookkeeping: exiting", discordgo.LogInformational, "exiting", true},
+		{"bookkeeping: hello", discordgo.LogInformational, "Op 10 Hello Packet received from Discord", true},
+		{"bookkeeping: disconnect", discordgo.LogInformational, "emit disconnect event", true},
+		{"exact match only", discordgo.LogInformational, "called %s", false},
+		// the reconnect lifecycle and REST rate limits are why informational is enabled at all
+		{"connecting", discordgo.LogInformational, "connecting to gateway %s", false},
+		{"resume", discordgo.LogInformational, "sending resume packet to gateway", false},
+		{"reconnecting", discordgo.LogInformational, "trying to reconnect to gateway", false},
+		{"reconnected", discordgo.LogInformational, "successfully reconnected to gateway", false},
+		{"op7", discordgo.LogInformational, "Closing and reconnecting in response to Op7", false},
+		{"op9", discordgo.LogInformational, "sending identify packet to gateway in response to Op9", false},
+		{"rate limit", discordgo.LogInformational, "Rate Limiting %s, retry in %v", false},
+		{"502 retry", discordgo.LogInformational, "%s Failed (%s), Retrying...", false},
 		{"unknown event text at error level", discordgo.LogError, unknown, false},
 		{"resume event dump", discordgo.LogWarning, "Expected READY/RESUMED, instead got:\n%#v\n", true},
 		{"first packet dump", discordgo.LogInformational, "First Packet:\n%#v\n", true},
@@ -51,5 +65,33 @@ func TestDiscordgoLoggerOutput(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q: %q", want, out)
 		}
+	}
+}
+
+func TestRateLimitEventCallback_LogsWaitBucketAndURL(t *testing.T) {
+	bot, deps := newTestBot(t)
+
+	bot.rateLimitEventCallback(nil, &discordgo.RateLimit{
+		TooManyRequests: &discordgo.TooManyRequests{
+			Bucket:     "abc123",
+			Message:    "You are being rate limited.",
+			RetryAfter: 1500 * time.Millisecond,
+		},
+		URL: "https://discord.com/api/v9/guilds/1/members/2",
+	})
+
+	out := deps.logs.String()
+	for _, want := range []string{"level=WARN", "rate limited by Discord", "component=discordgo", "bucket=abc123",
+		"retry_after=1.5s", "url=https://discord.com/api/v9/guilds/1/members/2"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("log missing %q: %q", want, out)
+		}
+	}
+
+	// a rate limit whose body could not be parsed still logs the URL
+	deps.logs.Reset()
+	bot.rateLimitEventCallback(nil, &discordgo.RateLimit{URL: "https://discord.com/api/v9/x"})
+	if out := deps.logs.String(); !strings.Contains(out, "rate limited by Discord") || !strings.Contains(out, "url=https://discord.com/api/v9/x") {
+		t.Errorf("unparsed rate limit not logged: %q", out)
 	}
 }

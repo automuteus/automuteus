@@ -107,7 +107,9 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 		captureTimeout:     GameTimeoutSeconds,
 	}
 	bot.useProductionDeps(dg, redisInterface, storageInterface, psql)
-	dg.LogLevel = discordgo.LogWarning
+	// informational includes the reconnect lifecycle and REST rate limits (with retry-after), which are what an
+	// outage or a slow mute batch needs explaining; the pure bookkeeping at that level is dropped by the bridge
+	dg.LogLevel = discordgo.LogInformational
 	installDiscordgoLogger()
 
 	dg.AddHandler(bot.handleVoiceStateChange)
