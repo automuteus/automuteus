@@ -198,6 +198,20 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
 on the API port. The process drains HTTP requests on SIGTERM/SIGINT.
 
+### Bot health endpoints
+
+Each bot process serves probes on port `8080`. `/ready` runs one check per shard in the
+process (the gateway session is connected and Discord has acknowledged a heartbeat within
+the last two minutes), plus `redis` and `postgres` pings, and answers `503` with a
+plain-text line per check naming any that failed. It also fails until startup completes
+and from the moment the process receives SIGTERM.
+
+`/live` always answers `200` unless `LIVENESS_GRACE` is set to a duration (for example
+`10m`), in which case it fails once `/ready` has been failing continuously for that long,
+so the orchestrator restarts a process whose shards have stopped reconnecting. Keep the
+grace well above Discord's own reconnect timing, and remember that during a Discord
+outage every replica will reach it at once.
+
 ### Bot metrics
 
 Each bot process serves Prometheus metrics at `/metrics` on port `2112`. Every metric

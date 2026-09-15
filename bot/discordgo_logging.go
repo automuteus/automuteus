@@ -24,6 +24,20 @@ var droppedPrefixes = []string{
 	"First Packet:",
 }
 
+// droppedMessages are discordgo's informational bookkeeping lines, emitted on every open, close, and reconnect.
+// They carry no information beyond the messages around them ("connecting to gateway", "sending resume packet",
+// "successfully reconnected to gateway", "trying to reconnect to gateway"), which are kept.
+var droppedMessages = map[string]struct{}{
+	"called":                                   {},
+	"exiting":                                  {},
+	"creating new VoiceConnections map":        {},
+	"closing listening channel":                {},
+	"sending close frame":                      {},
+	"closing gateway websocket":                {},
+	"emit disconnect event":                    {},
+	"Op 10 Hello Packet received from Discord": {},
+}
+
 var installDiscordgoLoggerOnce sync.Once
 
 // installDiscordgoLogger routes discordgo's logging through discordgoLogger. It is safe to call multiple times
@@ -74,6 +88,9 @@ func discordgoLevel(msgL int) slog.Level {
 }
 
 func shouldDropDiscordgoMessage(msgL int, format string) bool {
+	if _, ok := droppedMessages[format]; ok {
+		return true
+	}
 	for _, prefix := range droppedPrefixes {
 		if strings.HasPrefix(format, prefix) {
 			// the unknown-event message is only dropped at its usual warning level; the event dumps are dropped at
