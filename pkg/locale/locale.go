@@ -1,76 +1,97 @@
 package locale
 
 import (
+	"io/fs"
 	"log"
-	"os"
-	"path"
 	"regexp"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/automuteus/automuteus/v8/locales"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
 
-const (
-	DefaultLang       = "en"
-	DefaultLocalePath = "locales/"
-)
+const DefaultLang = "en"
 
 var bundleInstance *i18n.Bundle
 
 var localeLanguages = make(map[string]string)
 
-func InitLang(localePath, defaultLang string) {
-	if localePath == "" {
-		localePath = DefaultLocalePath
-	}
+// messageFile matches the go-i18n active message files; the tag comes from the file name.
+var messageFile = regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
+
+// InitLang loads the embedded translations (locales/active.*.toml). defaultLang
+// is the fallback language; empty means DefaultLang.
+func InitLang(defaultLang string) {
+	InitLangFS(locales.FS, defaultLang)
+}
+
+// InitLangFS loads translations from an arbitrary file system instead of the
+// embedded one. It exists for tests that ship their own message files.
+func InitLangFS(fsys fs.FS, defaultLang string) {
 	if defaultLang == "" {
 		defaultLang = DefaultLang
 	}
-	bundleInstance = LoadTranslations(localePath, defaultLang)
+	bundleInstance = LoadTranslations(fsys, defaultLang)
 }
 
 func GetBundle() *i18n.Bundle {
 	if bundleInstance == nil {
-		InitLang("", "")
+		InitLang("")
 	}
 	return bundleInstance
 }
 
+// GetLanguages returns the loaded language tags mapped to their display names,
+// loading the embedded translations first if nothing has been loaded yet, so a
+// process that never localizes anything (the API) still sees the full set.
 func GetLanguages() map[string]string {
+	GetBundle()
 	return localeLanguages
 }
 
-func LoadTranslations(localePath, defaultLang string) *i18n.Bundle {
+// LoadTranslations reads every active.<tag>.toml at the root of fsys into a new
+// bundle. The default language is always present in the returned language set,
+// even when it has no message file, since its messages are compiled in.
+func LoadTranslations(fsys fs.FS, defaultLang string) *i18n.Bundle {
 	bundle := i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
 	localeLanguages = make(map[string]string)
 	localeLanguages[defaultLang] = language.Make(defaultLang).String()
 
-	files, err := os.ReadDir(localePath)
-	if err == nil {
-		re := regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
-		for _, file := range files {
-			if match := re.FindStringSubmatch(file.Name()); match != nil {
-				fileLang := match[re.SubexpIndex("lang")]
-
-				if _, err := bundle.LoadMessageFile(path.Join(localePath, file.Name())); err != nil {
-					log.Println(err)
-				} else {
-					langName, _ := i18n.NewLocalizer(bundle, fileLang).Localize(&i18n.LocalizeConfig{
-						DefaultMessage: &i18n.Message{
-							ID:    "locale.language.name",
-							Other: "English", /* language.Make(fileLang).String() */
-						},
-					})
-					localeLanguages[fileLang /* msgFile.Tag.String() */] = langName
-
-					log.Printf("[Locale] Loaded language: %s - %s", fileLang, langName)
-				}
-			}
+	entries, err := fs.ReadDir(fsys, ".")
+	if err != nil {
+		log.Println(err)
+		bundleInstance = bundle
+		return bundle
+	}
+	for _, entry := range entries {
+		match := messageFile.FindStringSubmatch(entry.Name())
+		if match == nil || entry.IsDir() {
+			continue
 		}
+		fileLang := match[messageFile.SubexpIndex("lang")]
+
+		buf, err := fs.ReadFile(fsys, entry.Name())
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if _, err := bundle.ParseMessageFileBytes(buf, entry.Name()); err != nil {
+			log.Println(err)
+			continue
+		}
+		langName, _ := i18n.NewLocalizer(bundle, fileLang).Localize(&i18n.LocalizeConfig{
+			DefaultMessage: &i18n.Message{
+				ID:    "locale.language.name",
+				Other: "English",
+			},
+		})
+		localeLanguages[fileLang] = langName
+
+		log.Printf("[Locale] Loaded language: %s - %s", fileLang, langName)
 	}
 
 	bundleInstance = bundle

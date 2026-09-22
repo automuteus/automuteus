@@ -34,22 +34,20 @@ FROM alpine:3.24 AS final
 # * App directory to allow mounting volumes
 RUN addgroup -g 1000 bot && \
     adduser -HD -u 1000 -G bot bot && \
-    mkdir -p /app/logs /app/locales && \
+    mkdir -p /app/logs && \
     chown -R bot:bot /app
 USER bot
 WORKDIR /app
 
-# Import the compiled executable and locales.
+# Import the compiled executable (translations are embedded in it).
 COPY --from=builder /app /app
-COPY ./locales/ /app/locales
 
 # Port used for health/liveliness checks
 EXPOSE 8080
 # Port used for prometheus metrics
 EXPOSE 2112
 
-ENV LOCALE_PATH="/app/locales" \
-    LOG_PATH="/app/logs"
+ENV LOG_PATH="/app/logs"
 VOLUME ["/app/logs"]
 
 # Run the compiled binary.

@@ -130,7 +130,10 @@ func discordMainWrapper() error {
 		return errors.New("no REDIS_ADDR specified; exiting")
 	}
 
-	locale.InitLang(os.Getenv("LOCALE_PATH"), os.Getenv("BOT_LANG"))
+	if os.Getenv("LOCALE_PATH") != "" {
+		log.Println("LOCALE_PATH is deprecated and ignored: translations are embedded in the binary")
+	}
+	locale.InitLang(os.Getenv("BOT_LANG"))
 
 	psql := storage2.PsqlInterface{}
 	pAddr := os.Getenv("POSTGRES_ADDR")

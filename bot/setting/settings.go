@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	MaxDelay = 10
+	MaxDelay = settings.MaxDelaySeconds
 
-	MaxLeaderBoardSize float64 = 10
+	MaxLeaderBoardSize float64 = settings.MaxLeaderboardSize
 
-	MaxLeaderBoardMin float64 = 100
+	MaxLeaderBoardMin float64 = settings.MaxLeaderboardMin
 
-	MaxMatchSummaryDelete float64 = 60
+	MaxMatchSummaryDelete float64 = settings.MaxDeleteGameSummaryMinutes
 
 	View  = "view"
 	Clear = "clear"
@@ -24,14 +24,16 @@ const (
 	Role  = "role"
 )
 
+// Discord option bounds need addressable float64s; the values come from pkg/settings so the slash commands and
+// the settings validator enforce the same limits.
 var (
-	MinDelay float64 = 0
+	MinDelay float64 = settings.MinDelaySeconds
 
-	MinLeaderBoardSize float64 = 1
+	MinLeaderBoardSize float64 = settings.MinLeaderboardSize
 
-	MinLeaderBoardMin float64 = 1
+	MinLeaderBoardMin float64 = settings.MinLeaderboardMin
 
-	MinMatchSummaryDelete float64 = -1
+	MinMatchSummaryDelete float64 = settings.MinDeleteGameSummaryMinutes
 )
 
 const (

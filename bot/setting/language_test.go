@@ -1,8 +1,10 @@
 package setting
 
 import (
-	"github.com/automuteus/automuteus/v8/pkg/locale"
+	"os"
 	"testing"
+
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 )
 
 func TestFnLanguage(t *testing.T) {
@@ -26,7 +28,7 @@ func TestFnLanguage(t *testing.T) {
 		t.Error("Unimplemented language should never result in a valid language change")
 	}
 
-	locale.InitLang("testdata", "")
+	locale.InitLangFS(os.DirFS("testdata"), "")
 	_, valid = FnLanguage(sett, []string{"zu"})
 	if !valid {
 		t.Error("Valid language should result in a valid language change")
