@@ -198,6 +198,20 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
 on the API port. The process drains HTTP requests on SIGTERM/SIGINT.
 
+### Bot health endpoints
+
+Each bot process serves probes on port `8080`. `/ready` runs one check per shard in the
+process (the gateway session is connected and Discord has acknowledged a heartbeat within
+the last two minutes), plus `redis` and `postgres` pings, and answers `503` with a
+plain-text line per check naming any that failed. It also fails until startup completes
+and from the moment the process receives SIGTERM.
+
+`/live` always answers `200` unless `LIVENESS_GRACE` is set to a duration (for example
+`10m`), in which case it fails once `/ready` has been failing continuously for that long,
+so the orchestrator restarts a process whose shards have stopped reconnecting. Keep the
+grace well above Discord's own reconnect timing, and remember that during a Discord
+outage every replica will reach it at once.
+
 ### Bot metrics
 
 Each bot process serves Prometheus metrics at `/metrics` on port `2112`. Every metric
@@ -311,10 +325,11 @@ replica that is shutting down. The container runs the binary as PID 1 (exec-form
 
 ### Capture mock development client
 
-Run `go run ./cmd/capture-mock` to send simulated capture events to Galactus.
-Paste a connect code or capture link from `/new`, then send lobby, phase, player,
-and gameover events interactively. See [the capture mock guide](cmd/capture-mock/README.md)
-for connection settings and usage.
+Run `go run ./cmd/capture-mock` to play simulated games through Galactus without
+Among Us. Paste a connect code or capture link from `/new`, pick a scenario such as
+a full round or a player being killed, and confirm at each checkpoint that the bot
+muted, unmuted, and updated the status message as expected. Events can also be sent
+one at a time. See [the capture mock guide](cmd/capture-mock/README.md) for usage.
 
 # Similar Projects
 

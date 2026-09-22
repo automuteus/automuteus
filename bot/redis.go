@@ -52,8 +52,14 @@ func (bot *Bot) refreshGameLiveness(code string) {
 	go bot.RedisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
 }
 
+// rateLimitEventCallback records a 429 from Discord's REST API. discordgo sleeps for retry_after and retries the
+// request on its own; this is the only place the wait, the bucket, and the URL are visible.
 func (bot *Bot) rateLimitEventCallback(_ *discordgo.Session, rl *discordgo.RateLimit) {
-	log.Println(rl.Message)
+	l := bot.log.With("component", "discordgo", "url", rl.URL)
+	if rl.TooManyRequests != nil {
+		l = l.With("bucket", rl.Bucket, "retry_after", rl.RetryAfter, "message", rl.Message)
+	}
+	l.Warn("rate limited by Discord")
 	bot.metrics.RecordDiscordRequests(server.RateLimited, 1)
 }
 
@@ -444,6 +450,11 @@ func (redisInterface *RedisInterface) LockSnowflake(snowflake string) lock.Lock 
 		return nil
 	}
 	return lock
+}
+
+// Ping reports whether Redis is reachable. It is a readiness check for internal/server.Health.
+func (redisInterface *RedisInterface) Ping(ctx context.Context) error {
+	return redisInterface.client.Ping(ctx).Err()
 }
 
 func (redisInterface *RedisInterface) Close() error {

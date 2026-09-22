@@ -311,10 +311,10 @@ func (f *fakeMetrics) RecordDiscordRequests(t server.EventType, n int64) {
 	f.counts[t] += n
 }
 
-func (f *fakeMetrics) SetActiveGames(n int) {
+func (f *fakeMetrics) AddActiveGames(delta int) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.activeGames = n
+	f.activeGames += delta
 }
 
 func (f *fakeMetrics) RecordGameStarted() {

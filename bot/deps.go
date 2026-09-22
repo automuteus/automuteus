@@ -78,7 +78,7 @@ type SettingsSource interface {
 // Metrics receives the bot's Prometheus observations: Discord activity, game lifecycle, and cleanup failures.
 type Metrics interface {
 	RecordDiscordRequests(requestType server.EventType, num int64)
-	SetActiveGames(n int)
+	AddActiveGames(delta int)
 	RecordGameStarted()
 	RecordGameEnded(reason server.EndReason)
 	RecordCleanupFailure(step server.CleanupStep)

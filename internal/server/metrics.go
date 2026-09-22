@@ -185,9 +185,10 @@ func (m *Metrics) ObserveMuteBatch(elapsed time.Duration) {
 	m.muteBatchDuration.Observe(elapsed.Seconds())
 }
 
-// SetActiveGames publishes the number of games this process is subscribed to.
-func (m *Metrics) SetActiveGames(n int) {
-	m.activeGames.Set(float64(n))
+// AddActiveGames adjusts the process-wide count when a shard starts or stops
+// tracking a game. Each shard must report only changes to its tracked set.
+func (m *Metrics) AddActiveGames(delta int) {
+	m.activeGames.Add(float64(delta))
 }
 
 func (m *Metrics) RecordGameStarted() {

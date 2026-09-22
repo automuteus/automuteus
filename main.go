@@ -174,7 +174,18 @@ func discordMainWrapper() error {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	go server.StartHealthCheckServer("8080")
+	// LIVENESS_GRACE: how long readiness may fail continuously before /live also fails and the orchestrator
+	// restarts the process. Unset or 0 keeps /live unconditional.
+	var livenessGrace time.Duration
+	if v := os.Getenv("LIVENESS_GRACE"); v != "" {
+		livenessGrace, err = time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid LIVENESS_GRACE %q: %w", v, err)
+		}
+		log.Printf("Read from env; using LIVENESS_GRACE=%s\n", livenessGrace)
+	}
+	health := server.NewHealth(livenessGrace)
+	go server.StartHealthCheckServer("8080", health)
 
 	topGGToken := os.Getenv("TOP_GG_TOKEN")
 
@@ -215,8 +226,14 @@ func discordMainWrapper() error {
 		bots[i].SetTokenProvider(tokenProvider)
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
-	// indicate to Kubernetes that we're ready to start receiving traffic
-	server.GlobalReady = true
+
+	// readiness reflects this process's own dependencies: every shard's gateway session, Redis, and Postgres
+	for i, shard := range shards {
+		health.AddCheck(fmt.Sprintf("shard-%d", shard), bots[i].GatewayHealth)
+	}
+	health.AddCheck("redis", redisClient.Ping)
+	health.AddCheck("postgres", psql.Pool.Ping)
+	health.SetStarted()
 
 	go func() {
 		if err := server.PrometheusMetricsServer("2112"); err != nil {
@@ -258,6 +275,7 @@ func discordMainWrapper() error {
 
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
+	health.SetDraining()
 	time.Sleep(time.Second)
 
 	// only delete the slash commands if we're not the official bot, AND we're the primary/"master" shard
