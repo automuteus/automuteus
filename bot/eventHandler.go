@@ -159,6 +159,7 @@ func (bot *Bot) consumeQueue(gl *slog.Logger, guildID string, dgsRequest GameSta
 		// A draining process hands the lease over and leaves queued events for the process that takes it.
 		if bot.Draining() {
 			gl.Info("draining; handing the game's consumer lease over")
+			bot.metrics.RecordGameHandedOver()
 			lease.release(true)
 			return false
 		}

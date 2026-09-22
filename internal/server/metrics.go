@@ -72,6 +72,17 @@ const (
 
 var cleanupSteps = [...]CleanupStep{CleanupUnmute, CleanupRecordMatch, CleanupNotify}
 
+// AdoptSource is how a process came to subscribe to a game another process created.
+type AdoptSource string
+
+const (
+	AdoptAnnounce    AdoptSource = "announce"     // the creating or draining process announced it
+	AdoptDiscovery   AdoptSource = "discovery"    // the periodic scan of recently active games found it
+	AdoptGuildCreate AdoptSource = "guild_create" // the shard reconnected and resubscribed to the guild's games
+)
+
+var adoptSources = [...]AdoptSource{AdoptAnnounce, AdoptDiscovery, AdoptGuildCreate}
+
 // Metrics holds every Prometheus collector for one bot process, across all of its shards.
 type Metrics struct {
 	// operations are activity counters, not an exact count of HTTP requests or successful responses.
@@ -86,6 +97,12 @@ type Metrics struct {
 	gamesStarted    prometheus.Counter
 	gamesEnded      *prometheus.CounterVec
 	cleanupFailures *prometheus.CounterVec
+
+	// Consumer-lease and handover activity between processes sharing a shard. See bot/lease.go.
+	leaseLost       prometheus.Counter
+	leaseWaits      prometheus.Counter
+	gamesAdopted    *prometheus.CounterVec
+	gamesHandedOver prometheus.Counter
 }
 
 // DefaultMetrics is shared by the bot and token provider and is registered once per process.
@@ -130,6 +147,22 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			Name: "automuteus_game_cleanup_failures_total",
 			Help: "End-of-game cleanup steps that failed, by step.",
 		}, []string{"step"}),
+		leaseLost: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "automuteus_consumer_lease_lost_total",
+			Help: "Times this process found a game's consumer lease held elsewhere while it believed it held it: a renewal failed or a burst stalled past the lease TTL. Should stay at zero.",
+		}),
+		leaseWaits: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "automuteus_consumer_lease_waits_total",
+			Help: "End-of-game requests that had to wait for another process to finish a burst of capture events before cleaning up.",
+		}),
+		gamesAdopted: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "automuteus_games_adopted_total",
+			Help: "Games created by another process that this process subscribed to as a standby consumer, by how it learned of them.",
+		}, []string{"source"}),
+		gamesHandedOver: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "automuteus_games_handed_over_total",
+			Help: "Games whose consumer lease this process released mid-burst while draining, leaving queued events for a standby.",
+		}),
 	}
 
 	// Expose every label combination as zero so absent series read as "nothing happened", not "not scraped".
@@ -149,9 +182,13 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 	for _, step := range cleanupSteps {
 		m.cleanupFailures.WithLabelValues(string(step))
 	}
+	for _, source := range adoptSources {
+		m.gamesAdopted.WithLabelValues(string(source))
+	}
 
 	registry.MustRegister(m.operations, m.voiceChanges, m.workerFailures, m.captureTasks, m.muteBatchDuration,
-		m.activeGames, m.gamesStarted, m.gamesEnded, m.cleanupFailures)
+		m.activeGames, m.gamesStarted, m.gamesEnded, m.cleanupFailures,
+		m.leaseLost, m.leaseWaits, m.gamesAdopted, m.gamesHandedOver)
 	return m
 }
 
@@ -203,6 +240,36 @@ func (m *Metrics) RecordGameEnded(reason EndReason) {
 // RecordCleanupFailure counts an end-of-game step that did not complete.
 func (m *Metrics) RecordCleanupFailure(step CleanupStep) {
 	m.cleanupFailures.WithLabelValues(string(step)).Inc()
+}
+
+// RecordLeaseLost counts a consumer lease this process believed it held turning out to be held elsewhere.
+func (m *Metrics) RecordLeaseLost() {
+	m.leaseLost.Inc()
+}
+
+// RecordLeaseWait counts an end-of-game request that found the consumer lease taken and had to wait for it.
+func (m *Metrics) RecordLeaseWait() {
+	m.leaseWaits.Inc()
+}
+
+// RecordGameAdopted counts a subscription to a game another process created. Unknown sources fold into "announce"
+// so a new caller cannot grow the metric's cardinality.
+func (m *Metrics) RecordGameAdopted(source AdoptSource) {
+	m.gamesAdopted.WithLabelValues(string(source.known())).Inc()
+}
+
+// RecordGameHandedOver counts a game whose lease this process released mid-burst while draining.
+func (m *Metrics) RecordGameHandedOver() {
+	m.gamesHandedOver.Inc()
+}
+
+func (s AdoptSource) known() AdoptSource {
+	for _, known := range adoptSources {
+		if s == known {
+			return s
+		}
+	}
+	return AdoptAnnounce
 }
 
 // known maps arbitrary reasons onto the fixed label set, so a new caller cannot grow the metric's cardinality.

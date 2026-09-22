@@ -234,7 +234,7 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				GuildID:     m.Guild.ID,
 				ConnectCode: connCode,
 			}
-			if bot.attachToGame(gsr) {
+			if bot.attachToGame(gsr, server.AdoptGuildCreate) {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
 			}
 		}

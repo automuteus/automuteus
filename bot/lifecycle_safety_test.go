@@ -138,7 +138,7 @@ func TestLifecycle_StateReadFailureDoesNotAdoptOrCleanUp(t *testing.T) {
 	gsr := seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
 	failure := errors.New("temporary Redis failure")
 	bot.store = lifecycleReadStore{GameStateStore: deps.store, read: func(GameStateRequest) (*GameState, error) { return nil, failure }}
-	if bot.attachToGame(gsr) {
+	if bot.attachToGame(gsr, server.AdoptAnnounce) {
 		t.Fatal("adopted a game whose state could not be read")
 	}
 	if err := bot.stopGame(gsr, server.EndReasonCriticalNotice, ""); !errors.Is(err, failure) {

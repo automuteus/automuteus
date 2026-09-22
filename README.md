@@ -265,6 +265,19 @@ Games:
   `unmute` (players may have been left muted), `record_match` (match not marked aborted),
   or `notify` (end-of-game message not posted).
 
+Handover between processes sharing a shard:
+
+- `automuteus_games_adopted_total{source}`: games created elsewhere that this process
+  subscribed to as a standby, by how it learned of them: `announce`, `discovery` (the
+  once-a-minute scan), or `guild_create` (resubscribed on reconnect).
+- `automuteus_games_handed_over_total`: games whose consumer lease this process released
+  mid-burst while draining, leaving queued events for a standby.
+- `automuteus_consumer_lease_waits_total`: end-of-game requests that had to wait for
+  another process to finish a burst before cleaning up.
+- `automuteus_consumer_lease_lost_total`: times this process found a lease it believed it
+  held taken by another, meaning a renewal failed or a burst stalled past the lease TTL.
+  Should stay at zero; alert on it.
+
 Message activity, `automuteus_discord_operations_total{type}`, is a set of coarse
 counters: `message_create_delete`, `message_edit`, and `rate_limited`. These reflect
 existing instrumentation (message edits are counted when scheduled, for example) and are

@@ -293,6 +293,9 @@ func TestTwins_EndingWaitsForLeaseAndClosesOtherSubscriber(t *testing.T) {
 	if deps.store.getCode(scenarioConnectCode) != nil {
 		t.Fatal("game state should be deleted")
 	}
+	if _, waits, _ := first.metrics.(*fakeMetrics).leaseCounts(); waits != 1 {
+		t.Fatalf("lease waits = %d, want 1: the end request found the lease taken", waits)
+	}
 	eventually(t, "the other subscriber to close", func() bool {
 		second.ChannelsMapLock.RLock()
 		defer second.ChannelsMapLock.RUnlock()

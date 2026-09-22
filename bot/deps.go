@@ -83,6 +83,10 @@ type Metrics interface {
 	RecordGameStarted()
 	RecordGameEnded(reason server.EndReason)
 	RecordCleanupFailure(step server.CleanupStep)
+	RecordLeaseLost()
+	RecordLeaseWait()
+	RecordGameAdopted(source server.AdoptSource)
+	RecordGameHandedOver()
 }
 
 // Compile-time checks that the production types satisfy the seams.

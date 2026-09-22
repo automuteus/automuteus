@@ -8,6 +8,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	redis_common "github.com/automuteus/automuteus/v8/common"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
@@ -244,6 +245,9 @@ func TestHandleEvent_AnnouncedGamesAreAdoptedForGuildsOnThisShard(t *testing.T) 
 	bot.ChannelsMapLock.RUnlock()
 	if again != stop {
 		t.Fatal("repeated announcement replaced the existing subscription")
+	}
+	if got := deps.metrics.adoptedFrom(server.AdoptAnnounce); got != 1 {
+		t.Fatalf("games adopted from announcements = %d, want 1 (the served, existing game, counted once)", got)
 	}
 }
 

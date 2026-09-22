@@ -7,6 +7,7 @@ import (
 	"time"
 
 	redis_common "github.com/automuteus/automuteus/v8/common"
+	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/go-redis/redis/v8"
@@ -98,7 +99,7 @@ func (bot *Bot) discoverGamesOnce() int {
 		if _, err := bot.guilds.Guild(gsr.GuildID); err != nil {
 			continue
 		}
-		if bot.attachToGame(gsr) {
+		if bot.attachToGame(gsr, server.AdoptDiscovery) {
 			adopted++
 		}
 	}
@@ -150,7 +151,7 @@ func (bot *Bot) adoptGames(games []notice.GameRef) {
 		if _, err := bot.guilds.Guild(g.GuildID); err != nil {
 			continue
 		}
-		if bot.attachToGame(GameStateRequest{GuildID: g.GuildID, ConnectCode: g.ConnectCode}) {
+		if bot.attachToGame(GameStateRequest{GuildID: g.GuildID, ConnectCode: g.ConnectCode}, server.AdoptAnnounce) {
 			adopted++
 		}
 	}
@@ -160,10 +161,10 @@ func (bot *Bot) adoptGames(games []notice.GameRef) {
 }
 
 // attachToGame subscribes this shard to the capture events of a game that already exists in the store, unless it
-// is attached already. It reports whether a new subscription was started. It never takes the game's state lock: a
+// is attached already. It reports whether a new subscription was started, and counts it against source. It never takes the game's state lock: a
 // locked fetch creates an empty state when none exists, which would resurrect a game that ended between the check
 // and the lock. The subscriber re-checks existence under the consumer lease before consuming anything.
-func (bot *Bot) attachToGame(gsr GameStateRequest) bool {
+func (bot *Bot) attachToGame(gsr GameStateRequest, source server.AdoptSource) bool {
 	bot.ChannelsMapLock.RLock()
 	_, attached := bot.EndGameChannels[gsr.ConnectCode]
 	bot.ChannelsMapLock.RUnlock()
@@ -188,7 +189,8 @@ func (bot *Bot) attachToGame(gsr GameStateRequest) bool {
 	bot.EndGameChannels[gsr.ConnectCode] = killChan
 	bot.ChannelsMapLock.Unlock()
 
-	bot.gameLog(gsr).Info("subscribing to an existing game")
+	bot.gameLog(gsr).Info("subscribing to an existing game", "source", string(source))
+	bot.metrics.RecordGameAdopted(source)
 	go bot.SubscribeToGameByConnectCode(gsr.GuildID, gsr.ConnectCode, killChan)
 	return true
 }

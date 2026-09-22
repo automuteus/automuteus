@@ -32,9 +32,11 @@ type consumerLease struct {
 	key         string
 	token       string
 	log         *slog.Logger
+	metrics     Metrics
 
 	mu        sync.Mutex
 	holding   bool
+	everHeld  bool // whether this lease object has held the lease at least once; the first time is logged at Info
 	stopRenew chan struct{}
 }
 
@@ -63,6 +65,7 @@ func (bot *Bot) newConsumerLease(connectCode string) *consumerLease {
 		key:         rediskey.GameConsumerLease(connectCode),
 		token:       hex.EncodeToString(id[:]),
 		log:         bot.gameLog(GameStateRequest{ConnectCode: connectCode}),
+		metrics:     bot.metrics,
 	}
 }
 
@@ -87,7 +90,13 @@ func (l *consumerLease) acquire() bool {
 	l.holding = true
 	l.stopRenew = make(chan struct{})
 	go l.renewLoop(l.stopRenew)
-	l.log.Debug("acquired consumer lease")
+	if l.everHeld {
+		l.log.Debug("acquired consumer lease")
+	} else {
+		// once per subscription at Info, so a handover shows up as this process's first acquisition of the game
+		l.everHeld = true
+		l.log.Info("consuming this game's capture events here")
+	}
 	return true
 }
 
@@ -99,6 +108,9 @@ func (l *consumerLease) acquireBlocking(what string) {
 	const poll = 100 * time.Millisecond
 	var waited time.Duration
 	for !l.acquire() {
+		if waited == 0 {
+			l.metrics.RecordLeaseWait()
+		}
 		time.Sleep(poll)
 		waited += poll
 		if waited%ConsumerLeaseTTL == 0 {
@@ -146,6 +158,7 @@ func (l *consumerLease) lost() {
 	l.holding = false
 	close(l.stopRenew)
 	l.stopRenew = nil
+	l.metrics.RecordLeaseLost()
 	l.log.Warn("consumer lease lost; another process is consuming this game")
 }
 
@@ -168,6 +181,7 @@ func (l *consumerLease) renewLoop(stop chan struct{}) {
 				if l.stopRenew == stop { // still the goroutine for the current hold
 					l.holding = false
 					l.stopRenew = nil
+					l.metrics.RecordLeaseLost()
 					l.log.Warn("consumer lease lost; another process is consuming this game")
 				}
 				l.mu.Unlock()
