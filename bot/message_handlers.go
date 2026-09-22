@@ -15,6 +15,13 @@ import (
 // relevant discord api requests are fully applied successfully. Otherwise, we can issue multiple requests for
 // the same mute/unmute, erroneously
 func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceStateUpdate) {
+	// count this handler as in flight before checking for a drain, so shutdown never sees zero handlers
+	// while one is about to start; a draining process leaves the event to its twin, which wins the snowflake lock and applies it
+	defer bot.beginWork()()
+	if bot.Draining() {
+		return
+	}
+
 	snowFlakeLock := bot.store.LockSnowflake(m.ChannelID + m.UserID + m.SessionID)
 	// couldn't obtain lock; bail bail bail!
 	if snowFlakeLock == nil {

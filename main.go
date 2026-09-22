@@ -273,6 +273,10 @@ func discordMainWrapper() error {
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	health.SetDraining()
+	// refuse new events and hand running games to twin processes before anything is closed
+	for _, v := range bots {
+		v.Drain()
+	}
 	time.Sleep(time.Second)
 
 	// only delete the slash commands if we're not the official bot, AND we're the primary/"master" shard
@@ -292,6 +296,17 @@ func discordMainWrapper() error {
 		log.Println("Finished deleting all commands")
 	}
 
+	// give handlers that were already running a bounded chance to finish, then close
+	drainDeadline := time.Now().Add(bot.InflightDrainTimeout)
+	for _, v := range bots {
+		if n := v.WaitForInflight(time.Until(drainDeadline)); n > 0 {
+			log.Printf("Closing with %d handlers still in flight after %s", n, bot.InflightDrainTimeout)
+		}
+	}
+	// games attached during the drain window (an in-flight /new) were not in the first announcement
+	for _, v := range bots {
+		v.AnnounceGames()
+	}
 	for _, v := range bots {
 		v.Close()
 	}

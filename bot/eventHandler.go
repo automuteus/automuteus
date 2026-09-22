@@ -3,17 +3,16 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/pkg/task"
-	"github.com/go-redis/redis/v8"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"log/slog"
 	"strconv"
@@ -42,6 +41,11 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 	gl.Info("subscribed to capture events")
 	bot.trackGame(dgsRequest)
 	defer bot.untrackGame(connectCode)
+
+	// this process consumes the game's events only while it holds the lease, one burst at a time
+	lease := bot.newConsumerLease(connectCode)
+	defer lease.release(false)
+
 	var endRequest *EndGameMessage
 	var endErr error
 	defer func() {
@@ -54,8 +58,13 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			endRequest.done <- endErr
 		}
 	}()
+	// finish ends the game: everyone is unmuted and its state deleted. That must not overlap a burst on another
+	// process, which could still be applying a mute, so it waits for the lease, however long that takes. Releasing
+	// with wake lets the other subscribers see the game is gone and close.
 	finish := func(end EndGameMessage) {
 		endRequest = &end
+		lease.acquireBlocking("ending game")
+		defer lease.release(true)
 		if end.reason == "" {
 			// The existing /new replacement path only requests deletion of the old game.
 			bot.forceEndGame(dgsRequest)
@@ -64,6 +73,10 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			endErr = bot.completeGame(dgsRequest, end.reason, end.message)
 		}
 	}
+
+	// a standby polls for work it was not woken for: a lapsed lease with a backlog behind it
+	standby := time.NewTicker(ConsumerLeaseTTL / 3)
+	defer standby.Stop()
 
 	// indicate to the broker that we're online and ready to start processing messages
 	task.Ack(ctx, bot.RedisInterface.client, connectCode)
@@ -75,60 +88,28 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			if message == nil {
 				break
 			}
+			if bot.consumeQueue(gl, guildID, dgsRequest, lease, endGameChannel, finish) {
+				return
+			}
 
-			// anytime we get a notification message, continue pulling messages off the list until there are no more
-			for {
-				// A queued stop takes priority over the next job, even if capture keeps publishing events.
-				select {
-				case end := <-endGameChannel:
-					finish(end)
-					return
-				default:
-				}
-				// Do not consume queued game events while settings are unavailable.
-				sett, settingsErr := bot.settings.LoadGuildSettings(ctx, guildID)
-				if settingsErr != nil {
-					gl.Error("failed to load guild settings", "err", settingsErr)
-					break
-				}
-				job, err := task.PopJob(ctx, bot.RedisInterface.client, connectCode)
-				if errors.Is(err, redis.Nil) {
-					break
-				} else if err != nil {
-					gl.Error("failed to pop capture job", "err", err)
-					break
-				}
-				gl.Info("capture event received", "type", job.JobType.String(), "payload", job.Payload)
-				bot.refreshGameLiveness(connectCode)
-				bot.RedisInterface.RefreshActiveGame(guildID, connectCode)
-
-				// resolve premium once per job; every mute/deafen issued while handling it uses the same tier
-				premTier := bot.premiumTier(guildID)
-
-				correlatedUserID := bot.processJob(job, sett, premTier, dgsRequest)
-
-				if job.JobType != task.ConnectionJob {
-					gameEvent := storage.PostgresGameEvent{
-						GameID:    -1,
-						UserID:    nil,
-						EventTime: int32(time.Now().Unix()),
-						EventType: int16(job.JobType),
-						Payload:   job.Payload.(string),
-					}
-					go bot.recordGameEvent(dgsRequest, correlatedUserID, gameEvent)
-				}
+		case <-standby.C:
+			if bot.Draining() {
+				break
+			}
+			if bot.consumeQueue(gl, guildID, dgsRequest, lease, endGameChannel, finish) {
+				return
 			}
 
 		case <-timer.C:
-			timer.Stop()
-			gl.Warn("ending game after capture inactivity", "timeout_seconds", bot.captureTimeout)
-			err := notify.Close()
-			if err != nil {
-				gl.Error("failed to close capture subscription", "err", err)
+			// The timer only requests a check. Missed notifications must not
+			// make a standby end a game another consumer is still processing.
+			if bot.consumeQueue(gl, guildID, dgsRequest, lease, endGameChannel, finish) {
+				return
 			}
-			bot.endInactiveGame(dgsRequest)
-
-			return
+			if bot.endGameIfInactive(dgsRequest, lease) {
+				return
+			}
+			timer.Reset(ConsumerLeaseTTL / 3)
 		case end := <-endGameChannel:
 			gl.Info("end-game signal received; closing capture subscription")
 			err := notify.Close()
@@ -137,6 +118,90 @@ func (bot *Bot) SubscribeToGameByConnectCode(guildID, connectCode string, endGam
 			}
 			finish(end)
 			return
+		}
+	}
+}
+
+// consumeQueue applies one burst of the game's queued capture events, in order, under the consumer lease. It
+// returns true when the subscription is over: an end request was handled, or the game was ended elsewhere.
+func (bot *Bot) consumeQueue(gl *slog.Logger, guildID string, dgsRequest GameStateRequest, lease *consumerLease, endGameChannel chan EndGameMessage, finish func(EndGameMessage)) bool {
+	// admission and in-flight accounting happen together, before any work is taken from the queue
+	done := bot.beginWork()
+	defer done()
+	if bot.Draining() {
+		return false
+	}
+	if !lease.acquire() {
+		return false
+	}
+	defer lease.release(false)
+	// Checked only now, under the lease: a game ended by another subscriber is gone from the store and this
+	// subscription is over. Checking before acquiring could see the game just before its owner deleted it, then
+	// pop a queued event and recreate it.
+	dgs, err := bot.store.ReadDiscordGameState(dgsRequest)
+	if err != nil {
+		gl.Error("failed to read game; leaving queued events for retry", "err", err)
+		return false
+	}
+	if dgs == nil {
+		gl.Info("game no longer exists; closing capture subscription")
+		return true
+	}
+
+	for {
+		// A queued stop takes priority over the next job, even if capture keeps publishing events.
+		select {
+		case end := <-endGameChannel:
+			finish(end)
+			return true
+		default:
+		}
+		// A draining process hands the lease over and leaves queued events for the process that takes it.
+		if bot.Draining() {
+			gl.Info("draining; handing the game's consumer lease over")
+			lease.release(true)
+			return false
+		}
+		// Do not consume queued game events while settings are unavailable.
+		sett, settingsErr := bot.settings.LoadGuildSettings(ctx, guildID)
+		if settingsErr != nil {
+			gl.Error("failed to load guild settings", "err", settingsErr)
+			return false
+		}
+		entry, owner, err := lease.pop()
+		if err != nil {
+			gl.Error("failed to pop capture job", "err", err)
+			return false
+		}
+		if !owner {
+			return false
+		}
+		if entry == "" {
+			return false
+		}
+		job, err := task.ParseJob(entry)
+		if err != nil {
+			gl.Error("malformed capture job; skipping it", "err", err)
+			continue
+		}
+		gl.Info("capture event received", "type", job.JobType.String(), "payload", job.Payload)
+		bot.refreshGameLiveness(dgsRequest.ConnectCode)
+		bot.RedisInterface.RefreshActiveGame(guildID, dgsRequest.ConnectCode)
+
+		// resolve premium once per job; every mute/deafen issued while handling it uses the same tier
+		premTier := bot.premiumTier(guildID)
+
+		correlatedUserID := bot.processJob(job, sett, premTier, dgsRequest)
+
+		if job.JobType != task.ConnectionJob {
+			gameEvent := storage.PostgresGameEvent{
+				GameID:    -1,
+				UserID:    nil,
+				EventTime: int32(time.Now().Unix()),
+				EventType: int16(job.JobType),
+				Payload:   job.Payload.(string),
+			}
+			go bot.recordGameEvent(dgsRequest, correlatedUserID, gameEvent)
 		}
 	}
 }
@@ -272,6 +337,51 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 // deleted.
 func (bot *Bot) endInactiveGame(dgsRequest GameStateRequest) {
 	bot.completeGame(dgsRequest, server.EndReasonInactivity, "")
+}
+
+// endGameIfInactive rechecks shared activity under the consumer lease. A local
+// timer, a busy consumer, or a failed Redis read is never proof of inactivity.
+// It returns true only when this subscription can close.
+func (bot *Bot) endGameIfInactive(gsr GameStateRequest, lease *consumerLease) bool {
+	done := bot.beginWork()
+	defer done()
+	if bot.Draining() || !lease.acquire() {
+		return false
+	}
+	defer lease.release(false)
+	gl := bot.gameLog(gsr)
+	dgs, err := bot.store.ReadDiscordGameState(gsr)
+	if err != nil {
+		gl.Error("failed to read game for inactivity check", "err", err)
+		return false
+	}
+	if dgs == nil {
+		return true
+	}
+	queued, err := lease.client.LLen(ctx, rediskey.JobNamespace+gsr.ConnectCode).Result()
+	if err != nil {
+		gl.Error("failed to check queued capture events", "err", err)
+		return false
+	}
+	if queued > 0 {
+		return false
+	}
+	lastActivity, err := lease.client.ZScore(ctx, rediskey.ActiveGamesForGuild(gsr.GuildID), gsr.ConnectCode).Result()
+	if err != nil {
+		// Missing activity data is also unknown, not evidence of inactivity.
+		gl.Error("failed to read shared game activity", "err", err)
+		return false
+	}
+	if time.Since(time.Unix(int64(lastActivity), 0)) < time.Duration(bot.captureTimeout)*time.Second {
+		return false
+	}
+	gl.Warn("ending game after confirmed capture inactivity", "timeout_seconds", bot.captureTimeout)
+	if err := bot.completeGame(gsr, server.EndReasonInactivity, ""); err != nil {
+		gl.Error("failed to end inactive game", "err", err)
+		return false
+	}
+	lease.release(true)
+	return true
 }
 
 // recordGameEvent stores a capture event against the active match, if there is one.

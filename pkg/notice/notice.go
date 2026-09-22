@@ -5,6 +5,10 @@
 //
 // A Shutdown is announced by a Galactus replica that is about to exit. It names the games whose capture
 // connections are being severed so the bot can end exactly those, and is never stored.
+//
+// GamesAvailable is announced by a bot process when it creates a game and when it is about to exit. It names games
+// that every process serving their guilds should be subscribed to, so that a game always has a standby consumer
+// and a process exit hands its games over before their queued capture events go stale. It is never stored either.
 package notice
 
 import (
@@ -44,21 +48,44 @@ type Shutdown struct {
 	ConnectCodes []string `json:"connectCodes"`
 }
 
+// GameRef identifies one game.
+type GameRef struct {
+	GuildID     string `json:"guildID"`
+	ConnectCode string `json:"connectCode"`
+}
+
+// GamesAvailable announces games that every process serving their guilds should subscribe to.
+type GamesAvailable struct {
+	Games []GameRef `json:"games"`
+}
+
 // Event is what shards receive. Exactly one of the fields is set.
 type Event struct {
 	// NoticeChanged reports that the active notice was raised, replaced, or cleared; shards re-read it.
 	NoticeChanged bool `json:"noticeChanged,omitempty"`
 	// Shutdown reports capture connections going away.
 	Shutdown *Shutdown `json:"shutdown,omitempty"`
+	// GamesAvailable reports games to subscribe to.
+	GamesAvailable *GamesAvailable `json:"gamesAvailable,omitempty"`
 }
 
 var (
 	ErrInvalid      = errors.New("notice: severity must be warning or critical, and message is required")
-	ErrInvalidEvent = errors.New("notice: event must set exactly one of noticeChanged or shutdown")
+	ErrInvalidEvent = errors.New("notice: event must set exactly one of noticeChanged, shutdown, or gamesAvailable")
 )
 
 func (e Event) valid() bool {
-	return e.NoticeChanged != (e.Shutdown != nil)
+	set := 0
+	if e.NoticeChanged {
+		set++
+	}
+	if e.Shutdown != nil {
+		set++
+	}
+	if e.GamesAvailable != nil {
+		set++
+	}
+	return set == 1
 }
 
 // Raise stores n as the active notice, replacing any previous one, and tells every shard to re-read it.
@@ -108,6 +135,15 @@ func AnnounceShutdown(ctx context.Context, client *redis.Client, connectCodes []
 		connectCodes = []string{}
 	}
 	return publish(ctx, client, Event{Shutdown: &Shutdown{ConnectCodes: connectCodes}})
+}
+
+// AnnounceGames tells every shard about games it should be subscribed to: a game just created, or the games of a
+// process that is exiting. Shards that serve the games' guilds and are not already attached subscribe to them.
+func AnnounceGames(ctx context.Context, client *redis.Client, games []GameRef) error {
+	if games == nil {
+		games = []GameRef{}
+	}
+	return publish(ctx, client, Event{GamesAvailable: &GamesAvailable{Games: games}})
 }
 
 func publish(ctx context.Context, client *redis.Client, e Event) error {

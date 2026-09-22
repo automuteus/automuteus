@@ -2,6 +2,10 @@ package rediskey
 
 const TotalGuildsSet = "automuteus:count:guilds"
 const ActiveGamesZSet = "automuteus:games"
+
+// ActiveGamesByGuildZSet scores "guildID:connectCode" members by last activity, so a bot process can discover the
+// games running in the guilds it serves without scanning every guild. See bot.(*Bot).discoverGames.
+const ActiveGamesByGuildZSet = "automuteus:games:byguild"
 const EventsNamespace = "automuteus:capture:events"
 const JobNamespace = "automuteus:jobs:"
 
@@ -44,6 +48,12 @@ func SnowflakeLockID(snowflake string) string {
 
 func VoiceChangesForGameCodeLock(connectCode string) string {
 	return "automuteus:voice:game:" + connectCode + ":lock"
+}
+
+// GameConsumerLease is held by the one bot process currently allowed to consume a game's capture events, so that
+// events are applied strictly in order even though several processes subscribe to the game. See bot/lease.go.
+func GameConsumerLease(connectCode string) string {
+	return "automuteus:games:consumer:" + connectCode
 }
 
 func CompleteTask(taskID string) string {

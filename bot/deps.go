@@ -26,6 +26,7 @@ import (
 type GameStateStore interface {
 	GetDiscordGameStateAndLock(gsr GameStateRequest) (lock.Lock, *GameState)
 	GetReadOnlyDiscordGameState(gsr GameStateRequest) *GameState
+	ReadDiscordGameState(gsr GameStateRequest) (*GameState, error)
 	SetDiscordGameState(dgs *GameState, l lock.Lock)
 	LockVoiceChanges(connectCode string, dur time.Duration) lock.Lock
 	LockSnowflake(snowflake string) lock.Lock

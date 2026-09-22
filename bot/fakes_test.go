@@ -123,6 +123,10 @@ func (m *memoryStore) GetReadOnlyDiscordGameState(gsr GameStateRequest) *GameSta
 	return m.find(gsr)
 }
 
+func (m *memoryStore) ReadDiscordGameState(gsr GameStateRequest) (*GameState, error) {
+	return m.find(gsr), nil
+}
+
 func (m *memoryStore) SetDiscordGameState(dgs *GameState, _ lock.Lock) {
 	if dgs != nil {
 		m.put(dgs)

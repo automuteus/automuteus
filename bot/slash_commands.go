@@ -54,14 +54,23 @@ const (
 )
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// count this handler as in flight before checking for a drain, so shutdown never sees zero handlers
+	// while one is about to start; a draining process leaves the interaction to its twin, which wins the snowflake lock and answers
+	defer bot.beginWork()()
+	if bot.Draining() {
+		return
+	}
+
 	respondChan := make(chan *discordgo.InteractionResponse)
 	ticker := time.NewTicker(time.Second * 2)
 	var followUpMsg *discordgo.Message
 	var err error
+	// the user's rate limit is reserved at admission and lifted again if the response never reaches Discord
+	pending := &rateLimitReservation{client: bot.redisClient()}
 
 	// get the result in the background
 	go func() {
-		respondChan <- bot.slashCommandHandler(s, i)
+		respondChan <- bot.slashCommandHandler(s, i, pending)
 	}()
 
 	for {
@@ -102,6 +111,9 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 					})
 					if err != nil {
 						log.Println("error editing followup message: ", err)
+						pending.release()
+					} else {
+						pending.commit()
 					}
 				} else {
 					//TODO if this shows up in logs regularly, print more context
@@ -117,6 +129,9 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 					} else {
 						log.Println(string(iBytes))
 					}
+					pending.release()
+				} else {
+					pending.commit()
 				}
 			}
 			ticker.Stop()
@@ -126,7 +141,7 @@ func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Inter
 	}
 }
 
-func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.InteractionResponse {
+func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.InteractionCreate, pending *rateLimitReservation) *discordgo.InteractionResponse {
 	if i.Member != nil && i.Member.User != nil {
 		if redis_common.IsUserBanned(bot.RedisInterface.client, i.Member.User.ID) {
 			return nil
@@ -208,7 +223,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		if i.ApplicationCommandData().Name == command.New.Name {
 			cmdRatelimitTimeout = redis_common.NewGameRateLimitDuration
 		}
-		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.ApplicationCommandData().Name, cmdRatelimitTimeout)
+		pending.reserve(i.Member.User.ID, i.ApplicationCommandData().Name, cmdRatelimitTimeout)
 		switch i.ApplicationCommandData().Name {
 		case command.Help.Name:
 			return command.HelpResponse(sett, i.ApplicationCommandData().Options)
@@ -310,6 +325,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.EndGameChannels[dgs.ConnectCode] = killChan
 				bot.ChannelsMapLock.Unlock()
 				go bot.SubscribeToGameByConnectCode(i.GuildID, dgs.ConnectCode, killChan)
+				bot.announceGame(i.GuildID, dgs.ConnectCode) // so twins subscribe as standbys from the start
 				bot.metrics.RecordGameStarted()
 
 				hyperlink, apiHyperlink, minimalURL := formCaptureURL(bot.url, dgs.ConnectCode)
@@ -631,7 +647,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			banned := redis_common.IncrementRateLimitExceed(bot.RedisInterface.client, i.Member.User.ID)
 			return softbanResponse(banned, sett)
 		}
-		redis_common.MarkUserRateLimit(bot.RedisInterface.client, i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
+		pending.reserve(i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
 
 		gid, err := strconv.ParseUint(i.GuildID, 10, 64)
 		if err != nil {
