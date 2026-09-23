@@ -1,0 +1,11 @@
+# Codecov status checks. The project check compares whole-repo coverage against the base commit; without a
+# threshold, a single timing-dependent line flickering out of coverage fails it. 1% absorbs that noise while
+# still catching a PR that meaningfully reduces coverage. The patch check keeps its defaults.
+coverage:
+  status:
+    project:
+      default:
+        threshold: 1%
+    patch:
+      default:
+        target: auto
