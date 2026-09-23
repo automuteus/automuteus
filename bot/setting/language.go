@@ -12,7 +12,11 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 		return nil, false
 	}
 	if len(args) == 0 {
-		return ConstructEmbedForSetting(sett.GetLanguage(), s, sett), false
+		embed := ConstructEmbedForSetting(sett.GetLanguage(), s, sett)
+		if hint := locale.TranslateHint(sett.GetLanguage()); hint != "" {
+			embed.Description += "\n\n" + hint
+		}
+		return embed, false
 	}
 
 	if len(args[0]) < 2 {
@@ -59,11 +63,15 @@ func FnLanguage(sett *settings.GuildSettings, args []string) (interface{}, bool)
 			}), true
 	}
 
-	return sett.LocalizeMessage(&i18n.Message{
+	msg := sett.LocalizeMessage(&i18n.Message{
 		ID:    "settings.SettingLanguage.set",
 		Other: "Localization is set to `{{.LangCode}}`",
 	},
 		map[string]interface{}{
 			"LangCode": args[0],
-		}), true
+		})
+	if hint := locale.TranslateHint(sett.GetLanguage()); hint != "" {
+		msg += "\n\n" + hint
+	}
+	return msg, true
 }
