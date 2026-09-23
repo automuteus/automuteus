@@ -63,6 +63,7 @@
 "eventHandler.gameOver.deleteMessageFooter" = "Tar bort meddelande {{.Mins}} min från:"
 "eventHandler.gameOver.matchID" = "Spelöver! Visa matchens statistik med match-ID: '{{.MatchID}}'\\n{{.Winners}}"
 "locale.language.name" = "Engelska"
+"locale.translateHint" = "Translations are community maintained. Help improve this language on [Crowdin]({{.URL}})!"
 "notices.banner.critical" = "🛑 CRITICAL NOTICE"
 "notices.banner.warning" = "⚠️ WARNING"
 "notices.critical.gameEnded" = "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\\n{{.Message}}\\nRun `/new` to start again once the notice is over."
