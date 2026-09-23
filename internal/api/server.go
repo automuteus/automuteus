@@ -59,6 +59,11 @@ type Store interface {
 	// be checked and the write must not proceed.
 	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
+	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
+	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
+	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
+	// next sees the guild.
+	BotInGuild(context.Context, string) (bool, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
 	RaiseNotice(context.Context, notice.Notice) error
@@ -117,6 +122,7 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	botGroup := r.Group("/bot")
 	botGroup.GET("/info", handleGetInfo(store))
 	botGroup.GET("/commands", handleGetCommands())
+	botGroup.GET("/settings/defaults", handleGetSettingsDefaults())
 
 	verifier := config.GuildVerifier
 	if verifier == nil {
@@ -133,6 +139,7 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	}
 	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, WriteSettings), handleUpdateGuildSettings(store, channels))
 	guildGroup.GET("/premium", guildAuthentication(config, verifier, ReadPremium), handleGetGuildPremium(store))
+	guildGroup.GET("/bot", guildAuthentication(config, verifier, ReadBotPresence), handleGetGuildBot(store))
 
 	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
 	// notices requires an explicitly configured admin password; the default password is refused.
@@ -180,6 +187,23 @@ func handleGetInfo(store Store) func(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, info)
+	}
+}
+
+// SettingsDefaults godoc
+// @Summary Get Default Guild Settings
+// @Description The settings every guild starts with, and what GET /guild/settings returns for a guild that never
+// @Description changed anything. Clients compare against this to show which settings a guild has customised and to
+// @Description offer a reset. Not guild-specific and not secret, so no authentication is required.
+// @Tags bot
+// @Accept json
+// @Produce json
+// @Success 200 {object} settings.GuildSettings
+// @Router /bot/settings/defaults [get]
+func handleGetSettingsDefaults() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=300")
+		c.JSON(http.StatusOK, settings.MakeGuildSettings())
 	}
 }
 
@@ -643,6 +667,50 @@ func sentFields(body []byte) string {
 	}
 	sort.Strings(keys)
 	return strings.Join(keys, ", ")
+}
+
+// BotPresence says whether the bot is a member of a guild, so a client can offer an invite instead of settings
+// the bot could never apply.
+type BotPresence struct {
+	Present bool `json:"present"`
+}
+
+// GetGuildBot godoc
+// @Summary Get Guild Bot Presence
+// @Description Report whether the bot is currently a member of the given guild, based on the guild join and leave
+// @Description events the bot has processed. Any member of the guild may ask.
+// @Security BasicAuth
+// @Security DiscordBearer
+// @Tags guild
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Success 200 {object} BotPresence
+// @Failure 400 {object} HttpError
+// @Failure 503 {object} HttpError
+// @Router /guild/bot [get]
+func handleGetGuildBot(store Store) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid guild ID",
+			})
+			return
+		}
+
+		present, err := store.BotInGuild(c.Request.Context(), guildID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{
+				StatusCode: http.StatusServiceUnavailable,
+				Error:      "Unable to check bot membership",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, BotPresence{Present: present})
+	}
 }
 
 // GetGuildPremium godoc

@@ -44,6 +44,15 @@ func (s *DataStore) ClearNotice(ctx context.Context) error {
 	return notice.Clear(ctx, s.redis)
 }
 
+// BotInGuild checks the same Redis set the bot adds to on GuildCreate and removes from on GuildDelete, so the
+// API never needs a Discord session or bot token for this answer.
+func (s *DataStore) BotInGuild(ctx context.Context, guildID string) (bool, error) {
+	if err := discord.ValidateSnowflake(guildID); err != nil {
+		return false, err
+	}
+	return s.redis.SIsMember(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID))).Result()
+}
+
 func (s *DataStore) Ping(ctx context.Context) error {
 	if err := s.redis.Ping(ctx).Err(); err != nil {
 		return err

@@ -1,5 +1,10 @@
 basePath: /
 definitions:
+  api.BotPresence:
+    properties:
+      present:
+        type: boolean
+    type: object
   api.HttpError:
     properties:
       error:
@@ -160,6 +165,7 @@ definitions:
     - 9
     - 10
     - 11
+    format: int32
     type: integer
     x-enum-varnames:
     - ApplicationCommandOptionSubCommand
@@ -178,6 +184,7 @@ definitions:
     - 1
     - 2
     - 3
+    format: int32
     type: integer
     x-enum-varnames:
     - ChatApplicationCommand
@@ -269,6 +276,7 @@ definitions:
     - 3
     - 4
     - 5
+    format: int32
     type: integer
     x-enum-varnames:
     - FreeTier
@@ -437,6 +445,24 @@ paths:
       summary: Get Bot Info
       tags:
       - bot
+  /bot/settings/defaults:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The settings every guild starts with, and what GET /guild/settings returns for a guild that never
+        changed anything. Clients compare against this to show which settings a guild has customised and to
+        offer a reset. Not guild-specific and not secret, so no authentication is required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/settings.GuildSettings'
+      summary: Get Default Guild Settings
+      tags:
+      - bot
   /game/roomcode:
     get:
       consumes:
@@ -516,6 +542,40 @@ paths:
       summary: Get Game State
       tags:
       - game
+  /guild/bot:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Report whether the bot is currently a member of the given guild, based on the guild join and leave
+        events the bot has processed. Any member of the guild may ask.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BotPresence'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Get Guild Bot Presence
+      tags:
+      - guild
   /guild/premium:
     get:
       consumes:

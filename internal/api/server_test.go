@@ -36,6 +36,9 @@ type fakeStore struct {
 	premium      *premium.PremiumRecord
 	premiumErr   error
 	premiumCalls int
+	// botAbsent makes BotInGuild report false; botErr fails only BotInGuild.
+	botAbsent bool
+	botErr    error
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -105,6 +108,13 @@ func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, err
 	}
 	return premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, s.err
 }
+func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
+	s.calls++
+	if s.botErr != nil {
+		return false, s.botErr
+	}
+	return !s.botAbsent, s.err
+}
 func (s *fakeStore) Ping(context.Context) error { s.calls++; return s.err }
 
 func request(t *testing.T, router http.Handler, path string, auth bool) *httptest.ResponseRecorder {
@@ -129,10 +139,12 @@ func TestRoutesWithoutDiscordSession(t *testing.T) {
 	}{
 		{"/bot/info", false, `"totalGuilds":5`},
 		{"/bot/commands", false, `"name":"new"`},
+		{"/bot/settings/defaults", false, `"language":"en"`},
 		{"/game/state?guildID=123456789012345678&connectCode=ABCDEFGH", true, `"running":true`},
 		{"/game/roomcode?connectCode=ABCDEFGH", true, `"roomCode":"ABCDEF"`},
 		{"/guild/settings?guildID=123456789012345678", true, `"language":"en"`},
 		{"/guild/premium?guildID=123456789012345678", true, `"tier":`},
+		{"/guild/bot?guildID=123456789012345678", true, `{"present":true}`},
 		{"/open/link?connectCode=ABCDEFGH", false, `aucapture:\/\/galactus.example.com:443\/ABCDEFGH`},
 		{"/live", false, ""},
 		{"/ready", false, ""},
@@ -151,7 +163,7 @@ func TestAuthenticationAndValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	s := &fakeStore{}
 	r := NewRouter(Config{AdminPassword: "test-password"}, s)
-	for _, path := range []string{"/game/state", "/game/roomcode", "/guild/settings", "/guild/premium"} {
+	for _, path := range []string{"/game/state", "/game/roomcode", "/guild/settings", "/guild/premium", "/guild/bot"} {
 		if w := request(t, r, path, false); w.Code != 401 {
 			t.Fatalf("%s: %d", path, w.Code)
 		}
@@ -275,5 +287,50 @@ func TestNoticeEndpointsRefuseExplicitDefaultPassword(t *testing.T) {
 	}
 	if s.calls != 0 {
 		t.Errorf("default password reached the store %d times", s.calls)
+	}
+}
+
+func TestGuildBotPresence(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, tc := range []struct {
+		name  string
+		store *fakeStore
+		code  int
+		want  string
+	}{
+		{"present", &fakeStore{}, 200, `{"present":true}`},
+		{"absent", &fakeStore{botAbsent: true}, 200, `{"present":false}`},
+		{"redis down", &fakeStore{botErr: errors.New("private connection details")}, 503, "Unable to check bot membership"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewRouter(Config{AdminPassword: "test-password"}, tc.store)
+			w := request(t, r, "/guild/bot?guildID=123456789012345678", true)
+			if w.Code != tc.code || !strings.Contains(w.Body.String(), tc.want) {
+				t.Fatalf("got %d %s", w.Code, w.Body)
+			}
+			if strings.Contains(w.Body.String(), "private connection details") {
+				t.Fatal("leaked dependency error")
+			}
+		})
+	}
+}
+
+func TestSettingsDefaultsMatchFreshGuild(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := NewRouter(Config{AdminPassword: "test-password"}, &fakeStore{})
+	w := request(t, r, "/bot/settings/defaults", false)
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "public, max-age=300" {
+		t.Fatalf("got %d %q", w.Code, w.Header().Get("Cache-Control"))
+	}
+	fresh, err := json.Marshal(settings.MakeGuildSettings())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(w.Body.String()) != string(fresh) {
+		t.Fatalf("defaults drifted from MakeGuildSettings:\n%s\n%s", w.Body.String(), fresh)
+	}
+	// The fake store returns MakeGuildSettings for a guild with no row, so the two routes must agree.
+	if g := request(t, r, "/guild/settings?guildID=123456789012345678", true); strings.TrimSpace(g.Body.String()) != string(fresh) {
+		t.Fatalf("guild without settings differs from defaults:\n%s", g.Body.String())
 	}
 }

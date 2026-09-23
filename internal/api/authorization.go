@@ -6,10 +6,11 @@ import "github.com/bwmarrin/discordgo"
 type GuildAction string
 
 const (
-	ReadGame      GuildAction = "game:read"
-	ReadPremium   GuildAction = "premium:read"
-	ReadSettings  GuildAction = "settings:read"
-	WriteSettings GuildAction = "settings:write"
+	ReadGame        GuildAction = "game:read"
+	ReadPremium     GuildAction = "premium:read"
+	ReadSettings    GuildAction = "settings:read"
+	WriteSettings   GuildAction = "settings:write"
+	ReadBotPresence GuildAction = "bot:read"
 )
 
 // VerifiedGuildAccess must be constructed from trusted Discord responses for
@@ -33,7 +34,7 @@ func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildA
 		return false
 	}
 	switch action {
-	case ReadGame, ReadSettings, ReadPremium:
+	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence:
 		return true
 	case WriteSettings:
 		return access.Owner || access.Permissions&discordgo.PermissionAdministrator != 0
