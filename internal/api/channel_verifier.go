@@ -6,6 +6,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,9 +49,88 @@ type discordChannelVerifier struct {
 	client  *http.Client
 	baseURL string
 	token   string
+	now     func() time.Time // nil means time.Now
 
 	mu    sync.Mutex
 	botID string // the bot's own user ID, learned once from /users/@me
+	// cooldowns holds, per route path, the earliest moment a 429 allows another attempt; globalUntil does the same
+	// for every route when Discord flagged the limit as global. Calls during a cooldown fail without leaving the
+	// process: every 429 counts toward Discord's invalid-request limit, past which it blocks the whole host.
+	// Guarded by limitMu, separate from mu because self holds mu across a request.
+	limitMu     sync.Mutex
+	cooldowns   map[string]time.Time
+	globalUntil time.Time
+}
+
+const (
+	defaultRetryAfter = time.Second
+	maxRetryAfter     = 5 * time.Minute
+)
+
+func (v *discordChannelVerifier) clock() time.Time {
+	if v.now != nil {
+		return v.now()
+	}
+	return time.Now()
+}
+
+// coolingDown reports whether a recent 429 says path must not be called yet.
+func (v *discordChannelVerifier) coolingDown(path string) bool {
+	v.limitMu.Lock()
+	defer v.limitMu.Unlock()
+	now := v.clock()
+	if now.Before(v.globalUntil) {
+		return true
+	}
+	until, ok := v.cooldowns[path]
+	if !ok {
+		return false
+	}
+	if now.Before(until) {
+		return true
+	}
+	delete(v.cooldowns, path)
+	return false
+}
+
+// noteRateLimit records a 429 for path, or for every route when Discord marks it global.
+func (v *discordChannelVerifier) noteRateLimit(path string, resp *http.Response, body []byte) {
+	until := v.clock().Add(retryAfter(resp, body))
+	v.limitMu.Lock()
+	defer v.limitMu.Unlock()
+	if strings.EqualFold(resp.Header.Get("X-RateLimit-Global"), "true") {
+		if until.After(v.globalUntil) {
+			v.globalUntil = until
+		}
+		return
+	}
+	if v.cooldowns == nil {
+		v.cooldowns = map[string]time.Time{}
+	}
+	if until.After(v.cooldowns[path]) {
+		v.cooldowns[path] = until
+	}
+}
+
+// retryAfter is how long a 429 asks us to wait: the Retry-After header in seconds, else the body's retry_after in
+// fractional seconds. A missing or nonsense value waits a second; nothing waits more than five minutes, so a bad
+// reply cannot switch the lookups off for good.
+func retryAfter(resp *http.Response, body []byte) time.Duration {
+	wait := defaultRetryAfter
+	if secs, err := strconv.ParseFloat(strings.TrimSpace(resp.Header.Get("Retry-After")), 64); err == nil && secs > 0 {
+		wait = time.Duration(secs * float64(time.Second))
+	} else {
+		var payload struct {
+			RetryAfter float64 `json:"retry_after"`
+		}
+		if json.Unmarshal(body, &payload) == nil && payload.RetryAfter > 0 {
+			wait = time.Duration(payload.RetryAfter * float64(time.Second))
+		}
+	}
+	if wait > maxRetryAfter {
+		wait = maxRetryAfter
+	}
+	return wait
 }
 
 func newDiscordChannelVerifier(token string) *discordChannelVerifier {
@@ -60,8 +141,12 @@ func newDiscordChannelVerifier(token string) *discordChannelVerifier {
 }
 
 // get performs one bot-authenticated GET and decodes the body. 404 and 403 are errChannelNotFound: the object
-// does not exist or the bot is not allowed to see it. Anything else that is not a 200 is errChannelUnavailable.
+// does not exist or the bot is not allowed to see it. Anything else that is not a 200 is errChannelUnavailable,
+// and a 429 also starts a cooldown for the route (or everything) that later calls honour without asking Discord.
 func (v *discordChannelVerifier) get(ctx context.Context, path string, out interface{}) error {
+	if v.coolingDown(path) {
+		return errChannelUnavailable
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, v.baseURL+path, nil)
 	if err != nil {
 		return errChannelUnavailable
@@ -76,6 +161,10 @@ func (v *discordChannelVerifier) get(ctx context.Context, path string, out inter
 	case http.StatusOK:
 	case http.StatusNotFound, http.StatusForbidden:
 		return errChannelNotFound
+	case http.StatusTooManyRequests:
+		limited, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		v.noteRateLimit(path, resp, limited)
+		return errChannelUnavailable
 	default:
 		return errChannelUnavailable
 	}

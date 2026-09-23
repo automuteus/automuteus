@@ -21,6 +21,31 @@ definitions:
           type: string
         type: array
     type: object
+  api.GuildChannel:
+    properties:
+      category:
+        description: Category is the name of the parent category, empty for a channel
+          at the top level.
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      ok:
+        description: Problems is empty exactly when OK is true; each entry is a sentence
+          a client can show for the channel.
+        type: boolean
+      problems:
+        items:
+          type: string
+        type: array
+      type:
+        allOf:
+        - $ref: '#/definitions/discordgo.ChannelType'
+        description: |-
+          Type is Discord's channel type: 0 for a text channel, 5 for an announcement channel. Threads are never
+          listed; Discord does not include them in a guild's channel list.
+    type: object
   api.GuildRole:
     properties:
       color:
@@ -656,6 +681,57 @@ paths:
       summary: Check a Summary Channel
       tags:
       - guild
+  /guild/channels:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The guild's text and announcement channels as the bot sees them, in Discord's display order with
+        their category, each marked with whether the bot could post match summaries there and, if not, why:
+        the same verdict GET /guild/channel gives for one channel and PATCH /guild/settings applies on save.
+        Threads are not listed; one can still be set by ID. Channel names can be private, so this requires
+        the same permission as changing settings: the guild owner, or Administrator or Manage Server.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.GuildChannel'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: The caller may not change this guild's settings
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "404":
+          description: The bot is not in this guild
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "501":
+          description: The API is not configured with DISCORD_BOT_TOKEN
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: List Guild Channels
+      tags:
+      - guild
   /guild/premium:
     get:
       consumes:
@@ -778,7 +854,8 @@ paths:
         /guild/settings; fields that are present replace the stored value and fields that are absent keep it.
         Voice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null
         values, and values outside the ranges the /settings slash command accepts are rejected without saving.
-        Requires the guild owner or Discord Administrator permission. Changing a premium-only setting
+        Requires the guild owner or the Discord Administrator or Manage Server permission. Changing a
+        premium-only setting
         (match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a
         guild without premium is refused with 403 listing those fields. A new matchSummaryChannelID must pass
         the same checks as GET /guild/channel: visible to the bot, in this guild, text-capable, and granting

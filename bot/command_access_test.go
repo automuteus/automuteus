@@ -8,7 +8,7 @@ import (
 )
 
 func TestCommandAccess(t *testing.T) {
-	const owner, adminUser, someone = "100000000000000001", "100000000000000002", "100000000000000003"
+	const owner, legacyAdmin, someone = "100000000000000001", "100000000000000002", "100000000000000003"
 	const operatorRole = "200000000000000001"
 	member := func(id string, permissions int64, roles ...string) *discordgo.Member {
 		return &discordgo.Member{User: &discordgo.User{ID: id}, Permissions: permissions, Roles: roles}
@@ -19,7 +19,7 @@ func TestCommandAccess(t *testing.T) {
 		s.SetPermissionRoleIDs(roleIDs)
 		return s
 	}
-	none, roles, admins, both := with(nil, nil), with(nil, []string{operatorRole}), with([]string{adminUser}, nil), with([]string{adminUser}, []string{operatorRole})
+	none, roles, legacy := with(nil, nil), with(nil, []string{operatorRole}), with([]string{legacyAdmin}, []string{operatorRole})
 
 	for _, tc := range []struct {
 		name         string
@@ -27,19 +27,18 @@ func TestCommandAccess(t *testing.T) {
 		member       *discordgo.Member
 		admin, games bool
 	}{
-		{"owner always", both, member(owner, 0), true, true},
-		{"discord administrator always", both, member(someone, discordgo.PermissionAdministrator), true, true},
-		{"administrator bit among others", both, member(someone, discordgo.PermissionManageServer|discordgo.PermissionAdministrator), true, true},
-		{"manage server alone is not enough", both, member(someone, discordgo.PermissionManageServer), false, false},
-		{"nothing configured: everyone", none, member(someone, 0), true, true},
-		{"roles only: holder is admin and operator", roles, member(someone, 0, operatorRole), true, true},
-		{"roles only: non-holder is locked out", roles, member(someone, 0), false, false},
-		{"admins only: admin user", admins, member(adminUser, 0), true, true},
-		{"admins only: other member still controls games", admins, member(someone, 0), false, true},
-		{"both: admin user without the role still controls games", both, member(adminUser, 0), true, true},
-		{"both: role holder is operator, not admin", both, member(someone, 0, operatorRole), false, true},
-		{"both: plain member is locked out", both, member(someone, 0), false, false},
-		{"missing member", both, nil, false, false},
+		{"owner always", roles, member(owner, 0), true, true},
+		{"discord administrator always", roles, member(someone, discordgo.PermissionAdministrator), true, true},
+		{"manage server always", roles, member(someone, discordgo.PermissionManageServer), true, true},
+		{"manage server among other bits", roles, member(someone, discordgo.PermissionManageChannels|discordgo.PermissionManageServer), true, true},
+		{"other management permissions are not enough", roles, member(someone, discordgo.PermissionManageChannels|discordgo.PermissionManageRoles|discordgo.PermissionKickMembers), false, false},
+		{"no roles configured: everyone operates, nobody else administers", none, member(someone, 0), false, true},
+		{"role holder operates but does not administer", roles, member(someone, 0, operatorRole), false, true},
+		{"non-holder is locked out of games", roles, member(someone, 0), false, false},
+		{"legacy admin user ID grants nothing", legacy, member(legacyAdmin, 0), false, false},
+		{"legacy admin user ID with the role only operates", legacy, member(legacyAdmin, 0, operatorRole), false, true},
+		{"missing member", roles, nil, false, false},
+		{"missing user", roles, &discordgo.Member{Permissions: discordgo.PermissionAdministrator}, false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			admin, games := commandAccess(tc.sett, owner, tc.member)

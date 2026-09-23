@@ -26,7 +26,8 @@ var errFakeStore = errors.New("fake store failure")
 var (
 	ownerAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Owner: true}
 	adminAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionAdministrator}
-	memberAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionManageServer}
+	// memberAccess is a moderator with every management bit except the two that unlock settings.
+	memberAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionManageChannels | discordgo.PermissionManageRoles | discordgo.PermissionKickMembers | discordgo.PermissionBanMembers}
 )
 
 // writeRouter builds a router whose verifier returns access for the write guild and counts how often it is asked.
@@ -131,18 +132,23 @@ func TestUpdateSettings_OwnerWritesMergedDocument(t *testing.T) {
 	}
 }
 
-func TestUpdateSettings_AdministratorMayWrite(t *testing.T) {
-	s := &fakeStore{}
-	r, _ := writeRouter(s, adminAccess)
-	if w := patchSettings(r, "valid", `{"autoRefresh":true}`); w.Code != 200 {
-		t.Fatalf("status %d: %s", w.Code, w.Body)
-	}
-	if s.saved == nil || !s.saved.AutoRefresh {
-		t.Fatal("administrator's change was not saved")
+func TestUpdateSettings_AdministratorOrManagerMayWrite(t *testing.T) {
+	manager := memberAccess
+	manager.Permissions = discordgo.PermissionManageServer
+	for name, access := range map[string]VerifiedGuildAccess{"administrator": adminAccess, "manage server": manager} {
+		s := &fakeStore{}
+		r, _ := writeRouter(s, access)
+		if w := patchSettings(r, "valid", `{"autoRefresh":true}`); w.Code != 200 {
+			t.Fatalf("%s: status %d: %s", name, w.Code, w.Body)
+		}
+		if s.saved == nil || !s.saved.AutoRefresh {
+			t.Fatalf("%s: change was not saved", name)
+		}
 	}
 }
 
-// Everyone who can read settings but is neither owner nor administrator is refused before storage is touched.
+// Everyone who can read settings but holds neither ownership nor a settings permission is refused before storage
+// is touched.
 func TestUpdateSettings_DeniedCallersNeverReachStorage(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -150,7 +156,7 @@ func TestUpdateSettings_DeniedCallersNeverReachStorage(t *testing.T) {
 		token  string
 		status int
 	}{
-		{"manage server only", memberAccess, "valid", 403},
+		{"moderator without a settings permission", memberAccess, "valid", 403},
 		{"plain member", VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true}, "valid", 403},
 		{"nonmember owner flag", VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Owner: true}, "valid", 403},
 		{"owner of another guild", VerifiedGuildAccess{UserID: "999", GuildID: "223456789012345678", Member: true, Owner: true}, "valid", 403},

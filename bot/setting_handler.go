@@ -16,8 +16,6 @@ func (bot *Bot) HandleSettingsCommand(guildID string, sett *settings.GuildSettin
 	switch settType {
 	case setting.Language:
 		sendMsg, isValid = setting.FnLanguage(sett, args)
-	case setting.AdminUserIDs:
-		sendMsg, isValid = setting.FnAdminUserIDs(sett, args)
 	case setting.RoleIDs:
 		sendMsg, isValid = setting.FnPermissionRoleIDs(sett, args)
 	case setting.UnmuteDead:

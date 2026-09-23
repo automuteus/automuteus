@@ -65,18 +65,27 @@ func checkSummaryChannel(ctx context.Context, channels ChannelVerifier, guildID,
 		check.Problems = append(check.Problems, problemType)
 		return check, nil
 	}
-	var missing []string
-	for _, p := range summaryPermissions(info.Type) {
-		if info.Permissions&p.bit == 0 {
-			missing = append(missing, p.name)
-		}
-	}
-	if len(missing) > 0 {
-		check.Problems = append(check.Problems, "the bot is missing the "+strings.Join(missing, ", ")+" permission"+plural(len(missing))+" in this channel")
+	if problem := summaryProblem(info.Type, info.Permissions); problem != "" {
+		check.Problems = append(check.Problems, problem)
 		return check, nil
 	}
 	check.OK = true
 	return check, nil
+}
+
+// summaryProblem is the sentence explaining why a bot holding permissions cannot post summaries in a channel of
+// type t, or empty when it can. GET /guild/channels and the single-channel check share it so they never disagree.
+func summaryProblem(t discordgo.ChannelType, permissions int64) string {
+	var missing []string
+	for _, p := range summaryPermissions(t) {
+		if permissions&p.bit == 0 {
+			missing = append(missing, p.name)
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	return "the bot is missing the " + strings.Join(missing, ", ") + " permission" + plural(len(missing)) + " in this channel"
 }
 
 func isThreadType(t discordgo.ChannelType) bool {

@@ -66,3 +66,12 @@ func FnPermissionRoleIDs(sett *settings.GuildSettings, args []string) (interface
 		}), true
 	}
 }
+
+func contains(arr []string, elem string) bool {
+	for _, v := range arr {
+		if v == elem {
+			return true
+		}
+	}
+	return false
+}

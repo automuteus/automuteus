@@ -76,12 +76,15 @@ type Config struct {
 	// AccessCacheTTL is how long a verified read authorization for one (token, guild) is reused before Discord is
 	// asked again. Zero means DefaultAccessCacheTTL; negative disables caching. Writes always verify live.
 	AccessCacheTTL time.Duration
-	Version        string
-	Commit         string
-	ServerURL      string
-	AdminPassword  string
-	CaptureHost    string
-	Official       bool
+	// ListCacheTTL is how long GET /guild/roles and GET /guild/channels reuse a guild's lists before asking Discord
+	// again. Zero means DefaultListCacheTTL; negative disables caching. PATCH validates roles against a live list.
+	ListCacheTTL  time.Duration
+	Version       string
+	Commit        string
+	ServerURL     string
+	AdminPassword string
+	CaptureHost   string
+	Official      bool
 	// BotToken lets the API verify, with the bot's own credentials, that a channel a client names belongs to the
 	// guild being edited. Without it (and without an injected ChannelVerifier) the summary channel cannot be
 	// changed through the API.
@@ -91,6 +94,9 @@ type Config struct {
 	// RoleLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set, since
 	// the same bot credentials list roles. Without one, operator role IDs are accepted as typed.
 	RoleLister RoleLister
+	// ChannelLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set.
+	// Without one, GET /guild/channels answers 501 and clients fall back to typing a channel ID.
+	ChannelLister ChannelLister
 }
 
 func NewRouter(config Config, store Store) *gin.Engine {
@@ -154,11 +160,33 @@ func NewRouter(config Config, store Store) *gin.Engine {
 			roles = lister
 		}
 	}
+	channelList := config.ChannelLister
+	if channelList == nil {
+		if lister, ok := channels.(ChannelLister); ok {
+			channelList = lister
+		}
+	}
 	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles))
 	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
 	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
-	guildGroup.GET("/roles", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildRoles(roles))
+	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
+	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.
+	listTTL := config.ListCacheTTL
+	if listTTL == 0 {
+		listTTL = DefaultListCacheTTL
+	}
+	var listedRoles RoleLister
+	if roles != nil {
+		listedRoles = cachedRoleLister{newListCache(listTTL, nil, roles.ListRoles)}
+	}
+	var listedChannels ChannelLister
+	if channelList != nil {
+		listedChannels = cachedChannelLister{newListCache(listTTL, nil, channelList.ListChannels)}
+	}
+	guildGroup.GET("/roles", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildRoles(listedRoles))
+	// Channel names can be private, so listing them takes the write permission rather than membership.
+	guildGroup.GET("/channels", guildAuthentication(config, verifier, access, WriteSettings), handleGetGuildChannels(listedChannels))
 
 	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
 	// notices requires an explicitly configured admin password; the default password is refused.
@@ -471,7 +499,8 @@ type SettingsValidationError struct {
 // @Description /guild/settings; fields that are present replace the stored value and fields that are absent keep it.
 // @Description Voice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null
 // @Description values, and values outside the ranges the /settings slash command accepts are rejected without saving.
-// @Description Requires the guild owner or Discord Administrator permission. Changing a premium-only setting
+// @Description Requires the guild owner or the Discord Administrator or Manage Server permission. Changing a
+// @Description premium-only setting
 // @Description (match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a
 // @Description guild without premium is refused with 403 listing those fields. A new matchSummaryChannelID must pass
 // @Description the same checks as GET /guild/channel: visible to the bot, in this guild, text-capable, and granting

@@ -9,16 +9,16 @@ import (
 func TestGetSettingsParams(t *testing.T) {
 	options := []*discordgo.ApplicationCommandInteractionDataOption{
 		&discordgo.ApplicationCommandInteractionDataOption{
-			Name: "admin-user-ids",
+			Name: "operator-roles",
 			Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandInteractionDataOption{
 				&discordgo.ApplicationCommandInteractionDataOption{
-					Name: "user",
+					Name: "role",
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandInteractionDataOption{
 						&discordgo.ApplicationCommandInteractionDataOption{
-							Name:  "user",
-							Type:  discordgo.ApplicationCommandOptionUser,
+							Name:  "role",
+							Type:  discordgo.ApplicationCommandOptionRole,
 							Value: "1234",
 						},
 					},
@@ -27,16 +27,16 @@ func TestGetSettingsParams(t *testing.T) {
 		},
 	}
 	settingName, args := GetSettingsParams(options)
-	if settingName != "admin-user-ids" {
+	if settingName != "operator-roles" {
 		t.Fail()
 	}
-	if args[0] != "<@1234>" {
+	if args[0] != "<@&1234>" {
 		t.Fail()
 	}
 
 	options = []*discordgo.ApplicationCommandInteractionDataOption{
 		&discordgo.ApplicationCommandInteractionDataOption{
-			Name: "admin-user-ids",
+			Name: "operator-roles",
 			Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 			Options: []*discordgo.ApplicationCommandInteractionDataOption{
 				&discordgo.ApplicationCommandInteractionDataOption{
@@ -47,7 +47,7 @@ func TestGetSettingsParams(t *testing.T) {
 		},
 	}
 	settingName, args = GetSettingsParams(options)
-	if settingName != "admin-user-ids" {
+	if settingName != "operator-roles" {
 		t.Fail()
 	}
 	if args[0] != setting.Clear {

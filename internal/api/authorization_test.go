@@ -14,6 +14,8 @@ func TestAllowsGuildAction(t *testing.T) {
 	admin.Permissions = discordgo.PermissionAdministrator
 	manager := member
 	manager.Permissions = discordgo.PermissionManageServer
+	moderator := member
+	moderator.Permissions = discordgo.PermissionManageChannels | discordgo.PermissionManageRoles | discordgo.PermissionKickMembers | discordgo.PermissionBanMembers
 	departed := admin
 	departed.Member = false
 	anonymous := owner
@@ -33,7 +35,8 @@ func TestAllowsGuildAction(t *testing.T) {
 		{"member cannot write", member, "guild", WriteSettings, false},
 		{"owner writes", owner, "guild", WriteSettings, true},
 		{"administrator writes", admin, "guild", WriteSettings, true},
-		{"manage server alone cannot write", manager, "guild", WriteSettings, false},
+		{"manage server writes", manager, "guild", WriteSettings, true},
+		{"other management permissions cannot write", moderator, "guild", WriteSettings, false},
 		{"cross guild read denied", member, "other", ReadGame, false},
 		{"cross guild admin write denied", admin, "other", WriteSettings, false},
 		{"departed admin cannot read", departed, "guild", ReadSettings, false},

@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -229,5 +232,96 @@ func TestDiscordChannelVerifier_RejectsBadIDLocally(t *testing.T) {
 		if _, err := v.VerifyChannel(context.Background(), id); !errors.Is(err, errChannelNotFound) {
 			t.Errorf("%q: err = %v, want errChannelNotFound", id, err)
 		}
+	}
+}
+
+func TestDiscordChannelVerifier_HonoursRetryAfter(t *testing.T) {
+	var hits int32
+	var mu sync.Mutex
+	mode := "route"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		mu.Lock()
+		m := mode
+		mu.Unlock()
+		switch m {
+		case "route":
+			w.Header().Set("Retry-After", "2")
+			w.WriteHeader(429)
+			fmt.Fprint(w, `{"message":"You are being rate limited.","retry_after":2.0,"global":false}`)
+		default:
+			w.Header().Set("X-RateLimit-Global", "true")
+			w.WriteHeader(429)
+			fmt.Fprint(w, `{"retry_after":0.5,"global":true}`)
+		}
+	}))
+	defer srv.Close()
+	start := time.Unix(1_700_000_000, 0)
+	now := start
+	v := &discordChannelVerifier{client: srv.Client(), baseURL: srv.URL, token: "bot-token", now: func() time.Time { return now }}
+	ctx := context.Background()
+
+	// The first call reaches Discord and is throttled; a retry inside the window does not leave the process.
+	if _, err := v.VerifyChannel(ctx, verifyChannel); !errors.Is(err, errChannelUnavailable) {
+		t.Fatalf("err = %v", err)
+	}
+	now = start.Add(1999 * time.Millisecond)
+	if _, err := v.VerifyChannel(ctx, verifyChannel); !errors.Is(err, errChannelUnavailable) || atomic.LoadInt32(&hits) != 1 {
+		t.Fatalf("cooled-down route was called again: err %v, hits %d", err, hits)
+	}
+	// Another route is unaffected by that cooldown.
+	if _, err := v.ListRoles(ctx, verifyGuild); !errors.Is(err, errChannelUnavailable) || atomic.LoadInt32(&hits) != 2 {
+		t.Fatalf("other route should still be tried: err %v, hits %d", err, hits)
+	}
+	// Once the window passes the route is tried again.
+	now = start.Add(2 * time.Second)
+	v.VerifyChannel(ctx, verifyChannel)
+	if atomic.LoadInt32(&hits) != 3 {
+		t.Fatalf("route not retried after Retry-After: hits %d", hits)
+	}
+
+	// A global limit stops every route until it passes, including ones with no cooldown of their own.
+	mu.Lock()
+	mode = "global"
+	mu.Unlock()
+	now = start.Add(4 * time.Second)
+	v.VerifyChannel(ctx, verifyChannel)
+	if atomic.LoadInt32(&hits) != 4 {
+		t.Fatalf("hits %d", hits)
+	}
+	now = start.Add(4*time.Second + 499*time.Millisecond)
+	if _, err := v.ListRoles(ctx, verifyGuild); !errors.Is(err, errChannelUnavailable) || atomic.LoadInt32(&hits) != 4 {
+		t.Fatalf("global cooldown ignored: err %v, hits %d", err, hits)
+	}
+	now = start.Add(4*time.Second + 500*time.Millisecond)
+	v.ListRoles(ctx, verifyGuild)
+	if atomic.LoadInt32(&hits) != 5 {
+		t.Fatalf("route not retried after the global window: hits %d", hits)
+	}
+}
+
+func TestRetryAfter(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		header string
+		body   string
+		want   time.Duration
+	}{
+		{"header in seconds", "3", `{}`, 3 * time.Second},
+		{"body fractional seconds when no header", "", `{"retry_after":1.5}`, 1500 * time.Millisecond},
+		{"header wins over body", "2", `{"retry_after":9}`, 2 * time.Second},
+		{"nonsense waits a second", "soon", `not json`, time.Second},
+		{"zero waits a second", "0", `{"retry_after":0}`, time.Second},
+		{"absurd values are capped", "100000", `{}`, 5 * time.Minute},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := &http.Response{Header: http.Header{}}
+			if tc.header != "" {
+				resp.Header.Set("Retry-After", tc.header)
+			}
+			if got := retryAfter(resp, []byte(tc.body)); got != tc.want {
+				t.Fatalf("retryAfter = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }

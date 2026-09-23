@@ -116,6 +116,17 @@ func TestGuildRolesRoute(t *testing.T) {
 	if w.Header().Get("Cache-Control") != "no-store" {
 		t.Error("missing cache protection")
 	}
+	// Repeated requests for the same guild are served from the list cache.
+	calls := 0
+	cached := writeRouterRoles(&fakeStore{}, memberAccess, fakeRoles(&calls))
+	for i := 0; i < 3; i++ {
+		if w := bearerRequest(cached, "/guild/roles?guildID="+writeGuild, "valid"); w.Code != 200 {
+			t.Fatalf("cached request %d: %d", i, w.Code)
+		}
+	}
+	if calls != 1 {
+		t.Errorf("roles fetched %d times for three requests, want 1", calls)
+	}
 	if w := bearerRequest(r, "/guild/roles?guildID=general", "valid"); w.Code != 400 {
 		t.Errorf("bad guild: %d", w.Code)
 	}
