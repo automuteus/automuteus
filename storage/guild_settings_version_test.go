@@ -8,8 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4"
 	"github.com/pashagolub/pgxmock"
 )
@@ -169,4 +171,42 @@ func TestUpsertBumpsVersion(t *testing.T) {
 	if !strings.Contains(upsertSettings, "version = guild_settings.version + 1") {
 		t.Errorf("upsert must bump the version:\n%s", upsertSettings)
 	}
+}
+
+// A concurrent first reader can move the legacy record into Postgres between this reader's Postgres miss and its
+// Redis miss. The record vanishing from Redis therefore means "look in Postgres again", never "use defaults".
+func TestLoadVersionRecheckPostgresWhenLegacyRecordVanished(t *testing.T) {
+	mock := newMock(t)
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { client.Close() })
+	id := "123"
+	hash := string(rediskey.HashGuildID(id))
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(hash).WillReturnError(pgx.ErrNoRows)
+	// Redis has no record (the other reader already deleted it); Postgres now has the migrated row.
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(hash).
+		WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(selectRow(defaultRow(), 1)...))
+	sett, version, err := NewPostgresStorage(mock, client).LoadGuildSettingsVersion(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != 1 {
+		t.Errorf("version = %d, want 1 (the freshly migrated row)", version)
+	}
+	assertSettingsEqual(t, settings.MakeGuildSettings(), sett)
+}
+
+// When neither store has the guild after the re-check, it really is a guild with default settings.
+func TestLoadVersionNoLegacyRecordAndNoRowIsDefaults(t *testing.T) {
+	mock := newMock(t)
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { client.Close() })
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WillReturnError(pgx.ErrNoRows)
+	sett, version, err := NewPostgresStorage(mock, client).LoadGuildSettingsVersion(context.Background(), "123")
+	if err != nil || version != NoSettingsRow {
+		t.Fatalf("version=%d err=%v", version, err)
+	}
+	assertSettingsEqual(t, settings.MakeGuildSettings(), sett)
 }

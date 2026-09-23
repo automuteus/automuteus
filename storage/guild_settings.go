@@ -127,7 +127,15 @@ func (s *StorageInterface) LoadGuildSettingsVersion(ctx context.Context, guildID
 	key := rediskey.GuildSettings(rediskey.HashedID(hash))
 	blob, err := s.legacy.Get(ctx, key).Bytes()
 	if errors.Is(err, redis.Nil) {
-		return settings.MakeGuildSettings(), NoSettingsRow, nil
+		// No legacy record either. But a concurrent first reader may have moved
+		// it into Postgres between our two reads (its insert happens before its
+		// Redis delete), so look at Postgres once more before concluding that
+		// the guild has never changed a setting.
+		result, version, err := s.loadPostgres(ctx, hash)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return settings.MakeGuildSettings(), NoSettingsRow, nil
+		}
+		return result, version, err
 	}
 	if err != nil {
 		return nil, NoSettingsRow, fmt.Errorf("read legacy settings: %w", err)
