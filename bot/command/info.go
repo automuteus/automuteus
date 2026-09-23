@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -152,6 +153,8 @@ func InfoResponse(info BotInfo, guildID string, sett *settings.GuildSettings) *d
 		Inline: true,
 	}
 
+	// Description is otherwise unused; a 13th field would break the 3-column layout.
+	embed.Description = locale.TranslateHint(sett.GetLanguage())
 	embed.Fields = fields
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

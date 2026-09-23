@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -143,6 +144,10 @@ func HelpEmbedResponse(commands []*discordgo.ApplicationCommand, sett *settings.
 			Value:  "\u200B",
 			Inline: true,
 		})
+	}
+
+	if hint := locale.TranslateHint(sett.GetLanguage()); hint != "" {
+		embed.Description += "\n\n" + hint
 	}
 
 	embed.Fields = fields

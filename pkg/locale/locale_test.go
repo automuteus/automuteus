@@ -2,6 +2,7 @@ package locale
 
 import (
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -155,4 +156,19 @@ func TestInitLang_ReinitializeUnderReaders(t *testing.T) {
 	}
 	close(done)
 	readers.Wait()
+}
+
+// The Crowdin hint is only for guilds that actually read a translation; English has nothing to fix.
+func TestTranslateHint(t *testing.T) {
+	InitLang("en")
+	if got := TranslateHint(DefaultLang); got != "" {
+		t.Errorf("default language should get no hint, got %q", got)
+	}
+	if got := TranslateHint(""); got != "" {
+		t.Errorf("empty language should get no hint, got %q", got)
+	}
+	got := TranslateHint("ja")
+	if !strings.Contains(got, CrowdinURL) {
+		t.Errorf("non-default language hint should link to %s, got %q", CrowdinURL, got)
+	}
 }

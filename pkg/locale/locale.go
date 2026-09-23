@@ -15,6 +15,10 @@ import (
 
 const DefaultLang = "en"
 
+// CrowdinURL is the public translation project. Surfaced to non-English guilds
+// so the people actually reading a translation are the ones invited to fix it.
+const CrowdinURL = "https://automuteus.crowdin.com/"
+
 // The published bundle and language set are replaced atomically under mu and
 // never mutated after publication, so readers only ever see a complete set.
 // initMu serializes lazy initialization so concurrent first callers load once.
@@ -131,6 +135,21 @@ func publish(bundle *i18n.Bundle, langs map[string]string) {
 	bundleInstance = bundle
 	localeLanguages = langs
 	mu.Unlock()
+}
+
+// TranslateHint returns a localized line inviting users to improve their
+// language on Crowdin. It is empty for the default language, where there is
+// nothing to translate, so callers can append it unconditionally.
+func TranslateHint(lang string) string {
+	if lang == "" || lang == DefaultLang {
+		return ""
+	}
+	return LocalizeMessage(&i18n.Message{
+		ID:    "locale.translateHint",
+		Other: "Translations are community maintained. Help improve this language on [Crowdin]({{.URL}})!",
+	}, map[string]interface{}{
+		"URL": CrowdinURL,
+	}, lang)
 }
 
 // func LocalizeMessage(message *i18n.Message, templateData map[string]interface{}) string {
