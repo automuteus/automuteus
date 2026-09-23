@@ -301,10 +301,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 					}
 				}
 				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
-				channelID := dgs.GameStateMsg.MessageChannelID
-				if sett.GetMatchSummaryChannelID() != "" {
-					channelID = sett.GetMatchSummaryChannelID()
-				}
+				channelID := bot.summaryChannel(dgsRequest.GuildID, sett, dgs.GameStateMsg.MessageChannelID)
 				msg, err := bot.discord.ChannelMessageSendEmbed(channelID, embed)
 				if delTime > 0 && err == nil {
 					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)

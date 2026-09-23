@@ -10,16 +10,22 @@ import (
 	"github.com/automuteus/automuteus/v8/docs"
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
+	"io"
 	"log"
+	"math"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -43,7 +49,15 @@ type Store interface {
 	Info(context.Context) (Info, error)
 	GameState(context.Context, string, string) (json.RawMessage, error)
 	RoomCode(context.Context, string) (string, error)
-	Settings(context.Context, string) (*settings.GuildSettings, error)
+	// Settings returns a guild's settings and the version of its row, for ETags and conditional writes.
+	Settings(context.Context, string) (*settings.GuildSettings, storage.SettingsVersion, error)
+	// SetSettings writes a complete, validated document only if the row is still at the given version, and
+	// returns storage.ErrSettingsConflict otherwise.
+	SetSettings(context.Context, string, *settings.GuildSettings, storage.SettingsVersion) error
+	// ReserveSettingsWrite consumes one slot of the per-guild settings write budget. A zero duration means the
+	// write may proceed; a positive one is how long the caller should wait. Errors mean the budget could not
+	// be checked and the write must not proceed.
+	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
@@ -60,6 +74,12 @@ type Config struct {
 	AdminPassword string
 	CaptureHost   string
 	Official      bool
+	// BotToken lets the API verify, with the bot's own credentials, that a channel a client names belongs to the
+	// guild being edited. Without it (and without an injected ChannelVerifier) the summary channel cannot be
+	// changed through the API.
+	BotToken string
+	// ChannelVerifier is injectable for tests; nil uses Discord HTTPS endpoints when BotToken is set.
+	ChannelVerifier ChannelVerifier
 }
 
 func NewRouter(config Config, store Store) *gin.Engine {
@@ -107,6 +127,11 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	gameGroup.GET("/roomcode", handleGetRoomCode(store))
 	guildGroup := r.Group("/guild")
 	guildGroup.GET("/settings", guildAuthentication(config, verifier, ReadSettings), handleGetGuildSettings(store))
+	channels := config.ChannelVerifier
+	if channels == nil && config.BotToken != "" {
+		channels = newDiscordChannelVerifier(config.BotToken)
+	}
+	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, WriteSettings), handleUpdateGuildSettings(store, channels))
 	guildGroup.GET("/premium", guildAuthentication(config, verifier, ReadPremium), handleGetGuildPremium(store))
 
 	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
@@ -352,6 +377,7 @@ func handleGetRoomCode(store Store) func(c *gin.Context) {
 // @Produce json
 // @Param guildID query string true "Guild ID"
 // @Success 200 {object} settings.GuildSettings
+// @Header 200 {string} ETag "Version of the stored settings, for If-Match on PATCH"
 // @Failure 400 {object} HttpError
 // @Failure 503 {object} HttpError
 // @Router /guild/settings [get]
@@ -366,7 +392,7 @@ func handleGetGuildSettings(store Store) func(c *gin.Context) {
 			return
 		}
 
-		settings, err := store.Settings(c.Request.Context(), guildID)
+		settings, version, err := store.Settings(c.Request.Context(), guildID)
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusServiceUnavailable, HttpError{
@@ -375,8 +401,248 @@ func handleGetGuildSettings(store Store) func(c *gin.Context) {
 			})
 			return
 		}
+		c.Header("ETag", settingsETag(version))
 		c.JSON(http.StatusOK, settings)
 	}
+}
+
+// Settings writes: one guild may be rewritten at most SettingsWriteLimit times per SettingsWriteWindow, and a
+// request body may not exceed maxSettingsBody bytes (a complete document with full ID lists is a few KiB).
+const (
+	SettingsWriteLimit  = 10
+	SettingsWriteWindow = time.Minute
+	maxSettingsBody     = 64 << 10
+)
+
+// SettingsValidationError is the 400 response for a settings document that decoded but failed validation. Every
+// offending field is listed so a client can fix them all in one round trip.
+type SettingsValidationError struct {
+	StatusCode int                   `json:"StatusCode"`
+	Error      string                `json:"Error"`
+	Fields     []settings.FieldError `json:"fields"`
+}
+
+// UpdateGuildSettings godoc
+// @Summary Update Guild Settings
+// @Description Change settings for a guild. The body is a JSON object with any subset of the fields returned by GET
+// @Description /guild/settings; fields that are present replace the stored value and fields that are absent keep it.
+// @Description Voice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null
+// @Description values, and values outside the ranges the /settings slash command accepts are rejected without saving.
+// @Description Requires the guild owner or Discord Administrator permission. Changing a premium-only setting
+// @Description (match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a
+// @Description guild without premium is refused with 403 listing those fields.
+// @Security BasicAuth
+// @Security DiscordBearer
+// @Tags guild
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Param If-Match header string false "ETag from a previous GET or PATCH; the write is refused with 412 if the settings changed since"
+// @Param settings body settings.GuildSettings true "Fields to change"
+// @Success 200 {object} settings.GuildSettings "The stored settings after the change"
+// @Header 200 {string} ETag "Version of the stored settings after the change"
+// @Failure 400 {object} SettingsValidationError
+// @Failure 401 {object} HttpError
+// @Failure 403 {object} HttpError
+// @Failure 409 {object} HttpError "Settings were changed concurrently; reload and retry"
+// @Failure 412 {object} HttpError "If-Match did not match the stored version"
+// @Failure 413 {object} HttpError
+// @Failure 429 {object} HttpError
+// @Failure 501 {object} HttpError "Summary channel changes need DISCORD_BOT_TOKEN on the API"
+// @Failure 503 {object} HttpError
+// @Router /guild/settings [patch]
+func handleUpdateGuildSettings(store Store, channels ChannelVerifier) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid guild ID"})
+			return
+		}
+
+		// Every attempt counts, valid or not: the budget bounds how often a guild's row is touched and how often
+		// Discord is asked to revalidate a writer.
+		retryAfter, err := store.ReserveSettingsWrite(ctx, guildID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to save guild settings"})
+			return
+		}
+		if retryAfter > 0 {
+			c.Header("Retry-After", strconv.Itoa(int(math.Ceil(retryAfter.Seconds()))))
+			c.JSON(http.StatusTooManyRequests, HttpError{StatusCode: http.StatusTooManyRequests,
+				Error: fmt.Sprintf("Too many settings changes for this guild; at most %d per %s", SettingsWriteLimit, SettingsWriteWindow)})
+			return
+		}
+
+		body, err := io.ReadAll(http.MaxBytesReader(c.Writer, c.Request.Body, maxSettingsBody))
+		if err != nil {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				c.JSON(http.StatusRequestEntityTooLarge, HttpError{StatusCode: http.StatusRequestEntityTooLarge,
+					Error: fmt.Sprintf("settings document exceeds %d bytes", maxSettingsBody)})
+				return
+			}
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "unable to read settings document"})
+			return
+		}
+
+		// Decode over the stored settings so absent fields keep their values. Gaps in a legacy row are filled with
+		// the defaults first, the same substitutions the getters make, so an untouched legacy zero never fails
+		// validation of a field the client did not send.
+		current, version, err := store.Settings(ctx, guildID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to load guild settings"})
+			return
+		}
+		// A client that edits what it loaded sends the ETag back; if the settings moved on since, it is told to
+		// reload rather than have its stale view applied over someone else's change.
+		if !ifMatchAllows(c.GetHeader("If-Match"), version) {
+			c.Header("ETag", settingsETag(version))
+			c.JSON(http.StatusPreconditionFailed, HttpError{StatusCode: http.StatusPreconditionFailed,
+				Error: "settings changed since they were loaded; reload and retry"})
+			return
+		}
+		current.FillDefaults()
+		premiumBefore := current.PremiumSnapshot()
+		channelBefore := current.MatchSummaryChannelID
+		if err := settings.UnmarshalStrict(body, current); err != nil {
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid settings document: " + err.Error()})
+			return
+		}
+		if err := current.Validate(locale.GetLanguages()); err != nil {
+			respondSettingsValidation(c, err)
+			return
+		}
+
+		// The same settings the /settings slash command reserves for premium guilds are reserved here. Only a change
+		// counts: echoing a stored value back is allowed, so a client may always resubmit the document it was given.
+		if changed := premiumBefore.Changed(current); len(changed) > 0 {
+			record, err := store.Premium(ctx, guildID)
+			if err != nil {
+				log.Println(err)
+				c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to check premium status"})
+				return
+			}
+			if premium.IsExpired(record.Tier, record.Days) {
+				fields := make([]settings.FieldError, len(changed))
+				for i, name := range changed {
+					fields[i] = settings.FieldError{Field: name, Message: "changing this setting requires premium"}
+				}
+				c.JSON(http.StatusForbidden, SettingsValidationError{
+					StatusCode: http.StatusForbidden,
+					Error:      "premium required to change: " + strings.Join(changed, ", "),
+					Fields:     fields,
+				})
+				return
+			}
+		}
+
+		// The summary channel is where the bot will post on the caller's behalf. Validation only proved it is a
+		// snowflake; it must also be a text channel of this guild, or an administrator of one guild could aim the
+		// bot at a channel in another guild it shares. Clearing the channel needs no lookup.
+		if current.MatchSummaryChannelID != "" && current.MatchSummaryChannelID != channelBefore {
+			if channels == nil {
+				c.JSON(http.StatusNotImplemented, HttpError{StatusCode: http.StatusNotImplemented,
+					Error: "changing matchSummaryChannelID requires the API to be configured with DISCORD_BOT_TOKEN"})
+				return
+			}
+			info, err := channels.VerifyChannel(ctx, current.MatchSummaryChannelID)
+			switch {
+			case errors.Is(err, errChannelNotFound):
+				respondSettingsFields(c, http.StatusBadRequest, "invalid summary channel",
+					settings.FieldError{Field: "matchSummaryChannelID", Message: "channel not found, or the bot cannot see it"})
+				return
+			case err != nil:
+				log.Println(err)
+				c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to verify summary channel"})
+				return
+			case info.GuildID != guildID || !discord.IsTextCapableChannel(info.Type):
+				respondSettingsFields(c, http.StatusBadRequest, "invalid summary channel",
+					settings.FieldError{Field: "matchSummaryChannelID", Message: "must be a text channel in this guild"})
+				return
+			}
+		}
+
+		// Conditional on the version read above: a concurrent write in between is a conflict, never a silent
+		// overwrite of the other writer's fields.
+		if err := store.SetSettings(ctx, guildID, current, version); err != nil {
+			var verrs settings.ValidationErrors
+			switch {
+			case errors.Is(err, storage.ErrSettingsConflict):
+				c.JSON(http.StatusConflict, HttpError{StatusCode: http.StatusConflict,
+					Error: "settings were changed concurrently; reload and retry"})
+			case errors.As(err, &verrs):
+				respondSettingsValidation(c, err)
+			default:
+				log.Println(err)
+				c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to save guild settings"})
+			}
+			return
+		}
+		log.Printf("[API] Guild %s settings updated by %s (version %d -> %d): %s", guildID, requestActor(c), version, version+1, sentFields(body))
+		c.Header("ETag", settingsETag(version+1))
+		c.JSON(http.StatusOK, current)
+	}
+}
+
+func respondSettingsValidation(c *gin.Context, err error) {
+	var verrs settings.ValidationErrors
+	errors.As(err, &verrs)
+	respondSettingsFields(c, http.StatusBadRequest, fmt.Sprintf("%d invalid setting(s)", len(verrs)), verrs...)
+}
+
+func respondSettingsFields(c *gin.Context, status int, message string, fields ...settings.FieldError) {
+	c.JSON(status, SettingsValidationError{StatusCode: status, Error: message, Fields: fields})
+}
+
+// settingsETag renders a settings row version as a strong ETag.
+func settingsETag(version storage.SettingsVersion) string {
+	return fmt.Sprintf(`"%d"`, version)
+}
+
+// ifMatchAllows reports whether an If-Match header permits a write against the current version. No header means
+// the client did not ask for the check. "*" matches any state. Otherwise any listed tag equal to the current
+// version's ETag matches; weak indicators and quotes are tolerated.
+func ifMatchAllows(header string, version storage.SettingsVersion) bool {
+	header = strings.TrimSpace(header)
+	if header == "" || header == "*" {
+		return true
+	}
+	want := strconv.FormatInt(int64(version), 10)
+	for _, tag := range strings.Split(header, ",") {
+		tag = strings.TrimSpace(tag)
+		tag = strings.TrimPrefix(tag, "W/")
+		tag = strings.Trim(tag, `"`)
+		if tag == want {
+			return true
+		}
+	}
+	return false
+}
+
+// requestActor names who authenticated the request, for audit logs.
+func requestActor(c *gin.Context) string {
+	if user, ok := c.Get(verifiedUserKey); ok {
+		return fmt.Sprintf("Discord user %v", user)
+	}
+	return "platform admin (Basic Auth)"
+}
+
+// sentFields lists the top-level keys a request body changed, sorted, for audit logs. The body has already been
+// decoded strictly by the time this runs, so a failure here only affects the log line.
+func sentFields(body []byte) string {
+	var doc map[string]json.RawMessage
+	if json.Unmarshal(body, &doc) != nil {
+		return "(unparseable)"
+	}
+	keys := make([]string, 0, len(doc))
+	for k := range doc {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ", ")
 }
 
 // GetGuildPremium godoc

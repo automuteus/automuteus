@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/internal/api"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/logging"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
@@ -37,7 +38,8 @@ type config struct {
 
 func configFromEnv(getenv func(string) string) (config, error) {
 	c := config{api: api.Config{Version: version, Commit: commit, ServerURL: getenv("API_SERVER_URL"),
-		AdminPassword: getenv("API_ADMIN_PASS"), CaptureHost: getenv("HOST"), Official: getenv("AUTOMUTEUS_OFFICIAL") != ""},
+		AdminPassword: getenv("API_ADMIN_PASS"), CaptureHost: getenv("HOST"), Official: getenv("AUTOMUTEUS_OFFICIAL") != "",
+		BotToken: getenv("DISCORD_BOT_TOKEN")},
 		redis: redis.Options{Addr: getenv("REDIS_ADDR"), Username: getenv("REDIS_USER"), Password: getenv("REDIS_PASS")}, port: getenv("API_PORT")}
 	for _, key := range []string{"REDIS_ADDR", "POSTGRES_ADDR", "POSTGRES_USER", "POSTGRES_PASS"} {
 		if getenv(key) == "" {
@@ -83,6 +85,8 @@ func run(ctx context.Context) error {
 		return err
 	}
 	log.Printf("api %s-%s", version, commit)
+	// Settings validation checks languages against the embedded translations; load them before the first request.
+	locale.InitLang("")
 	startupCtx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	client := redis.NewClient(&cfg.redis)

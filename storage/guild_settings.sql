@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     leaderboard_min bigint NOT NULL,
     mute_spectator boolean NOT NULL,
     display_room_code text NOT NULL,
-    updated_at timestamptz NOT NULL DEFAULT now()
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    version bigint NOT NULL DEFAULT 1
 );
+-- version counts writes to the row (1 on creation); the API uses it for ETags and conditional writes.
+ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 1;
 COMMIT;

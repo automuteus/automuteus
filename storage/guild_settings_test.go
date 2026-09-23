@@ -62,9 +62,27 @@ func newMock(t *testing.T) pgxmock.PgxPoolIface {
 }
 
 // defaultRow is what a row written from MakeGuildSettings looks like: both
-// documents collapse to NULL.
+// documents collapse to NULL. These are the insert/update arguments, without the version.
 func defaultRow() []interface{} {
 	return []interface{}{[]string{}, []string{}, "en", nil, "simple", nil, 0, false, false, "", true, 3, 3, false, "always"}
+}
+
+// selectRow is what a SELECT returns: the settings columns plus the row version.
+func selectRow(values []interface{}, version int64) []interface{} {
+	return append(append([]interface{}{}, values...), version)
+}
+
+// The select must return the settings columns in insert order followed only by the version, since loadPostgres
+// scans positionally.
+func TestSelectColumnsAreSettingsColumnsPlusVersion(t *testing.T) {
+	if len(selectColumns) != len(settingsColumns)+1 || selectColumns[len(selectColumns)-1] != "version" {
+		t.Fatalf("selectColumns = %v", selectColumns)
+	}
+	for i, column := range settingsColumns {
+		if selectColumns[i] != column {
+			t.Errorf("selectColumns[%d] = %s, want %s", i, selectColumns[i], column)
+		}
+	}
 }
 
 func TestSettingsArgsMatchColumns(t *testing.T) {
@@ -81,7 +99,7 @@ func TestLoadResolvesNullDocumentsToDefaults(t *testing.T) {
 	mock := newMock(t)
 	id := "123"
 	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(string(rediskey.HashGuildID(id))).
-		WillReturnRows(pgxmock.NewRows(settingsColumns).AddRow(defaultRow()...))
+		WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(selectRow(defaultRow(), 1)...))
 	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), id)
 	if err != nil {
 		t.Fatal(err)
@@ -92,11 +110,11 @@ func TestLoadResolvesNullDocumentsToDefaults(t *testing.T) {
 func TestLoadDecodesStoredDocuments(t *testing.T) {
 	mock := newMock(t)
 	want := loadFixture(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(settingsColumns).AddRow(
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(
 		want.AdminUserIDs, want.PermissionRoleIDs, want.Language, mustMarshal(t, want.VoiceRules), want.MapVersion,
 		mustMarshal(t, want.Delays), want.DeleteGameSummaryMinutes, want.UnmuteDeadDuringTasks, want.AutoRefresh,
 		want.MatchSummaryChannelID, want.LeaderboardMention, want.LeaderboardSize, want.LeaderboardMin,
-		want.MuteSpectator, want.DisplayRoomCode))
+		want.MuteSpectator, want.DisplayRoomCode, int64(9)))
 	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
 	if err != nil {
 		t.Fatal(err)
@@ -126,9 +144,9 @@ func TestLoadFailureDoesNotReturnDefaults(t *testing.T) {
 
 func TestLoadMalformedDocumentFails(t *testing.T) {
 	mock := newMock(t)
-	row := defaultRow()
+	row := selectRow(defaultRow(), 1)
 	row[3] = []byte(`[1]`)
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(settingsColumns).AddRow(row...))
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(row...))
 	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
 	if err == nil || got != nil {
 		t.Fatalf("malformed document did not fail: %v, %v", got, err)
@@ -156,6 +174,35 @@ func TestSetStoresCustomDocuments(t *testing.T) {
 		sett.LeaderboardMin, sett.MuteSpectator, sett.DisplayRoomCode).WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	if err := NewPostgresStorage(mock, nil).SetGuildSettings("123", sett); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSetWithContextStoresCustomDocuments(t *testing.T) {
+	mock := newMock(t)
+	sett := loadFixture(t)
+	mock.ExpectExec(`INSERT INTO guild_settings .* DO UPDATE SET`).WithArgs(
+		pgxmock.AnyArg(), sett.AdminUserIDs, sett.PermissionRoleIDs, sett.Language, mustMarshal(t, sett.VoiceRules),
+		sett.MapVersion, mustMarshal(t, sett.Delays), sett.DeleteGameSummaryMinutes, sett.UnmuteDeadDuringTasks,
+		sett.AutoRefresh, sett.MatchSummaryChannelID, sett.LeaderboardMention, sett.LeaderboardSize,
+		sett.LeaderboardMin, sett.MuteSpectator, sett.DisplayRoomCode).WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	if err := NewPostgresStorage(mock, nil).SetGuildSettingsContext(context.Background(), "123", sett); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A request that was already cancelled must not reach the database.
+func TestSetWithCancelledContextDoesNotWrite(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := NewPostgresStorage(newMock(t), nil).SetGuildSettingsContext(ctx, "123", loadFixture(t))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("want context.Canceled, got %v", err)
+	}
+}
+
+func TestSetWithContextNilSettingsFails(t *testing.T) {
+	if err := NewPostgresStorage(newMock(t), nil).SetGuildSettingsContext(context.Background(), "123", nil); err == nil {
+		t.Fatal("nil settings were accepted")
 	}
 }
 

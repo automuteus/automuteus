@@ -395,10 +395,129 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/settings.GuildSettings"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Version of the stored settings, for If-Match on PATCH"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "Change settings for a guild. The body is a JSON object with any subset of the fields returned by GET\n/guild/settings; fields that are present replace the stored value and fields that are absent keep it.\nVoice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null\nvalues, and values outside the ranges the /settings slash command accepts are rejected without saving.\nRequires the guild owner or Discord Administrator permission. Changing a premium-only setting\n(match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a\nguild without premium is refused with 403 listing those fields.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Update Guild Settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ETag from a previous GET or PATCH; the write is refused with 412 if the settings changed since",
+                        "name": "If-Match",
+                        "in": "header"
+                    },
+                    {
+                        "description": "Fields to change",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/settings.GuildSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The stored settings after the change",
+                        "schema": {
+                            "$ref": "#/definitions/settings.GuildSettings"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Version of the stored settings after the change"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.SettingsValidationError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Settings were changed concurrently; reload and retry",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "412": {
+                        "description": "If-Match did not match the stored version",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "501": {
+                        "description": "Summary channel changes need DISCORD_BOT_TOKEN on the API",
                         "schema": {
                             "$ref": "#/definitions/api.HttpError"
                         }
@@ -487,6 +606,23 @@ const docTemplate = `{
                 },
                 "roomCode": {
                     "type": "string"
+                }
+            }
+        },
+        "api.SettingsValidationError": {
+            "type": "object",
+            "properties": {
+                "Error": {
+                    "type": "string"
+                },
+                "StatusCode": {
+                    "type": "integer"
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/settings.FieldError"
+                    }
                 }
             }
         },
@@ -795,6 +931,17 @@ const docTemplate = `{
                 "TrialTier",
                 "SelfHostTier"
             ]
+        },
+        "settings.FieldError": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
         },
         "settings.GuildSettings": {
             "type": "object",
