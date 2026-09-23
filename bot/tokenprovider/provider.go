@@ -1,9 +1,16 @@
 package tokenprovider
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
+	"log/slog"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/lock"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
@@ -12,12 +19,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/token"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
-	"golang.org/x/exp/constraints"
-	"log"
-	"log/slog"
-	"strconv"
-	"sync"
-	"time"
 )
 
 var PremiumBotConstraints = map[premium.Tier]int{
@@ -135,7 +136,7 @@ func (tokenProvider *TokenProvider) getSession(guildID string, hTokenSubset map[
 	return nil, ""
 }
 
-func mapHasEntry[T constraints.Ordered, K any](dict map[T]K, key T) bool {
+func mapHasEntry[T cmp.Ordered, K any](dict map[T]K, key T) bool {
 	if dict == nil {
 		return false
 	}
