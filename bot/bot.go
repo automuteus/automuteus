@@ -24,6 +24,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -71,6 +72,11 @@ type Bot struct {
 	logPath string
 
 	captureTimeout int
+
+	// draining is set once shutdown begins; see Drain. inflight counts handlers that must finish before the
+	// process exits.
+	draining atomic.Bool
+	inflight atomic.Int64
 }
 
 // MakeAndStartBot does what it sounds like
@@ -138,6 +144,7 @@ func MakeAndStartBot(version, commit, botToken, topGGToken, url, emojiGuildID st
 	log.Println("Finished identifying to the Discord API. Now ready for incoming events")
 
 	go bot.listenForNotices(notice.Subscribe(ctx, redisInterface.client))
+	go bot.discoverGames()
 
 	listeningTo := os.Getenv("AUTOMUTEUS_LISTENING")
 	if listeningTo == "" {
@@ -227,23 +234,9 @@ func (bot *Bot) newGuild(emojiGuildID string) func(s *discordgo.Session, m *disc
 				GuildID:     m.Guild.ID,
 				ConnectCode: connCode,
 			}
-			lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
-			for lock == nil {
-				lock, dgs = bot.store.GetDiscordGameStateAndLock(gsr)
-			}
-			if dgs != nil && dgs.ConnectCode != "" {
+			if bot.attachToGame(gsr, server.AdoptGuildCreate) {
 				log.Println("Resubscribing to Redis events for an old game: " + connCode)
-				killChan := make(chan EndGameMessage, 1)
-				dgs.Subscribed = true
-
-				bot.store.SetDiscordGameState(dgs, lock)
-
-				bot.ChannelsMapLock.Lock()
-				bot.EndGameChannels[dgs.ConnectCode] = killChan
-				bot.ChannelsMapLock.Unlock()
-				go bot.SubscribeToGameByConnectCode(gsr.GuildID, dgs.ConnectCode, killChan)
 			}
-			lock.Release(ctx)
 		}
 	}
 }

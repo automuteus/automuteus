@@ -107,6 +107,7 @@ func standInSubscriber(bot *Bot, gsr GameStateRequest) <-chan struct{} {
 
 func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 	bot, deps := newTestBot(t)
+	withRedis(t, bot)
 	first, _ := seedTwoMatches(t, bot, deps)
 	done := standInSubscriber(bot, first)
 
@@ -146,6 +147,7 @@ func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 
 func TestHandleEvent_ShutdownOnlyEndsListedGames(t *testing.T) {
 	bot, deps := newTestBot(t)
+	withRedis(t, bot)
 	seedTwoMatches(t, bot, deps)
 
 	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{"QRSTUVWX"}}})
@@ -234,6 +236,7 @@ func TestListenForNotices_DeliversPublishedEventsToHandler(t *testing.T) {
 
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	bot.RedisInterface = &RedisInterface{client: client}
 	ctx := context.Background()
 	sub := notice.Subscribe(ctx, client)
 	if _, err := sub.Receive(ctx); err != nil {

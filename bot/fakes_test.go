@@ -123,6 +123,10 @@ func (m *memoryStore) GetReadOnlyDiscordGameState(gsr GameStateRequest) *GameSta
 	return m.find(gsr)
 }
 
+func (m *memoryStore) ReadDiscordGameState(gsr GameStateRequest) (*GameState, error) {
+	return m.find(gsr), nil
+}
+
 func (m *memoryStore) SetDiscordGameState(dgs *GameState, _ lock.Lock) {
 	if dgs != nil {
 		m.put(dgs)
@@ -300,6 +304,10 @@ type fakeMetrics struct {
 	started         int
 	ended           map[server.EndReason]int
 	cleanupFailures map[server.CleanupStep]int
+	leaseLost       int
+	leaseWaits      int
+	adopted         map[server.AdoptSource]int
+	handedOver      int
 }
 
 func (f *fakeMetrics) RecordDiscordRequests(t server.EventType, n int64) {
@@ -339,6 +347,45 @@ func (f *fakeMetrics) RecordCleanupFailure(step server.CleanupStep) {
 		f.cleanupFailures = map[server.CleanupStep]int{}
 	}
 	f.cleanupFailures[step]++
+}
+
+func (f *fakeMetrics) RecordLeaseLost() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.leaseLost++
+}
+
+func (f *fakeMetrics) RecordLeaseWait() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.leaseWaits++
+}
+
+func (f *fakeMetrics) RecordGameAdopted(source server.AdoptSource) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.adopted == nil {
+		f.adopted = map[server.AdoptSource]int{}
+	}
+	f.adopted[source]++
+}
+
+func (f *fakeMetrics) RecordGameHandedOver() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.handedOver++
+}
+
+func (f *fakeMetrics) adoptedFrom(source server.AdoptSource) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.adopted[source]
+}
+
+func (f *fakeMetrics) leaseCounts() (lost, waits, handedOver int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.leaseLost, f.leaseWaits, f.handedOver
 }
 
 func (f *fakeMetrics) endedBy(reason server.EndReason) int {

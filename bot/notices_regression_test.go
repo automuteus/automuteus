@@ -26,6 +26,7 @@ func (unavailableNoticeSettings) LoadGuildSettings(context.Context, string) (*se
 
 func TestHandleEvent_ShutdownCleansUpWithoutSettings(t *testing.T) {
 	bot, deps := newTestBot(t)
+	withRedis(t, bot)
 	seedTwoMatches(t, bot, deps)
 	bot.settings = unavailableNoticeSettings{}
 	bot.handleEvent(&notice.Event{Shutdown: &notice.Shutdown{ConnectCodes: []string{scenarioConnectCode}}})
@@ -65,6 +66,7 @@ func (v observedNoticeVoice) ModifyUsers(guild, code string, req task.UserModify
 
 func TestStopGame_StopsStateBeforeUnmutingAndReportsFailure(t *testing.T) {
 	bot, deps := newTestBot(t)
+	withRedis(t, bot)
 	gsr := seedMatch(t, bot, deps, scenarioConnectCode, scenarioTextChannel, trackedChannel, "10", "11")
 	deps.voice.err = errors.New("Discord rejected the unmute")
 	bot.voice = observedNoticeVoice{fakeVoice: deps.voice, before: func() {

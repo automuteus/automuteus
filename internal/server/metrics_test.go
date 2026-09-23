@@ -150,6 +150,38 @@ func TestMetricsGameLifecycleAndCleanupLabelsAreFixed(t *testing.T) {
 	}
 }
 
+func TestMetricsLeaseAndHandoverCounters(t *testing.T) {
+	registry := prometheus.NewRegistry()
+	metrics := NewMetrics(registry)
+
+	metrics.RecordLeaseLost()
+	metrics.RecordLeaseWait()
+	metrics.RecordLeaseWait()
+	metrics.RecordGameAdopted(AdoptDiscovery)
+	metrics.RecordGameAdopted(AdoptSource("made up")) // free text must not become a new series
+	metrics.RecordGameHandedOver()
+
+	if got := testutil.ToFloat64(metrics.leaseLost); got != 1 {
+		t.Errorf("lease lost = %v, want 1", got)
+	}
+	if got := testutil.ToFloat64(metrics.leaseWaits); got != 2 {
+		t.Errorf("lease waits = %v, want 2", got)
+	}
+	if got := testutil.ToFloat64(metrics.gamesHandedOver); got != 1 {
+		t.Errorf("games handed over = %v, want 1", got)
+	}
+	adopted := counterValues(t, registry, "automuteus_games_adopted_total", "source")
+	want := map[string]float64{"announce": 1, "discovery": 1, "guild_create": 0}
+	if len(adopted) != len(want) {
+		t.Fatalf("adopt sources = %v, want exactly the fixed set %v", adopted, want)
+	}
+	for source, n := range want {
+		if adopted[source] != n {
+			t.Errorf("games adopted %s = %v, want %v", source, adopted[source], n)
+		}
+	}
+}
+
 func TestMetricsVoiceOutcomesAndBatchDuration(t *testing.T) {
 	registry := prometheus.NewRegistry()
 	metrics := NewMetrics(registry)

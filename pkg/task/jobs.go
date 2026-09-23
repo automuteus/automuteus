@@ -69,18 +69,28 @@ func notify(ctx context.Context, redis *redis.Client, connCode string) {
 	redis.Publish(ctx, rediskey.JobNamespace+connCode+":notify", true)
 }
 
+// Notify wakes every subscriber of a game's queue without queueing a job, so that a process which just became
+// eligible to consume (for example, on a lease handover) drains any backlog right away.
+func Notify(ctx context.Context, redis *redis.Client, connCode string) {
+	notify(ctx, redis, connCode)
+}
+
 func Subscribe(ctx context.Context, redis *redis.Client, connCode string) *redis.PubSub {
 	return redis.Subscribe(ctx, rediskey.JobNamespace+connCode+":notify")
 }
 
 func PopJob(ctx context.Context, redis *redis.Client, connCode string) (Job, error) {
 	str, err := redis.LPop(ctx, rediskey.JobNamespace+connCode).Result()
-
-	j := Job{}
 	if err != nil {
-		return j, err
+		return Job{}, err
 	}
-	err = json.Unmarshal([]byte(str), &j)
+	return ParseJob(str)
+}
+
+// ParseJob decodes a queued job entry, for callers that pop the list themselves.
+func ParseJob(entry string) (Job, error) {
+	j := Job{}
+	err := json.Unmarshal([]byte(entry), &j)
 	return j, err
 }
 

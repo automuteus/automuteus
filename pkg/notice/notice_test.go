@@ -109,14 +109,55 @@ func TestAnnounceShutdownIsPublishedButNeverStored(t *testing.T) {
 }
 
 func TestDecodeEventRejectsMalformedEvents(t *testing.T) {
-	for _, raw := range []string{`{}`, `{"noticeChanged":true,"shutdown":{"connectCodes":[]}}`, `{"noticeChanged":false}`} {
+	for _, raw := range []string{`{}`, `{"noticeChanged":true,"shutdown":{"connectCodes":[]}}`, `{"noticeChanged":false}`,
+		`{"shutdown":{"connectCodes":[]},"gamesAvailable":{"games":[]}}`, `{"noticeChanged":true,"gamesAvailable":{"games":[]}}`} {
 		if e, err := DecodeEvent([]byte(raw)); err != ErrInvalidEvent {
 			t.Errorf("DecodeEvent(%s) = %+v, %v; want ErrInvalidEvent", raw, e, err)
 		}
 	}
-	for _, raw := range []string{`{"noticeChanged":true}`, `{"shutdown":{"connectCodes":["ABCDEFGH"]}}`} {
+	for _, raw := range []string{`{"noticeChanged":true}`, `{"shutdown":{"connectCodes":["ABCDEFGH"]}}`,
+		`{"gamesAvailable":{"games":[{"guildID":"1","connectCode":"ABCDEFGH"}]}}`} {
 		if _, err := DecodeEvent([]byte(raw)); err != nil {
 			t.Errorf("DecodeEvent(%s): %v", raw, err)
 		}
+	}
+}
+
+func TestAnnounceGamesIsPublishedButNeverStored(t *testing.T) {
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	ctx := context.Background()
+	sub := Subscribe(ctx, client)
+	if _, err := sub.Receive(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer sub.Close()
+
+	games := []GameRef{{GuildID: "1", ConnectCode: "ABCDEFGH"}, {GuildID: "2", ConnectCode: "IJKLMNOP"}}
+	if err := AnnounceGames(ctx, client, games); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case msg := <-sub.Channel():
+		e, err := DecodeEvent([]byte(msg.Payload))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if e.GamesAvailable == nil || len(e.GamesAvailable.Games) != 2 || e.GamesAvailable.Games[1] != games[1] {
+			t.Fatalf("event = %+v, want the games", e)
+		}
+		if e.NoticeChanged || e.Shutdown != nil {
+			t.Fatalf("event = %+v, want only handoff set", e)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("no handoff event received")
+	}
+	if len(mr.Keys()) != 0 {
+		t.Fatalf("announcement must not be stored, got keys %v", mr.Keys())
+	}
+
+	// an empty announcement is still a valid event
+	if err := AnnounceGames(ctx, client, nil); err != nil {
+		t.Fatal(err)
 	}
 }

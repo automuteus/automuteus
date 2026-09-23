@@ -206,6 +206,25 @@ the last two minutes), plus `redis` and `postgres` pings, and answers `503` with
 plain-text line per check naming any that failed. It also fails until startup completes
 and from the moment the process receives SIGTERM.
 
+On SIGTERM the process drains before closing: it stops accepting interactions and
+voice events (a twin process identifying with the same shard IDs handles them instead),
+releases its per-game consumer leases so a standby subscriber takes over the queue at
+once, announces its running games so twins subscribe to any they had not seen, waits up to
+ten seconds for handlers already in flight, then closes its sessions. Every process serving
+a game's guild subscribes to it (games are announced when created and rediscovered every
+minute), but only the lease holder applies its events, one burst at a time, so events are
+consumed in order; a holder that dies without releasing is replaced when the ten-second
+lease lapses. The lease orders consumption, not Discord: a mute request the previous holder
+already issued can still complete after the new holder's, which is what the desired-state
+reconcile in `VOICE_DESIRED_STATE_PLAN.md` is for. A user's command rate limit is reserved when a command is admitted and lifted again
+if the response never reaches Discord, so a command dropped by a restart can be retried
+without a spam warning.
+
+Subscribers retry failed game-state reads without consuming queued events or treating
+the game as deleted. Inactivity timers check for queued events and recent shared
+activity under the consumer lease before ending a game. Failed checks or missing
+activity data leave the subscription open for another check.
+
 `/live` always answers `200` unless `LIVENESS_GRACE` is set to a duration (for example
 `10m`), in which case it fails once `/ready` has been failing continuously for that long,
 so the orchestrator restarts a process whose shards have stopped reconnecting. Keep the
@@ -245,6 +264,19 @@ Games:
 - `automuteus_game_cleanup_failures_total{step}`: end-of-game steps that failed:
   `unmute` (players may have been left muted), `record_match` (match not marked aborted),
   or `notify` (end-of-game message not posted).
+
+Handover between processes sharing a shard:
+
+- `automuteus_games_adopted_total{source}`: games created elsewhere that this process
+  subscribed to as a standby, by how it learned of them: `announce`, `discovery` (the
+  once-a-minute scan), or `guild_create` (resubscribed on reconnect).
+- `automuteus_games_handed_over_total`: games whose consumer lease this process released
+  mid-burst while draining, leaving queued events for a standby.
+- `automuteus_consumer_lease_waits_total`: end-of-game requests that had to wait for
+  another process to finish a burst before cleaning up.
+- `automuteus_consumer_lease_lost_total`: times this process found a lease it believed it
+  held taken by another, meaning a renewal failed or a burst stalled past the lease TTL.
+  Should stay at zero; alert on it.
 
 Message activity, `automuteus_discord_operations_total{type}`, is a set of coarse
 counters: `message_create_delete`, `message_edit`, and `rate_limited`. These reflect

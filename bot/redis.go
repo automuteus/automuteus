@@ -13,6 +13,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-redis/redis/v8"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -125,6 +126,50 @@ func (redisInterface *RedisInterface) GetReadOnlyDiscordGameState(gsr GameStateR
 		dgs = redisInterface.getDiscordGameState(gsr, false)
 	}
 	return dgs
+}
+
+// ReadDiscordGameState distinguishes a missing game (nil, nil) from an unavailable
+// or corrupt game. Lifecycle decisions must not treat a failed read as deletion.
+func (redisInterface *RedisInterface) ReadDiscordGameState(gsr GameStateRequest) (*GameState, error) {
+	var pointers []string
+	if gsr.ConnectCode != "" {
+		pointers = append(pointers, rediskey.ConnectCodePtr(gsr.GuildID, gsr.ConnectCode))
+	}
+	if gsr.TextChannel != "" {
+		pointers = append(pointers, rediskey.TextChannelPtr(gsr.GuildID, gsr.TextChannel))
+	}
+	if gsr.VoiceChannel != "" {
+		pointers = append(pointers, rediskey.VoiceChannelPtr(gsr.GuildID, gsr.VoiceChannel))
+	}
+	var key string
+	for _, pointer := range pointers {
+		value, err := redisInterface.client.Get(ctx, pointer).Result()
+		if errors.Is(err, redis.Nil) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read game pointer: %w", err)
+		}
+		if value != "" {
+			key = value
+			break
+		}
+	}
+	if key == "" {
+		return nil, nil
+	}
+	data, err := redisInterface.client.Get(ctx, key).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read game state: %w", err)
+	}
+	var dgs GameState
+	if err := json.Unmarshal(data, &dgs); err != nil {
+		return nil, fmt.Errorf("decode game state: %w", err)
+	}
+	return &dgs, nil
 }
 
 func (redisInterface RedisInterface) GetDiscordGameStateAndLockRetries(gsr GameStateRequest, retries int) (lock.Lock, *GameState) {
@@ -268,8 +313,40 @@ func (redisInterface *RedisInterface) RefreshActiveGame(guildID, connectCode str
 	if err != nil {
 		log.Println(err)
 	}
+	err = redisInterface.client.ZAdd(ctx, rediskey.ActiveGamesByGuildZSet, &redis.Z{
+		Score:  float64(t.Unix()),
+		Member: guildID + ":" + connectCode,
+	}).Err()
+	if err != nil {
+		log.Println(err)
+	}
 	before := t.Add(-time.Second * GameTimeoutSeconds)
 	go redisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesZSet, "-inf", fmt.Sprintf("%d", before.Unix()))
+}
+
+// LoadRecentGames returns every game, in any guild, that saw activity within the game timeout, and trims older
+// entries. It is one Redis call regardless of how many guilds a process serves.
+func (redisInterface *RedisInterface) LoadRecentGames() []GameStateRequest {
+	before := time.Now().Add(-time.Second * GameTimeoutSeconds).Unix()
+	members, err := redisInterface.client.ZRangeByScore(ctx, rediskey.ActiveGamesByGuildZSet, &redis.ZRangeBy{
+		Min: fmt.Sprintf("%d", before),
+		Max: "+inf",
+	}).Result()
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	go redisInterface.client.ZRemRangeByScore(context.Background(), rediskey.ActiveGamesByGuildZSet, "-inf", fmt.Sprintf("%d", before))
+
+	games := make([]GameStateRequest, 0, len(members))
+	for _, m := range members {
+		guildID, code, ok := strings.Cut(m, ":")
+		if !ok || guildID == "" || code == "" {
+			continue
+		}
+		games = append(games, GameStateRequest{GuildID: guildID, ConnectCode: code})
+	}
+	return games
 }
 
 func (redisInterface *RedisInterface) RemoveOldGame(guildID, connectCode string) {
