@@ -163,7 +163,7 @@ func TestAuthenticationAndValidation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	s := &fakeStore{}
 	r := NewRouter(Config{AdminPassword: "test-password"}, s)
-	for _, path := range []string{"/game/state", "/game/roomcode", "/guild/settings", "/guild/premium", "/guild/bot"} {
+	for _, path := range []string{"/game/state", "/game/roomcode", "/guild/settings", "/guild/premium", "/guild/bot", "/guild/channel", "/guild/roles"} {
 		if w := request(t, r, path, false); w.Code != 401 {
 			t.Fatalf("%s: %d", path, w.Code)
 		}

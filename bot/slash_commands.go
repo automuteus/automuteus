@@ -189,23 +189,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
 	}
 
-	isAdmin, isPermissioned := false, false
-	if g.OwnerID == i.Member.User.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
-		// the guild owner should always have both permissions
-		// or if both permissions are still empty, everyone gets both
-		isAdmin = true
-		isPermissioned = true
-	} else {
-		// if we have no admins, then we MUST have mods as per the check above. So ensure this user is a mod
-		if len(sett.AdminUserIDs) == 0 {
-			isAdmin = sett.HasRolePerms(i.Member)
-		} else {
-			// we have admins; make sure user is one
-			isAdmin = sett.HasAdminPerms(i.Member.User)
-		}
-		// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
-		isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(i.Member)
-	}
+	isAdmin, isPermissioned := commandAccess(sett, g.OwnerID, i.Member)
 
 	// common gsr, but not necessarily used by all commands
 	gsr := GameStateRequest{
@@ -1016,4 +1000,36 @@ func checkPermissions(perm int64, perms []int64) (a int64) {
 		}
 	}
 	return
+}
+
+// commandAccess decides what a member may do with the bot's slash commands. isAdmin unlocks the admin-only
+// commands (settings, download, other players' stats, and so on); isPermissioned unlocks game control (new,
+// pause, end, link, unlink).
+//
+// The guild owner and anyone holding Discord's Administrator permission get both, matching the API's write policy
+// and the web settings page: someone who can rewrite every setting from the site must not be locked out of
+// /settings in Discord by an operator role they do not hold. Discord resolves the member's permissions into every
+// interaction, so no extra lookup is needed.
+//
+// With both the admin user ID list and the operator role list empty, everyone gets both. Otherwise admin status
+// comes from the admin user ID list, or from the operator roles when no admin user IDs are configured. Game
+// control comes from the operator roles (everyone, when that list is empty), and every admin has it too.
+func commandAccess(sett *settings.GuildSettings, ownerID string, member *discordgo.Member) (isAdmin, isPermissioned bool) {
+	if member == nil || member.User == nil {
+		return false, false
+	}
+	if ownerID == member.User.ID || member.Permissions&discordgo.PermissionAdministrator != 0 {
+		return true, true
+	}
+	if len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0 {
+		return true, true
+	}
+	if len(sett.AdminUserIDs) == 0 {
+		isAdmin = sett.HasRolePerms(member)
+	} else {
+		isAdmin = sett.HasAdminPerms(member.User)
+	}
+	// Admin is the greater privilege, so it implies game control even without an operator role.
+	isPermissioned = isAdmin || len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(member)
+	return isAdmin, isPermissioned
 }

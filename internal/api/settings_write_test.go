@@ -616,6 +616,7 @@ const (
 	textChannelHere   = "223456789012345678"
 	voiceChannelHere  = "223456789012345679"
 	threadHere        = "223456789012345680"
+	textNoPostHere    = "223456789012345681"
 	textChannelThere  = "323456789012345678"
 	unknownChannel    = "423456789012345678"
 	otherGuildForChan = "923456789012345678"
@@ -626,15 +627,18 @@ func fakeChannels(calls *int) channelVerifierFunc {
 		if calls != nil {
 			*calls++
 		}
+		const post = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages | discordgo.PermissionEmbedLinks
 		switch id {
 		case textChannelHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText, Name: "match-summaries", Permissions: post}, nil
+		case textNoPostHere:
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText, Name: "read-only", Permissions: discordgo.PermissionViewChannel}, nil
 		case voiceChannelHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildVoice}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildVoice, Name: "voice", Permissions: post}, nil
 		case threadHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildPublicThread}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildPublicThread, Name: "thread", Permissions: post | discordgo.PermissionSendMessagesInThreads}, nil
 		case textChannelThere:
-			return ChannelInfo{ID: id, GuildID: otherGuildForChan, Type: discordgo.ChannelTypeGuildText}, nil
+			return ChannelInfo{ID: id, GuildID: otherGuildForChan, Type: discordgo.ChannelTypeGuildText, Name: "elsewhere", Permissions: post}, nil
 		default:
 			return ChannelInfo{}, errChannelNotFound
 		}
@@ -649,6 +653,7 @@ func TestUpdateSettings_SummaryChannelMustBeTextChannelInGuild(t *testing.T) {
 	}{
 		{"text channel in guild", textChannelHere, 200},
 		{"thread in guild", threadHere, 200},
+		{"text channel the bot cannot post in", textNoPostHere, 400},
 		{"voice channel in guild", voiceChannelHere, 400},
 		{"text channel in another guild", textChannelThere, 400},
 		{"unknown channel", unknownChannel, 400},
@@ -670,8 +675,11 @@ func TestUpdateSettings_SummaryChannelMustBeTextChannelInGuild(t *testing.T) {
 			if got := validationFields(t, w); len(got) != 1 || got[0] != "matchSummaryChannelID" {
 				t.Errorf("fields = %v, want [matchSummaryChannelID]", got)
 			}
+			if tc.channel == textNoPostHere && !strings.Contains(w.Body.String(), "Send Messages, Embed Links permissions") {
+				t.Errorf("missing permissions should be named: %s", w.Body)
+			}
 			if s.saved != nil {
-				t.Fatal("cross-guild or non-text channel was saved")
+				t.Fatal("cross-guild, non-text, or unpostable channel was saved")
 			}
 		})
 	}

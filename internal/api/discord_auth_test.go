@@ -157,7 +157,7 @@ func TestBearerValidationAndRevocation(t *testing.T) {
 	member := true
 	calls := 0
 	s := &fakeStore{}
-	r := NewRouter(Config{GuildVerifier: verifierFunc(func(_ context.Context, _, guild string) (VerifiedGuildAccess, error) {
+	r := NewRouter(Config{AccessCacheTTL: -1, GuildVerifier: verifierFunc(func(_ context.Context, _, guild string) (VerifiedGuildAccess, error) {
 		calls++
 		return VerifiedGuildAccess{UserID: "user", GuildID: guild, Member: member}, nil
 	})}, s)

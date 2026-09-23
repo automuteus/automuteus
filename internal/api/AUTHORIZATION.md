@@ -57,8 +57,16 @@ any Discord OAuth application are intentionally accepted, supporting external
 clients. The required scopes are `identify guilds`; no bot token, client secret,
 or Discord gateway session is needed in the API process.
 
-Every request revalidates with Discord: there is no authorization cache or token
-persistence. Responses use `Cache-Control: no-store`. Discord 401 maps to 401,
+Read requests reuse a verified (token, guild) answer for a bounded window
+(`AccessCacheTTL`, one minute by default; negative disables it). The token is
+stored only as a SHA-256 hash, errors are never cached, and concurrent lookups
+for the same pair are collapsed into one Discord round trip (singleflight), so a
+settings page load that asks about one guild several times costs one
+verification. Writes always verify live, and a live answer replaces the cached
+one, so a member removed from the guild is refused on their next write and on
+every read after it, and within the window on reads otherwise. No token is
+persisted beyond that window. Responses use `Cache-Control: no-store`. Discord
+401 maps to 401,
 missing scope to 403, nonmembership to 403, and rate limits/outages/malformed
 upstream responses to 503. A Discord 429 with a valid cooldown of up to five
 seconds is retried once after waiting for Retry-After (or JSON retry_after),
@@ -66,8 +74,9 @@ within the request deadline. This handles the guild picker immediately preceding
 Go's membership check. Repeated limits and longer cooldowns still fail closed;
 there is no stale-authorization fallback.
 HTTP requests have timeouts and production requests do not follow redirects.
-This favors revocation checks over throughput; high-frequency polling should
-wait for a bounded cache/rate-limit design rather than retry aggressively.
+The one-minute read window is the bounded design that keeps a burst of reads
+from exhausting Discord's per-user guild-list bucket; polling faster than that
+gains nothing and should not retry aggressively on 503.
 
 Explicit, non-default `API_ADMIN_PASS` Basic Auth retains legacy platform access
 on these routes. The default `automuteus` password no longer works on game/guild

@@ -382,6 +382,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/guild/channel": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "Report whether the bot could post match summaries into a channel of the given guild: the channel\nmust exist and be visible to the bot, belong to the guild, be a text or announcement channel or a\nthread in one, and grant the bot View Channel, Embed Links, and Send Messages (Send Messages in Threads\nfor a thread). The same checks are applied when PATCH /guild/settings changes\nmatchSummaryChannelID, so a client can validate before saving. Any member of the guild may ask.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Check a Summary Channel",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel ID",
+                        "name": "channelID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ChannelCheck"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "501": {
+                        "description": "The API is not configured with DISCORD_BOT_TOKEN",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/guild/premium": {
             "get": {
                 "security": [
@@ -427,6 +492,73 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/guild/roles": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "The guild's roles as the bot sees them, in Discord's display order and without @everyone, so a client\ncan offer a picker for bot operator roles and show names instead of IDs. PATCH /guild/settings rejects a\npermissionRoleIDs entry that is not one of these. Any member of the guild may ask.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "List Guild Roles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.GuildRole"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "The bot is not in this guild",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "501": {
+                        "description": "The API is not configured with DISCORD_BOT_TOKEN",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/api.HttpError"
                         }
@@ -500,7 +632,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "Change settings for a guild. The body is a JSON object with any subset of the fields returned by GET\n/guild/settings; fields that are present replace the stored value and fields that are absent keep it.\nVoice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null\nvalues, and values outside the ranges the /settings slash command accepts are rejected without saving.\nRequires the guild owner or Discord Administrator permission. Changing a premium-only setting\n(match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a\nguild without premium is refused with 403 listing those fields.",
+                "description": "Change settings for a guild. The body is a JSON object with any subset of the fields returned by GET\n/guild/settings; fields that are present replace the stored value and fields that are absent keep it.\nVoice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null\nvalues, and values outside the ranges the /settings slash command accepts are rejected without saving.\nRequires the guild owner or Discord Administrator permission. Changing a premium-only setting\n(match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a\nguild without premium is refused with 403 listing those fields. A new matchSummaryChannelID must pass\nthe same checks as GET /guild/channel: visible to the bot, in this guild, text-capable, and granting\nthe bot View Channel, Send Messages, and Embed Links. A changed permissionRoleIDs list must name roles of\nthis guild (see GET /guild/roles) when the API has bot credentials.",
                 "consumes": [
                     "application/json"
                 ],
@@ -629,6 +761,50 @@ const docTemplate = `{
             "properties": {
                 "present": {
                     "type": "boolean"
+                }
+            }
+        },
+        "api.ChannelCheck": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the channel name without the leading '#'. Omitted when the channel is not in the requested guild,\nso a caller cannot use this route to learn channel names in guilds it shares with the bot but not with us.",
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                },
+                "problems": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.GuildRole": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color is Discord's integer RGB value; zero means the role has no colour.",
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "managed": {
+                    "description": "Managed roles belong to an integration or bot and cannot be given to members by hand.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "position": {
+                    "description": "Position is Discord's display order; higher is listed first.",
+                    "type": "integer"
                 }
             }
         },

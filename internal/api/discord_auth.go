@@ -100,9 +100,9 @@ func (v *discordVerifier) getAttempt(ctx context.Context, token, path string, ou
 	return nil
 }
 
-// No authorization cache: removals and revocations are checked on each request.
 // Tokens from any Discord OAuth application are accepted, supporting external
-// clients as well as our UI. Required scopes: identify and guilds.
+// clients as well as our UI. Required scopes: identify and guilds. Read
+// authorizations may be reused briefly by accessCache; writes verify live.
 func (v *discordVerifier) VerifyGuild(ctx context.Context, token, guildID string) (VerifiedGuildAccess, error) {
 	var user struct {
 		ID string `json:"id"`
@@ -157,7 +157,7 @@ const verifiedUserKey = "api.verifiedUser"
 
 // Explicitly configured platform credentials retain legacy access. Default
 // credentials cannot bypass user authorization on these endpoints.
-func guildAuthentication(config Config, verifier GuildVerifier, action GuildAction) gin.HandlerFunc {
+func guildAuthentication(config Config, verifier GuildVerifier, cache *accessCache, action GuildAction) gin.HandlerFunc {
 	basic := gin.BasicAuth(gin.Accounts{"admin": config.AdminPassword})
 	return func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store")
@@ -176,7 +176,7 @@ func guildAuthentication(config Config, verifier GuildVerifier, action GuildActi
 			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{StatusCode: 400, Error: "invalid guild ID"})
 			return
 		}
-		access, err := verifier.VerifyGuild(c.Request.Context(), parts[1], guildID)
+		access, err := cache.verify(c.Request.Context(), verifier, parts[1], guildID, action == WriteSettings)
 		if err != nil {
 			status := http.StatusServiceUnavailable
 			if errors.Is(err, errInvalidToken) {
