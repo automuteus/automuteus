@@ -5,12 +5,12 @@ go 1.27
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alicebob/miniredis/v2 v2.39.0
-	github.com/bsm/redislock v0.7.1
-	github.com/bwmarrin/discordgo v0.27.1
+	github.com/bsm/redislock v0.10.0
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/georgysavva/scany v0.2.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/googollee/go-socket.io v1.4.4
+	github.com/googollee/go-socket.io v1.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hesh915/go-socket.io-client v0.0.0-20200925034401-83ee73793ba4
 	github.com/jackc/pgconn v1.14.3
@@ -48,6 +48,8 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/gomodule/redigo v1.8.4 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -74,6 +76,7 @@ require (
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
+	github.com/redis/go-redis/v9 v9.19.0 // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
@@ -82,6 +85,7 @@ require (
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/zhouhui8915/engine.io-go v0.0.0-20150910083302-02ea08f0971f // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
