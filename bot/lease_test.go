@@ -217,9 +217,11 @@ func TestTwins_OnlyLeaseHolderConsumesAndDrainHandsOver(t *testing.T) {
 	if countReceived(holderLogs) != 1 || countReceived(standbyLogs) != 0 {
 		t.Fatalf("events received: holder=%d standby=%d, want 1 and 0", countReceived(holderLogs), countReceived(standbyLogs))
 	}
-	if first.RedisInterface.client.Exists(ctx, leaseKey()).Val() != 0 {
-		t.Fatal("lease should be released between bursts")
-	}
+	// The key flickers while the twins drain the nudges queued during the wait above, so poll rather than
+	// read once: the property is that the burst ends with the lease released, not that it is free at one instant.
+	eventually(t, "lease to be released between bursts", func() bool {
+		return first.RedisInterface.client.Exists(ctx, leaseKey()).Val() == 0
+	})
 
 	// draining the holder: the standby applies the next event, the holder receives nothing more
 	holder.Drain()
