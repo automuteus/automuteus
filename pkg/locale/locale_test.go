@@ -2,6 +2,7 @@ package locale
 
 import (
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/automuteus/automuteus/v8/locales"
@@ -30,9 +31,13 @@ func TestInitLang_LoadsEmbeddedLanguages(t *testing.T) {
 }
 
 // A process that never calls InitLang (the API) still gets the embedded set from GetLanguages.
+// resetLocale returns the package to its never-initialized state.
+func resetLocale() {
+	publish(nil, map[string]string{})
+}
+
 func TestGetLanguages_LazyLoads(t *testing.T) {
-	bundleInstance = nil
-	localeLanguages = map[string]string{}
+	resetLocale()
 	langs := GetLanguages()
 	if _, ok := langs["de"]; !ok || len(langs) < 2 {
 		t.Errorf("GetLanguages should load the embedded translations on first use, got %v", langs)
@@ -95,4 +100,59 @@ func TestLocalizeMessage(t *testing.T) {
 	if output != "Извини, `something` не является допустимым параметром!\n" {
 		t.Error("Substitution should succeed if ru has not been loaded: " + output)
 	}
+}
+
+// The API process never initializes locales explicitly and serves requests concurrently, so the very first
+// callers of GetLanguages may race. They must all see the complete set and the process must not crash.
+func TestGetLanguages_ConcurrentFirstUse(t *testing.T) {
+	resetLocale()
+	const callers = 64
+	results := make(chan int, callers)
+	var start sync.WaitGroup
+	start.Add(1)
+	for i := 0; i < callers; i++ {
+		go func() {
+			start.Wait()
+			results <- len(GetLanguages())
+		}()
+	}
+	start.Done()
+	want := len(GetLanguages())
+	for i := 0; i < callers; i++ {
+		if got := <-results; got != want {
+			t.Errorf("caller saw %d languages, want %d", got, want)
+		}
+	}
+}
+
+// Re-initialization while readers are active swaps the set atomically: a reader sees the old set or the new one,
+// never a partially built one.
+func TestInitLang_ReinitializeUnderReaders(t *testing.T) {
+	InitLang("en")
+	full := len(GetLanguages())
+	done := make(chan struct{})
+	var readers sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		readers.Add(1)
+		go func() {
+			defer readers.Done()
+			for {
+				select {
+				case <-done:
+					return
+				default:
+					if n := len(GetLanguages()); n != full && n != 2 {
+						t.Errorf("reader saw %d languages, want %d or 2", n, full)
+						return
+					}
+				}
+			}
+		}()
+	}
+	for i := 0; i < 20; i++ {
+		InitLangFS(os.DirFS("testdata"), "en")
+		InitLang("en")
+	}
+	close(done)
+	readers.Wait()
 }

@@ -76,9 +76,11 @@ var settingsColumns = []string{
 }
 
 var (
-	selectSettings = "SELECT " + strings.Join(settingsColumns, ", ") + " FROM guild_settings WHERE guild_hash = $1"
+	// selectColumns is what a read returns: every setting plus the row version, in one snapshot.
+	selectColumns  = append(append([]string{}, settingsColumns...), "version")
+	selectSettings = "SELECT " + strings.Join(selectColumns, ", ") + " FROM guild_settings WHERE guild_hash = $1"
 	insertSettings = buildInsert()
-	upsertSettings = insertSettings + " ON CONFLICT (guild_hash) DO UPDATE SET " + buildUpdateList() + ", updated_at = now()"
+	upsertSettings = insertSettings + " ON CONFLICT (guild_hash) DO UPDATE SET " + buildUpdateList() + ", version = guild_settings.version + 1, updated_at = now()"
 	insertIfAbsent = insertSettings + " ON CONFLICT (guild_hash) DO NOTHING"
 )
 
@@ -101,53 +103,78 @@ func buildUpdateList() string {
 // LoadGuildSettings returns an error for storage or decoding failures rather
 // than substituting defaults, so callers never act on fabricated settings.
 func (s *StorageInterface) LoadGuildSettings(ctx context.Context, guildID string) (*settings.GuildSettings, error) {
+	sett, _, err := s.LoadGuildSettingsVersion(ctx, guildID)
+	return sett, err
+}
+
+// LoadGuildSettingsVersion is LoadGuildSettings plus the version of the row the
+// settings came from, read in the same query so the two can never disagree; a
+// conditional write with that version therefore only succeeds if the row is
+// exactly what was read. A guild with no row reports NoSettingsRow.
+func (s *StorageInterface) LoadGuildSettingsVersion(ctx context.Context, guildID string) (*settings.GuildSettings, SettingsVersion, error) {
 	ctx, cancel := context.WithTimeout(ctx, settingsTimeout)
 	defer cancel()
 	hash := string(rediskey.HashGuildID(guildID))
 
-	result, err := s.loadPostgres(ctx, hash)
+	result, version, err := s.loadPostgres(ctx, hash)
 	if !errors.Is(err, pgx.ErrNoRows) {
-		return result, err
+		return result, version, err
 	}
 	if s.legacy == nil {
-		return settings.MakeGuildSettings(), nil
+		return settings.MakeGuildSettings(), NoSettingsRow, nil
 	}
 
 	key := rediskey.GuildSettings(rediskey.HashedID(hash))
 	blob, err := s.legacy.Get(ctx, key).Bytes()
 	if errors.Is(err, redis.Nil) {
-		return settings.MakeGuildSettings(), nil
+		return settings.MakeGuildSettings(), NoSettingsRow, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read legacy settings: %w", err)
+		return nil, NoSettingsRow, fmt.Errorf("read legacy settings: %w", err)
 	}
 	legacy, err := decodeLegacySettings(blob, false)
 	if err != nil {
 		// The old reader treated an unreadable record as defaults. Keep that,
 		// and leave the record in place so the sweep can report it.
 		log.Printf("Legacy Redis settings for guild %s are unreadable; using defaults: %v\n", guildID, err)
-		return settings.MakeGuildSettings(), nil
+		return settings.MakeGuildSettings(), NoSettingsRow, nil
 	}
 	inserted, err := importLegacySettings(ctx, s.db, s.legacy, key, hash, legacy)
 	if err != nil {
 		// The Redis record is still there, so the next read retries the move.
 		log.Printf("Could not move legacy settings for guild %s to Postgres: %v\n", guildID, err)
-		return legacy, nil
+		if inserted {
+			// The row exists now (only the Redis delete failed) and a fresh row is at version 1.
+			return legacy, 1, nil
+		}
+		return legacy, NoSettingsRow, nil
 	}
 	if !inserted {
 		// Another writer created the row first; it is authoritative.
 		return s.loadPostgres(ctx, hash)
 	}
-	return legacy, nil
+	return legacy, 1, nil
 }
 
-// SetGuildSettings replaces the stored settings. Documents equal to the
-// built-in defaults are stored as NULL.
+// SetGuildSettings replaces the stored settings with its own timeout. Callers
+// that have a request context should use SetGuildSettingsContext instead.
 func (s *StorageInterface) SetGuildSettings(guildID string, sett *settings.GuildSettings) error {
+	return s.SetGuildSettingsContext(context.Background(), guildID, sett)
+}
+
+// SetGuildSettingsContext replaces the stored settings, bounded by ctx and the
+// storage timeout, whichever ends first. Documents equal to the built-in
+// defaults are stored as NULL. It does not validate: the slash commands check
+// each field as it is set, and the API validates the whole document before
+// calling this.
+func (s *StorageInterface) SetGuildSettingsContext(ctx context.Context, guildID string, sett *settings.GuildSettings) error {
 	if sett == nil {
 		return errors.New("nil guild settings")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), settingsTimeout)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, settingsTimeout)
 	defer cancel()
 	hash := string(rediskey.HashGuildID(guildID))
 	args, err := settingsArgs(hash, sett)
@@ -188,11 +215,12 @@ func (s *StorageInterface) deleteLegacy(ctx context.Context, hash string) error 
 	return nil
 }
 
-func (s *StorageInterface) loadPostgres(ctx context.Context, hash string) (*settings.GuildSettings, error) {
+func (s *StorageInterface) loadPostgres(ctx context.Context, hash string) (*settings.GuildSettings, SettingsVersion, error) {
 	var (
 		result     settings.GuildSettings
 		voiceRules []byte
 		delays     []byte
+		version    int64
 	)
 	err := s.db.QueryRow(ctx, selectSettings, hash).Scan(
 		&result.AdminUserIDs,
@@ -210,21 +238,25 @@ func (s *StorageInterface) loadPostgres(ctx context.Context, hash string) (*sett
 		&result.LeaderboardMin,
 		&result.MuteSpectator,
 		&result.DisplayRoomCode,
+		&version,
 	)
 	if err != nil {
-		return nil, err
+		return nil, NoSettingsRow, err
 	}
 	if voiceRules == nil {
 		result.VoiceRules = game.MakeMuteAndDeafenRules()
 	} else if err := json.Unmarshal(voiceRules, &result.VoiceRules); err != nil {
-		return nil, fmt.Errorf("decode voice rules: %w", err)
+		return nil, NoSettingsRow, fmt.Errorf("decode voice rules: %w", err)
 	}
 	if delays == nil {
 		result.Delays = game.MakeDefaultDelays()
 	} else if err := json.Unmarshal(delays, &result.Delays); err != nil {
-		return nil, fmt.Errorf("decode delays: %w", err)
+		return nil, NoSettingsRow, fmt.Errorf("decode delays: %w", err)
 	}
-	return &result, nil
+	if version < 1 {
+		return nil, NoSettingsRow, fmt.Errorf("invalid settings version %d", version)
+	}
+	return &result, SettingsVersion(version), nil
 }
 
 // settingsArgs orders values to match settingsColumns, after guild_hash.

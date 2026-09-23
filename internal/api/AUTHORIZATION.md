@@ -11,7 +11,45 @@ The existing GET endpoints `/guild/settings`, `/guild/premium`, `/game/state`,
 and `/game/roomcode` now accept `Authorization: Bearer <Discord access token>`.
 All require `guildID`; game endpoints also require `connectCode`. Membership is
 required to read premium status; purchasing premium remains a separate policy.
-No write endpoint has been added.
+`PATCH /guild/settings?guildID=...` writes settings and requires `WriteSettings`:
+the verified guild owner or a member holding Discord Administrator. The body is
+a JSON object holding any subset of the GET document; present fields replace the
+stored value, absent fields keep it, and voice-rule/delay rows are replaced
+whole. The handler loads the stored row, fills legacy gaps with defaults
+(`FillDefaults`), decodes strictly (`UnmarshalStrict`: exact key names, no
+nulls, no unknown fields), validates the whole document (`Validate`, against
+the embedded language set) and only then calls `Store.SetSettings`, which
+validates again before Postgres. Decode failures are 400 with a message;
+validation failures are 400 with every offending field path; the response on
+success is the stored document. Bodies over 64 KiB are 413. The settings the
+`/settings` slash command reserves for premium guilds (match summary deletion
+and channel, auto refresh, leaderboard mention/size/min, spectator muting, room
+code display) are reserved here too: a request that changes one of them on a
+guild whose premium is free or expired is refused with 403 listing the fields,
+and nothing in that request is applied. Resubmitting a stored value is not a
+change. Premium is looked up only when such a field changes; a lookup failure
+refuses the write.
+
+Every settings row carries a `version` (1 on creation, +1 per write, including the
+bot's own slash-command writes). GET returns it as a strong `ETag`; PATCH accepts
+`If-Match` and answers 412 if the stored version differs, and the write itself is
+conditional on the version that was loaded, so two overlapping PATCHes cannot
+silently merge: the loser gets 409 and must reload and retry. The bot's
+unconditional upsert is unchanged apart from bumping the version.
+
+`matchSummaryChannelID` names a channel the bot will post into on the caller's
+behalf, so a syntactically valid ID is not enough: the API resolves the channel
+with the bot's own token (`DISCORD_BOT_TOKEN`, optional) and requires it to be a
+text-capable channel of the guild being edited, else 400. Without a bot token
+the API refuses to change the channel (501) but still allows clearing it. The
+bot independently re-checks the channel against its guild cache before posting,
+so a stale or hostile stored value falls back to the game's channel.
+
+Each guild has a write budget of 10 PATCH attempts per minute, counted in Redis
+after authentication and before anything else, so anonymous callers cannot
+drain it. Exceeding it is 429 with `Retry-After`; an unreachable Redis is 503,
+never an unmetered write. Every successful write logs the verified Discord user
+ID (or "platform admin" for Basic Auth) and the top-level fields sent.
 
 Go calls Discord `/users/@me` and `/users/@me/guilds` with the supplied token,
 handles guild pagination, and parses permission strings as integers. Tokens from
@@ -79,8 +117,10 @@ server-side policy and are not OAuth scopes to request from Discord.
 
 - Add game and premium dashboard views; coordinate simultaneous token refreshes
   across replicas if needed.
-- Add validated settings writes with concurrency protection and actor auditing;
-  protect cookie-authenticated Next.js writes against CSRF.
+- Decide on concurrency protection for settings writes: the PATCH is a
+  read-merge-write with no version check, same as the slash commands. An
+  `If-Match`/ETag scheme would need the load path to surface `updated_at`.
+  Protect cookie-authenticated Next.js writes against CSRF.
 - Consider bounded authorization caching and Discord rate-limit coordination for
   polling workloads. Do not silently retain access after verification fails.
 - Add game discovery so the UI can find authorized games without knowing capture

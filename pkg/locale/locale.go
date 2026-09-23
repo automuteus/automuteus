@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 	"github.com/automuteus/automuteus/v8/locales"
@@ -14,15 +15,22 @@ import (
 
 const DefaultLang = "en"
 
-var bundleInstance *i18n.Bundle
-
-var localeLanguages = make(map[string]string)
+// The published bundle and language set are replaced atomically under mu and
+// never mutated after publication, so readers only ever see a complete set.
+// initMu serializes lazy initialization so concurrent first callers load once.
+var (
+	mu              sync.RWMutex
+	initMu          sync.Mutex
+	bundleInstance  *i18n.Bundle
+	localeLanguages = map[string]string{}
+)
 
 // messageFile matches the go-i18n active message files; the tag comes from the file name.
 var messageFile = regexp.MustCompile(`^active\.(?P<lang>.*)\.toml$`)
 
 // InitLang loads the embedded translations (locales/active.*.toml). defaultLang
-// is the fallback language; empty means DefaultLang.
+// is the fallback language; empty means DefaultLang. Safe to call from any
+// goroutine; readers switch to the new set atomically.
 func InitLang(defaultLang string) {
 	InitLangFS(locales.FS, defaultLang)
 }
@@ -33,38 +41,58 @@ func InitLangFS(fsys fs.FS, defaultLang string) {
 	if defaultLang == "" {
 		defaultLang = DefaultLang
 	}
-	bundleInstance = LoadTranslations(fsys, defaultLang)
+	LoadTranslations(fsys, defaultLang)
 }
 
+// GetBundle returns the published bundle, loading the embedded translations on
+// first use. Concurrent first callers block on one load rather than each
+// loading their own.
 func GetBundle() *i18n.Bundle {
-	if bundleInstance == nil {
-		InitLang("")
+	mu.RLock()
+	bundle := bundleInstance
+	mu.RUnlock()
+	if bundle != nil {
+		return bundle
 	}
-	return bundleInstance
+	initMu.Lock()
+	defer initMu.Unlock()
+	mu.RLock()
+	bundle = bundleInstance
+	mu.RUnlock()
+	if bundle == nil {
+		InitLang("")
+		mu.RLock()
+		bundle = bundleInstance
+		mu.RUnlock()
+	}
+	return bundle
 }
 
 // GetLanguages returns the loaded language tags mapped to their display names,
 // loading the embedded translations first if nothing has been loaded yet, so a
-// process that never localizes anything (the API) still sees the full set.
+// process that never localizes anything (the API) still sees the full set. The
+// returned map is shared and must be treated as read-only.
 func GetLanguages() map[string]string {
 	GetBundle()
+	mu.RLock()
+	defer mu.RUnlock()
 	return localeLanguages
 }
 
 // LoadTranslations reads every active.<tag>.toml at the root of fsys into a new
-// bundle. The default language is always present in the returned language set,
-// even when it has no message file, since its messages are compiled in.
+// bundle and publishes it. The default language is always present in the
+// language set, even when it has no message file, since its messages are
+// compiled in.
 func LoadTranslations(fsys fs.FS, defaultLang string) *i18n.Bundle {
 	bundle := i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
-	localeLanguages = make(map[string]string)
-	localeLanguages[defaultLang] = language.Make(defaultLang).String()
+	langs := map[string]string{defaultLang: language.Make(defaultLang).String()}
 
 	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
 		log.Println(err)
-		bundleInstance = bundle
+		publish(bundle, langs)
 		return bundle
 	}
 	for _, entry := range entries {
@@ -89,13 +117,20 @@ func LoadTranslations(fsys fs.FS, defaultLang string) *i18n.Bundle {
 				Other: "English",
 			},
 		})
-		localeLanguages[fileLang] = langName
+		langs[fileLang] = langName
 
 		log.Printf("[Locale] Loaded language: %s - %s", fileLang, langName)
 	}
 
-	bundleInstance = bundle
+	publish(bundle, langs)
 	return bundle
+}
+
+func publish(bundle *i18n.Bundle, langs map[string]string) {
+	mu.Lock()
+	bundleInstance = bundle
+	localeLanguages = langs
+	mu.Unlock()
 }
 
 // func LocalizeMessage(message *i18n.Message, templateData map[string]interface{}) string {

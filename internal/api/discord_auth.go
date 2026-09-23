@@ -152,6 +152,9 @@ func (v *discordVerifier) VerifyGuild(ctx context.Context, token, guildID string
 
 const memberRequestKey = "api.memberRequest"
 
+// verifiedUserKey holds the Discord user ID the Bearer token resolved to, for audit logs. Absent on Basic Auth.
+const verifiedUserKey = "api.verifiedUser"
+
 // Explicitly configured platform credentials retain legacy access. Default
 // credentials cannot bypass user authorization on these endpoints.
 func guildAuthentication(config Config, verifier GuildVerifier, action GuildAction) gin.HandlerFunc {
@@ -191,5 +194,6 @@ func guildAuthentication(config Config, verifier GuildVerifier, action GuildActi
 			return
 		}
 		c.Set(memberRequestKey, true)
+		c.Set(verifiedUserKey, access.UserID)
 	}
 }

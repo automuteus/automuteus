@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -104,6 +105,37 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM guild_settings WHERE guild_hash=$1", hash).Scan(&count); err != nil || count != 1 {
 		t.Fatalf("migration row: %d %v", count, err)
+	}
+	// Writes through the store are what the bot reads next: change one field and read it back over HTTP.
+	updated := settings.MakeGuildSettings()
+	updated.SetLanguage("de")
+	updated.SetLeaderboardSize(7)
+	_, version, err := store.Settings(ctx, guildID)
+	if err != nil {
+		t.Fatalf("load settings version: %v", err)
+	}
+	if err := store.SetSettings(ctx, guildID, updated, version); err != nil {
+		t.Fatalf("set settings: %v", err)
+	}
+	// The same version again is stale now: the write must conflict rather than overwrite.
+	if err := store.SetSettings(ctx, guildID, updated, version); !errors.Is(err, storage.ErrSettingsConflict) {
+		t.Fatalf("stale version write: want ErrSettingsConflict, got %v", err)
+	}
+	if _, after, err := store.Settings(ctx, guildID); err != nil || after != version+1 {
+		t.Fatalf("version after write = %d (%v), want %d", after, err, version+1)
+	}
+	w = request(t, router, "/guild/settings?guildID="+guildID, true)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"leaderboardSize":7`) || !strings.Contains(w.Body.String(), `"language":"de"`) {
+		t.Fatalf("settings after write: %d %s", w.Code, w.Body)
+	}
+	invalid := settings.MakeGuildSettings()
+	invalid.SetLeaderboardSize(99)
+	if err := store.SetSettings(ctx, guildID, invalid, version+1); err == nil {
+		t.Fatal("invalid settings were stored")
+	}
+	w = request(t, router, "/guild/settings?guildID="+guildID, true)
+	if !strings.Contains(w.Body.String(), `"leaderboardSize":7`) {
+		t.Fatalf("rejected write changed stored settings: %s", w.Body)
 	}
 	for _, path := range []string{"/guild/premium?guildID=" + guildID, "/ready"} {
 		if w := request(t, router, path, true); w.Code != 200 {

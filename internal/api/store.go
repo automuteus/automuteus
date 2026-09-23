@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
-
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -14,6 +16,7 @@ import (
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"time"
 )
 
 // DataStore borrows the API process's connections. It reads shared data directly
@@ -89,8 +92,68 @@ func (s *DataStore) RoomCode(ctx context.Context, connectCode string) (string, e
 	return s.redis.Get(ctx, rediskey.RoomCodesForConnCode(connectCode)).Result()
 }
 
-func (s *DataStore) Settings(ctx context.Context, guildID string) (*settings.GuildSettings, error) {
-	return s.settings.LoadGuildSettings(ctx, guildID)
+func (s *DataStore) Settings(ctx context.Context, guildID string) (*settings.GuildSettings, storage.SettingsVersion, error) {
+	return s.settings.LoadGuildSettingsVersion(ctx, guildID)
+}
+
+// SetSettings persists a complete settings document for one guild. It is the
+// last line of defence before storage: whatever the handler checked, a document
+// that fails settings.Validate (against the embedded language set) or a guild ID
+// that is not a snowflake is refused here, so an invalid document can never
+// reach Postgres through the API. A settings.ValidationErrors is returned in
+// that case so the caller can tell client mistakes from storage failures. The
+// write is conditional on expected, the version returned by Settings; a
+// concurrent change is storage.ErrSettingsConflict and nothing is written.
+func (s *DataStore) SetSettings(ctx context.Context, guildID string, sett *settings.GuildSettings, expected storage.SettingsVersion) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := discord.ValidateSnowflake(guildID); err != nil {
+		return errors.New("invalid guild ID")
+	}
+	if err := sett.Validate(locale.GetLanguages()); err != nil {
+		return err
+	}
+	return s.settings.SetGuildSettingsIfVersion(ctx, guildID, sett, expected)
+}
+
+// settingsWriteBudget increments the guild's counter, starts the window on the first hit, and returns the count
+// and the seconds left in the window, atomically, so a crash between INCR and EXPIRE can never leave a guild
+// locked out for good.
+var settingsWriteBudget = redis.NewScript(`
+local n = redis.call('INCR', KEYS[1])
+if n == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return {n, redis.call('TTL', KEYS[1])}
+`)
+
+// ReserveSettingsWrite fails closed: if Redis cannot be reached the write is refused rather than allowed
+// unmetered, matching how the bot treats Redis everywhere else.
+func (s *DataStore) ReserveSettingsWrite(ctx context.Context, guildID string) (time.Duration, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	key := rediskey.APISettingsWriteLimit(guildID)
+	raw, err := settingsWriteBudget.Run(ctx, s.redis, []string{key}, int(SettingsWriteWindow.Seconds())).Result()
+	if err != nil {
+		return 0, fmt.Errorf("settings write budget: %w", err)
+	}
+	reply, ok := raw.([]interface{})
+	if !ok || len(reply) != 2 {
+		return 0, fmt.Errorf("settings write budget: unexpected reply %v", reply)
+	}
+	count, countOK := reply[0].(int64)
+	ttl, ttlOK := reply[1].(int64)
+	if !countOK || !ttlOK {
+		return 0, fmt.Errorf("settings write budget: unexpected reply %v", reply)
+	}
+	if count <= SettingsWriteLimit {
+		return 0, nil
+	}
+	if ttl <= 0 {
+		// The key has no expiry (it should always have one); refuse for a full window rather than forever.
+		ttl = int64(SettingsWriteWindow.Seconds())
+	}
+	return time.Duration(ttl) * time.Second, nil
 }
 
 func (s *DataStore) Premium(ctx context.Context, guildID string) (premium.PremiumRecord, error) {

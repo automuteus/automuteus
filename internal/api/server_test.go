@@ -8,10 +8,12 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )
@@ -20,6 +22,20 @@ type fakeStore struct {
 	err    error
 	calls  int
 	notice *notice.Notice
+
+	// savedGuild and saved record the last SetSettings call. saveErr fails only SetSettings; stored, when set,
+	// is what Settings returns instead of fresh defaults; writeRetryAfter makes ReserveSettingsWrite refuse.
+	savedGuild      string
+	saved           *settings.GuildSettings
+	saveErr         error
+	stored          *settings.GuildSettings
+	writeRetryAfter time.Duration
+	// version is the row version Settings reports; SetSettings requires it and bumps it.
+	version storage.SettingsVersion
+	// premium, when set, is what Premium returns instead of self-host; premiumErr fails only Premium.
+	premium      *premium.PremiumRecord
+	premiumErr   error
+	premiumCalls int
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -52,12 +68,41 @@ func (s *fakeStore) RoomCode(context.Context, string) (string, error) {
 	s.calls++
 	return "ABCDEF", s.err
 }
-func (s *fakeStore) Settings(context.Context, string) (*settings.GuildSettings, error) {
+func (s *fakeStore) Settings(context.Context, string) (*settings.GuildSettings, storage.SettingsVersion, error) {
 	s.calls++
-	return settings.MakeGuildSettings(), s.err
+	if s.stored != nil {
+		return s.stored, s.version, s.err
+	}
+	return settings.MakeGuildSettings(), s.version, s.err
+}
+func (s *fakeStore) SetSettings(_ context.Context, guildID string, sett *settings.GuildSettings, expected storage.SettingsVersion) error {
+	s.calls++
+	if s.err != nil {
+		return s.err
+	}
+	if s.saveErr != nil {
+		return s.saveErr
+	}
+	if expected != s.version {
+		return storage.ErrSettingsConflict
+	}
+	s.version++
+	s.savedGuild, s.saved = guildID, sett
+	return nil
+}
+func (s *fakeStore) ReserveSettingsWrite(context.Context, string) (time.Duration, error) {
+	s.calls++
+	return s.writeRetryAfter, s.err
 }
 func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, error) {
 	s.calls++
+	s.premiumCalls++
+	if s.premiumErr != nil {
+		return premium.PremiumRecord{}, s.premiumErr
+	}
+	if s.premium != nil {
+		return *s.premium, s.err
+	}
 	return premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, s.err
 }
 func (s *fakeStore) Ping(context.Context) error { s.calls++; return s.err }
