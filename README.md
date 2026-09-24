@@ -331,13 +331,13 @@ Regenerate Swagger documentation with the generator matching the Go dependency:
 CGO_ENABLED=0 go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 ```
 
-### Upgrading: guild settings moved from Redis to Postgres
+### Upgrading from 8.x or earlier
 
-Guild settings are now stored in Postgres instead of Redis. No manual step is
-needed: each guild's settings are moved the first time the new version reads
-them. Guilds that are never read again can be moved with the optional sweep in
-`cmd/migrate-guild-settings`. See
-[storage/GUILD_SETTINGS_MIGRATION.md](storage/GUILD_SETTINGS_MIGRATION.md).
+Guild settings are stored in Postgres. 8.x and earlier kept them in Redis, and
+9.2.x is the last release that can move them. Upgrade to 9.2.x first and run
+its `cmd/migrate-guild-settings` sweep before moving to 10.0 or later;
+otherwise every guild falls back to the default settings. See
+[storage/GUILD_SETTINGS.md](storage/GUILD_SETTINGS.md).
 
 ### Galactus environment variables
 
@@ -378,7 +378,9 @@ go run ./cmd/seed-stats -guild <guild ID> -clean | docker exec -i deploy-postgre
 
 Seeded games use connect codes starting with `SEED`, which is all `-clean`
 removes. The same `-seed` always produces the same players and outcomes; only
-the timestamps follow the time of the run.
+the timestamps follow the time of the run. Each game also gets up to `-guests`
+(default 2) unlinked players, who appear only in its events and game over
+report, as they would for a real lobby.
 
 # Similar Projects
 

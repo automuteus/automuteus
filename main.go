@@ -23,7 +23,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/logging"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 
 	"github.com/automuteus/automuteus/v8/storage"
 
@@ -164,11 +163,7 @@ func discordMainWrapper() error {
 	if err != nil {
 		return err
 	}
-	// Settings that are still in Redis from older versions are moved to
-	// Postgres the first time each guild is read.
-	legacySettings := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
-	defer legacySettings.Close()
-	storageInterface := storage.NewPostgresStorage(psql.Pool, legacySettings)
+	storageInterface := storage.NewPostgresStorage(psql.Pool)
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)

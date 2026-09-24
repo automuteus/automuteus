@@ -48,6 +48,9 @@ var roster = []player{
 	{900000000000000012, "limelight", "Lime", 0.55},
 }
 
+// Guests join lobbies without linking to Discord, so they only appear in events and the game over report.
+var guests = []string{"Guest1", "Kiwi", "Mochi", "Sora", "Taro"}
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -62,6 +65,7 @@ func run() error {
 	include := flag.String("include", "", "comma-separated real user IDs to put on the roster, optionally as id:nickname")
 	seed := flag.Int64("seed", 1, "random seed; the same seed always produces the same players and outcomes")
 	days := flag.Int("days", 60, "spread the games over this many days ending now")
+	maxGuests := flag.Int("guests", 2, "up to this many unlinked players join each game (max 5)")
 	redis := flag.Bool("redis", false, "print redis-cli commands that cache the roster's names instead of SQL")
 	clean := flag.Bool("clean", false, "print SQL that removes every seeded game for the guild")
 	flag.Parse()
@@ -71,6 +75,9 @@ func run() error {
 	if *clean {
 		fmt.Printf("DELETE FROM games WHERE guild_id = %d AND connect_code LIKE 'SEED%%';\n", *guild)
 		return nil
+	}
+	if *maxGuests < 0 || *maxGuests > len(guests) {
+		return fmt.Errorf("-guests must be between 0 and %d", len(guests))
 	}
 	if *players < 2 || *players > len(roster) {
 		return fmt.Errorf("-players must be between 2 and %d", len(roster))
@@ -107,10 +114,10 @@ func run() error {
 		}
 		return nil
 	}
-	return writeSQL(os.Stdout, *guild, team, *games, *days, rand.New(rand.NewSource(*seed)))
+	return writeSQL(os.Stdout, *guild, team, *games, *days, *maxGuests, rand.New(rand.NewSource(*seed)))
 }
 
-func writeSQL(w *os.File, guild uint64, team []player, games, days int, rng *rand.Rand) error {
+func writeSQL(w *os.File, guild uint64, team []player, games, days, maxGuests int, rng *rand.Rand) error {
 	fmt.Fprintln(w, "BEGIN;")
 	fmt.Fprintf(w, "INSERT INTO guilds (guild_id, guild_name, premium) VALUES (%d, 'Seeded guild', 0) ON CONFLICT DO NOTHING;\n", guild)
 	for _, p := range team {
@@ -121,7 +128,7 @@ func writeSQL(w *os.File, guild uint64, team []player, games, days int, rng *ran
 	first := now - int64(days)*86400
 	for i := range games {
 		start := first + int64(float64(now-first)*float64(i)/float64(games)) + rng.Int63n(3600)
-		if err := writeGame(w, guild, team, i, start, rng); err != nil {
+		if err := writeGame(w, guild, team, i, start, maxGuests, rng); err != nil {
 			return err
 		}
 	}
@@ -129,12 +136,35 @@ func writeSQL(w *os.File, guild uint64, team []player, games, days int, rng *ran
 	return nil
 }
 
-func writeGame(w *os.File, guild uint64, team []player, index int, start int64, rng *rand.Rand) error {
-	// 6 to 10 players, or everyone if the roster is smaller; one impostor under 8 players, else two.
+// inGameName is the name a player shows in game: the bot records at most ten characters.
+func (p player) inGameName() string {
+	name := p.username
+	if name == "" {
+		name = p.nickname
+	}
+	if name == "" {
+		name = "player"
+	}
+	if len(name) > 10 {
+		name = name[:10]
+	}
+	return name
+}
+
+func writeGame(w *os.File, guild uint64, team []player, index int, start int64, maxGuests int, rng *rand.Rand) error {
+	// 6 to 10 linked players, or everyone if the roster is smaller, plus up to maxGuests unlinked guests (ID 0);
+	// one impostor under 8 players, else two. Guests are shuffled in, so they are impostors as often as anyone.
 	n := min(6+rng.Intn(5), len(team))
 	lobby := append([]player{}, team...)
 	rng.Shuffle(len(lobby), func(a, b int) { lobby[a], lobby[b] = lobby[b], lobby[a] })
 	lobby = lobby[:n]
+	if maxGuests > 0 {
+		for _, g := range rng.Perm(len(guests))[:rng.Intn(maxGuests+1)] {
+			lobby = append(lobby, player{username: guests[g], skill: 0.5})
+		}
+		rng.Shuffle(len(lobby), func(a, b int) { lobby[a], lobby[b] = lobby[b], lobby[a] })
+		n = len(lobby)
+	}
 	impostors := 1
 	if n >= 8 {
 		impostors = 2
@@ -183,23 +213,17 @@ func writeGame(w *os.File, guild uint64, team []player, index int, start int64, 
 			role = game.ImposterRole
 			won = impostorWin
 		}
-		name := p.username
-		if name == "" {
-			name = p.nickname
+		if p.id == 0 {
+			continue // the bot records only linked players
 		}
-		if name == "" {
-			name = "player"
-		}
-		if len(name) > 10 {
-			name = name[:10]
-		}
-		rows = append(rows, fmt.Sprintf("(%d::numeric, %d::numeric, '%s', %d::smallint, %d::smallint, %t)", p.id, guild, strings.ReplaceAll(name, "'", "''"), colors[i], int16(role), won))
+		rows = append(rows, fmt.Sprintf("(%d::numeric, %d::numeric, '%s', %d::smallint, %d::smallint, %t)", p.id, guild, strings.ReplaceAll(p.inGameName(), "'", "''"), colors[i], int16(role), won))
 	}
 	fmt.Fprintf(w, ",\np AS (INSERT INTO users_games (user_id, guild_id, game_id, player_name, player_color, player_role, player_won) SELECT v.user_id, v.guild_id, g.game_id, v.player_name, v.player_color, v.player_role, v.player_won FROM g, (VALUES %s) AS v(user_id, guild_id, player_name, player_color, player_role, player_won))",
 		strings.Join(rows, ", "))
 
-	// Events: a task phase, then a few rounds of kill and meeting. Crewmates die in a random order, the first
-	// death being what the first-target board counts; a vote-off is recorded as an exile.
+	// Events: a task phase, then a few rounds of kill and meeting, then the capture's game over report naming
+	// every player's role. Crewmates die in a random order, the first death being what the first-target board
+	// counts; a vote-off is recorded as an exile. Events for guests carry no user ID, as the bot records them.
 	type event struct {
 		user    string
 		at      int64
@@ -207,7 +231,22 @@ func writeGame(w *os.File, guild uint64, team []player, index int, start int64, 
 		payload string
 	}
 	events := []event{{"NULL", start + 5, capture.State, fmt.Sprint(game.TASKS)}}
-	crew := append([]player{}, lobby[impostors:]...)
+	userOf := func(p player) string {
+		if p.id == 0 {
+			return "NULL"
+		}
+		return fmt.Sprint(p.id)
+	}
+	// Colors travel with the crewmates through the shuffle, so a player's events use the color they have in
+	// users_games.
+	type crewmate struct {
+		player
+		color int
+	}
+	crew := make([]crewmate, 0, n-impostors)
+	for i, p := range lobby[impostors:] {
+		crew = append(crew, crewmate{p, colors[impostors+i]})
+	}
 	rng.Shuffle(len(crew), func(a, b int) { crew[a], crew[b] = crew[b], crew[a] })
 	deaths := rng.Intn(len(crew))
 	if impostorWin && deaths < len(crew)/2 {
@@ -216,8 +255,8 @@ func writeGame(w *os.File, guild uint64, team []player, index int, start int64, 
 	t := start + 60
 	for i := 0; i < deaths && t < start+duration-30; i++ {
 		p := crew[i]
-		payload, _ := json.Marshal(game.Player{Action: game.DIED, Name: p.username, Color: colors[impostors+i], IsDead: true})
-		events = append(events, event{fmt.Sprint(p.id), t, capture.Player, string(payload)})
+		payload, _ := json.Marshal(game.Player{Action: game.DIED, Name: p.inGameName(), Color: p.color, IsDead: true})
+		events = append(events, event{userOf(p.player), t, capture.Player, string(payload)})
 		t += int64(20 + rng.Intn(60))
 		if rng.Intn(2) == 0 {
 			events = append(events, event{"NULL", t, capture.State, fmt.Sprint(game.DISCUSS)})
@@ -226,13 +265,19 @@ func writeGame(w *os.File, guild uint64, team []player, index int, start int64, 
 				// The meeting votes out an innocent crewmate.
 				i++
 				v := crew[i]
-				payload, _ := json.Marshal(game.Player{Action: game.EXILED, Name: v.username, Color: colors[impostors+i], IsDead: true})
-				events = append(events, event{fmt.Sprint(v.id), t, capture.Player, string(payload)})
+				payload, _ := json.Marshal(game.Player{Action: game.EXILED, Name: v.inGameName(), Color: v.color, IsDead: true})
+				events = append(events, event{userOf(v.player), t, capture.Player, string(payload)})
 			}
 			events = append(events, event{"NULL", t + 5, capture.State, fmt.Sprint(game.TASKS)})
 			t += 30
 		}
 	}
+	report := game.Gameover{GameOverReason: result, PlayerInfos: make([]game.PlayerInfo, 0, n)}
+	for i, p := range lobby {
+		report.PlayerInfos = append(report.PlayerInfos, game.PlayerInfo{Name: p.inGameName(), IsImpostor: i < impostors})
+	}
+	payload, _ := json.Marshal(report)
+	events = append(events, event{"NULL", start + duration, capture.GameOver, string(payload)})
 	values := make([]string, 0, len(events))
 	for _, e := range events {
 		user := "NULL::numeric"

@@ -43,6 +43,10 @@ type fakeStore struct {
 	stats      *GuildStats
 	statsErr   error
 	statsCalls int
+	// match, when set, is what MatchSummary returns; matchErr fails only MatchSummary.
+	match      *MatchSummary
+	matchErr   error
+	matchCalls int
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -122,6 +126,17 @@ func (s *fakeStore) GuildStats(_ context.Context, guildID string) (GuildStats, e
 		return *s.stats, s.err
 	}
 	return GuildStats{GuildID: guildID, Summary: GuildStatsSummary{GamesPlayed: 7}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) MatchSummary(_ context.Context, guildID, matchID string) (MatchSummary, error) {
+	s.calls++
+	s.matchCalls++
+	if s.matchErr != nil {
+		return MatchSummary{}, s.matchErr
+	}
+	if s.match != nil {
+		return *s.match, s.err
+	}
+	return MatchSummary{GuildID: guildID, MatchID: matchID, Status: "finished", Roster: []MatchPlayer{}, Players: map[string]StatsPlayer{}}, s.err
 }
 func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
 	s.calls++

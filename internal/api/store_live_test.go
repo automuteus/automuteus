@@ -39,7 +39,7 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Separate Redis DB from the migration sweep tests running in other packages.
+	// Separate Redis DB from the live tests running in other packages.
 	r := redis.NewClient(&redis.Options{Addr: addr, DB: 15})
 	defer r.Close()
 	config := Config{Version: "api-test", Commit: "test-commit", AdminPassword: "test-password"}
@@ -49,10 +49,9 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 	hash := string(rediskey.HashGuildID(guildID))
 	key := rediskey.ConnectCodeData(guildID, code)
 	pointer := rediskey.ConnectCodePtr(guildID, code)
-	legacyKey := rediskey.GuildSettings(rediskey.HashedID(hash))
 	defer pool.Exec(ctx, "DELETE FROM guild_settings WHERE guild_hash=$1", hash)
 	pool.Exec(ctx, "DELETE FROM guild_settings WHERE guild_hash=$1", hash)
-	keys := []string{key, pointer, legacyKey, rediskey.RoomCodesForConnCode(code), rediskey.TotalGuildsSet, rediskey.ActiveGamesZSet, rediskey.TotalUsers, rediskey.TotalGames}
+	keys := []string{key, pointer, rediskey.RoomCodesForConnCode(code), rediskey.TotalGuildsSet, rediskey.ActiveGamesZSet, rediskey.TotalUsers, rediskey.TotalGames}
 	defer r.Del(ctx, keys...)
 	state := bot.NewDiscordGameState(guildID)
 	state.ConnectCode = code
@@ -88,23 +87,12 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 	}
 	sett := settings.MakeGuildSettings()
 	sett.SetLanguage("de")
-	legacy, err := json.Marshal(sett)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := r.Set(ctx, legacyKey, legacy, 0).Err(); err != nil {
+	if err := storage.NewPostgresStorage(pool).SetGuildSettings(guildID, sett); err != nil {
 		t.Fatal(err)
 	}
 	w = request(t, router, "/guild/settings?guildID="+guildID, true)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"language":"de"`) {
 		t.Fatalf("settings: %d %s", w.Code, w.Body)
-	}
-	if r.Exists(ctx, legacyKey).Val() != 0 {
-		t.Fatal("API did not migrate legacy settings on read")
-	}
-	var count int
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM guild_settings WHERE guild_hash=$1", hash).Scan(&count); err != nil || count != 1 {
-		t.Fatalf("migration row: %d %v", count, err)
 	}
 	// Writes through the store are what the bot reads next: change one field and read it back over HTTP.
 	updated := settings.MakeGuildSettings()

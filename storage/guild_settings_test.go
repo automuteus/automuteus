@@ -100,7 +100,7 @@ func TestLoadResolvesNullDocumentsToDefaults(t *testing.T) {
 	id := "123"
 	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(string(rediskey.HashGuildID(id))).
 		WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(selectRow(defaultRow(), 1)...))
-	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), id)
+	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,17 +115,17 @@ func TestLoadDecodesStoredDocuments(t *testing.T) {
 		mustMarshal(t, want.Delays), want.DeleteGameSummaryMinutes, want.UnmuteDeadDuringTasks, want.AutoRefresh,
 		want.MatchSummaryChannelID, want.LeaderboardMention, want.LeaderboardSize, want.LeaderboardMin,
 		want.MuteSpectator, want.DisplayRoomCode, int64(9)))
-	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
+	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertSettingsEqual(t, want, got)
 }
 
-func TestLoadMissingGuildWithoutLegacyReturnsDefaultsWithoutWriting(t *testing.T) {
+func TestLoadMissingGuildReturnsDefaultsWithoutWriting(t *testing.T) {
 	mock := newMock(t)
 	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnError(pgx.ErrNoRows)
-	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
+	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestLoadFailureDoesNotReturnDefaults(t *testing.T) {
 	mock := newMock(t)
 	failure := errors.New("database unavailable")
 	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnError(failure)
-	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
+	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if !errors.Is(err, failure) || got != nil {
 		t.Fatalf("got %v, %v", got, err)
 	}
@@ -147,7 +147,7 @@ func TestLoadMalformedDocumentFails(t *testing.T) {
 	row := selectRow(defaultRow(), 1)
 	row[3] = []byte(`[1]`)
 	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(row...))
-	got, err := NewPostgresStorage(mock, nil).LoadGuildSettings(context.Background(), "123")
+	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if err == nil || got != nil {
 		t.Fatalf("malformed document did not fail: %v, %v", got, err)
 	}
@@ -159,7 +159,7 @@ func TestSetStoresDefaultDocumentsAsNull(t *testing.T) {
 	args := append([]interface{}{string(rediskey.HashGuildID(id))}, defaultRow()...)
 	mock.ExpectExec(`INSERT INTO guild_settings .* ON CONFLICT \(guild_hash\) DO UPDATE SET`).WithArgs(args...).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
-	if err := NewPostgresStorage(mock, nil).SetGuildSettings(id, settings.MakeGuildSettings()); err != nil {
+	if err := NewPostgresStorage(mock).SetGuildSettings(id, settings.MakeGuildSettings()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -172,7 +172,7 @@ func TestSetStoresCustomDocuments(t *testing.T) {
 		sett.MapVersion, mustMarshal(t, sett.Delays), sett.DeleteGameSummaryMinutes, sett.UnmuteDeadDuringTasks,
 		sett.AutoRefresh, sett.MatchSummaryChannelID, sett.LeaderboardMention, sett.LeaderboardSize,
 		sett.LeaderboardMin, sett.MuteSpectator, sett.DisplayRoomCode).WillReturnResult(pgxmock.NewResult("INSERT", 1))
-	if err := NewPostgresStorage(mock, nil).SetGuildSettings("123", sett); err != nil {
+	if err := NewPostgresStorage(mock).SetGuildSettings("123", sett); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -185,7 +185,7 @@ func TestSetWithContextStoresCustomDocuments(t *testing.T) {
 		sett.MapVersion, mustMarshal(t, sett.Delays), sett.DeleteGameSummaryMinutes, sett.UnmuteDeadDuringTasks,
 		sett.AutoRefresh, sett.MatchSummaryChannelID, sett.LeaderboardMention, sett.LeaderboardSize,
 		sett.LeaderboardMin, sett.MuteSpectator, sett.DisplayRoomCode).WillReturnResult(pgxmock.NewResult("INSERT", 1))
-	if err := NewPostgresStorage(mock, nil).SetGuildSettingsContext(context.Background(), "123", sett); err != nil {
+	if err := NewPostgresStorage(mock).SetGuildSettingsContext(context.Background(), "123", sett); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -194,20 +194,20 @@ func TestSetWithContextStoresCustomDocuments(t *testing.T) {
 func TestSetWithCancelledContextDoesNotWrite(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := NewPostgresStorage(newMock(t), nil).SetGuildSettingsContext(ctx, "123", loadFixture(t))
+	err := NewPostgresStorage(newMock(t)).SetGuildSettingsContext(ctx, "123", loadFixture(t))
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("want context.Canceled, got %v", err)
 	}
 }
 
 func TestSetWithContextNilSettingsFails(t *testing.T) {
-	if err := NewPostgresStorage(newMock(t), nil).SetGuildSettingsContext(context.Background(), "123", nil); err == nil {
+	if err := NewPostgresStorage(newMock(t)).SetGuildSettingsContext(context.Background(), "123", nil); err == nil {
 		t.Fatal("nil settings were accepted")
 	}
 }
 
 func TestSetNilSettingsFails(t *testing.T) {
-	if err := NewPostgresStorage(newMock(t), nil).SetGuildSettings("123", nil); err == nil {
+	if err := NewPostgresStorage(newMock(t)).SetGuildSettings("123", nil); err == nil {
 		t.Fatal("nil settings were accepted")
 	}
 }
@@ -217,35 +217,7 @@ func TestDeleteRemovesRow(t *testing.T) {
 	id := "123"
 	mock.ExpectExec("DELETE FROM guild_settings WHERE guild_hash").WithArgs(string(rediskey.HashGuildID(id))).
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
-	if err := NewPostgresStorage(mock, nil).DeleteGuildSettings(id); err != nil {
+	if err := NewPostgresStorage(mock).DeleteGuildSettings(id); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestDecodeLegacySettings(t *testing.T) {
-	for _, blob := range []string{``, `null`, `[]`, `{"language":7}`, `{} {}`} {
-		for _, strict := range []bool{false, true} {
-			if _, err := decodeLegacySettings([]byte(blob), strict); err == nil {
-				t.Errorf("accepted %q (strict=%v)", blob, strict)
-			}
-		}
-	}
-	if _, err := decodeLegacySettings([]byte(`{"unknownSetting":true}`), true); err == nil {
-		t.Error("strict decode accepted an unknown field")
-	}
-	if _, err := decodeLegacySettings([]byte(`{"unknownSetting":true}`), false); err != nil {
-		t.Errorf("lenient decode rejected an unknown field: %v", err)
-	}
-	// Legacy records decode into a zero struct: absent fields stay zero.
-	for _, blob := range []string{`{}`, `{"language":"en","adminIDs":[]}`, `{"voiceRules":{"MuteRules":{"TASKS":{"alive":false}}}}`} {
-		var want settings.GuildSettings
-		if err := json.Unmarshal([]byte(blob), &want); err != nil {
-			t.Fatal(err)
-		}
-		got, err := decodeLegacySettings([]byte(blob), true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		assertSettingsEqual(t, &want, got)
 	}
 }

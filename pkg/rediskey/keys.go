@@ -68,10 +68,6 @@ func BotTokenIdentifyLock(token string) string {
 	return "automuteus:token:lock" + token
 }
 
-func GuildSettings(id HashedID) string {
-	return "automuteus:settings:guild:" + string(id)
-}
-
 // APISettingsWriteLimit counts settings writes for a guild made through the HTTP API in the current window, so
 // one guild cannot be rewritten in a tight loop. The window is set by the API when the key is created.
 func APISettingsWriteLimit(guildID string) string {

@@ -38,7 +38,7 @@ func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStor
 	if profiles == nil && config.BotToken != "" {
 		profiles = newDiscordChannelVerifier(config.BotToken)
 	}
-	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool, client), profiles: profiles, config: config}
+	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool), profiles: profiles, config: config}
 }
 
 func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {

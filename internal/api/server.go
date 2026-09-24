@@ -62,6 +62,9 @@ type Store interface {
 	// GuildStats builds the stats page document for a guild: the summary for everyone and, while the guild's
 	// premium is active, the leaderboards too. It is the uncached build; the router caches per guild.
 	GuildStats(context.Context, string) (GuildStats, error)
+	// MatchSummary builds the match summary document for one match of a guild (guild ID, then match ID), or
+	// returns errMatchNotFound. It is the uncached build; the router caches per match.
+	MatchSummary(context.Context, string, string) (MatchSummary, error)
 	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
 	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
 	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
@@ -82,8 +85,8 @@ type Config struct {
 	// ListCacheTTL is how long GET /guild/roles and GET /guild/channels reuse a guild's lists before asking Discord
 	// again. Zero means DefaultListCacheTTL; negative disables caching. PATCH validates roles against a live list.
 	ListCacheTTL time.Duration
-	// StatsCacheTTL is how long GET /guild/stats reuses a guild's rollup before building it again. Zero means
-	// DefaultStatsCacheTTL; negative disables caching.
+	// StatsCacheTTL is how long GET /guild/stats reuses a guild's rollup, and GET /guild/match a match summary,
+	// before building it again. Zero means DefaultStatsCacheTTL; negative disables caching.
 	StatsCacheTTL time.Duration
 	Version       string
 	Commit        string
@@ -183,6 +186,7 @@ func NewRouter(config Config, store Store) *gin.Engine {
 		statsTTL = DefaultStatsCacheTTL
 	}
 	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(newListCache(statsTTL, nil, store.GuildStats)))
+	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(newMatchCache(statsTTL, store.MatchSummary)))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
 	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.

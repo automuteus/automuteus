@@ -520,6 +520,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/guild/match": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "One match of the guild: when it ran, how it ended, the map and region, and the linked players with\ntheir roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline the /stats match slash\ncommand shows (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the\nnumber after the colon in the Match ID the bot posts when a game ends. Responses may be up to a\nminute old.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Get Match Summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "matchID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.MatchSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/guild/premium": {
             "get": {
                 "security": [
@@ -1202,6 +1279,149 @@ const docTemplate = `{
                 },
                 "userId": {
                     "type": "string"
+                }
+            }
+        },
+        "api.MatchEvent": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name and Color identify the player of a player event, as they appeared in game.",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "Offset is seconds since the match started.",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "Type is \"tasks\" or \"discussion\" for a phase beginning, or \"death\", \"exile\", or \"disconnect\" for a player.",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "UserID is set on a player event only when that player is on the roster, so an opted-out or reset player's\nlink is never revealed.",
+                    "type": "string"
+                }
+            }
+        },
+        "api.MatchPlayer": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color is the in-game color key (red, blue, ... coral). The game over report carries no colors, so an\nunlinked player has one only if a timeline event named them; otherwise it is empty.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the in-game name the player used in this match.",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Role is \"crewmate\" or \"impostor\".",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "UserID is set for players linked to a Discord user; absent for everyone else.",
+                    "type": "string"
+                },
+                "won": {
+                    "description": "Won is false for everyone when the result is unknown.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.MatchSummary": {
+            "type": "object",
+            "properties": {
+                "endTime": {
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "map": {
+                    "description": "Map is skeld, mira, polus, dleks, airship, or fungle, and Region is na, eu, or as. Each is absent for\nmatches recorded before they were stored, or when the capture never reported a lobby.",
+                    "type": "string"
+                },
+                "matchId": {
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Players maps every user ID in the roster to a name and picture, resolved as for GET /guild/stats.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatsPlayer"
+                    }
+                },
+                "premium": {
+                    "description": "Premium is the guild's premium status the summary was built under, so the page can explain a missing\ntimeline without a second request.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/premium.PremiumRecord"
+                        }
+                    ]
+                },
+                "region": {
+                    "type": "string"
+                },
+                "result": {
+                    "description": "Result is how a finished match ended: crewmateVote, crewmateTasks, crewmateDisconnect, impostorVote,\nimpostorKill, impostorSabotage, impostorDisconnect, or unknown. Absent unless finished.",
+                    "type": "string"
+                },
+                "roster": {
+                    "description": "Roster lists the players of the match, impostors first. Linked players carry a user ID. When the capture's\ngame over report was kept (matches since it started being recorded), everyone else in the lobby is listed\ntoo, by in-game name; otherwise only linked players are, and nobody is until the match ends.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MatchPlayer"
+                    }
+                },
+                "rosterComplete": {
+                    "description": "RosterComplete reports whether Roster came with the game over report and so names every player. When\nfalse, unlinked and opted-out players are missing and the page should say so.",
+                    "type": "boolean"
+                },
+                "startTime": {
+                    "description": "StartTime and EndTime are Unix times. EndTime is absent while the match is in progress.",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Status is \"finished\", \"inProgress\", or \"aborted\" (ended by /end or the platform before the game reported a\nresult). Only finished matches count toward statistics.",
+                    "type": "string"
+                },
+                "timeline": {
+                    "description": "Timeline is omitted for guilds whose premium is free or expired.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.MatchTimeline"
+                        }
+                    ]
+                },
+                "winner": {
+                    "description": "Winner is \"crewmate\" or \"impostor\"; absent when there is no known winner.",
+                    "type": "string"
+                }
+            }
+        },
+        "api.MatchTimeline": {
+            "type": "object",
+            "properties": {
+                "deaths": {
+                    "type": "integer"
+                },
+                "disconnects": {
+                    "type": "integer"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MatchEvent"
+                    }
+                },
+                "exiles": {
+                    "type": "integer"
+                },
+                "meetings": {
+                    "type": "integer"
                 }
             }
         },

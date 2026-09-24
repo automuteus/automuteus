@@ -194,7 +194,9 @@ func (bot *Bot) consumeQueue(gl *slog.Logger, guildID string, dgsRequest GameSta
 
 		correlatedUserID := bot.processJob(job, sett, premTier, dgsRequest)
 
-		if job.JobType != task.ConnectionJob {
+		// Game over is recorded by dumpGameToPostgres instead: by the time this goroutine reads the state, the
+		// match has been closed, and it could even read the next match's ID.
+		if job.JobType != task.ConnectionJob && job.JobType != task.GameOverJob {
 			gameEvent := storage.PostgresGameEvent{
 				GameID:    -1,
 				UserID:    nil,
@@ -310,7 +312,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 				}
 			}
-			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult)
+			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult, payload)
 
 			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
 			// read-only). This means the original msg is refreshed, not the gameover message
@@ -628,12 +630,24 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 	return i
 }
 
-func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover) {
+// dumpGameToPostgres records a match's result and linked players, and keeps the capture's game over payload as an
+// event of the match: it is the only record of every player's role, linked or not.
+func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover, payload string) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
 		gl.Debug("no active match; not recording game result")
 		return
 	}
 	end := time.Now().Unix()
+
+	err := psql.AddEvent(&storage.PostgresGameEvent{
+		GameID:    dgs.MatchID,
+		EventTime: int32(end),
+		EventType: int16(task.GameOverJob),
+		Payload:   payload,
+	})
+	if err != nil {
+		gl.Error("failed to record game over event", "match", dgs.MatchID, "err", err)
+	}
 
 	userGames := make([]*storage.PostgresUserGame, 0)
 
@@ -692,7 +706,7 @@ func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameO
 			})
 		}
 	}
-	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
+	err = psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
 	if err != nil {
 		gl.Error("failed to record match result", "match", dgs.MatchID, "err", err)
 		return

@@ -174,6 +174,22 @@ produced, and avatar hashes are checked before being put in one. The
 rollup is cached per guild (`DefaultStatsCacheTTL`, one minute, collapsed with
 singleflight); a premium change is visible within that window.
 
+`GET /guild/match?guildID=...&matchID=...` is one match (`MatchSummary` in
+`match_summary.go`), readable by any member under the same `ReadStats` action.
+The match ID is the number after the colon in the ID the bot posts at game
+over; the lookup is by guild and match together, so an ID from another guild is
+404. Every guild gets the header (status, times, result, map, region) and the
+linked roster; the event timeline is included only while premium is active,
+as `/stats match` is premium-only. The capture connect code is never returned,
+since it may still name a live capture session. A timeline event carries a
+user ID only when that user is on the match's roster, so an opted-out or reset
+player's link is not revealed through the events table. The roster also lists
+unlinked players, by in-game name and role, from the capture's game over
+report, which the bot keeps as an event of the match since it started doing
+so; that report is in-game information every player saw, so it is not
+premium-gated. An opted-out or reset player appears there unlinked. Summaries are cached
+per guild and match for the stats TTL; a missing match is not cached.
+
 Operator delegation is deferred. It would compare current Discord member roles
 (`guilds.members.read`) with stored `PermissionRoleIDs`. Editing authorization
 lists must stay behind the Discord settings permissions. The stored admin user

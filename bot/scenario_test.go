@@ -165,3 +165,39 @@ func TestProcessJob_LobbyToTasks_RecordsMapAndRegion(t *testing.T) {
 		t.Errorf("region = %v, want %d", g.Region, game.EU)
 	}
 }
+
+func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	dgs := runningGame(deps, game.TASKS)
+	addLinkedUser(dgs, "10", "alice", true, false, false)
+	dgs.MatchID = 7
+	dgs.MatchStartUnix = time.Now().Unix() - 60
+	deps.store.put(dgs)
+
+	payload := `{"GameOverReason":3,"PlayerInfos":[{"Name":"alice","IsImpostor":true},{"Name":"unlinked","IsImpostor":false}]}`
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.GameOverJob, Payload: payload}, sett, premium.FreeTier, gsr)
+
+	eventually(t, "the match result to be recorded", func() bool {
+		deps.recorder.mu.Lock()
+		defer deps.recorder.mu.Unlock()
+		return len(deps.recorder.updates) == 1
+	})
+	deps.recorder.mu.Lock()
+	defer deps.recorder.mu.Unlock()
+	if deps.recorder.updates[0] != 7 {
+		t.Fatalf("result recorded for match %d, want 7", deps.recorder.updates[0])
+	}
+	// the raw payload is kept, so unlinked players' roles survive even though only linked players get a result row
+	if len(deps.recorder.events) != 1 {
+		t.Fatalf("events = %+v, want the game over event only", deps.recorder.events)
+	}
+	if e := deps.recorder.events[0]; e.GameID != 7 || e.EventType != int16(task.GameOverJob) || e.Payload != payload || e.UserID != nil {
+		t.Fatalf("event = %+v", e)
+	}
+	if got := deps.store.get(); got.MatchID != -1 {
+		t.Fatalf("match still open after game over: %d", got.MatchID)
+	}
+}
