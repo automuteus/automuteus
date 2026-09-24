@@ -25,7 +25,10 @@ RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && 
     GOARCH=${TARGETARCH} \
     go build -installsuffix 'static' \
     -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
-    -o /app .
+    -o /app . && \
+    # One-off tool for self-hosters moving guild settings out of Redis before 10.0
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -installsuffix 'static' -o /migrate-guild-settings ./cmd/migrate-guild-settings
 
 FROM alpine:3.24 AS final
 
@@ -41,6 +44,7 @@ WORKDIR /app
 
 # Import the compiled executable (translations are embedded in it).
 COPY --from=builder /app /app
+COPY --from=builder /migrate-guild-settings /app/migrate-guild-settings
 
 # Port used for health/liveliness checks
 EXPOSE 8080
