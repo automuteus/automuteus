@@ -66,6 +66,10 @@ func TestProcessJob_LobbyToTasks_StartsMatchAndMutesLinkedPlayers(t *testing.T) 
 	if len(deps.recorder.games) != 1 || deps.recorder.games[0].ConnectCode != scenarioConnectCode {
 		t.Fatalf("recorder games = %+v", deps.recorder.games)
 	}
+	// no lobby event was seen, so the map and region are unknown rather than defaulted
+	if g := deps.recorder.games[0]; g.PlayMap != nil || g.Region != nil {
+		t.Errorf("map/region = %v/%v, want nil/nil without a lobby event", g.PlayMap, g.Region)
+	}
 
 	// the configured lobby->tasks delay was honored (without actually sleeping)
 	wantDelay := time.Second * time.Duration(sett.GetDelay(game.LOBBY, game.TASKS))
@@ -138,5 +142,26 @@ func TestVoiceStateChange_JoiningTrackedChannelMidGameMutesLinkedUser(t *testing
 	}
 	if u, _ := deps.store.get().GetUser("11"); u.ShouldBeMute != wantMute || u.ShouldBeDeaf != wantDeaf {
 		t.Errorf("stored intent for bob not updated: %+v", u)
+	}
+}
+
+func TestProcessJob_LobbyToTasks_RecordsMapAndRegion(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	deps.store.put(runningGame(deps, game.LOBBY))
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.LobbyJob, Payload: `{"LobbyCode":"ABCDEF","Region":2,"Map":4}`}, sett, premium.FreeTier, gsr)
+	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+
+	if len(deps.recorder.games) != 1 {
+		t.Fatalf("recorder games = %+v", deps.recorder.games)
+	}
+	g := deps.recorder.games[0]
+	if g.PlayMap == nil || *g.PlayMap != int16(game.AIRSHIP) {
+		t.Errorf("play map = %v, want %d", g.PlayMap, game.AIRSHIP)
+	}
+	if g.Region == nil || *g.Region != int16(game.EU) {
+		t.Errorf("region = %v, want %d", g.Region, game.EU)
 	}
 }

@@ -612,6 +612,15 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 		WinType:     -1,
 		EndTime:     -1,
 	}
+	_, regionName, playMap := dgs.GameData.GetRoomRegionMap()
+	if playMap >= 0 && playMap != game.EMPTYMAP {
+		m := int16(playMap)
+		pgame.PlayMap = &m
+	}
+	if region, ok := game.RegionFromString(regionName); ok {
+		r := int16(region)
+		pgame.Region = &r
+	}
 	i, err := psql.AddInitialGame(pgame)
 	if err != nil {
 		gl.Error("failed to record match start", "err", err)

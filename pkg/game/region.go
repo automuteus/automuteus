@@ -19,3 +19,13 @@ func (r Region) ToString() string {
 	}
 	return "Unknown"
 }
+
+// RegionFromString reverses ToString. It reports false for "Unknown" and any other unrecognized name.
+func RegionFromString(s string) (Region, bool) {
+	for _, r := range []Region{NA, AS, EU} {
+		if r.ToString() == s {
+			return r, true
+		}
+	}
+	return 0, false
+}

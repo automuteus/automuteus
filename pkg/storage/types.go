@@ -35,6 +35,9 @@ type PostgresGame struct {
 	StartTime   int32  `db:"start_time"`
 	WinType     int16  `db:"win_type"`
 	EndTime     int32  `db:"end_time"`
+	// PlayMap and Region are recorded at match start; nil for older games or when the capture never reported a lobby.
+	PlayMap *int16 `db:"play_map"`
+	Region  *int16 `db:"region"`
 }
 
 func GamesToCSV(g []*PostgresGame) string {

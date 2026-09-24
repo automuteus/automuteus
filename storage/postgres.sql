@@ -15,8 +15,25 @@ create table if not exists games
     connect_code CHAR(8) NOT NULL,
     start_time   integer NOT NULL,                            --2038 problem, but I do not care
     win_type     smallint,                                    --imposter win, crewmate win, etc
-    end_time     integer                                      --2038 problem, but I do not care
+    end_time     integer,                                     --2038 problem, but I do not care
+    play_map     smallint,                                    --game.PlayMap at match start; NULL if unknown
+    region       smallint                                     --game.Region at match start; NULL if unknown
 );
+
+-- add play_map and region to games created before they existed. Checking the catalog first skips the
+-- ALTER, and its brief exclusive lock on games, on every startup after the first.
+do $$
+begin
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = current_schema() and table_name = 'games' and column_name = 'play_map') then
+        alter table games add column play_map smallint;
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = current_schema() and table_name = 'games' and column_name = 'region') then
+        alter table games add column region smallint;
+    end if;
+end
+$$;
 
 -- links userIDs to their hashed variants. Allows for deletion of users without deleting underlying game_event data
 create table if not exists users
