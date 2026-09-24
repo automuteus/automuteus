@@ -363,6 +363,23 @@ a full round or a player being killed, and confirm at each checkpoint that the b
 muted, unmuted, and updated the status message as expected. Events can also be sent
 one at a time. See [the capture mock guide](cmd/capture-mock/README.md) for usage.
 
+### Seeding fake match history
+
+`go run ./cmd/seed-stats` prints SQL that records a few months of made-up
+games for one guild, so the stats page and `/stats` have leaderboards to show
+on a development stack. It prints rather than connects, so it works with the
+compose stack's unpublished database ports:
+
+```sh
+go run ./cmd/seed-stats -guild <guild ID> -include <your user ID> | docker exec -i deploy-postgres-1 psql -U postgres -v ON_ERROR_STOP=1
+go run ./cmd/seed-stats -guild <guild ID> -redis | docker exec -i deploy-redis-1 redis-cli   # cache the fake players' names
+go run ./cmd/seed-stats -guild <guild ID> -clean | docker exec -i deploy-postgres-1 psql -U postgres   # remove them again
+```
+
+Seeded games use connect codes starting with `SEED`, which is all `-clean`
+removes. The same `-seed` always produces the same players and outcomes; only
+the timestamps follow the time of the run.
+
 # Similar Projects
 
 - [Imposter](https://github.com/molenzwiebel/Impostor): Similar bot that uses private Discord channels instead of mute/deafen. Also uses a dummy player joining the game and "spectating" to get game information; no capture needed (although loses the 10th player slot).

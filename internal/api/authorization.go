@@ -11,6 +11,8 @@ const (
 	ReadSettings    GuildAction = "settings:read"
 	WriteSettings   GuildAction = "settings:write"
 	ReadBotPresence GuildAction = "bot:read"
+	// ReadStats is the guild statistics page. Any member may see it, as any member may run /stats guild.
+	ReadStats GuildAction = "stats:read"
 )
 
 // VerifiedGuildAccess must be constructed from trusted Discord responses for
@@ -39,7 +41,7 @@ func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildA
 		return false
 	}
 	switch action {
-	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence:
+	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence, ReadStats:
 		return true
 	case WriteSettings:
 		return access.Owner || access.Permissions&settingsPermissions != 0

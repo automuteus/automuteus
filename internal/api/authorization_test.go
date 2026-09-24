@@ -31,6 +31,8 @@ func TestAllowsGuildAction(t *testing.T) {
 		{"member reads game", member, "guild", ReadGame, true},
 		{"member reads settings", member, "guild", ReadSettings, true},
 		{"member reads bot presence", member, "guild", ReadBotPresence, true},
+		{"member reads stats", member, "guild", ReadStats, true},
+		{"departed member cannot read stats", departed, "guild", ReadStats, false},
 		{"departed member cannot read bot presence", departed, "guild", ReadBotPresence, false},
 		{"member cannot write", member, "guild", WriteSettings, false},
 		{"owner writes", owner, "guild", WriteSettings, true},

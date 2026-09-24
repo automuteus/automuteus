@@ -810,6 +810,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/guild/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "The guild statistics page in one document. Every guild gets the summary (games played and each\nside's wins); guilds with active premium also get the leaderboards the /stats guild slash command\nshows, five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to the\nnames the bot last cached where available. Responses are built at most once a minute per guild.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Get Guild Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GuildStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/open/link": {
             "get": {
                 "description": "Return html that open AmongUsCapture",
@@ -858,6 +922,45 @@ const docTemplate = `{
                 }
             }
         },
+        "api.DuoWinrate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "teammateId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.FirstTarget": {
+            "type": "object",
+            "properties": {
+                "crewmateGames": {
+                    "description": "CrewmateGames is how many games the player was a crewmate in, the denominator of Rate.",
+                    "type": "integer"
+                },
+                "firstDeaths": {
+                    "description": "FirstDeaths is how many games this player was the first to die in.",
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "api.GuildChannel": {
             "type": "object",
             "properties": {
@@ -891,6 +994,80 @@ const docTemplate = `{
                 }
             }
         },
+        "api.GuildLeaderboards": {
+            "type": "object",
+            "properties": {
+                "bestCrewmateDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "bestImpostorDuo": {
+                    "description": "The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID\nfirst. Best is highest winrate first; worst is lowest first.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "crewmateWinrate": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "firstTarget": {
+                    "description": "FirstTarget ranks players by how often they were the first to die.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.FirstTarget"
+                    }
+                },
+                "impostorWinrate": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "killedBy": {
+                    "description": "KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.\nThe game never reports who made a kill, so a death counts against every impostor of that game.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.KilledBy"
+                    }
+                },
+                "minGames": {
+                    "description": "MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by\nrate. The impostor duo boards use a fixed floor of two shared games instead.",
+                    "type": "integer"
+                },
+                "mostGames": {
+                    "description": "MostGames ranks players by games recorded, with no minimum.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerGames"
+                    }
+                },
+                "winrate": {
+                    "description": "Winrate ranks players by winrate across both roles.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "worstCrewmateDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "worstImpostorDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                }
+            }
+        },
         "api.GuildRole": {
             "type": "object",
             "properties": {
@@ -910,6 +1087,64 @@ const docTemplate = `{
                 },
                 "position": {
                     "description": "Position is Discord's display order; higher is listed first.",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.GuildStats": {
+            "type": "object",
+            "properties": {
+                "generatedAt": {
+                    "description": "GeneratedAt is the Unix time the rollup was built; responses may be served from a short cache.",
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "leaderboards": {
+                    "description": "Leaderboards is omitted for guilds whose premium is free or expired.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.GuildLeaderboards"
+                        }
+                    ]
+                },
+                "players": {
+                    "description": "Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with\nthe bot's credentials or from the names the bot cached. IDs nothing knows are absent and the page shows\nthe ID itself.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatsPlayer"
+                    }
+                },
+                "premium": {
+                    "description": "Premium is the guild's premium status the rollup was built under, so the page can explain a missing\nleaderboards section without a second request.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/premium.PremiumRecord"
+                        }
+                    ]
+                },
+                "summary": {
+                    "$ref": "#/definitions/api.GuildStatsSummary"
+                }
+            }
+        },
+        "api.GuildStatsSummary": {
+            "type": "object",
+            "properties": {
+                "crewmateWinrate": {
+                    "type": "number"
+                },
+                "crewmateWins": {
+                    "type": "integer"
+                },
+                "gamesPlayed": {
+                    "type": "integer"
+                },
+                "impostorWinrate": {
+                    "type": "number"
+                },
+                "impostorWins": {
                     "type": "integer"
                 }
             }
@@ -948,6 +1183,28 @@ const docTemplate = `{
                 }
             }
         },
+        "api.KilledBy": {
+            "type": "object",
+            "properties": {
+                "deaths": {
+                    "description": "Deaths is how many of the shared games the crewmate died in.",
+                    "type": "integer"
+                },
+                "games": {
+                    "description": "Games is how many games the two shared as crewmate and impostor, the denominator of Rate.",
+                    "type": "integer"
+                },
+                "impostorId": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "api.NoticeRequest": {
             "type": "object",
             "properties": {
@@ -959,6 +1216,34 @@ const docTemplate = `{
                     "description": "Severity is warning or critical. Critical ends every running game and blocks new ones.",
                     "type": "string",
                     "example": "warning"
+                }
+            }
+        },
+        "api.PlayerGames": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PlayerWinrate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
                 }
             }
         },
@@ -987,6 +1272,26 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/settings.FieldError"
                     }
+                }
+            }
+        },
+        "api.StatsPlayer": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "Avatar is a Discord CDN image URL: the user's avatar for this guild, else their global avatar, else the\ndefault Discord assigns them. Always set when the profile was resolved through Discord.",
+                    "type": "string"
+                },
+                "globalName": {
+                    "description": "GlobalName is the display name the user chose for all of Discord, if any.",
+                    "type": "string"
+                },
+                "nickname": {
+                    "description": "Nickname is the user's name in this guild, if they set one.",
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },

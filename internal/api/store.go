@@ -14,6 +14,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"time"
@@ -24,12 +25,20 @@ import (
 type DataStore struct {
 	redis    *redis.Client
 	postgres *pgxpool.Pool
+	// stats is the pool again, typed so tests can substitute a mock for the statistics queries.
+	stats    pgxscan.Querier
 	settings *storage.StorageInterface
+	// profiles resolves stats-page users through Discord with the bot's credentials; nil leaves only cached names.
+	profiles ProfileFetcher
 	config   Config
 }
 
 func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStore {
-	return &DataStore{redis: client, postgres: pool, settings: storage.NewPostgresStorage(pool, client), config: config}
+	profiles := config.ProfileFetcher
+	if profiles == nil && config.BotToken != "" {
+		profiles = newDiscordChannelVerifier(config.BotToken)
+	}
+	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool, client), profiles: profiles, config: config}
 }
 
 func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {

@@ -59,6 +59,9 @@ type Store interface {
 	// be checked and the write must not proceed.
 	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
+	// GuildStats builds the stats page document for a guild: the summary for everyone and, while the guild's
+	// premium is active, the leaderboards too. It is the uncached build; the router caches per guild.
+	GuildStats(context.Context, string) (GuildStats, error)
 	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
 	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
 	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
@@ -78,7 +81,10 @@ type Config struct {
 	AccessCacheTTL time.Duration
 	// ListCacheTTL is how long GET /guild/roles and GET /guild/channels reuse a guild's lists before asking Discord
 	// again. Zero means DefaultListCacheTTL; negative disables caching. PATCH validates roles against a live list.
-	ListCacheTTL  time.Duration
+	ListCacheTTL time.Duration
+	// StatsCacheTTL is how long GET /guild/stats reuses a guild's rollup before building it again. Zero means
+	// DefaultStatsCacheTTL; negative disables caching.
+	StatsCacheTTL time.Duration
 	Version       string
 	Commit        string
 	ServerURL     string
@@ -97,6 +103,9 @@ type Config struct {
 	// ChannelLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set.
 	// Without one, GET /guild/channels answers 501 and clients fall back to typing a channel ID.
 	ChannelLister ChannelLister
+	// ProfileFetcher is injectable for tests; nil uses Discord with BotToken when set. Without one the stats page
+	// shows only the names the bot cached, and no avatars.
+	ProfileFetcher ProfileFetcher
 }
 
 func NewRouter(config Config, store Store) *gin.Engine {
@@ -169,6 +178,11 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles))
 	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
 	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
+	statsTTL := config.StatsCacheTTL
+	if statsTTL == 0 {
+		statsTTL = DefaultStatsCacheTTL
+	}
+	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(newListCache(statsTTL, nil, store.GuildStats)))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
 	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.

@@ -21,6 +21,34 @@ definitions:
           type: string
         type: array
     type: object
+  api.DuoWinrate:
+    properties:
+      games:
+        type: integer
+      teammateId:
+        type: string
+      userId:
+        type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
+    type: object
+  api.FirstTarget:
+    properties:
+      crewmateGames:
+        description: CrewmateGames is how many games the player was a crewmate in,
+          the denominator of Rate.
+        type: integer
+      firstDeaths:
+        description: FirstDeaths is how many games this player was the first to die
+          in.
+        type: integer
+      rate:
+        type: number
+      userId:
+        type: string
+    type: object
   api.GuildChannel:
     properties:
       category:
@@ -46,6 +74,64 @@ definitions:
           Type is Discord's channel type: 0 for a text channel, 5 for an announcement channel. Threads are never
           listed; Discord does not include them in a guild's channel list.
     type: object
+  api.GuildLeaderboards:
+    properties:
+      bestCrewmateDuo:
+        items:
+          $ref: '#/definitions/api.DuoWinrate'
+        type: array
+      bestImpostorDuo:
+        description: |-
+          The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID
+          first. Best is highest winrate first; worst is lowest first.
+        items:
+          $ref: '#/definitions/api.DuoWinrate'
+        type: array
+      crewmateWinrate:
+        items:
+          $ref: '#/definitions/api.PlayerWinrate'
+        type: array
+      firstTarget:
+        description: FirstTarget ranks players by how often they were the first to
+          die.
+        items:
+          $ref: '#/definitions/api.FirstTarget'
+        type: array
+      impostorWinrate:
+        items:
+          $ref: '#/definitions/api.PlayerWinrate'
+        type: array
+      killedBy:
+        description: |-
+          KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.
+          The game never reports who made a kill, so a death counts against every impostor of that game.
+        items:
+          $ref: '#/definitions/api.KilledBy'
+        type: array
+      minGames:
+        description: |-
+          MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by
+          rate. The impostor duo boards use a fixed floor of two shared games instead.
+        type: integer
+      mostGames:
+        description: MostGames ranks players by games recorded, with no minimum.
+        items:
+          $ref: '#/definitions/api.PlayerGames'
+        type: array
+      winrate:
+        description: Winrate ranks players by winrate across both roles.
+        items:
+          $ref: '#/definitions/api.PlayerWinrate'
+        type: array
+      worstCrewmateDuo:
+        items:
+          $ref: '#/definitions/api.DuoWinrate'
+        type: array
+      worstImpostorDuo:
+        items:
+          $ref: '#/definitions/api.DuoWinrate'
+        type: array
+    type: object
   api.GuildRole:
     properties:
       color:
@@ -62,6 +148,48 @@ definitions:
         type: string
       position:
         description: Position is Discord's display order; higher is listed first.
+        type: integer
+    type: object
+  api.GuildStats:
+    properties:
+      generatedAt:
+        description: GeneratedAt is the Unix time the rollup was built; responses
+          may be served from a short cache.
+        type: integer
+      guildId:
+        type: string
+      leaderboards:
+        allOf:
+        - $ref: '#/definitions/api.GuildLeaderboards'
+        description: Leaderboards is omitted for guilds whose premium is free or expired.
+      players:
+        additionalProperties:
+          $ref: '#/definitions/api.StatsPlayer'
+        description: |-
+          Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with
+          the bot's credentials or from the names the bot cached. IDs nothing knows are absent and the page shows
+          the ID itself.
+        type: object
+      premium:
+        allOf:
+        - $ref: '#/definitions/premium.PremiumRecord'
+        description: |-
+          Premium is the guild's premium status the rollup was built under, so the page can explain a missing
+          leaderboards section without a second request.
+      summary:
+        $ref: '#/definitions/api.GuildStatsSummary'
+    type: object
+  api.GuildStatsSummary:
+    properties:
+      crewmateWinrate:
+        type: number
+      crewmateWins:
+        type: integer
+      gamesPlayed:
+        type: integer
+      impostorWinrate:
+        type: number
+      impostorWins:
         type: integer
     type: object
   api.HttpError:
@@ -86,6 +214,22 @@ definitions:
       version:
         type: string
     type: object
+  api.KilledBy:
+    properties:
+      deaths:
+        description: Deaths is how many of the shared games the crewmate died in.
+        type: integer
+      games:
+        description: Games is how many games the two shared as crewmate and impostor,
+          the denominator of Rate.
+        type: integer
+      impostorId:
+        type: string
+      rate:
+        type: number
+      userId:
+        type: string
+    type: object
   api.NoticeRequest:
     properties:
       message:
@@ -96,6 +240,24 @@ definitions:
           game and blocks new ones.
         example: warning
         type: string
+    type: object
+  api.PlayerGames:
+    properties:
+      games:
+        type: integer
+      userId:
+        type: string
+    type: object
+  api.PlayerWinrate:
+    properties:
+      games:
+        type: integer
+      userId:
+        type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
     type: object
   api.RoomCodeResponse:
     properties:
@@ -114,6 +276,23 @@ definitions:
         items:
           $ref: '#/definitions/settings.FieldError'
         type: array
+    type: object
+  api.StatsPlayer:
+    properties:
+      avatar:
+        description: |-
+          Avatar is a Discord CDN image URL: the user's avatar for this guild, else their global avatar, else the
+          default Discord assigns them. Always set when the profile was resolved through Discord.
+        type: string
+      globalName:
+        description: GlobalName is the display name the user chose for all of Discord,
+          if any.
+        type: string
+      nickname:
+        description: Nickname is the user's name in this guild, if they set one.
+        type: string
+      username:
+        type: string
     type: object
   discordgo.ApplicationCommand:
     properties:
@@ -929,6 +1108,50 @@ paths:
       - BasicAuth: []
       - DiscordBearer: []
       summary: Update Guild Settings
+      tags:
+      - guild
+  /guild/stats:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The guild statistics page in one document. Every guild gets the summary (games played and each
+        side's wins); guilds with active premium also get the leaderboards the /stats guild slash command
+        shows, five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to the
+        names the bot last cached where available. Responses are built at most once a minute per guild.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GuildStats'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Get Guild Stats
       tags:
       - guild
   /open/link:

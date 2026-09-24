@@ -39,6 +39,10 @@ type fakeStore struct {
 	// botAbsent makes BotInGuild report false; botErr fails only BotInGuild.
 	botAbsent bool
 	botErr    error
+	// stats, when set, is what GuildStats returns; statsErr fails only GuildStats.
+	stats      *GuildStats
+	statsErr   error
+	statsCalls int
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -107,6 +111,17 @@ func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, err
 		return *s.premium, s.err
 	}
 	return premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, s.err
+}
+func (s *fakeStore) GuildStats(_ context.Context, guildID string) (GuildStats, error) {
+	s.calls++
+	s.statsCalls++
+	if s.statsErr != nil {
+		return GuildStats{}, s.statsErr
+	}
+	if s.stats != nil {
+		return *s.stats, s.err
+	}
+	return GuildStats{GuildID: guildID, Summary: GuildStatsSummary{GamesPlayed: 7}, Players: map[string]StatsPlayer{}}, s.err
 }
 func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
 	s.calls++

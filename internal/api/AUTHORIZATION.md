@@ -154,6 +154,26 @@ calls a minute per guild. The bot-token client also honours `Retry-After`: a
 global) during which lookups fail fast instead of producing more 429s, since
 those count toward Discord's invalid-request limit that blocks the whole host.
 
+`GET /guild/stats` is the stats page in one document (`GuildStats` in
+`guild_stats.go`). Any member may read it, as any member may run `/stats guild`.
+Every guild gets the summary (finished games and each side's wins); the
+leaderboards are included only while the guild's premium is active, so the
+free tier shows exactly what the slash command shows and a free guild costs one
+count query. The premium boards run concurrently and are trimmed in SQL to the
+guild's leaderboard minimum, five entries each (the leaderboard size setting is
+no longer consulted; it is being retired), rather than ranking every player
+and keeping the top few in Go. User IDs are resolved to a name and avatar
+through Discord with the bot's token (`player_profiles.go`: the member record,
+else the global user record for someone who left), cached in Redis for twelve
+hours with misses remembered for one, and failing that the names the bot cached
+for the guild (the same Redis records `/stats` uses). The Discord phase of one
+build has a four-second budget, after which the remaining users get cached
+names, and a 429 on one member lookup pauses every member lookup in that guild
+(cooldowns are kept per Discord route bucket, not per full path). Only Discord CDN URLs are
+produced, and avatar hashes are checked before being put in one. The
+rollup is cached per guild (`DefaultStatsCacheTTL`, one minute, collapsed with
+singleflight); a premium change is visible within that window.
+
 Operator delegation is deferred. It would compare current Discord member roles
 (`guilds.members.read`) with stored `PermissionRoleIDs`. Editing authorization
 lists must stay behind the Discord settings permissions. The stored admin user

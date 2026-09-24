@@ -74,27 +74,46 @@ func (v *discordChannelVerifier) clock() time.Time {
 	return time.Now()
 }
 
-// coolingDown reports whether a recent 429 says path must not be called yet.
+// rateLimitBucket is the key a 429 cooldown is kept under. Discord limits routes per major parameter (the guild,
+// channel, or webhook ID directly after that segment), not per full path: every member of one guild shares the
+// guild's member-lookup bucket, and every user shares the user-lookup bucket. Other IDs are folded to "*" so a
+// limit hit on one member's lookup pauses the rest rather than each one asking and being refused in turn.
+func rateLimitBucket(path string) string {
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		if i > 0 && discord.ValidateSnowflake(part) == nil {
+			major := parts[i-1] == "guilds" || parts[i-1] == "channels" || parts[i-1] == "webhooks"
+			if !major {
+				parts[i] = "*"
+			}
+		}
+	}
+	return strings.Join(parts, "/")
+}
+
+// coolingDown reports whether a recent 429 says path's bucket must not be called yet.
 func (v *discordChannelVerifier) coolingDown(path string) bool {
+	bucket := rateLimitBucket(path)
 	v.limitMu.Lock()
 	defer v.limitMu.Unlock()
 	now := v.clock()
 	if now.Before(v.globalUntil) {
 		return true
 	}
-	until, ok := v.cooldowns[path]
+	until, ok := v.cooldowns[bucket]
 	if !ok {
 		return false
 	}
 	if now.Before(until) {
 		return true
 	}
-	delete(v.cooldowns, path)
+	delete(v.cooldowns, bucket)
 	return false
 }
 
-// noteRateLimit records a 429 for path, or for every route when Discord marks it global.
+// noteRateLimit records a 429 for path's bucket, or for every route when Discord marks it global.
 func (v *discordChannelVerifier) noteRateLimit(path string, resp *http.Response, body []byte) {
+	bucket := rateLimitBucket(path)
 	until := v.clock().Add(retryAfter(resp, body))
 	v.limitMu.Lock()
 	defer v.limitMu.Unlock()
@@ -107,8 +126,8 @@ func (v *discordChannelVerifier) noteRateLimit(path string, resp *http.Response,
 	if v.cooldowns == nil {
 		v.cooldowns = map[string]time.Time{}
 	}
-	if until.After(v.cooldowns[path]) {
-		v.cooldowns[path] = until
+	if until.After(v.cooldowns[bucket]) {
+		v.cooldowns[bucket] = until
 	}
 }
 
