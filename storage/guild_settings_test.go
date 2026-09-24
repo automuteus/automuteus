@@ -236,6 +236,20 @@ func TestDecodeLegacySettings(t *testing.T) {
 	if _, err := decodeLegacySettings([]byte(`{"unknownSetting":true}`), false); err != nil {
 		t.Errorf("lenient decode rejected an unknown field: %v", err)
 	}
+	// Fields from removed features are accepted and dropped, in either mode, alongside real settings.
+	retired := `{"commandPrefix":".au","defaultTrackedChannel":"general","applyNicknames":true,"language":"ja","adminIDs":["1"]}`
+	for _, strict := range []bool{false, true} {
+		got, err := decodeLegacySettings([]byte(retired), strict)
+		if err != nil {
+			t.Fatalf("strict=%v rejected a record with retired fields: %v", strict, err)
+		}
+		want := settings.GuildSettings{Language: "ja", AdminUserIDs: []string{"1"}}
+		assertSettingsEqual(t, &want, got)
+	}
+	// Retiring those names does not loosen strict mode for anything else.
+	if _, err := decodeLegacySettings([]byte(`{"commandPrefix":".au","unknownSetting":true}`), true); err == nil {
+		t.Error("strict decode accepted an unknown field next to a retired one")
+	}
 	// Legacy records decode into a zero struct: absent fields stay zero.
 	for _, blob := range []string{`{}`, `{"language":"en","adminIDs":[]}`, `{"voiceRules":{"MuteRules":{"TASKS":{"alive":false}}}}`} {
 		var want settings.GuildSettings

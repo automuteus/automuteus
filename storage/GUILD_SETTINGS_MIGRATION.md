@@ -46,14 +46,21 @@ go build -o /tmp/migrate-guild-settings ./cmd/migrate-guild-settings
 /tmp/migrate-guild-settings             # move everything that validates
 ```
 
+The bot image also includes it, so a Docker Compose install can run it
+without Go:
+
+```sh
+docker compose run --rm --no-deps --entrypoint ./migrate-guild-settings automuteus --dry-run
+```
+
 It reads the deployment's `REDIS_ADDR`, `REDIS_PASS`, `POSTGRES_ADDR`,
 `POSTGRES_USER`, and `POSTGRES_PASS`, plus an optional `REDIS_USER`, and uses
 Redis database 0 like the bot. It prints a JSON report and exits nonzero if
 any record failed; failed records stay in Redis for inspection. The sweep only
 touches `automuteus:settings:guild:*` keys.
 
-Once the sweep reports nothing left, the legacy Redis client passed to
-`storage.NewPostgresStorage` can be dropped in a later release.
+9.2.x is the last release with this migration. 10.0 no longer reads settings
+from Redis, so run the sweep until it reports nothing left before upgrading.
 
 ## Tests
 

@@ -314,10 +314,27 @@ func documentUnlessDefault(value, defaultValue interface{}) (interface{}, error)
 	return blob, nil
 }
 
+// legacySettingsRecord is the shape of a Redis settings record: today's
+// fields plus fields from features that were removed years ago. Old records
+// still carry those, and the old reader ignored them, so strict decoding
+// accepts and discards them rather than failing the whole record. Any other
+// unknown field is still rejected. Only the names are checked; their values
+// are never used.
+type legacySettingsRecord struct {
+	settings.GuildSettings
+	// Prefix commands, replaced by slash commands.
+	CommandPrefix json.RawMessage `json:"commandPrefix"`
+	// Channel tracking before /new took the voice channel from the caller.
+	DefaultTrackedChannel json.RawMessage `json:"defaultTrackedChannel"`
+	// Renaming members to their in-game names.
+	ApplyNicknames json.RawMessage `json:"applyNicknames"`
+}
+
 // decodeLegacySettings decodes a Redis record into a zero struct exactly as
 // the old reader did, so fields absent from old records keep their zero
 // values instead of acquiring today's defaults. strict additionally rejects
-// unknown fields, which the typed columns would otherwise silently drop.
+// unknown fields, which the typed columns would otherwise silently drop,
+// except the retired fields listed on legacySettingsRecord.
 func decodeLegacySettings(blob []byte, strict bool) (*settings.GuildSettings, error) {
 	trimmed := bytes.TrimSpace(blob)
 	if len(trimmed) == 0 || trimmed[0] != '{' {
@@ -327,14 +344,14 @@ func decodeLegacySettings(blob []byte, strict bool) (*settings.GuildSettings, er
 	if strict {
 		decoder.DisallowUnknownFields()
 	}
-	var result settings.GuildSettings
-	if err := decoder.Decode(&result); err != nil {
+	var record legacySettingsRecord
+	if err := decoder.Decode(&record); err != nil {
 		return nil, err
 	}
 	if decoder.More() {
 		return nil, errors.New("unexpected data after settings object")
 	}
-	return &result, nil
+	return &record.GuildSettings, nil
 }
 
 // importLegacySettings inserts a legacy record if the guild has no row yet,
