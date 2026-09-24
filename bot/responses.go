@@ -387,9 +387,3 @@ func (dgs *GameState) descriptionAndColor(sett *settings.GuildSettings) (string,
 
 }
 
-func nonPremiumSettingResponse(sett *settings.GuildSettings) string {
-	return sett.LocalizeMessage(&i18n.Message{
-		ID:    "responses.nonPremiumSetting.Desc",
-		Other: "Sorry, but that setting is reserved for AutoMuteUs Premium users! See `/premium` for details",
-	})
-}

@@ -38,6 +38,8 @@ var (
 
 const (
 	DefaultURL                   = "http://localhost:8123"
+	// DefaultWebURL is where /settings sends people when WEB_URL is unset: the hosted dashboard.
+	DefaultWebURL = "https://automute.us"
 	DefaultMaxRequests5Sec int64 = 5 // Discord allows ~10 member modifications per 10s per guild
 )
 
@@ -111,6 +113,12 @@ func discordMainWrapper() error {
 	if url == "" {
 		log.Printf("[Info] No valid HOST provided. Defaulting to %s\n", DefaultURL)
 		url = DefaultURL
+	}
+
+	webURL := os.Getenv("WEB_URL")
+	if webURL == "" {
+		log.Printf("[Info] No WEB_URL provided. /settings will link to %s\n", DefaultWebURL)
+		webURL = DefaultWebURL
 	}
 
 	var redisClient bot.RedisInterface
@@ -214,7 +222,7 @@ func discordMainWrapper() error {
 
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
+		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
