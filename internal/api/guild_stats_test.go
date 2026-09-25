@@ -110,10 +110,10 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 	mock.ExpectQuery(worstDuo).WithArgs(testGuildNum, int16(1), 2, 5).WillReturnRows(duoRows())
 	mock.ExpectQuery(bestDuo).WithArgs(testGuildNum, int16(0), 4, 5).WillReturnRows(duoRows())
 	mock.ExpectQuery(worstDuo).WithArgs(testGuildNum, int16(0), 4, 5).WillReturnRows(duoRows())
-	mock.ExpectQuery(`SELECT ug.user_id, COUNT\(\*\) AS total_death, t.total, .* FROM games g JOIN LATERAL .* JOIN users_games ug ON .* HAVING t.total >= \$3 ORDER BY death_rate DESC, total_death DESC, ug.user_id LIMIT \$4`).
+	mock.ExpectQuery(`WITH first_death AS \(SELECT DISTINCT ON \(e.game_id\) .* crew AS .* totals AS .* SELECT c.user_id, COUNT\(\*\) AS total_death, t.total, .* HAVING t.total >= \$3 ORDER BY death_rate DESC, total_death DESC, c.user_id LIMIT \$4`).
 		WithArgs(testGuildNum, "2", 4, 5).
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "total_death", "total", "death_rate"}).AddRow(uint64(44), int64(3), int64(6), 50.0))
-	mock.ExpectQuery(`SELECT c.user_id, i.user_id AS teammate_id, .* FROM users_games c INNER JOIN users_games i .* HAVING COUNT\(\*\) >= \$3 ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT \$4`).
+	mock.ExpectQuery(`WITH crew AS .* imp AS .* died AS .* SELECT c.user_id, i.user_id AS teammate_id, .* FROM crew c INNER JOIN imp i .* LEFT JOIN died d .* HAVING COUNT\(\*\) >= \$3 ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT \$4`).
 		WithArgs(testGuildNum, "2", 4, 5).
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "teammate_id", "total_death", "encounter", "death_rate"}).AddRow(uint64(44), uint64(11), int64(4), int64(5), 80.0))
 
