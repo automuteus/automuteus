@@ -51,6 +51,9 @@ type fakeStore struct {
 	user      *UserStats
 	userErr   error
 	userCalls int
+	// botGuilds and statsGuilds are the guilds BotInGuilds and GuildsWithStats answer true for.
+	botGuilds   map[string]bool
+	statsGuilds map[string]bool
 	// resets records each stats reset as "guild" or "guild/user"; resetErr fails them after recording.
 	resets   []string
 	resetErr error
@@ -172,6 +175,28 @@ func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
 		return false, s.botErr
 	}
 	return !s.botAbsent, s.err
+}
+func (s *fakeStore) BotInGuilds(_ context.Context, guildIDs []string) ([]bool, error) {
+	s.calls++
+	if s.botErr != nil {
+		return nil, s.botErr
+	}
+	present := make([]bool, len(guildIDs))
+	for i, id := range guildIDs {
+		present[i] = s.botGuilds[id]
+	}
+	return present, s.err
+}
+func (s *fakeStore) GuildsWithStats(_ context.Context, guildIDs []string) ([]bool, error) {
+	s.calls++
+	if s.statsErr != nil {
+		return nil, s.statsErr
+	}
+	has := make([]bool, len(guildIDs))
+	for i, id := range guildIDs {
+		has[i] = s.statsGuilds[id]
+	}
+	return has, s.err
 }
 func (s *fakeStore) Ping(context.Context) error { s.calls++; return s.err }
 

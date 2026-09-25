@@ -40,6 +40,10 @@ var (
 		"COUNT(*) FILTER (WHERE win_type IN (" + impostorWinTypes + ")) AS impostor_wins " +
 		"FROM games WHERE guild_id = $1 AND end_time <> -1 AND win_type <> $2"
 
+	// One indexed probe per guild, stopping at its first finished game, so a busy guild costs no more than a quiet one.
+	guildsWithStatsQuery = "SELECT g.id FROM unnest($1::numeric[]) AS g(id) WHERE EXISTS " +
+		"(SELECT 1 FROM games WHERE guild_id = g.id AND end_time <> -1 AND win_type <> $2)"
+
 	guildMostGamesQuery = "SELECT user_id, COUNT(*) AS total FROM users_games WHERE guild_id = $1 " +
 		"GROUP BY user_id ORDER BY total DESC, user_id LIMIT $2"
 
@@ -124,6 +128,17 @@ func GuildSummaryStats(ctx context.Context, q pgxscan.Querier, guildID uint64) (
 	var s GuildSummary
 	err := pgxscan.Get(ctx, q, &s, guildSummaryQuery, guildID, int16(game.Aborted))
 	return s, err
+}
+
+// GuildsWithStats returns which of the given guilds have at least one finished game, the games GuildSummaryStats
+// counts, so a guild picker can leave out guilds whose stats page would be empty.
+func GuildsWithStats(ctx context.Context, q pgxscan.Querier, guildIDs []uint64) ([]uint64, error) {
+	r := []uint64{}
+	if len(guildIDs) == 0 {
+		return r, nil
+	}
+	err := pgxscan.Select(ctx, q, &r, guildsWithStatsQuery, guildIDs, int16(game.Aborted))
+	return r, err
 }
 
 // GuildMostGames ranks the guild's linked players by games recorded.

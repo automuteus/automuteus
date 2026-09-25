@@ -123,6 +123,28 @@ definitions:
           Type is Discord's channel type: 0 for a text channel, 5 for an announcement channel. Threads are never
           listed; Discord does not include them in a guild's channel list.
     type: object
+  api.GuildEntry:
+    properties:
+      botPresent:
+        description: 'BotPresent is BotInGuild for this guild: whether the bot last
+          saw itself join rather than leave.'
+        type: boolean
+      hasStats:
+        description: |-
+          HasStats is whether the guild has a finished game for the stats page to show. It stays true after the bot
+          leaves, since the games remain until reset.
+        type: boolean
+      icon:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner:
+        type: boolean
+      permissions:
+        type: string
+    type: object
   api.GuildLeaderboards:
     properties:
       bestCrewmateDuo:
@@ -1845,6 +1867,42 @@ paths:
           schema:
             type: string
       summary: Get AmongUsCapture
+  /user/guilds:
+    get:
+      description: |-
+        List every guild the Discord token's user belongs to, as Discord reports them, each tagged with
+        whether the bot is in it and whether it has recorded games. The list comes from the token, so it
+        never reveals the bot's presence in guilds the caller is not a member of.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.GuildEntry'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "501":
+          description: Not Implemented
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - DiscordBearer: []
+      summary: List the User's Guilds
+      tags:
+      - user
 securityDefinitions:
   BasicAuth:
     type: basic

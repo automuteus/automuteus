@@ -78,6 +78,10 @@ type Store interface {
 	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
 	// next sees the guild.
 	BotInGuild(context.Context, string) (bool, error)
+	// BotInGuilds is BotInGuild for many guilds at once, answering in the order asked.
+	BotInGuilds(context.Context, []string) ([]bool, error)
+	// GuildsWithStats reports, in the order asked, which guilds have at least one finished game recorded.
+	GuildsWithStats(context.Context, []string) ([]bool, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
 	RaiseNotice(context.Context, notice.Notice) error
@@ -87,6 +91,9 @@ type Store interface {
 type Config struct {
 	// GuildVerifier is injectable for tests; nil uses Discord HTTPS endpoints.
 	GuildVerifier GuildVerifier
+	// GuildLister is injectable for tests; nil uses GuildVerifier when it can also list guilds, as the Discord one
+	// can. Without one, GET /user/guilds answers 501.
+	GuildLister GuildLister
 	// AccessCacheTTL is how long a verified read authorization for one (token, guild) is reused before Discord is
 	// asked again. Zero means DefaultAccessCacheTTL; negative disables caching. Writes always verify live.
 	AccessCacheTTL time.Duration
@@ -165,6 +172,13 @@ func NewRouter(config Config, store Store) *gin.Engine {
 		ttl = DefaultAccessCacheTTL
 	}
 	access := newAccessCache(ttl, nil)
+	guildList := config.GuildLister
+	if guildList == nil {
+		if lister, ok := verifier.(GuildLister); ok {
+			guildList = lister
+		}
+	}
+	r.GET("/user/guilds", handleGetUserGuilds(guildList, store))
 	gameGroup := r.Group("/game", guildAuthentication(config, verifier, access, ReadGame))
 	gameGroup.GET("/state", handleGetGameState(store))
 	gameGroup.GET("/roomcode", handleGetRoomCode(store))

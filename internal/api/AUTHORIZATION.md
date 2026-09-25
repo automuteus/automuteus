@@ -109,9 +109,14 @@ neither Discord token is exposed in the public session. Browser-supplied
 Authorization headers and extra query parameters are not forwarded. No CORS
 support is needed for this server-to-server flow.
 
-The web `/api/guilds` route still calls Discord directly because this API has no
-guild-list endpoint. It uses the same refresh-aware helper and preserves all
-member guilds for the premium picker. The web `/settings` page now consumes the
+The web `/api/guilds` route forwards the session token to `GET /user/guilds`,
+which lists the token's guilds from Discord and tags each with `botPresent` (the
+bot's Redis guild set) and `hasStats` (a finished game in Postgres). The list
+comes from the token, never from the caller, so bot presence is only revealed for
+the caller's own guilds. Only a Bearer token is accepted there; the admin password
+has no guild list. The web pages filter the list: stats pages keep guilds with
+stats or the bot, settings keeps guilds with the bot that the user can manage, and
+the premium picker keeps every guild. The web `/settings` page now consumes the
 settings route with a server selector and read-only setting groups.
 See the sibling web README for usage, status handling, and refresh limitations.
 

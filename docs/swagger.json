@@ -1251,6 +1251,58 @@
                     }
                 }
             }
+        },
+        "/user/guilds": {
+            "get": {
+                "security": [
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "List every guild the Discord token's user belongs to, as Discord reports them, each tagged with\nwhether the bot is in it and whether it has recorded games. The list comes from the token, so it\nnever reveals the bot's presence in guilds the caller is not a member of.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "List the User's Guilds",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.GuildEntry"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1428,6 +1480,34 @@
                             "$ref": "#/definitions/discordgo.ChannelType"
                         }
                     ]
+                }
+            }
+        },
+        "api.GuildEntry": {
+            "type": "object",
+            "properties": {
+                "botPresent": {
+                    "description": "BotPresent is BotInGuild for this guild: whether the bot last saw itself join rather than leave.",
+                    "type": "boolean"
+                },
+                "hasStats": {
+                    "description": "HasStats is whether the guild has a finished game for the stats page to show. It stays true after the bot\nleaves, since the games remain until reset.",
+                    "type": "boolean"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "boolean"
+                },
+                "permissions": {
+                    "type": "string"
                 }
             }
         },

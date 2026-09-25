@@ -100,6 +100,20 @@ func (v *discordVerifier) getAttempt(ctx context.Context, token, path string, ou
 	return nil
 }
 
+// UserGuild is one guild the token's user belongs to, as /users/@me/guilds reports it.
+type UserGuild struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Icon        *string `json:"icon"`
+	Owner       bool    `json:"owner"`
+	Permissions string  `json:"permissions"`
+}
+
+// GuildLister lists every guild a Discord access token's user belongs to. Like GuildVerifier it must fail closed.
+type GuildLister interface {
+	ListGuilds(context.Context, string) ([]UserGuild, error)
+}
+
 // Tokens from any Discord OAuth application are accepted, supporting external
 // clients as well as our UI. Required scopes: identify and guilds. Read
 // authorizations may be reused briefly by accessCache; writes verify live.
@@ -114,40 +128,71 @@ func (v *discordVerifier) VerifyGuild(ctx context.Context, token, guildID string
 		return VerifiedGuildAccess{}, errDiscordUnavailable
 	}
 	access := VerifiedGuildAccess{UserID: user.ID, GuildID: guildID}
+	err := v.eachGuild(ctx, token, func(guild UserGuild) (bool, error) {
+		if guild.ID != guildID {
+			return true, nil
+		}
+		permissions, err := strconv.ParseInt(guild.Permissions, 10, 64)
+		if err != nil || permissions < 0 {
+			return false, errDiscordUnavailable
+		}
+		access.Member, access.Owner, access.Permissions = true, guild.Owner, permissions
+		return false, nil
+	})
+	if err != nil {
+		return VerifiedGuildAccess{}, err
+	}
+	return access, nil
+}
+
+// ListGuilds returns every guild of the token's user, refusing the whole list if any entry is malformed.
+func (v *discordVerifier) ListGuilds(ctx context.Context, token string) ([]UserGuild, error) {
+	var guilds []UserGuild
+	err := v.eachGuild(ctx, token, func(guild UserGuild) (bool, error) {
+		permissions, err := strconv.ParseInt(guild.Permissions, 10, 64)
+		if err != nil || permissions < 0 {
+			return false, errDiscordUnavailable
+		}
+		guilds = append(guilds, guild)
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return guilds, nil
+}
+
+// eachGuild pages through /users/@me/guilds, calling visit for each guild until it returns false or an error.
+func (v *discordVerifier) eachGuild(ctx context.Context, token string, visit func(UserGuild) (bool, error)) error {
 	after := ""
 	for page := 0; page < 100; page++ {
-		var guilds []struct {
-			ID          string `json:"id"`
-			Owner       bool   `json:"owner"`
-			Permissions string `json:"permissions"`
-		}
+		var guilds []UserGuild
 		path := "/users/@me/guilds?limit=200"
 		if after != "" {
 			path += "&after=" + url.QueryEscape(after)
 		}
 		if err := v.get(ctx, token, path, &guilds); err != nil {
-			return VerifiedGuildAccess{}, err
+			return err
 		}
 		for _, guild := range guilds {
-			if guild.ID == guildID {
-				permissions, err := strconv.ParseInt(guild.Permissions, 10, 64)
-				if err != nil || permissions < 0 {
-					return VerifiedGuildAccess{}, errDiscordUnavailable
-				}
-				access.Member, access.Owner, access.Permissions = true, guild.Owner, permissions
-				return access, nil
+			if discord.ValidateSnowflake(guild.ID) != nil {
+				return errDiscordUnavailable
+			}
+			more, err := visit(guild)
+			if err != nil || !more {
+				return err
 			}
 		}
 		if len(guilds) < 200 {
-			return access, nil
+			return nil
 		}
 		next := guilds[len(guilds)-1].ID
-		if discord.ValidateSnowflake(next) != nil || next == after {
-			return VerifiedGuildAccess{}, errDiscordUnavailable
+		if next == after {
+			return errDiscordUnavailable
 		}
 		after = next
 	}
-	return VerifiedGuildAccess{}, errDiscordUnavailable
+	return errDiscordUnavailable
 }
 
 const memberRequestKey = "api.memberRequest"

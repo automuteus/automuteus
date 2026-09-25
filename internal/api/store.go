@@ -17,6 +17,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"strconv"
 	"time"
 )
 
@@ -60,6 +61,55 @@ func (s *DataStore) BotInGuild(ctx context.Context, guildID string) (bool, error
 		return false, err
 	}
 	return s.redis.SIsMember(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID))).Result()
+}
+
+// BotInGuilds is BotInGuild for many guilds in one pipelined round trip, answering in the order asked. Pipelined
+// SISMEMBER rather than SMISMEMBER keeps self-hosts on Redis older than 6.2 working.
+func (s *DataStore) BotInGuilds(ctx context.Context, guildIDs []string) ([]bool, error) {
+	present := make([]bool, len(guildIDs))
+	if len(guildIDs) == 0 {
+		return present, nil
+	}
+	cmds := make([]*redis.BoolCmd, len(guildIDs))
+	pipe := s.redis.Pipeline()
+	for i, guildID := range guildIDs {
+		if err := discord.ValidateSnowflake(guildID); err != nil {
+			return nil, err
+		}
+		cmds[i] = pipe.SIsMember(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID)))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return nil, err
+	}
+	for i, cmd := range cmds {
+		present[i] = cmd.Val()
+	}
+	return present, nil
+}
+
+// GuildsWithStats reports, in the order asked, which guilds have a finished game for the stats page to show.
+func (s *DataStore) GuildsWithStats(ctx context.Context, guildIDs []string) ([]bool, error) {
+	ids := make([]uint64, len(guildIDs))
+	for i, guildID := range guildIDs {
+		id, err := strconv.ParseUint(guildID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("guild ID: %w", err)
+		}
+		ids[i] = id
+	}
+	found, err := pgstorage.GuildsWithStats(ctx, s.stats, ids)
+	if err != nil {
+		return nil, err
+	}
+	with := make(map[uint64]bool, len(found))
+	for _, id := range found {
+		with[id] = true
+	}
+	has := make([]bool, len(ids))
+	for i, id := range ids {
+		has[i] = with[id]
+	}
+	return has, nil
 }
 
 func (s *DataStore) Ping(ctx context.Context) error {
