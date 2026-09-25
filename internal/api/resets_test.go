@@ -157,6 +157,22 @@ func TestResetStats_DeletesAndReports(t *testing.T) {
 	if strings.Join(s.resets, ",") != writeGuild+","+writeGuild+"/"+resetUser {
 		t.Fatalf("resets %v", s.resets)
 	}
+	// the other replicas are told to drop the guild too, once per reset
+	if len(s.announced) != 2 || len(s.announced[0]) != 1 || s.announced[0][0] != writeGuild || len(s.announced[1]) != 1 || s.announced[1][0] != writeGuild {
+		t.Fatalf("announced %v, want the guild twice", s.announced)
+	}
+}
+
+func TestResetStats_FailedAnnouncementDoesNotFailTheReset(t *testing.T) {
+	s := &fakeStore{announceErr: errors.New("redis: connection refused")}
+	r, _ := writeRouter(s, ownerAccess)
+	w := postReset(r, "/guild/stats/reset?guildID="+writeGuild, "valid", "")
+	if w.Code != 200 || strings.Contains(w.Body.String(), "redis") {
+		t.Fatalf("%d %s", w.Code, w.Body)
+	}
+	if len(s.announced) != 1 {
+		t.Fatalf("announced %v, want one attempt", s.announced)
+	}
 }
 
 func TestResetStats_StoreFailureIs500WithoutDetail(t *testing.T) {

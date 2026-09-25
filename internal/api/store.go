@@ -57,6 +57,43 @@ func (s *DataStore) ClearNotice(ctx context.Context) error {
 	return notice.Clear(ctx, s.redis)
 }
 
+func (s *DataStore) AnnounceStatsChanged(ctx context.Context, guildIDs ...string) error {
+	return notice.AnnounceStatsChanged(ctx, s.redis, guildIDs...)
+}
+
+// StatsChanges subscribes to the bot's stats change announcements and relays them until ctx ends or the Redis
+// client closes. The subscription reconnects by itself; announcements published meanwhile are missed, which the
+// stats cache TTL covers.
+func (s *DataStore) StatsChanges(ctx context.Context) <-chan notice.StatsChanged {
+	sub := notice.SubscribeStatsChanged(ctx, s.redis)
+	out := make(chan notice.StatsChanged, 64)
+	go func() {
+		defer close(out)
+		defer sub.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-sub.Channel():
+				if !ok {
+					return
+				}
+				change, err := notice.DecodeStatsChanged([]byte(msg.Payload))
+				if err != nil {
+					log.Printf("malformed stats change announcement: %v", err)
+					continue
+				}
+				select {
+				case out <- *change:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return out
+}
+
 // BotInGuild checks the same Redis set the bot adds to on GuildCreate and removes from on GuildDelete, so the
 // API never needs a Discord session or bot token for this answer.
 func (s *DataStore) BotInGuild(ctx context.Context, guildID string) (bool, error) {

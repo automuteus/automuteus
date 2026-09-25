@@ -366,6 +366,10 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				fallthrough
 			case command.PrivacyOptIn:
 				err = bot.PostgresInterface.OptUserByString(i.Member.User.ID, privArg == command.PrivacyOptIn)
+				if err == nil && privArg == command.PrivacyOptOut {
+					// Opting out deletes the user's rows in every guild, so no cached stats page is safe.
+					bot.announceStatsChanged()
+				}
 				return command.PrivacyResponse(privArg, nil, nil, err, sett)
 
 			case command.PrivacyShowMe:

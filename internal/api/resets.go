@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/discord"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
@@ -52,6 +54,46 @@ func (s statsCaches) forgetGuild(guildID string) {
 	s.user.forget(match)
 }
 
+// setBuildTimeout gives every stats build the same deadline. Zero means DefaultStatsBuildTimeout.
+func (s statsCaches) setBuildTimeout(d time.Duration) {
+	if d <= 0 {
+		d = DefaultStatsBuildTimeout
+	}
+	for _, c := range []interface{ setBuildTimeout(time.Duration) }{s.guild, s.guildFull, s.match, s.user} {
+		c.setBuildTimeout(d)
+	}
+}
+
+// forgetAll drops every cached document, for changes that touch an unknown set of guilds.
+func (s statsCaches) forgetAll() {
+	all := func(string) bool { return true }
+	s.guild.forget(all)
+	s.guildFull.forget(all)
+	s.match.forget(all)
+	s.user.forget(all)
+}
+
+// applyChanges drops documents as changes are announced, until the channel closes.
+func (s statsCaches) applyChanges(changes <-chan notice.StatsChanged) {
+	for change := range changes {
+		if change.All() {
+			s.forgetAll()
+			continue
+		}
+		for _, guildID := range change.GuildIDs {
+			s.forgetGuild(guildID)
+		}
+	}
+}
+
+// announceStatsChanged tells the other replicas what this one just forgot. The local caches were already dropped,
+// so a failed announcement only leaves the others to their TTL.
+func announceStatsChanged(c *gin.Context, store Store, guildID string) {
+	if err := store.AnnounceStatsChanged(c.Request.Context(), guildID); err != nil {
+		log.Printf("Guild %s stats change announcement: %v\n", guildID, err)
+	}
+}
+
 // ResetGuildStats godoc
 // @Summary Reset Guild Stats
 // @Description Delete every recorded game of the guild, for every player.
@@ -78,6 +120,7 @@ func handleResetGuildStats(store Store, caches statsCaches) func(c *gin.Context)
 		games, err := store.ResetGuildStats(c.Request.Context(), guildID)
 		// Forget even on failure: the delete may have happened before the error came back.
 		caches.forgetGuild(guildID)
+		announceStatsChanged(c, store, guildID)
 		if err != nil {
 			log.Printf("Guild %s stats reset: %v\n", guildID, err)
 			c.JSON(http.StatusInternalServerError, HttpError{StatusCode: http.StatusInternalServerError, Error: "Unable to reset guild statistics"})
@@ -120,6 +163,7 @@ func handleResetUserStats(store Store, caches statsCaches) func(c *gin.Context) 
 		}
 		games, err := store.ResetUserStats(c.Request.Context(), guildID, userID)
 		caches.forgetGuild(guildID)
+		announceStatsChanged(c, store, guildID)
 		if err != nil {
 			log.Printf("Guild %s user %s stats reset: %v\n", guildID, userID, err)
 			c.JSON(http.StatusInternalServerError, HttpError{StatusCode: http.StatusInternalServerError, Error: "Unable to reset player statistics"})

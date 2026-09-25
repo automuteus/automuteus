@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -542,6 +543,8 @@ func (d *UserStatsDetails) userIDs(userID string) []string {
 // @Failure 401 {object} HttpError
 // @Failure 403 {object} HttpError
 // @Failure 500 {object} HttpError
+// @Failure 503 {object} HttpError "The document is still being built; retry after the Retry-After header"
+// @Header 503 {string} Retry-After "Seconds to wait before retrying"
 // @Router /guild/user [get]
 func handleGetUserStats(users *listCache[UserStats]) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -562,6 +565,10 @@ func handleGetUserStats(users *listCache[UserStats]) func(c *gin.Context) {
 			return
 		}
 		result, err := users.get(c.Request.Context(), guildID+"/"+userID)
+		if errors.Is(err, errStillBuilding) {
+			respondStillBuilding(c, "player statistics")
+			return
+		}
 		if err != nil {
 			log.Printf("Guild %s user %s stats: %v\n", guildID, userID, err)
 			c.JSON(http.StatusInternalServerError, HttpError{

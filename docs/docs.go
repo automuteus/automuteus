@@ -593,6 +593,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.HttpError"
                         }
+                    },
+                    "503": {
+                        "description": "The summary is still being built; retry after the Retry-After header",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "type": "string",
+                                "description": "Seconds to wait before retrying"
+                            }
+                        }
                     }
                 }
             }
@@ -1044,6 +1056,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.HttpError"
                         }
+                    },
+                    "503": {
+                        "description": "The rollup is still being built; retry after the Retry-After header",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "type": "string",
+                                "description": "Seconds to wait before retrying"
+                            }
+                        }
                     }
                 }
             }
@@ -1175,6 +1199,18 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "The document is still being built; retry after the Retry-After header",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "type": "string",
+                                "description": "Seconds to wait before retrying"
+                            }
                         }
                     }
                 }

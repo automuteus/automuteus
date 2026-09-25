@@ -2,11 +2,20 @@ package api
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"golang.org/x/sync/singleflight"
 )
+
+// defaultBuildTimeout bounds a fetch that no caller is waiting for any more. It matches the request deadline, so
+// a Discord list fetch is never kept alive longer than the request that wanted it would have been.
+const defaultBuildTimeout = 10 * time.Second
+
+// errStillBuilding is returned to a caller whose context ended while the entry was being fetched. The fetch keeps
+// running on its own deadline and stores its result, so a retry a moment later is answered from the cache.
+var errStillBuilding = errors.New("still building")
 
 // DefaultListCacheTTL bounds how long a guild's role or channel list is reused before Discord is asked again. It is
 // short because a picker should show a channel created moments ago, and long enough that a browser held on
@@ -17,12 +26,14 @@ const DefaultListCacheTTL = 30 * time.Second
 // of the same guild into one. Errors are never cached; the verifier's rate-limit cooldown already makes a
 // throttled route fail fast. Cached values are shared, so callers must not modify what they get back.
 type listCache[T any] struct {
-	ttl     time.Duration
-	now     func() time.Time
-	fetch   func(ctx context.Context, guildID string) (T, error)
-	mu      sync.Mutex
-	entries map[string]cachedList[T]
-	flight  singleflight.Group
+	ttl   time.Duration
+	now   func() time.Time
+	fetch func(ctx context.Context, guildID string) (T, error)
+	// buildTimeout is the deadline of each fetch, which runs detached from the callers waiting on it.
+	buildTimeout time.Duration
+	mu           sync.Mutex
+	entries      map[string]cachedList[T]
+	flight       singleflight.Group
 	// generation counts forget calls, so a fetch that started before one does not store what it read.
 	generation uint64
 }
@@ -36,7 +47,7 @@ func newListCache[T any](ttl time.Duration, now func() time.Time, fetch func(ctx
 	if now == nil {
 		now = time.Now
 	}
-	return &listCache[T]{ttl: ttl, now: now, fetch: fetch, entries: map[string]cachedList[T]{}}
+	return &listCache[T]{ttl: ttl, now: now, fetch: fetch, buildTimeout: defaultBuildTimeout, entries: map[string]cachedList[T]{}}
 }
 
 func (c *listCache[T]) lookup(guildID string) (T, bool) {
@@ -74,34 +85,50 @@ func (c *listCache[T]) store(guildID string, value T, generation uint64) {
 }
 
 // get answers from the cache when it can, otherwise fetches once for all concurrent callers of the same guild.
-// A non-positive TTL disables caching and collapsing alike.
+// The fetch runs on its own deadline (buildTimeout), not the callers': a caller whose context ends first gets
+// errStillBuilding, and the fetch carries on and stores its result for the next request. That is what lets a
+// guild whose rollup takes longer than a request build at all. A non-positive TTL disables caching, collapsing,
+// and detaching alike.
 func (c *listCache[T]) get(ctx context.Context, guildID string) (T, error) {
+	var zero T
 	if c == nil || c.ttl <= 0 {
 		return c.fetch(ctx, guildID)
 	}
 	if value, ok := c.lookup(guildID); ok {
 		return value, nil
 	}
-	result, err, _ := c.flight.Do(guildID, func() (interface{}, error) {
+	results := c.flight.DoChan(guildID, func() (interface{}, error) {
 		if value, ok := c.lookup(guildID); ok {
 			return value, nil
 		}
 		c.mu.Lock()
 		generation := c.generation
 		c.mu.Unlock()
-		// The leader's deadline governs the shared call; a cancelled leader just makes everyone retry next time.
-		value, err := c.fetch(ctx, guildID)
+		buildCtx, cancel := context.WithTimeout(context.Background(), c.buildTimeout)
+		defer cancel()
+		value, err := c.fetch(buildCtx, guildID)
 		if err != nil {
 			return nil, err
 		}
 		c.store(guildID, value, generation)
 		return value, nil
 	})
-	if err != nil {
-		var zero T
-		return zero, err
+	select {
+	case result := <-results:
+		if result.Err != nil {
+			return zero, result.Err
+		}
+		return result.Val.(T), nil
+	case <-ctx.Done():
+		return zero, errStillBuilding
 	}
-	return result.(T), nil
+}
+
+// setBuildTimeout changes the deadline given to each fetch.
+func (c *listCache[T]) setBuildTimeout(d time.Duration) {
+	if c != nil {
+		c.buildTimeout = d
+	}
 }
 
 // forget drops every cached entry whose key matches, after the data behind them changed. A fetch already running

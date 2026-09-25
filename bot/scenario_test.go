@@ -200,4 +200,11 @@ func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {
 	if got := deps.store.get(); got.MatchID != -1 {
 		t.Fatalf("match still open after game over: %d", got.MatchID)
 	}
+	// the API is told the guild's stats pages are stale, once, for this guild only
+	deps.recorder.mu.Unlock()
+	eventually(t, "the stats change to be announced", func() bool { return len(deps.notices.statsAnnouncements()) == 1 })
+	deps.recorder.mu.Lock()
+	if got := deps.notices.statsAnnouncements(); len(got[0]) != 1 || got[0][0] != scenarioGuild {
+		t.Fatalf("stats announcements = %v, want [[%s]]", got, scenarioGuild)
+	}
 }

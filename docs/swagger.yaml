@@ -1433,6 +1433,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.HttpError'
+        "503":
+          description: The summary is still being built; retry after the Retry-After
+            header
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying
+              type: string
+          schema:
+            $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
       - DiscordBearer: []
@@ -1744,6 +1753,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.HttpError'
+        "503":
+          description: The rollup is still being built; retry after the Retry-After
+            header
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying
+              type: string
+          schema:
+            $ref: '#/definitions/api.HttpError'
       security:
       - BasicAuth: []
       - DiscordBearer: []
@@ -1834,6 +1852,15 @@ paths:
             $ref: '#/definitions/api.HttpError'
         "500":
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: The document is still being built; retry after the Retry-After
+            header
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying
+              type: string
           schema:
             $ref: '#/definitions/api.HttpError'
       security:

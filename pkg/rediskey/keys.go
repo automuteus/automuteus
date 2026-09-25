@@ -16,6 +16,10 @@ const NoticeChannel = "automuteus:notices"
 
 // ActiveNotice holds the notice currently shown to players, if any.
 const ActiveNotice = "automuteus:notices:active"
+
+// StatsChangedChannel carries announcements that a guild's recorded match history changed (see
+// notice.AnnounceStatsChanged), so the API can drop its cached stats documents instead of waiting out their TTL.
+const StatsChangedChannel = "automuteus:stats:changed"
 const TotalGames = "automuteus:games:total"
 
 func ActiveGamesForGuild(guildID string) string {

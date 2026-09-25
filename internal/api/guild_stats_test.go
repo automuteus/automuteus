@@ -9,7 +9,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/gin-gonic/gin"
@@ -257,6 +259,57 @@ func TestGetGuildStats(t *testing.T) {
 		}
 	})
 
+	t.Run("an announced change drops the guild's rollup", func(t *testing.T) {
+		s := &fakeStore{changes: make(chan notice.StatsChanged, 1)}
+		r := NewRouter(Config{GuildVerifier: member}, s)
+		const other = "223456789012345678"
+		for _, g := range []string{guild, other, guild} {
+			if w := bearerRequest(r, "/guild/stats?guildID="+g, "token"); w.Code != 200 {
+				t.Fatalf("%d %s", w.Code, w.Body)
+			}
+		}
+		if s.statsCalls != 2 {
+			t.Fatalf("store built the rollup %d times before the change, want 2", s.statsCalls)
+		}
+		s.changes <- notice.StatsChanged{GuildIDs: []string{guild}}
+		waitForRebuild(t, r, "/guild/stats?guildID="+guild, &s.statsCalls, 3)
+		// the other guild's rollup was left alone
+		if w := bearerRequest(r, "/guild/stats?guildID="+other, "token"); w.Code != 200 || s.statsCalls != 3 {
+			t.Fatalf("%d, builds = %d, want the other guild still cached", w.Code, s.statsCalls)
+		}
+	})
+
+	t.Run("an announcement naming no guild drops every rollup", func(t *testing.T) {
+		s := &fakeStore{changes: make(chan notice.StatsChanged, 1)}
+		r := NewRouter(Config{GuildVerifier: member}, s)
+		const other = "223456789012345678"
+		for _, g := range []string{guild, other} {
+			if w := bearerRequest(r, "/guild/stats?guildID="+g, "token"); w.Code != 200 {
+				t.Fatalf("%d %s", w.Code, w.Body)
+			}
+		}
+		s.changes <- notice.StatsChanged{}
+		waitForRebuild(t, r, "/guild/stats?guildID="+guild, &s.statsCalls, 3)
+		waitForRebuild(t, r, "/guild/stats?guildID="+other, &s.statsCalls, 4)
+	})
+
+	t.Run("a request that gives up waiting gets 503 and the finished build serves the retry", func(t *testing.T) {
+		s := &slowStatsStore{release: make(chan struct{})}
+		r := NewRouter(Config{GuildVerifier: member}, s)
+		// the request's deadline has already passed when the build starts
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		req := httptest.NewRequest(http.MethodGet, "/guild/stats?guildID="+guild, nil).WithContext(ctx)
+		req.Header.Set("Authorization", "Bearer token")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != 503 || w.Header().Get("Retry-After") != stillBuildingRetryAfter || !strings.Contains(w.Body.String(), "still being built") {
+			t.Fatalf("%d %q %s", w.Code, w.Header().Get("Retry-After"), w.Body)
+		}
+		close(s.release)
+		waitForRebuild(t, r, "/guild/stats?guildID="+guild, &s.statsCalls, 1)
+	})
+
 	t.Run("caching can be disabled", func(t *testing.T) {
 		s := &fakeStore{}
 		r := NewRouter(Config{GuildVerifier: member, StatsCacheTTL: -1}, s)
@@ -321,4 +374,37 @@ func TestGetGuildStatsFull(t *testing.T) {
 			}
 		})
 	}
+}
+
+// waitForRebuild repeats the request until the store has been asked to build want times, or gives up after a
+// second. Announced changes are applied by a goroutine, so a request right after one may still be served stale.
+func waitForRebuild(t *testing.T, r http.Handler, path string, builds *int, want int) {
+	t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for {
+		if w := bearerRequest(r, path, "token"); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		if *builds >= want {
+			if *builds != want {
+				t.Fatalf("store built the rollup %d times, want %d", *builds, want)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("store built the rollup %d times, want %d: the announced change was never applied", *builds, want)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// slowStatsStore holds every GuildStats build until release is closed.
+type slowStatsStore struct {
+	fakeStore
+	release chan struct{}
+}
+
+func (s *slowStatsStore) GuildStats(ctx context.Context, guildID string) (GuildStats, error) {
+	<-s.release
+	return s.fakeStore.GuildStats(ctx, guildID)
 }

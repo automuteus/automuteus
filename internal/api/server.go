@@ -91,6 +91,12 @@ type Store interface {
 	ActiveNotice(context.Context) (*notice.Notice, error)
 	RaiseNotice(context.Context, notice.Notice) error
 	ClearNotice(context.Context) error
+	// AnnounceStatsChanged tells every API replica that the named guilds' recorded history changed (every guild's
+	// when none is named), so their cached stats documents are dropped.
+	AnnounceStatsChanged(context.Context, ...string) error
+	// StatsChanges delivers the announcements made by the bot and by other replicas, until ctx ends. A nil channel
+	// means the store has no way to hear them and the caches rely on their TTL alone.
+	StatsChanges(context.Context) <-chan notice.StatsChanged
 }
 
 type Config struct {
@@ -108,12 +114,15 @@ type Config struct {
 	// StatsCacheTTL is how long GET /guild/stats reuses a guild's rollup, and GET /guild/match a match summary,
 	// before building it again. Zero means DefaultStatsCacheTTL; negative disables caching.
 	StatsCacheTTL time.Duration
-	Version       string
-	Commit        string
-	ServerURL     string
-	AdminPassword string
-	CaptureHost   string
-	Official      bool
+	// StatsBuildTimeout is how long one build of a stats document may run once started, whether or not the request
+	// that started it is still waiting. Zero means DefaultStatsBuildTimeout.
+	StatsBuildTimeout time.Duration
+	Version           string
+	Commit            string
+	ServerURL         string
+	AdminPassword     string
+	CaptureHost       string
+	Official          bool
 	// BotToken lets the API verify, with the bot's own credentials, that a channel a client names belongs to the
 	// guild being edited. Without it (and without an injected ChannelVerifier) the summary channel cannot be
 	// changed through the API.
@@ -217,6 +226,13 @@ func NewRouter(config Config, store Store) *gin.Engine {
 		guildFull: newListCache(statsTTL, nil, store.AdminGuildStats),
 		match:     newMatchCache(statsTTL, store.MatchSummary),
 		user:      newUserStatsCache(statsTTL, store.UserStats),
+	}
+	stats.setBuildTimeout(config.StatsBuildTimeout)
+	// The bot announces every recorded, aborted, or reset match over Redis, so the caches can hold a rollup for the
+	// whole TTL and still show a game seconds after it ends. The listener lives as long as the process; the Redis
+	// client closing at shutdown ends it.
+	if changes := store.StatsChanges(context.Background()); changes != nil {
+		go stats.applyChanges(changes)
 	}
 	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild, stats.guildFull))
 	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
