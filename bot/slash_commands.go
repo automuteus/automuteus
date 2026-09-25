@@ -259,16 +259,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return resp
 
 		case command.Settings.Name:
+			// Settings are managed on the web dashboard; the same people who may change them there get the link.
 			if !isAdmin {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
-			if err != nil {
-				log.Println("Err in /settings get premium:", err)
-			}
-			setting, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, !premium.IsExpired(premStatus, days))
-			return command.SettingsResponse(msg)
+			return command.SettingsResponse(bot.webURL, i.GuildID, sett)
 
 		case command.New.Name:
 			if !isPermissioned {

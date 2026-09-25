@@ -92,7 +92,7 @@ If you want to view command usage or see the available options, type `/help` in 
 | `/end`      | End the game entirely, and stop tracking players. Unmutes all and resets state                                         |                          |
 | `/link`     | Manually link a discord user to their in-game color                                                                    | `/link @Soup cyan`       |
 | `/unlink`   | Manually unlink a player                                                                                               | `/unlink @Soup`          |
-| `/settings` | View and change settings for the bot, such as the command prefix or mute behavior                                      |                          |
+| `/settings` | Get a link to the web dashboard, where the bot's settings for this server are managed                                  |                          |
 | `/privacy`  | View privacy and data collection information about the bot                                                             |                          |
 | `/info`     | View general info about the Bot                                                                                        |                          |
 | `/map`      | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
@@ -193,6 +193,7 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 | `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Game/guild access and raising or clearing platform notices require a non-default value. |
 | `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
+| `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings` links to; defaults to `https://automute.us`. |
 | `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
 
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
