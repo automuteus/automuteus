@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/automuteus/automuteus/v8/internal/server"
-	"github.com/automuteus/automuteus/v8/pkg/storage"
 
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/setting"
@@ -21,10 +18,6 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-var DownloadPermissions = []int64{
-	discordgo.PermissionAttachFiles,
-}
-
 var RequiredPermissions = []int64{
 	discordgo.PermissionViewChannel, discordgo.PermissionSendMessages,
 	discordgo.PermissionManageMessages, discordgo.PermissionEmbedLinks,
@@ -34,15 +27,6 @@ var RequiredPermissions = []int64{
 var VoicePermissions = []int64{
 	discordgo.PermissionVoiceMuteMembers, discordgo.PermissionVoiceDeafenMembers,
 }
-
-const (
-	downloadGuildConfirmedID      = "download-guild-confirmed"
-	downloadUsersConfirmedID      = "download-users-confirmed"
-	downloadUsersGamesConfirmedID = "download-users-games-confirmed"
-	downloadGamesConfirmedID      = "download-games-confirmed"
-	downloadGameEventsConfirmedID = "download-game-events-confirmed"
-	downloadCanceledID            = "download-canceled"
-)
 
 func (bot *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// count this handler as in flight before checking for a drain, so shutdown never sees zero handlers
@@ -482,65 +466,6 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 				return command.DeadlockGameStateResponse(command.UnmuteAll, sett)
 			}
-		case command.Download.Name:
-			if !isAdmin {
-				return command.InsufficientPermissionsResponse(sett)
-			}
-			// don't send the userid because downloading is restricted to Gold members
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, "")
-			if err != nil {
-				log.Println("Err in /download get guild prem:", err)
-			}
-			if premium.IsExpired(premStatus, days) {
-				premStatus = premium.FreeTier
-			}
-			if premStatus != premium.SelfHostTier && premStatus != premium.GoldTier {
-				return command.DownloadNotGoldResponse(sett)
-			}
-			missingPerms = checkPermissions(perm, DownloadPermissions)
-			if missingPerms > 0 {
-				return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
-			}
-
-			category := command.GetDownloadParams(i.ApplicationCommandData().Options)
-
-			d, err := redis_common.GetDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, category)
-			if err != nil {
-				return command.PrivateErrorResponse("/download guild", err, sett)
-			}
-			if d > 0 {
-				return command.DownloadCooldownResponse(sett, category, d)
-			}
-			var content string
-			var components []discordgo.MessageComponent
-			content = sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.download.guild.confirmation",
-				Other: "⚠️**Are you sure?**⚠️\nIf you download the `{{.Category}}` data now, it will not be downloadable again for 24 hours!",
-			}, map[string]interface{}{
-				"Category": category,
-			})
-			var downloadConfirmedID string
-			switch category {
-			case command.Guild:
-				downloadConfirmedID = downloadGuildConfirmedID
-			case command.Users:
-				downloadConfirmedID = downloadUsersConfirmedID
-			case command.UsersGames:
-				downloadConfirmedID = downloadUsersGamesConfirmedID
-			case command.Games:
-				downloadConfirmedID = downloadGamesConfirmedID
-			case command.GameEvents:
-				downloadConfirmedID = downloadGameEventsConfirmedID
-			}
-			components = confirmationComponents(downloadConfirmedID, downloadCanceledID, sett)
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Flags:      1 << 6, //private message
-					Content:    content,
-					Components: components,
-				},
-			}
 		}
 
 	} else if i.Type == discordgo.InteractionMessageComponent {
@@ -550,11 +475,6 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		}
 		pending.reserve(i.Member.User.ID, i.MessageComponentData().CustomID, redis_common.GlobalUserRateLimitDuration)
 
-		gid, err := strconv.ParseUint(i.GuildID, 10, 64)
-		if err != nil {
-			log.Println(err)
-			// TODO report this properly
-		}
 		switch i.MessageComponentData().CustomID {
 		case colorSelectID:
 			if len(i.MessageComponentData().Values) > 0 {
@@ -578,162 +498,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return resp
 			}
 
-		case downloadGuildConfirmedID:
-			guild, err := bot.PostgresInterface.GetGuildForDownload(gid)
-			if err != nil {
-				log.Println("Error downloading guild data:", err)
-				return downloadErrorResponse(sett, err)
-			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Guild)
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseUpdateMessage,
-					Data: &discordgo.InteractionResponseData{
-						Flags: 1 << 6, //private message
-						Content: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.download.file.success",
-							Other: "Here's that file for you!",
-						}),
-						Components: []discordgo.MessageComponent{},
-						Files: []*discordgo.File{
-							{
-								Name:        "guilds.csv",
-								ContentType: "text/csv",
-								Reader:      strings.NewReader(guild.ToCSV()),
-							},
-						},
-					},
-				}
-			}
-
-		case downloadUsersConfirmedID:
-			users, err := bot.PostgresInterface.GetUsersForGuild(gid)
-			if err != nil {
-				log.Println("Error downloading users data:", err)
-				return downloadErrorResponse(sett, err)
-			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Users)
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseUpdateMessage,
-					Data: &discordgo.InteractionResponseData{
-						Flags: 1 << 6, //private message
-						Content: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.download.file.success",
-							Other: "Here's that file for you!",
-						}),
-						Components: []discordgo.MessageComponent{},
-						Files: []*discordgo.File{
-							{
-								Name:        "users.csv",
-								ContentType: "text/csv",
-								Reader:      strings.NewReader(storage.UsersToCSV(users)),
-							},
-						},
-					},
-				}
-			}
-		case downloadUsersGamesConfirmedID:
-			usersGames, err := bot.PostgresInterface.GetUsersGamesForGuild(gid)
-			if err != nil {
-				log.Println("Error downloading users_games data:", err)
-				return downloadErrorResponse(sett, err)
-			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.UsersGames)
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseUpdateMessage,
-					Data: &discordgo.InteractionResponseData{
-						Flags: 1 << 6, //private message
-						Content: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.download.file.success",
-							Other: "Here's that file for you!",
-						}),
-						Components: []discordgo.MessageComponent{},
-						Files: []*discordgo.File{
-							{
-								Name:        "users_games.csv",
-								ContentType: "text/csv",
-								Reader:      strings.NewReader(storage.UsersGamesToCSV(usersGames)),
-							},
-						},
-					},
-				}
-			}
-		case downloadGamesConfirmedID:
-			games, err := bot.PostgresInterface.GetGamesForGuild(gid)
-			if err != nil {
-				log.Println("Error downloading game data:", err)
-				return downloadErrorResponse(sett, err)
-			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.Games)
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseUpdateMessage,
-					Data: &discordgo.InteractionResponseData{
-						Flags: 1 << 6, //private message
-						Content: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.download.file.success",
-							Other: "Here's that file for you!",
-						}),
-						Components: []discordgo.MessageComponent{},
-						Files: []*discordgo.File{
-							{
-								Name:        "games.csv",
-								ContentType: "text/csv",
-								Reader:      strings.NewReader(storage.GamesToCSV(games)),
-							},
-						},
-					},
-				}
-			}
-		case downloadGameEventsConfirmedID:
-			events, err := bot.PostgresInterface.GetGamesEventsForGuild(gid)
-			if err != nil {
-				log.Println("Error downloading game events data:", err)
-				return downloadErrorResponse(sett, err)
-			} else {
-				redis_common.MarkDownloadCategoryCooldown(bot.RedisInterface.client, i.GuildID, command.GameEvents)
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseUpdateMessage,
-					Data: &discordgo.InteractionResponseData{
-						Flags: 1 << 6, //private message
-						Content: sett.LocalizeMessage(&i18n.Message{
-							ID:    "commands.download.file.success",
-							Other: "Here's that file for you!",
-						}),
-						Components: []discordgo.MessageComponent{},
-						Files: []*discordgo.File{
-							{
-								Name:        "events.csv",
-								ContentType: "text/csv",
-								Reader:      strings.NewReader(storage.EventsToCSV(events)),
-							},
-						},
-					},
-				}
-			}
-		case downloadCanceledID:
-			if i.Message.MessageReference != nil {
-				bot.deleteComponentInParentMessage(s, i)
-			}
-			return resetCancelResponse(sett)
 		}
 	}
 
 	// no command or handler matched somehow
 	return nil
-}
-
-func downloadErrorResponse(sett *settings.GuildSettings, err error) *discordgo.InteractionResponse {
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseUpdateMessage,
-		Data: &discordgo.InteractionResponseData{
-			Flags: 1 << 6, //private message
-			Content: sett.LocalizeMessage(&i18n.Message{
-				ID:    "commands.download.guild.error",
-				Other: "I encountered an error fetching your stats for download: {{.Error}}",
-			}, map[string]interface{}{
-				"Error": err.Error(),
-			}),
-		},
-	}
 }
 
 func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string, sett *settings.GuildSettings) (*discordgo.InteractionResponse, bool) {
@@ -840,7 +609,7 @@ func checkPermissions(perm int64, perms []int64) (a int64) {
 }
 
 // commandAccess decides what a member may do with the bot's slash commands. isAdmin unlocks the admin-only
-// commands (settings, download, other players' stats, and so on); isPermissioned unlocks game control (new,
+// commands (settings, other players' stats, and so on); isPermissioned unlocks game control (new,
 // pause, end, link, unlink).
 //
 // Admin is purely a Discord permission: the guild owner, Administrator, or Manage Server. That is the same rule

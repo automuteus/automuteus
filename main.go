@@ -289,6 +289,28 @@ func discordMainWrapper() error {
 			}
 		}
 		log.Println("Finishing registering all commands!")
+		// Commands dropped from command.All would otherwise stay registered with Discord, and keep being offered,
+		// until someone deleted them by hand.
+		known := map[string]bool{}
+		for _, v := range command.All {
+			known[v.Name] = true
+		}
+		for _, guild := range slashCommandGuildIds {
+			existing, err := bots[0].PrimarySession.ApplicationCommands(bots[0].PrimarySession.State.User.ID, guild)
+			if err != nil {
+				log.Printf("Cannot list registered commands: %v\n", err)
+				continue
+			}
+			for _, cmd := range existing {
+				if known[cmd.Name] {
+					continue
+				}
+				log.Printf("Removing retired command %s\n", cmd.Name)
+				if err := bots[0].PrimarySession.ApplicationCommandDelete(bots[0].PrimarySession.State.User.ID, guild, cmd.ID); err != nil {
+					log.Printf("Cannot remove command %s: %v\n", cmd.Name, err)
+				}
+			}
+		}
 	}
 
 	<-sc

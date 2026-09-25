@@ -66,24 +66,6 @@ func insertGuild(conn PgxIface, guildID uint64, guildName string) error {
 	return err
 }
 
-func (psqlInterface *PsqlInterface) GetGuildForDownload(guildID uint64) (*PostgresGuild, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-
-	guild, err := getGuild(conn.Conn(), guildID)
-	if err != nil {
-		return nil, err
-	}
-	guild.Premium = int16(premium.SelfHostTier)
-	guild.TxTimeUnix = nil
-	guild.InheritsFrom = nil
-	guild.TransferredTo = nil
-	return guild, nil
-}
-
 func getGuild(conn PgxIface, guildID uint64) (*PostgresGuild, error) {
 	var guilds []*PostgresGuild
 	err := pgxscan.Select(context.Background(), conn, &guilds, "SELECT "+guildColumns+" FROM guilds WHERE guild_id = $1", guildID)
@@ -333,91 +315,6 @@ func ensureUserExists(conn PgxIface, userID uint64) (*PostgresUser, error) {
 		return getUser(conn, userID)
 	}
 	return user, err
-}
-
-func (psqlInterface *PsqlInterface) GetGamesForGuild(guildID uint64) ([]*PostgresGame, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getGamesForGuild(conn.Conn(), guildID)
-}
-
-func getGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresGame, error) {
-	var games []*PostgresGame
-	// aborted matches (ended before a result) are excluded, as they are from statistics
-	err := pgxscan.Select(context.Background(), conn, &games, "SELECT "+gameColumns+" FROM games WHERE guild_id = $1 AND win_type != $2;", guildID, int16(game.Aborted))
-	if err != nil {
-		return nil, err
-	}
-	return games, nil
-}
-
-func (psqlInterface *PsqlInterface) GetGamesEventsForGuild(guildID uint64) ([]*PostgresGameEvent, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getGameEventsForGuild(conn.Conn(), guildID)
-}
-
-func getGameEventsForGuild(conn PgxIface, guildID uint64) ([]*PostgresGameEvent, error) {
-	var r []*PostgresGameEvent
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT event_id, user_id, game_events.game_id, event_time, event_type, payload "+
-		"FROM game_events "+
-		"INNER JOIN games gg ON gg.game_id = game_events.game_id "+
-		"WHERE gg.guild_id = $1 AND gg.win_type != $2", guildID, int16(game.Aborted))
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (psqlInterface *PsqlInterface) GetUsersForGuild(guildID uint64) ([]*PostgresUser, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getUsersForGuild(conn.Conn(), guildID)
-}
-
-func getUsersForGuild(conn PgxIface, guildID uint64) ([]*PostgresUser, error) {
-	var r []*PostgresUser
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT DISTINCT users.user_id,opt,vote_time_unix "+
-		"FROM users "+
-		"INNER JOIN game_events ge ON users.user_id = ge.user_id "+
-		"INNER JOIN games gg ON gg.game_id = ge.game_id "+
-		// only return users who are opted in to data collection
-		"WHERE gg.guild_id = $1 AND users.opt = true", guildID)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (psqlInterface *PsqlInterface) GetUsersGamesForGuild(guildID uint64) ([]*PostgresUserGame, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-
-	return getUsersGamesForGuild(conn.Conn(), guildID)
-}
-
-func getUsersGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresUserGame, error) {
-	var r []*PostgresUserGame
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT DISTINCT users_games.user_id,guild_id,game_id,player_name,player_color,player_role,player_won "+
-		"FROM users_games "+
-		"INNER JOIN users u ON u.user_id = users_games.user_id "+
-		"WHERE guild_id = $1 AND u.opt = true", guildID)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
 }
 
 func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) (uint64, error) {
