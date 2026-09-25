@@ -45,6 +45,9 @@ func SettingsResponse(webURL, guildID string, sett *settings.GuildSettings) *dis
 								ID:    "commands.settings.open",
 								Other: "Open settings",
 							}),
+							// Every button needs an emoji: discordgo 0.27 serializes a missing one as an empty
+							// name, which Discord rejects with COMPONENT_INVALID_EMOJI.
+							Emoji: discordgo.ComponentEmoji{Name: "⚙️"},
 						},
 					},
 				},
