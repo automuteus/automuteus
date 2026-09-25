@@ -132,8 +132,11 @@ var (
 		"COUNT(*) OVER () AS players " +
 		"FROM users_games WHERE guild_id = $1 GROUP BY user_id) ranked WHERE user_id = $2"
 
+	// Every self-join below restricts the other player to the guild too. Sharing a game implies it, but the
+	// planner does not know that, and without it production hashed the whole users_games table (see the guild duo
+	// query).
 	userPlayedWithQuery = "SELECT b.user_id, COUNT(*) AS total " +
-		"FROM users_games a INNER JOIN users_games b ON b.game_id = a.game_id AND b.user_id <> a.user_id " +
+		"FROM users_games a INNER JOIN users_games b ON b.guild_id = $1 AND b.game_id = a.game_id AND b.user_id <> a.user_id " +
 		"WHERE a.guild_id = $1 AND a.user_id = $2 " +
 		"GROUP BY b.user_id ORDER BY total DESC, b.user_id LIMIT $3"
 
@@ -143,7 +146,7 @@ var (
 		"COUNT(*) FILTER (WHERE a.player_won) AS win, " +
 		"COUNT(*) FILTER (WHERE a.player_won)::decimal / COUNT(*) * 100 AS win_rate " +
 		"FROM users_games a " +
-		"INNER JOIN users_games b ON b.game_id = a.game_id AND b.user_id <> a.user_id AND b.player_role = $3 " +
+		"INNER JOIN users_games b ON b.guild_id = $1 AND b.game_id = a.game_id AND b.user_id <> a.user_id AND b.player_role = $3 " +
 		"WHERE a.guild_id = $1 AND a.user_id = $2 AND a.player_role = $3 " +
 		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $4 "
 	userBestTeammatesQuery  = userTeammatesSelect + "ORDER BY win_rate DESC, win DESC, total DESC, b.user_id LIMIT $5"
@@ -156,7 +159,7 @@ var (
 		"COUNT(*) AS encounter, " +
 		"COUNT(*) FILTER (WHERE d.game_id IS NOT NULL)::decimal / COUNT(*) * 100 AS death_rate " +
 		"FROM users_games c " +
-		"INNER JOIN users_games i ON i.game_id = c.game_id AND i.player_role = " + impostorRole + " " +
+		"INNER JOIN users_games i ON i.guild_id = $1 AND i.game_id = c.game_id AND i.player_role = " + impostorRole + " " +
 		"LEFT JOIN LATERAL (SELECT game_events.game_id FROM game_events " +
 		"WHERE game_events.game_id = c.game_id AND game_events.user_id = c.user_id AND payload ->> 'Action' = $3 " +
 		"FETCH FIRST 1 ROW ONLY) d ON TRUE " +

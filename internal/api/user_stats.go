@@ -298,11 +298,12 @@ func userMatch(m *pgstorage.UserMatch) UserMatch {
 	return match
 }
 
-// buildUserDetails runs every premium query concurrently; the first failure cancels the rest.
+// buildUserDetails runs the premium queries a few at a time; the first failure cancels the rest.
 func buildUserDetails(ctx context.Context, db pgxscan.Querier, gid, uid uint64, summary pgstorage.UserSummary, minGames int, now time.Time) (*UserStatsDetails, error) {
 	const size = leaderboardSize
 	d := &UserStatsDetails{MinGames: minGames}
 	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(statsQueryParallelism)
 
 	g.Go(func() error {
 		var err error

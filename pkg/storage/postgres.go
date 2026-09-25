@@ -286,51 +286,12 @@ func guildOrUserPremium(conn PgxIface, dbl *dbl.Client, guildID, userID string) 
 }
 
 func getGuildPremiumStatus(conn PgxIface, guildID string, depth int) (premium.Tier, int) {
-	// if we somehow recurse too deep...
-	if depth > 3 {
-		return premium.FreeTier, 0
-	}
-
-	gid, err := strconv.ParseUint(guildID, 10, 64)
+	tier, days, err := checkedGuildPremiumStatus(context.Background(), conn, guildID, depth)
 	if err != nil {
 		log.Println(err)
 		return premium.FreeTier, 0
 	}
-
-	guild, err := getGuild(conn, gid)
-	if err != nil {
-		log.Println(err)
-		return premium.FreeTier, 0
-	}
-
-	// if this is a recursive call, then we ignore the transfer (this is how inheriting works)
-	if depth == 0 {
-		// transferred servers are always treated as free tier, even if their tier/expiry is marked otherwise (the server
-		// that premium was transferred to still uses these values, as "inherited")
-		if guild.TransferredTo != nil {
-			return premium.FreeTier, 0
-		}
-	}
-
-	daysRem := premium.NoExpiryCode
-
-	if guild.TxTimeUnix != nil {
-		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
-		// 31 - days elapsed
-		daysRem = int(premium.SubDays - (diff / SecsInADay))
-		// if the premium for this server is still active, return it (disregarding inheritance)
-		if daysRem > 0 {
-			return premium.Tier(guild.Premium), daysRem
-		}
-	}
-
-	// follow the link to the inherited server
-	// other tooling that facilitates transfers/gold sub-servers will need to be careful to avoid cyclic inheritance...
-	if guild.InheritsFrom != nil {
-		return getGuildPremiumStatus(conn, fmt.Sprintf("%d", *guild.InheritsFrom), depth+1)
-	}
-
-	return premium.Tier(guild.Premium), daysRem
+	return tier, days
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {

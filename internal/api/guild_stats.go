@@ -34,6 +34,10 @@ const leaderboardSize = 5
 // less often than crewmates, so the guild's leaderboard minimum would leave those boards empty for most guilds.
 const impostorDuoMinGames = 2
 
+// statsQueryParallelism bounds how many of a document's queries run at once. Running all of them together made a
+// large guild's build starve every other request on the shared database, including the readiness probe.
+const statsQueryParallelism = 3
+
 // GuildStats is the GET /guild/stats response: everything the stats page shows for one guild in one document.
 // Summary is always present. Leaderboards is present only while the guild's premium is active, as with the
 // retired /stats guild slash command; a free guild sees no key at all rather than empty boards.
@@ -196,6 +200,7 @@ func buildGuildLeaderboards(ctx context.Context, db pgxscan.Querier, gid uint64,
 	const size = leaderboardSize
 	boards := &GuildLeaderboards{MinGames: minGames}
 	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(statsQueryParallelism)
 	g.Go(func() error {
 		rows, err := pgstorage.GuildMostGames(ctx, db, gid, size)
 		if err != nil {

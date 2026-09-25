@@ -21,6 +21,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/logging"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 
@@ -36,9 +37,9 @@ var (
 )
 
 const (
-	DefaultURL                   = "http://localhost:8123"
+	DefaultURL = "http://localhost:8123"
 	// DefaultWebURL is where /settings sends people when WEB_URL is unset: the hosted dashboard.
-	DefaultWebURL = "https://automute.us"
+	DefaultWebURL                = "https://automute.us"
 	DefaultMaxRequests5Sec int64 = 5 // Discord allows ~10 member modifications per 10s per guild
 )
 
@@ -215,6 +216,13 @@ func discordMainWrapper() error {
 		extraTokens = strings.Split(extraTokenStr, ",")
 	}
 
+	var cleanupConfig tokenprovider.CleanupConfig
+	if len(extraTokens) > 0 {
+		cleanupConfig, err = tokenprovider.CleanupConfigFromEnv()
+		if err != nil {
+			return err
+		}
+	}
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
 		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
@@ -229,6 +237,13 @@ func discordMainWrapper() error {
 		bots[i].SetTokenProvider(tokenProvider)
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
+	if len(extraTokens) > 0 {
+		if err := tokenProvider.StartCleanup(cleanupConfig, func(ctx context.Context, guildID string) (premium.Tier, int, error) {
+			return psql.GetGuildPremiumStatus(ctx, isOfficial, guildID)
+		}); err != nil {
+			return err
+		}
+	}
 
 	// readiness reflects this process's own dependencies: every shard's gateway session, Redis, and Postgres
 	for i, shard := range shards {
@@ -313,10 +328,10 @@ func discordMainWrapper() error {
 	for _, v := range bots {
 		v.AnnounceGames()
 	}
+	tokenProvider.Close()
 	for _, v := range bots {
 		v.Close()
 	}
-	tokenProvider.Close()
 	return nil
 }
 

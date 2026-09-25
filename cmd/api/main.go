@@ -94,7 +94,15 @@ func run(ctx context.Context) error {
 	if err := client.Ping(startupCtx).Err(); err != nil {
 		return fmt.Errorf("connect Redis: %w", err)
 	}
-	pool, err := pgxpool.Connect(startupCtx, cfg.postgresURL)
+	poolConfig, err := pgxpool.ParseConfig(cfg.postgresURL)
+	if err != nil {
+		return fmt.Errorf("parse Postgres URL: %w", err)
+	}
+	// The stats queries touch tables large enough that the planner's cost estimates trip JIT compilation, which
+	// then costs about a second per query, most of their runtime. None of the API's queries run long enough to
+	// earn it back.
+	poolConfig.ConnConfig.RuntimeParams["jit"] = "off"
+	pool, err := pgxpool.ConnectConfig(startupCtx, poolConfig)
 	if err != nil {
 		return fmt.Errorf("connect Postgres: %w", err)
 	}

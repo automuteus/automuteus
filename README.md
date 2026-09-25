@@ -297,6 +297,59 @@ to `rate_limited`, and the `mute_deafen_official`, `mute_deafen_worker`, and
 general, are not yet measured. A metrics scraper and dashboards are not bundled with the
 bot yet.
 
+### Worker bot cleanup
+
+Workers maintain a small guild-ID inventory from gateway events; cleanup does not
+probe Discord membership or run from mute/deafen batches. A background sweep checks
+one guild's effective premium allowance at a time, including expiry and transfers.
+Excess workers enter a persistent Redis queue, with a stable token-hash order deciding
+which workers to retain. Servers without matches are checked too.
+
+`WORKER_CLEANUP_CHECK_INTERVAL` defaults to `5s` (minimum `1s`).
+`WORKER_CLEANUP_LEAVE_INTERVAL` defaults to `45s` (minimum `30s`); each departure
+attempt adds up to one-third of that interval as jitter, giving 45–60 seconds by
+default. Both settings accept Go durations such as `30s` or `2m`. These are shared
+fleet-wide budgets in Redis, not allowances per process. Failures consume the leave
+budget too; cleanup does not immediately retry Discord requests or catch up in bursts
+after a restart. At the default rate, 10,000 guilds take roughly 14 hours to check,
+plus any time spent on errors or Discord calls; departures drain separately.
+
+Before leaving, cleanup rechecks premium and recent game activity. Active games,
+unavailable/disconnected guild inventories, recent local voice traffic, observed rate
+limits, and database/Redis errors defer departures. A renewal can therefore cancel
+queued cleanup. Workers with incomplete startup inventories prevent cleanup until
+membership is known. Sessions that fail to open are removed from that inventory so
+they cannot permanently block healthy workers. No full Discord guild cache is needed.
+Free, Bronze, and voting-trial servers have no priority workers; Silver retains one,
+Gold three, and self-hosted installations up to 100.
+
+Monitor `automuteus_worker_cleanup_total{result}` (`checked`, `left`, `deferred`,
+`failed`, `rate_limited`), `automuteus_worker_cleanup_pending_guilds`, and
+`automuteus_worker_cleanup_oldest_check_seconds`. The gauges are each process's latest
+observation of the shared queue; use `max`, not `sum`, across processes. The age tracks
+check **attempts**; monitor failures as well to spot unsuccessful sweeps.
+
+Example PromQL for cleanup progress and backlog:
+
+```promql
+sum by (result) (increase(automuteus_worker_cleanup_total[1h]))
+max(automuteus_worker_cleanup_pending_guilds)
+max(automuteus_worker_cleanup_oldest_check_seconds)
+```
+
+Alert on a stalled sweep when deferrals keep occurring but no checks succeed:
+
+```promql
+(sum(increase(automuteus_worker_cleanup_total{result="deferred"}[30m])) > 0)
+and
+(sum(increase(automuteus_worker_cleanup_total{result="checked"}[30m])) == 0)
+```
+
+Use a window longer than the configured check interval. Also alert on an increase in
+`result="failed"` or `result="rate_limited"`. Failed lookups rotate to the back of the
+sweep and retry on a later pass, so `oldest_check_seconds` alone cannot prove checks
+are succeeding. These are query examples; no alerting service is installed by the bot.
+
 ### Platform notices
 
 Operators can show a banner on every running game's status message, or end every

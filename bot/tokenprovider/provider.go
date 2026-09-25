@@ -22,12 +22,12 @@ import (
 )
 
 var PremiumBotConstraints = map[premium.Tier]int{
-	0: 0,
-	1: 0,   // Free and Bronze have no premium bots
-	2: 1,   // Silver has 1 bot
-	3: 3,   // Gold has 3 bots
-	4: 10,  // Platinum (TBD)
-	5: 100, // Selfhost; 100 bots(!)
+	premium.FreeTier:     0,
+	premium.BronzeTier:   0,
+	premium.SilverTier:   1,
+	premium.GoldTier:     3,
+	premium.TrialTier:    0, // Voting trials do not include priority workers; see invitesResponse.
+	premium.SelfHostTier: 100,
 }
 
 type TokenProvider struct {
@@ -46,6 +46,10 @@ type TokenProvider struct {
 
 	// metrics receives voice-change outcomes and batch timings; production uses server.DefaultMetrics.
 	metrics *server.Metrics
+
+	membershipMu sync.Mutex
+	memberships  map[string]*workerMembership
+	cleanup      *workerCleanup
 }
 
 // applyWithPrimary mutes/deafens a user with the primary bot's own session.
@@ -65,6 +69,7 @@ func NewTokenProvider(client *redis.Client, sess *discordgo.Session, taskTimeout
 		sessionLock:         sync.RWMutex{},
 		taskTimeoutMs:       taskTimeout,
 		metrics:             server.DefaultMetrics,
+		memberships:         make(map[string]*workerMembership),
 	}
 }
 
@@ -96,18 +101,11 @@ func (tokenProvider *TokenProvider) openAndStartSessionWithToken(botToken string
 			log.Println(err)
 			return false
 		}
-		// Worker sessions only issue REST calls (mute/deafen, membership checks); they never read the
-		// guild cache. Disabling state avoids holding a full copy of every guild per worker token.
-		// State.User is still populated from the Ready event with state disabled.
-		sess.StateEnabled = false
-		sess.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds)
-		err = sess.Open()
+		err = tokenProvider.openWorkerSession(k, sess)
 		if err != nil {
 			log.Println(err)
 			return false
 		}
-		// associates the guilds with this token to be used for requests
-		sess.AddHandler(tokenProvider.newGuild)
 		log.Println("Opened session on startup for " + k)
 		tokenProvider.activeSessions[k] = sess
 		return true
@@ -270,10 +268,6 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	elapsed := time.Since(start)
 	tokenProvider.metrics.ObserveMuteBatch(elapsed)
 
-	// note, this should probably be more systematic on startup, not when a mute/deafen task comes in. But this is a
-	// context in which we already have the guildID, successful tokens, AND the premium limit...
-	go tokenProvider.verifyBotMembership(guildID, limit, uniqueTokensUsed)
-
 	summary := l.With("users", len(request.Users), "worker", mdsc.Worker, "capture", mdsc.Capture,
 		"official", mdsc.Official, "capture_throttled", mdsc.RateLimit, "elapsed", elapsed)
 	if latestErr != nil {
@@ -315,6 +309,9 @@ func hashToken(token string) string {
 }
 
 func (tokenProvider *TokenProvider) Close() {
+	if tokenProvider.cleanup != nil {
+		tokenProvider.cleanup.stop()
+	}
 	tokenProvider.sessionLock.Lock()
 	for _, v := range tokenProvider.activeSessions {
 		v.Close()
@@ -322,9 +319,7 @@ func (tokenProvider *TokenProvider) Close() {
 
 	tokenProvider.activeSessions = map[string]*discordgo.Session{}
 	tokenProvider.sessionLock.Unlock()
-	tokenProvider.primarySession.Close()
-}
-
-func (tokenProvider *TokenProvider) newGuild(s *discordgo.Session, m *discordgo.GuildCreate) {
-	log.Println("added to " + m.ID)
+	if tokenProvider.primarySession != nil {
+		tokenProvider.primarySession.Close()
+	}
 }

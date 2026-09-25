@@ -182,6 +182,35 @@ func TestMetricsLeaseAndHandoverCounters(t *testing.T) {
 	}
 }
 
+func TestMetricsWorkerCleanup(t *testing.T) {
+	registry := prometheus.NewRegistry()
+	m := NewMetrics(registry)
+	for _, result := range []string{"checked", "left", "deferred", "failed", "rate_limited"} {
+		m.RecordWorkerCleanup(result)
+	}
+	counts := counterValues(t, registry, "automuteus_worker_cleanup_total", "result")
+	if len(counts) != 5 {
+		t.Fatalf("unexpected cleanup labels: %v", counts)
+	}
+	for result, count := range counts {
+		if count != 1 {
+			t.Errorf("cleanup %s = %v, want 1", result, count)
+		}
+	}
+	m.SetWorkerCleanupStatus(12, 600)
+	response := httptest.NewRecorder()
+	metricsHandler(registry).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	for _, line := range []string{
+		`automuteus_worker_cleanup_total{result="checked"} 1`,
+		"automuteus_worker_cleanup_pending_guilds 12",
+		"automuteus_worker_cleanup_oldest_check_seconds 600",
+	} {
+		if !strings.Contains(response.Body.String(), line) {
+			t.Errorf("metrics endpoint missing %q", line)
+		}
+	}
+}
+
 func TestMetricsVoiceOutcomesAndBatchDuration(t *testing.T) {
 	registry := prometheus.NewRegistry()
 	metrics := NewMetrics(registry)

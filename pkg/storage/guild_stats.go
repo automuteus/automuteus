@@ -57,13 +57,15 @@ var (
 		"ORDER BY win_rate DESC, win DESC, total DESC, user_id LIMIT $4"
 
 	// Pairs are keyed with the lower user ID first so each duo appears once. Both players share a role and a
-	// game, so they share the outcome; counting a's wins is counting the duo's wins.
+	// game, so they share the outcome; counting a's wins is counting the duo's wins. The teammate side is
+	// restricted to the guild as well, which is implied by sharing a game but not known to the planner: without
+	// it, production hashed all 27 million rows of users_games for every build.
 	guildDuoRankingSelect = "SELECT a.user_id, b.user_id AS teammate_id, " +
 		"COUNT(*) AS total, " +
 		"COUNT(*) FILTER (WHERE a.player_won) AS win, " +
 		"COUNT(*) FILTER (WHERE a.player_won)::decimal / COUNT(*) * 100 AS win_rate " +
 		"FROM users_games a " +
-		"INNER JOIN users_games b ON b.game_id = a.game_id AND b.user_id > a.user_id AND b.player_role = $2 " +
+		"INNER JOIN users_games b ON b.guild_id = $1 AND b.game_id = a.game_id AND b.user_id > a.user_id AND b.player_role = $2 " +
 		"WHERE a.guild_id = $1 AND a.player_role = $2 " +
 		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $3 "
 	guildBestDuoQuery  = guildDuoRankingSelect + "ORDER BY win_rate DESC, win DESC, total DESC, a.user_id, b.user_id LIMIT $4"
@@ -76,12 +78,14 @@ var (
 	// are deleted but the events stay), the game simply has no first target, rather than the next victim being
 	// credited or a deleted history being counted against retained games. Aborted games keep their events but
 	// record no players, so they drop out here too.
+	// The death action is part of the statement rather than a parameter so an index restricted to death events
+	// (see stats-explain.sql / the deploy notes) can be matched at plan time.
 	// First deaths and per-player totals are each computed once and joined. Counting a player's games inside a
 	// per-game subquery instead made the planner rescan the guild's rows for every game, which took over a
 	// minute for a guild of 13,000 games once the table held other guilds.
 	guildFirstTargetQuery = "WITH first_death AS (SELECT DISTINCT ON (e.game_id) e.game_id, e.user_id " +
 		"FROM game_events e JOIN games g ON g.game_id = e.game_id " +
-		"WHERE g.guild_id = $1 AND g.end_time <> -1 AND g.win_type <> " + abortedResult + " AND e.payload ->> 'Action' = $2 " +
+		"WHERE g.guild_id = $1 AND g.end_time <> -1 AND g.win_type <> " + abortedResult + " AND e.payload ->> 'Action' = '" + diedAction + "' " +
 		"ORDER BY e.game_id, e.event_time, e.event_id), " +
 		"crew AS (SELECT game_id, user_id FROM users_games WHERE guild_id = $1 AND player_role = " + crewmateRole + "), " +
 		"totals AS (SELECT user_id, COUNT(*) AS total FROM crew GROUP BY user_id) " +
@@ -89,8 +93,8 @@ var (
 		"FROM first_death fd " +
 		"JOIN crew c ON c.game_id = fd.game_id AND c.user_id = fd.user_id " +
 		"JOIN totals t ON t.user_id = c.user_id " +
-		"GROUP BY c.user_id, t.total HAVING t.total >= $3 " +
-		"ORDER BY death_rate DESC, total_death DESC, c.user_id LIMIT $4"
+		"GROUP BY c.user_id, t.total HAVING t.total >= $2 " +
+		"ORDER BY death_rate DESC, total_death DESC, c.user_id LIMIT $3"
 
 	// The game never reports who made a kill, so a crewmate's death counts against every impostor of that game.
 	// encounter is how many games the pair shared in those roles. The guild's deaths are collected once rather
@@ -98,7 +102,7 @@ var (
 	guildKilledByQuery = "WITH crew AS (SELECT game_id, user_id FROM users_games WHERE guild_id = $1 AND player_role = " + crewmateRole + "), " +
 		"imp AS (SELECT game_id, user_id FROM users_games WHERE guild_id = $1 AND player_role = " + impostorRole + "), " +
 		"died AS (SELECT DISTINCT e.game_id, e.user_id FROM game_events e JOIN games g ON g.game_id = e.game_id " +
-		"WHERE g.guild_id = $1 AND e.user_id IS NOT NULL AND e.payload ->> 'Action' = $2) " +
+		"WHERE g.guild_id = $1 AND e.user_id IS NOT NULL AND e.payload ->> 'Action' = '" + diedAction + "') " +
 		"SELECT c.user_id, i.user_id AS teammate_id, " +
 		"COUNT(*) FILTER (WHERE d.game_id IS NOT NULL) AS total_death, " +
 		"COUNT(*) AS encounter, " +
@@ -106,8 +110,8 @@ var (
 		"FROM crew c " +
 		"INNER JOIN imp i ON i.game_id = c.game_id " +
 		"LEFT JOIN died d ON d.game_id = c.game_id AND d.user_id = c.user_id " +
-		"GROUP BY c.user_id, i.user_id HAVING COUNT(*) >= $3 " +
-		"ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT $4"
+		"GROUP BY c.user_id, i.user_id HAVING COUNT(*) >= $2 " +
+		"ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT $3"
 )
 
 const (
@@ -177,7 +181,7 @@ func GuildDuoRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, rol
 // minGames games as a crewmate.
 func GuildFirstTargetRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, minGames, limit int) ([]*PostgresUserMostFrequentFirstTargetRanking, error) {
 	r := []*PostgresUserMostFrequentFirstTargetRanking{}
-	err := pgxscan.Select(ctx, q, &r, guildFirstTargetQuery, guildID, diedAction, minGames, limit)
+	err := pgxscan.Select(ctx, q, &r, guildFirstTargetQuery, guildID, minGames, limit)
 	return r, err
 }
 
@@ -185,6 +189,6 @@ func GuildFirstTargetRanking(ctx context.Context, q pgxscan.Querier, guildID uin
 // game, among pairs that shared at least minGames games in those roles.
 func GuildKilledByRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, minGames, limit int) ([]*PostgresUserMostFrequentKilledByanking, error) {
 	r := []*PostgresUserMostFrequentKilledByanking{}
-	err := pgxscan.Select(ctx, q, &r, guildKilledByQuery, guildID, diedAction, minGames, limit)
+	err := pgxscan.Select(ctx, q, &r, guildKilledByQuery, guildID, minGames, limit)
 	return r, err
 }
