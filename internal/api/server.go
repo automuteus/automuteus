@@ -65,6 +65,14 @@ type Store interface {
 	// MatchSummary builds the match summary document for one match of a guild (guild ID, then match ID), or
 	// returns errMatchNotFound. It is the uncached build; the router caches per match.
 	MatchSummary(context.Context, string, string) (MatchSummary, error)
+	// UserStats builds the player stats document for one player of a guild (guild ID, then user ID). It is the
+	// uncached build; the router caches per guild and player.
+	UserStats(context.Context, string, string) (UserStats, error)
+	// ResetGuildStats deletes every recorded game of a guild and returns how many there were.
+	ResetGuildStats(context.Context, string) (int64, error)
+	// ResetUserStats removes one player from every recorded game of one guild (guild ID, then user ID), leaving
+	// the games and other guilds alone, and returns how many games the player was removed from.
+	ResetUserStats(context.Context, string, string) (int64, error)
 	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
 	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
 	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
@@ -185,8 +193,17 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	if statsTTL == 0 {
 		statsTTL = DefaultStatsCacheTTL
 	}
-	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(newListCache(statsTTL, nil, store.GuildStats)))
-	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(newMatchCache(statsTTL, store.MatchSummary)))
+	stats := statsCaches{
+		guild: newListCache(statsTTL, nil, store.GuildStats),
+		match: newMatchCache(statsTTL, store.MatchSummary),
+		user:  newUserStatsCache(statsTTL, store.UserStats),
+	}
+	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild))
+	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
+	guildGroup.GET("/user", guildAuthentication(config, verifier, access, ReadStats), handleGetUserStats(stats.user))
+	guildGroup.POST("/stats/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetGuildStats(store, stats))
+	guildGroup.POST("/user/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetUserStats(store, stats))
+	guildGroup.POST("/settings/reset", guildAuthentication(config, verifier, access, WriteSettings), handleResetGuildSettings(store))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
 	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.

@@ -190,6 +190,30 @@ so; that report is in-game information every player saw, so it is not
 premium-gated. An opted-out or reset player appears there unlinked. Summaries are cached
 per guild and match for the stats TTL; a missing match is not cached.
 
+`GET /guild/user?guildID=...&userID=...` is one player's statistics in the guild
+(`UserStats` in `user_stats.go`), readable by any member under the same
+`ReadStats` action, since any member may run `/stats user` on anyone and the
+guild boards already name every ranked player. Every guild gets the player's
+record and ten latest matches; ranks, streaks, fates, favorites, teammates,
+activity, and per-map records are included only while premium is active. The
+player need not be a current member: a player with no recorded games gets a zero
+summary, not a 404, so the response does not reveal whether someone opted out.
+Documents are cached per guild and player for the stats TTL.
+
+Three POST routes reset data, each verified live against Discord on every call
+like PATCH. `POST /guild/stats/reset?guildID=...` deletes every recorded game of
+the guild (players and events go by cascade), and
+`POST /guild/user/reset?guildID=...&userID=...` removes one player from the
+guild's games while keeping the games, so other players' stats do not change.
+Both take the `ResetStats` action, which has the same bar as `WriteSettings`.
+Unlike `/stats user reset`, a player may not reset their own stats without that
+permission, and unlike it the player reset never touches other guilds. Both drop
+the guild's cached stats, match, and player documents. Both answer with the
+number of games affected. `POST /guild/settings/reset?guildID=...` takes
+`WriteSettings`. It writes the defaults over the row conditionally, honoring
+`If-Match` and bumping the version rather than deleting the row. It counts
+against the PATCH write budget and skips the premium check.
+
 Operator delegation is deferred. It would compare current Discord member roles
 (`guilds.members.read`) with stored `PermissionRoleIDs`. Editing authorization
 lists must stay behind the Discord settings permissions. The stored admin user

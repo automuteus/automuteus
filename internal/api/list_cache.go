@@ -23,6 +23,8 @@ type listCache[T any] struct {
 	mu      sync.Mutex
 	entries map[string]cachedList[T]
 	flight  singleflight.Group
+	// generation counts forget calls, so a fetch that started before one does not store what it read.
+	generation uint64
 }
 
 type cachedList[T any] struct {
@@ -53,9 +55,12 @@ func (c *listCache[T]) lookup(guildID string) (T, bool) {
 	return entry.value, true
 }
 
-func (c *listCache[T]) store(guildID string, value T) {
+func (c *listCache[T]) store(guildID string, value T, generation uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if generation != c.generation {
+		return
+	}
 	c.entries[guildID] = cachedList[T]{value: value, expires: c.now().Add(c.ttl)}
 	// Opportunistic sweep so an idle cache does not hold every guild ever seen.
 	if len(c.entries) > 4096 {
@@ -81,12 +86,15 @@ func (c *listCache[T]) get(ctx context.Context, guildID string) (T, error) {
 		if value, ok := c.lookup(guildID); ok {
 			return value, nil
 		}
+		c.mu.Lock()
+		generation := c.generation
+		c.mu.Unlock()
 		// The leader's deadline governs the shared call; a cancelled leader just makes everyone retry next time.
 		value, err := c.fetch(ctx, guildID)
 		if err != nil {
 			return nil, err
 		}
-		c.store(guildID, value)
+		c.store(guildID, value, generation)
 		return value, nil
 	})
 	if err != nil {
@@ -94,6 +102,22 @@ func (c *listCache[T]) get(ctx context.Context, guildID string) (T, error) {
 		return zero, err
 	}
 	return result.(T), nil
+}
+
+// forget drops every cached entry whose key matches, after the data behind them changed. A fetch already running
+// still answers its callers, but what it read is not kept.
+func (c *listCache[T]) forget(match func(key string) bool) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.generation++
+	for k := range c.entries {
+		if match(k) {
+			delete(c.entries, k)
+		}
+	}
 }
 
 // cachedRoleLister serves GET /guild/roles from a listCache. PATCH keeps the uncached lister so a role created a

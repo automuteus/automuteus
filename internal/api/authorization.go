@@ -13,7 +13,16 @@ const (
 	ReadBotPresence GuildAction = "bot:read"
 	// ReadStats is the guild statistics page. Any member may see it, as any member may run /stats guild.
 	ReadStats GuildAction = "stats:read"
+	// ResetStats deletes a guild's recorded games, or one player's part in them. It takes the same permissions as
+	// changing the settings, unlike /stats user reset, which also lets players reset their own.
+	ResetStats GuildAction = "stats:reset"
 )
+
+// verifiesLive reports whether an action must be authorized against Discord on every request rather than from
+// the short-lived access cache, so a revoked permission stops a change at once.
+func (a GuildAction) verifiesLive() bool {
+	return a == WriteSettings || a == ResetStats
+}
 
 // VerifiedGuildAccess must be constructed from trusted Discord responses for
 // this user and guild, never from request bodies or client-supplied headers.
@@ -43,7 +52,7 @@ func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildA
 	switch action {
 	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence, ReadStats:
 		return true
-	case WriteSettings:
+	case WriteSettings, ResetStats:
 		return access.Owner || access.Permissions&settingsPermissions != 0
 	default:
 		return false

@@ -1,5 +1,21 @@
 basePath: /
 definitions:
+  api.Activity:
+    properties:
+      until:
+        type: integer
+      weeks:
+        items:
+          type: integer
+        type: array
+    type: object
+  api.BoardRank:
+    properties:
+      players:
+        type: integer
+      position:
+        type: integer
+    type: object
   api.BotPresence:
     properties:
       present:
@@ -21,6 +37,26 @@ definitions:
           type: string
         type: array
     type: object
+  api.ColorShare:
+    properties:
+      color:
+        type: string
+      games:
+        type: integer
+      share:
+        type: number
+    type: object
+  api.DiedWith:
+    properties:
+      deaths:
+        type: integer
+      games:
+        type: integer
+      impostorId:
+        type: string
+      rate:
+        type: number
+    type: object
   api.DuoWinrate:
     properties:
       games:
@@ -29,6 +65,19 @@ definitions:
         type: string
       userId:
         type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
+    type: object
+  api.Fate:
+    properties:
+      games:
+        type: integer
+      rate:
+        type: number
+      times:
+        type: integer
       winrate:
         type: number
       wins:
@@ -230,6 +279,17 @@ definitions:
       userId:
         type: string
     type: object
+  api.MapRecord:
+    properties:
+      games:
+        type: integer
+      map:
+        type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
+    type: object
   api.MatchEvent:
     properties:
       color:
@@ -350,6 +410,15 @@ definitions:
       meetings:
         type: integer
     type: object
+  api.NameShare:
+    properties:
+      games:
+        type: integer
+      name:
+        type: string
+      share:
+        type: number
+    type: object
   api.NoticeRequest:
     properties:
       message:
@@ -359,6 +428,15 @@ definitions:
         description: Severity is warning or critical. Critical ends every running
           game and blocks new ones.
         example: warning
+        type: string
+    type: object
+  api.PlayedWith:
+    properties:
+      games:
+        type: integer
+      share:
+        type: number
+      userId:
         type: string
     type: object
   api.PlayerGames:
@@ -374,6 +452,15 @@ definitions:
         type: integer
       userId:
         type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
+    type: object
+  api.RoleRecord:
+    properties:
+      games:
+        type: integer
       winrate:
         type: number
       wins:
@@ -413,6 +500,223 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  api.StatsReset:
+    properties:
+      games:
+        type: integer
+      guildId:
+        type: string
+      userId:
+        type: string
+    type: object
+  api.Streaks:
+    properties:
+      bestLoss:
+        type: integer
+      bestWin:
+        type: integer
+      current:
+        type: integer
+    type: object
+  api.Survival:
+    properties:
+      games:
+        type: integer
+      rate:
+        type: number
+      survived:
+        type: integer
+    type: object
+  api.Teammate:
+    properties:
+      games:
+        type: integer
+      userId:
+        type: string
+      winrate:
+        type: number
+      wins:
+        type: integer
+    type: object
+  api.UserFates:
+    properties:
+      killedAsCrewmate:
+        $ref: '#/definitions/api.Fate'
+      votedOutAsCrewmate:
+        $ref: '#/definitions/api.Fate'
+      votedOutAsImpostor:
+        $ref: '#/definitions/api.Fate'
+    type: object
+  api.UserFirstTarget:
+    properties:
+      crewmateGames:
+        type: integer
+      firstDeaths:
+        type: integer
+      rate:
+        type: number
+    type: object
+  api.UserMatch:
+    properties:
+      color:
+        type: string
+      endTime:
+        type: integer
+      map:
+        description: Map is absent for matches recorded before maps were stored.
+        type: string
+      matchId:
+        type: string
+      name:
+        type: string
+      result:
+        description: Result uses the keys of MatchSummary.Result.
+        type: string
+      role:
+        type: string
+      startTime:
+        type: integer
+      won:
+        type: boolean
+    type: object
+  api.UserRanks:
+    properties:
+      crewmateWinrate:
+        $ref: '#/definitions/api.BoardRank'
+      games:
+        $ref: '#/definitions/api.BoardRank'
+      impostorWinrate:
+        $ref: '#/definitions/api.BoardRank'
+      winrate:
+        $ref: '#/definitions/api.BoardRank'
+    type: object
+  api.UserStats:
+    properties:
+      details:
+        allOf:
+        - $ref: '#/definitions/api.UserStatsDetails'
+        description: Details is omitted for guilds whose premium is free or expired.
+      generatedAt:
+        description: GeneratedAt is the Unix time the document was built; responses
+          may be served from a short cache.
+        type: integer
+      guildId:
+        type: string
+      players:
+        additionalProperties:
+          $ref: '#/definitions/api.StatsPlayer'
+        description: |-
+          Players maps the player and every user ID named in Details to a name and picture, resolved as for
+          GET /guild/stats.
+        type: object
+      premium:
+        allOf:
+        - $ref: '#/definitions/premium.PremiumRecord'
+        description: Premium is the guild's premium status the document was built
+          under.
+      recentMatches:
+        description: |-
+          RecentMatches are the player's latest finished matches, newest first, at most ten. Their match IDs work
+          with GET /guild/match.
+        items:
+          $ref: '#/definitions/api.UserMatch'
+        type: array
+      summary:
+        $ref: '#/definitions/api.UserStatsSummary'
+      userId:
+        type: string
+    type: object
+  api.UserStatsDetails:
+    properties:
+      activity:
+        $ref: '#/definitions/api.Activity'
+      bestCrewmateTeammates:
+        description: |-
+          The teammate boards rank players who shared a role with the player. Best is highest winrate first;
+          worst is lowest first.
+        items:
+          $ref: '#/definitions/api.Teammate'
+        type: array
+      bestImpostorTeammates:
+        items:
+          $ref: '#/definitions/api.Teammate'
+        type: array
+      colors:
+        items:
+          $ref: '#/definitions/api.ColorShare'
+        type: array
+      fates:
+        $ref: '#/definitions/api.UserFates'
+      firstTarget:
+        allOf:
+        - $ref: '#/definitions/api.UserFirstTarget'
+        description: FirstTarget is how often the player was the first to die, of
+          their crewmate games.
+      killedBy:
+        description: |-
+          KilledBy ranks impostors by how often the player died, as a crewmate, with them in the game. The game
+          never reports who made a kill, so a death counts against every impostor of that game.
+        items:
+          $ref: '#/definitions/api.DiedWith'
+        type: array
+      maps:
+        description: Maps is the player's record per map, most played first, over
+          the games whose map was recorded.
+        items:
+          $ref: '#/definitions/api.MapRecord'
+        type: array
+      minGames:
+        description: |-
+          MinGames is the guild's leaderboard minimum: the games the player needs to be ranked by winrate, and a
+          crewmate teammate or impostor needs to be listed. Impostor teammates need two shared games instead.
+        type: integer
+      names:
+        items:
+          $ref: '#/definitions/api.NameShare'
+        type: array
+      playedWith:
+        description: PlayedWith ranks the linked players the player shared the most
+          games with.
+        items:
+          $ref: '#/definitions/api.PlayedWith'
+        type: array
+      ranks:
+        $ref: '#/definitions/api.UserRanks'
+      streaks:
+        $ref: '#/definitions/api.Streaks'
+      survival:
+        allOf:
+        - $ref: '#/definitions/api.Survival'
+        description: Survival is how often the player was still alive at the end of
+          their crewmate games.
+      worstCrewmateTeammates:
+        items:
+          $ref: '#/definitions/api.Teammate'
+        type: array
+      worstImpostorTeammates:
+        items:
+          $ref: '#/definitions/api.Teammate'
+        type: array
+    type: object
+  api.UserStatsSummary:
+    properties:
+      crewmate:
+        $ref: '#/definitions/api.RoleRecord'
+      firstGame:
+        description: FirstGame and LastGame are the start times of the player's first
+          and latest games; absent with no games.
+        type: integer
+      games:
+        type: integer
+      impostor:
+        $ref: '#/definitions/api.RoleRecord'
+      lastGame:
+        type: integer
+      winrate:
+        type: number
+      wins:
+        type: integer
     type: object
   discordgo.ApplicationCommand:
     properties:
@@ -1284,6 +1588,69 @@ paths:
       summary: Update Guild Settings
       tags:
       - guild
+  /guild/settings/reset:
+    post:
+      description: |-
+        Put every setting of the guild back to its default, like the /settings reset slash command. This
+        includes the match summary channel and operator roles. Premium is not checked, since the defaults
+        need none. Requires the guild owner or the Discord Administrator or Manage Server permission, and
+        counts against the same per-guild budget as PATCH /guild/settings.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      - description: ETag from a previous GET or PATCH; the reset is refused with
+          412 if the settings changed since
+        in: header
+        name: If-Match
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The default settings, now stored
+          headers:
+            ETag:
+              description: Version of the stored settings after the reset
+              type: string
+          schema:
+            $ref: '#/definitions/settings.GuildSettings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "409":
+          description: Settings were changed concurrently; reload and retry
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "412":
+          description: If-Match did not match the stored version
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Reset Guild Settings
+      tags:
+      - guild
   /guild/stats:
     get:
       consumes:
@@ -1326,6 +1693,145 @@ paths:
       - BasicAuth: []
       - DiscordBearer: []
       summary: Get Guild Stats
+      tags:
+      - guild
+  /guild/stats/reset:
+    post:
+      description: |-
+        Delete every recorded game of the guild, for every player, like the /stats guild reset slash command.
+        It cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server
+        permission.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StatsReset'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Reset Guild Stats
+      tags:
+      - guild
+  /guild/user:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        One player's statistics in the guild. Every guild gets the player's games, wins, and winrates overall
+        and per role, and their ten latest matches; guilds with active premium also get the player's ranks
+        on the guild boards, streaks, survival, how often they were killed or voted out, first-target
+        rate, favorite colors and names, who they played with and won or lost with, the impostors they
+        died with, games per week, and per-map records. Any member may read any player, as with the /stats
+        user slash command. Responses may be up to a minute old.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      - description: User ID
+        in: query
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.UserStats'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Get Player Stats
+      tags:
+      - guild
+  /guild/user/reset:
+    post:
+      description: |-
+        Remove one player from every recorded game of this guild. Their games in other guilds are kept, and
+        so are the games themselves, so the other players' stats do not change. It cannot be undone.
+        Requires the guild owner or the Discord Administrator or Manage Server permission, including to
+        reset one's own stats.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      - description: User ID
+        in: query
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StatsReset'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Reset Player Stats
       tags:
       - guild
   /open/link:

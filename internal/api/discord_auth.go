@@ -176,7 +176,7 @@ func guildAuthentication(config Config, verifier GuildVerifier, cache *accessCac
 			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{StatusCode: 400, Error: "invalid guild ID"})
 			return
 		}
-		access, err := cache.verify(c.Request.Context(), verifier, parts[1], guildID, action == WriteSettings)
+		access, err := cache.verify(c.Request.Context(), verifier, parts[1], guildID, action.verifiesLive())
 		if err != nil {
 			status := http.StatusServiceUnavailable
 			if errors.Is(err, errInvalidToken) {

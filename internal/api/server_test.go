@@ -47,6 +47,13 @@ type fakeStore struct {
 	match      *MatchSummary
 	matchErr   error
 	matchCalls int
+	// user, when set, is what UserStats returns; userErr fails only UserStats.
+	user      *UserStats
+	userErr   error
+	userCalls int
+	// resets records each stats reset as "guild" or "guild/user"; resetErr fails them after recording.
+	resets   []string
+	resetErr error
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -137,6 +144,27 @@ func (s *fakeStore) MatchSummary(_ context.Context, guildID, matchID string) (Ma
 		return *s.match, s.err
 	}
 	return MatchSummary{GuildID: guildID, MatchID: matchID, Status: "finished", Roster: []MatchPlayer{}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) UserStats(_ context.Context, guildID, userID string) (UserStats, error) {
+	s.calls++
+	s.userCalls++
+	if s.userErr != nil {
+		return UserStats{}, s.userErr
+	}
+	if s.user != nil {
+		return *s.user, s.err
+	}
+	return UserStats{GuildID: guildID, UserID: userID, RecentMatches: []UserMatch{}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) ResetGuildStats(_ context.Context, guildID string) (int64, error) {
+	s.calls++
+	s.resets = append(s.resets, guildID)
+	return 5, s.resetErr
+}
+func (s *fakeStore) ResetUserStats(_ context.Context, guildID, userID string) (int64, error) {
+	s.calls++
+	s.resets = append(s.resets, guildID+"/"+userID)
+	return 2, s.resetErr
 }
 func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
 	s.calls++

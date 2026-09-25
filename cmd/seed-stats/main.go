@@ -151,6 +151,12 @@ func (p player) inGameName() string {
 	return name
 }
 
+// seedMaps weights the maps roughly as lobbies pick them; seedUnmappedGames is how many of the oldest games have
+// no map or region.
+var seedMaps = []game.PlayMap{game.SKELD, game.SKELD, game.SKELD, game.POLUS, game.POLUS, game.AIRSHIP, game.MIRA, game.FUNGLE}
+
+const seedUnmappedGames = 20
+
 func writeGame(w *os.File, guild uint64, team []player, index int, start int64, maxGuests int, rng *rand.Rand) error {
 	// 6 to 10 linked players, or everyone if the roster is smaller, plus up to maxGuests unlinked guests (ID 0);
 	// one impostor under 8 players, else two. Guests are shuffled in, so they are impostors as often as anyone.
@@ -195,8 +201,14 @@ func writeGame(w *os.File, guild uint64, team []player, index int, start int64, 
 		result = []game.GameResult{game.HumansByTask, game.HumansByVote, game.HumansByVote}[rng.Intn(3)]
 	}
 	code := fmt.Sprintf("SEED%04d", index)
-	fmt.Fprintf(w, "WITH g AS (INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES (%d, '%s', %d, %d, %d) RETURNING game_id)",
-		guild, code, start, int16(result), start+duration)
+	// The map and region come from the index rather than the random source, so adding them left every other
+	// seeded outcome as it was. The oldest games have neither, like matches recorded before they were stored.
+	playMap, region := "NULL", "NULL"
+	if index >= seedUnmappedGames {
+		playMap, region = fmt.Sprint(int(seedMaps[index*5%len(seedMaps)])), fmt.Sprint(int(game.NA))
+	}
+	fmt.Fprintf(w, "WITH g AS (INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time, play_map, region) VALUES (%d, '%s', %d, %d, %d, %s, %s) RETURNING game_id)",
+		guild, code, start, int16(result), start+duration, playMap, region)
 	if aborted {
 		// The bot records no players or result for an aborted game, but it has usually logged some events.
 		fmt.Fprintf(w, "\nINSERT INTO game_events (user_id, game_id, event_time, event_type, payload) SELECT NULL::numeric, g.game_id, %d, %d, '%d'::jsonb FROM g;\n",
