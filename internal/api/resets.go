@@ -89,8 +89,8 @@ func handleResetGuildStats(store Store, caches statsCaches) func(c *gin.Context)
 // @Summary Reset Player Stats
 // @Description Remove one player from every recorded game of this guild. Their games in other guilds are kept, and
 // @Description so are the games themselves, so the other players' stats do not change. It cannot be undone.
-// @Description Requires the guild owner or the Discord Administrator or Manage Server permission, including to
-// @Description reset one's own stats.
+// @Description Any member may reset their own stats; resetting another player's requires the guild owner or the
+// @Description Discord Administrator or Manage Server permission.
 // @Security BasicAuth
 // @Security DiscordBearer
 // @Tags guild

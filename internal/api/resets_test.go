@@ -46,8 +46,6 @@ func TestResets_DeniedCallersNeverReachStorage(t *testing.T) {
 	}{
 		{"moderator without a settings permission", memberAccess, "valid", 403},
 		{"plain member", VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true}, "valid", 403},
-		// Discord's /stats user reset lets players reset themselves; the API does not.
-		{"player resetting themselves", VerifiedGuildAccess{UserID: resetUser, GuildID: writeGuild, Member: true}, "valid", 403},
 		{"owner of another guild", VerifiedGuildAccess{UserID: "999", GuildID: "323456789012345678", Member: true, Owner: true}, "valid", 403},
 		{"invalid token", ownerAccess, "expired", 401},
 		{"no token", ownerAccess, "", 401},
@@ -63,6 +61,44 @@ func TestResets_DeniedCallersNeverReachStorage(t *testing.T) {
 					t.Fatal("denied request reached storage")
 				}
 			})
+		}
+	}
+}
+
+// A player may reset their own stats in a guild they belong to, and nothing else.
+func TestResets_PlayersMayResetOnlyThemselves(t *testing.T) {
+	self := VerifiedGuildAccess{UserID: resetUser, GuildID: writeGuild, Member: true}
+	s := &fakeStore{}
+	r, verifierCalls := writeRouter(s, self)
+	for i := 0; i < 2; i++ {
+		if w := postReset(r, resetPaths[1], "valid", ""); w.Code != 200 {
+			t.Fatalf("own reset: %d %s", w.Code, w.Body)
+		}
+	}
+	if *verifierCalls != 2 {
+		t.Errorf("verifier called %d times, want 2: membership is checked live", *verifierCalls)
+	}
+	if strings.Join(s.resets, ",") != writeGuild+"/"+resetUser+","+writeGuild+"/"+resetUser {
+		t.Fatalf("resets %v", s.resets)
+	}
+	for _, tc := range []struct {
+		name   string
+		access VerifiedGuildAccess
+		path   string
+	}{
+		{"another player", self, "/guild/user/reset?guildID=" + writeGuild + "&userID=323456789012345678"},
+		{"the whole guild", self, resetPaths[0]},
+		{"the settings", self, resetPaths[2]},
+		{"after leaving the guild", VerifiedGuildAccess{UserID: resetUser, GuildID: writeGuild}, resetPaths[1]},
+		{"with no user named", self, "/guild/user/reset?guildID=" + writeGuild},
+	} {
+		s := &fakeStore{}
+		r, _ := writeRouter(s, tc.access)
+		if w := postReset(r, tc.path, "valid", ""); w.Code != 403 {
+			t.Errorf("%s: %d %s", tc.name, w.Code, w.Body)
+		}
+		if s.calls != 0 {
+			t.Errorf("%s reached storage", tc.name)
 		}
 	}
 }

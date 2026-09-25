@@ -202,7 +202,10 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
 	guildGroup.GET("/user", guildAuthentication(config, verifier, access, ReadStats), handleGetUserStats(stats.user))
 	guildGroup.POST("/stats/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetGuildStats(store, stats))
-	guildGroup.POST("/user/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetUserStats(store, stats))
+	// Players may reset their own stats, as with /stats user reset, so this policy also looks at the target.
+	guildGroup.POST("/user/reset", guildAuthorization(config, verifier, access, true, func(c *gin.Context, a VerifiedGuildAccess, guildID string) bool {
+		return AllowsUserStatsReset(a, guildID, c.Query("userID"))
+	}), handleResetUserStats(store, stats))
 	guildGroup.POST("/settings/reset", guildAuthentication(config, verifier, access, WriteSettings), handleResetGuildSettings(store))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs

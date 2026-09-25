@@ -61,3 +61,28 @@ func TestAllowsGuildAction(t *testing.T) {
 		})
 	}
 }
+
+func TestAllowsUserStatsReset(t *testing.T) {
+	const guild, self, other = "guild", "100", "200"
+	member := VerifiedGuildAccess{UserID: self, GuildID: guild, Member: true}
+	manager := VerifiedGuildAccess{UserID: self, GuildID: guild, Member: true, Permissions: discordgo.PermissionManageServer}
+	for _, tc := range []struct {
+		name   string
+		access VerifiedGuildAccess
+		guild  string
+		user   string
+		want   bool
+	}{
+		{"member resets themselves", member, guild, self, true},
+		{"member cannot reset another player", member, guild, other, false},
+		{"manager resets another player", manager, guild, other, true},
+		{"departed player cannot reset themselves", VerifiedGuildAccess{UserID: self, GuildID: guild}, guild, self, false},
+		{"member of another guild cannot reset themselves here", VerifiedGuildAccess{UserID: self, GuildID: "other", Member: true}, guild, self, false},
+		{"no target", member, guild, "", false},
+		{"no identity", VerifiedGuildAccess{GuildID: guild, Member: true}, guild, "", false},
+	} {
+		if got := AllowsUserStatsReset(tc.access, tc.guild, tc.user); got != tc.want {
+			t.Errorf("%s: got %v", tc.name, got)
+		}
+	}
+}

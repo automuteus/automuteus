@@ -1792,8 +1792,8 @@ paths:
       description: |-
         Remove one player from every recorded game of this guild. Their games in other guilds are kept, and
         so are the games themselves, so the other players' stats do not change. It cannot be undone.
-        Requires the guild owner or the Discord Administrator or Manage Server permission, including to
-        reset one's own stats.
+        Any member may reset their own stats; resetting another player's requires the guild owner or the
+        Discord Administrator or Manage Server permission.
       parameters:
       - description: Guild ID
         in: query

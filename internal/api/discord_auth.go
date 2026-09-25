@@ -158,6 +158,14 @@ const verifiedUserKey = "api.verifiedUser"
 // Explicitly configured platform credentials retain legacy access. Default
 // credentials cannot bypass user authorization on these endpoints.
 func guildAuthentication(config Config, verifier GuildVerifier, cache *accessCache, action GuildAction) gin.HandlerFunc {
+	return guildAuthorization(config, verifier, cache, action.verifiesLive(), func(_ *gin.Context, access VerifiedGuildAccess, guildID string) bool {
+		return AllowsGuildAction(access, guildID, action)
+	})
+}
+
+// guildAuthorization is guildAuthentication with a policy that may depend on the request, for routes whose answer
+// depends on more than the guild, such as who a player reset targets. live skips the access cache.
+func guildAuthorization(config Config, verifier GuildVerifier, cache *accessCache, live bool, allow func(c *gin.Context, access VerifiedGuildAccess, guildID string) bool) gin.HandlerFunc {
 	basic := gin.BasicAuth(gin.Accounts{"admin": config.AdminPassword})
 	return func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store")
@@ -176,7 +184,7 @@ func guildAuthentication(config Config, verifier GuildVerifier, cache *accessCac
 			c.AbortWithStatusJSON(http.StatusBadRequest, HttpError{StatusCode: 400, Error: "invalid guild ID"})
 			return
 		}
-		access, err := cache.verify(c.Request.Context(), verifier, parts[1], guildID, action.verifiesLive())
+		access, err := cache.verify(c.Request.Context(), verifier, parts[1], guildID, live)
 		if err != nil {
 			status := http.StatusServiceUnavailable
 			if errors.Is(err, errInvalidToken) {
@@ -189,7 +197,7 @@ func guildAuthentication(config Config, verifier GuildVerifier, cache *accessCac
 			c.AbortWithStatusJSON(status, HttpError{StatusCode: status, Error: "Unable to authorize Discord access"})
 			return
 		}
-		if !AllowsGuildAction(access, guildID, action) {
+		if !allow(c, access, guildID) {
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}

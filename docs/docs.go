@@ -1184,7 +1184,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "Remove one player from every recorded game of this guild. Their games in other guilds are kept, and\nso are the games themselves, so the other players' stats do not change. It cannot be undone.\nRequires the guild owner or the Discord Administrator or Manage Server permission, including to\nreset one's own stats.",
+                "description": "Remove one player from every recorded game of this guild. Their games in other guilds are kept, and\nso are the games themselves, so the other players' stats do not change. It cannot be undone.\nAny member may reset their own stats; resetting another player's requires the guild owner or the\nDiscord Administrator or Manage Server permission.",
                 "produces": [
                     "application/json"
                 ],

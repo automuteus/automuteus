@@ -669,7 +669,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			// a bit dirty way but works :P
 			if len(i.Message.Mentions) == 1 {
 				id := i.Message.Mentions[0].ID
-				err := bot.PostgresInterface.DeleteAllGamesForUser(id)
+				err := bot.PostgresInterface.DeleteAllGamesForUserInServer(i.GuildID, id)
 				if err != nil {
 					content = sett.LocalizeMessage(&i18n.Message{
 						ID:    "commands.stats.user.reset.error",

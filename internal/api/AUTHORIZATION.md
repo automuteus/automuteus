@@ -205,9 +205,11 @@ like PATCH. `POST /guild/stats/reset?guildID=...` deletes every recorded game of
 the guild (players and events go by cascade), and
 `POST /guild/user/reset?guildID=...&userID=...` removes one player from the
 guild's games while keeping the games, so other players' stats do not change.
-Both take the `ResetStats` action, which has the same bar as `WriteSettings`.
-Unlike `/stats user reset`, a player may not reset their own stats without that
-permission, and unlike it the player reset never touches other guilds. Both drop
+The guild reset takes the `ResetStats` action, which has the same bar as
+`WriteSettings`. The player reset uses `AllowsUserStatsReset`: `ResetStats`
+covers any player, and any verified member may reset themselves, as with
+`/stats user reset`. The player reset never touches other guilds, and since
+this change neither does the slash command. Both drop
 the guild's cached stats, match, and player documents. Both answer with the
 number of games affected. `POST /guild/settings/reset?guildID=...` takes
 `WriteSettings`. It writes the defaults over the row conditionally, honoring

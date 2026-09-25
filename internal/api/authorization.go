@@ -13,8 +13,8 @@ const (
 	ReadBotPresence GuildAction = "bot:read"
 	// ReadStats is the guild statistics page. Any member may see it, as any member may run /stats guild.
 	ReadStats GuildAction = "stats:read"
-	// ResetStats deletes a guild's recorded games, or one player's part in them. It takes the same permissions as
-	// changing the settings, unlike /stats user reset, which also lets players reset their own.
+	// ResetStats deletes a guild's recorded games, or any player's part in them. It takes the same permissions as
+	// changing the settings. Players may also reset their own part; see AllowsUserStatsReset.
 	ResetStats GuildAction = "stats:reset"
 )
 
@@ -57,4 +57,13 @@ func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildA
 	default:
 		return false
 	}
+}
+
+// AllowsUserStatsReset is the policy for removing one player from a guild's games: anyone who may reset the guild's
+// stats may reset any player's, and any member may reset their own. Either way only this guild's games change.
+func AllowsUserStatsReset(access VerifiedGuildAccess, guildID, userID string) bool {
+	if AllowsGuildAction(access, guildID, ResetStats) {
+		return true
+	}
+	return userID != "" && access.UserID == userID && AllowsGuildAction(access, guildID, ReadStats)
 }

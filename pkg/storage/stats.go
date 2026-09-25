@@ -458,8 +458,9 @@ func (psqlInterface *PsqlInterface) DeleteAllGamesForServer(guildID string) erro
 	return err
 }
 
-func (psqlInterface *PsqlInterface) DeleteAllGamesForUser(userID string) error {
-	_, err := psqlInterface.Pool.Exec(context.Background(), "DELETE FROM users_games WHERE user_id=$1", userID)
+// DeleteAllGamesForUserInServer removes a player from one server's games only, like the API's player reset.
+func (psqlInterface *PsqlInterface) DeleteAllGamesForUserInServer(guildID, userID string) error {
+	_, err := ResetGuildUserStats(context.Background(), psqlInterface.Pool, guildID, userID)
 	return err
 }
 
