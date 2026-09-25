@@ -59,6 +59,9 @@ type Store interface {
 	// be checked and the write must not proceed.
 	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
+	// Subscription is what the payment listener knows about the subscription paying for a guild's premium, or nil
+	// when none is tracked (premium from before the listener, granted by hand, or a self-hosted bot).
+	Subscription(context.Context, string) (*SubscriptionStatus, error)
 	// GuildStats builds the stats page document for a guild: the summary for everyone and, while the guild's
 	// premium is active, the leaderboards too. It is the uncached build; the router caches per guild.
 	GuildStats(context.Context, string) (GuildStats, error)
@@ -843,6 +846,23 @@ func handleGetGuildBot(store Store) func(c *gin.Context) {
 	}
 }
 
+// GuildPremium is a guild's premium tier and days remaining, plus the subscription paying for it when the payment
+// listener tracks one.
+type GuildPremium struct {
+	premium.PremiumRecord
+	Subscription *SubscriptionStatus `json:"subscription,omitempty"`
+}
+
+// SubscriptionStatus describes the subscription behind a guild's premium.
+type SubscriptionStatus struct {
+	// Status is active (renews each period) or cancelled (paid up until endsAt, then stops).
+	Status string `json:"status" enums:"active,cancelled" example:"active"`
+	// EndsAt is when the current paid period runs out, in unix seconds.
+	EndsAt int64 `json:"endsAt" example:"1793000000"`
+	// Inherited is set when the subscription belongs to the server this one inherits premium from.
+	Inherited bool `json:"inherited,omitempty"`
+}
+
 // GetGuildPremium godoc
 // @Summary Get Guild Premium
 // @Description Get the premium status for a given guild
@@ -852,7 +872,7 @@ func handleGetGuildBot(store Store) func(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param guildID query string true "Guild ID"
-// @Success 200 {object} premium.PremiumRecord
+// @Success 200 {object} GuildPremium
 // @Failure 400 {object} HttpError
 // @Failure 500 {object} HttpError
 // @Router /guild/premium [get]
@@ -875,7 +895,18 @@ func handleGetGuildPremium(store Store) func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, record)
+		response := GuildPremium{PremiumRecord: record}
+		if !premium.IsExpired(record.Tier, record.Days) {
+			// Only the subscription behind premium that is in force is worth showing; a lapsed one says nothing
+			// the days remaining do not.
+			sub, err := store.Subscription(c.Request.Context(), guildID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, HttpError{StatusCode: http.StatusInternalServerError, Error: "unable to read subscription"})
+				return
+			}
+			response.Subscription = sub
+		}
+		c.JSON(http.StatusOK, response)
 	}
 }
 

@@ -33,9 +33,12 @@ type fakeStore struct {
 	// version is the row version Settings reports; SetSettings requires it and bumps it.
 	version storage.SettingsVersion
 	// premium, when set, is what Premium returns instead of self-host; premiumErr fails only Premium.
-	premium      *premium.PremiumRecord
-	premiumErr   error
-	premiumCalls int
+	premium *premium.PremiumRecord
+	// subscription, when set, is what Subscription returns; subscriptionErr fails only Subscription.
+	subscription    *SubscriptionStatus
+	subscriptionErr error
+	premiumErr      error
+	premiumCalls    int
 	// botAbsent makes BotInGuild report false; botErr fails only BotInGuild.
 	botAbsent bool
 	botErr    error
@@ -114,6 +117,9 @@ func (s *fakeStore) SetSettings(_ context.Context, guildID string, sett *setting
 func (s *fakeStore) ReserveSettingsWrite(context.Context, string) (time.Duration, error) {
 	s.calls++
 	return s.writeRetryAfter, s.err
+}
+func (s *fakeStore) Subscription(context.Context, string) (*SubscriptionStatus, error) {
+	return s.subscription, s.subscriptionErr
 }
 func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, error) {
 	s.calls++

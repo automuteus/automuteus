@@ -65,7 +65,8 @@ func liveListener(t *testing.T, now time.Time) (*Listener, *pgxpool.Pool, *fakeV
 		t.Fatal(err)
 	}
 	for _, line := range strings.Split(string(grants), "\n") {
-		if g := strings.TrimSpace(strings.TrimPrefix(line, "--")); strings.HasPrefix(g, "GRANT ") {
+		// Only the listener's own grants; the file also names what other roles need.
+		if g := strings.TrimSpace(strings.TrimPrefix(line, "--")); strings.HasPrefix(g, "GRANT ") && strings.HasSuffix(g, "TO ipn_user;") {
 			if _, err := owner.Exec(ctx, strings.Replace(g, "TO ipn_user", "TO ipn_test_user", 1)); err != nil {
 				t.Fatalf("%s: %v", g, err)
 			}

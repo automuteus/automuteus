@@ -59,3 +59,7 @@ create table if not exists transactions
 --   GRANT USAGE ON SEQUENCE payment_events_event_id_seq TO ipn_user;
 --   GRANT SELECT, INSERT ON guilds TO ipn_user;
 --   GRANT UPDATE (premium, tx_time_unix) ON guilds TO ipn_user;
+--
+-- The API shows a server's subscription status on the premium page and needs only to read it. Grant its role
+-- (POSTGRES_USER in the API deployment) once:
+--   GRANT SELECT ON premium_subscriptions TO <api role>;

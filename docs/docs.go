@@ -631,7 +631,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/premium.PremiumRecord"
+                            "$ref": "#/definitions/api.GuildPremium"
                         }
                     },
                     "400": {
@@ -1592,6 +1592,20 @@ const docTemplate = `{
                 }
             }
         },
+        "api.GuildPremium": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "subscription": {
+                    "$ref": "#/definitions/api.SubscriptionStatus"
+                },
+                "tier": {
+                    "$ref": "#/definitions/premium.Tier"
+                }
+            }
+        },
         "api.GuildRole": {
             "type": "object",
             "properties": {
@@ -2046,6 +2060,29 @@ const docTemplate = `{
                 },
                 "current": {
                     "type": "integer"
+                }
+            }
+        },
+        "api.SubscriptionStatus": {
+            "type": "object",
+            "properties": {
+                "endsAt": {
+                    "description": "EndsAt is when the current paid period runs out, in unix seconds.",
+                    "type": "integer",
+                    "example": 1793000000
+                },
+                "inherited": {
+                    "description": "Inherited is set when the subscription belongs to the server this one inherits premium from.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "Status is active (renews each period) or cancelled (paid up until endsAt, then stops).",
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "cancelled"
+                    ],
+                    "example": "active"
                 }
             }
         },

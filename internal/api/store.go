@@ -16,8 +16,11 @@ import (
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -231,4 +234,30 @@ func (s *DataStore) Premium(ctx context.Context, guildID string) (premium.Premiu
 	pg := pgstorage.PsqlInterface{Pool: s.postgres}
 	tier, days, err := pg.GetGuildOrUserPremiumStatus(s.config.Official, nil, guildID, "")
 	return premium.PremiumRecord{Tier: tier, Days: days}, err
+}
+
+// subscriptionsUnavailable logs once when premium_subscriptions cannot be read. Self-hosted databases never have
+// the payment tables, and the official API role needs SELECT on them (see storage/payments.sql).
+var subscriptionsUnavailable sync.Once
+
+func (s *DataStore) Subscription(ctx context.Context, guildID string) (*SubscriptionStatus, error) {
+	if !s.config.Official {
+		return nil, nil
+	}
+	id, err := strconv.ParseUint(guildID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	sub, err := pgstorage.GuildSubscription(ctx, s.stats, id, time.Now())
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && (pgErr.Code == "42P01" || pgErr.Code == "42501") { // undefined_table, insufficient_privilege
+		subscriptionsUnavailable.Do(func() {
+			log.Printf("premium_subscriptions unavailable, premium pages show no subscription status: %v", err)
+		})
+		return nil, nil
+	}
+	if err != nil || sub == nil {
+		return nil, err
+	}
+	return &SubscriptionStatus{Status: sub.Status, EndsAt: sub.EndsAt().Unix(), Inherited: sub.Inherited}, nil
 }

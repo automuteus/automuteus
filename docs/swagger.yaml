@@ -203,6 +203,15 @@ definitions:
           $ref: '#/definitions/api.DuoWinrate'
         type: array
     type: object
+  api.GuildPremium:
+    properties:
+      days:
+        type: integer
+      subscription:
+        $ref: '#/definitions/api.SubscriptionStatus'
+      tier:
+        $ref: '#/definitions/premium.Tier'
+    type: object
   api.GuildRole:
     properties:
       color:
@@ -540,6 +549,25 @@ definitions:
         type: integer
       current:
         type: integer
+    type: object
+  api.SubscriptionStatus:
+    properties:
+      endsAt:
+        description: EndsAt is when the current paid period runs out, in unix seconds.
+        example: 1793000000
+        type: integer
+      inherited:
+        description: Inherited is set when the subscription belongs to the server
+          this one inherits premium from.
+        type: boolean
+      status:
+        description: Status is active (renews each period) or cancelled (paid up until
+          endsAt, then stops).
+        enum:
+        - active
+        - cancelled
+        example: active
+        type: string
     type: object
   api.Survival:
     properties:
@@ -1428,7 +1456,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/premium.PremiumRecord'
+            $ref: '#/definitions/api.GuildPremium'
         "400":
           description: Bad Request
           schema:
