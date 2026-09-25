@@ -23,7 +23,7 @@ RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && 
     # thanks kurokobo!
     GOOS=${TARGETOS} \
     GOARCH=${TARGETARCH} \
-    go build -installsuffix 'static' \
+    go build -installsuffix 'static' -tags timetzdata \
     -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
     -o /app .
 

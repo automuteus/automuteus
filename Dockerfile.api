@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 swag init -g cmd/api/main.go --parseDependency true --parseInt
 RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && \
     export COMMIT=$(git rev-parse --short HEAD) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -installsuffix 'static' \
+    go build -installsuffix 'static' -tags timetzdata \
     -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
     -o /api ./cmd/api
 
