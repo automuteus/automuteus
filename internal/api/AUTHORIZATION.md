@@ -1,9 +1,12 @@
 # User API authorization: incremental implementation
 
 Implemented: a pure, tested policy in `authorization.go`. Members may read game
-state and settings in their verified guild; owners and Discord Administrators
-may edit settings. Unknown actions, missing identities, nonmembers, and mismatched
-guilds are denied. Manage Server alone is intentionally insufficient.
+state and settings in their verified guild; owners and members holding Discord
+Administrator or Manage Server may edit settings. Unknown actions, missing
+identities, nonmembers, and mismatched guilds are denied. Manage Server is
+Discord's own bar for configuring integrations, and the bot's slash-command
+gate (`commandAccess` in `bot/slash_commands.go`) uses the same rule, so
+whoever can edit settings in one place can edit them in the other.
 
 ## Implemented HTTP authentication
 
@@ -12,7 +15,7 @@ and `/game/roomcode` now accept `Authorization: Bearer <Discord access token>`.
 All require `guildID`; game endpoints also require `connectCode`. Membership is
 required to read premium status; purchasing premium remains a separate policy.
 `PATCH /guild/settings?guildID=...` writes settings and requires `WriteSettings`:
-the verified guild owner or a member holding Discord Administrator. The body is
+the verified guild owner or a member holding Administrator or Manage Server. The body is
 a JSON object holding any subset of the GET document; present fields replace the
 stored value, absent fields keep it, and voice-rule/delay rows are replaced
 whole. The handler loads the stored row, fills legacy gaps with defaults
@@ -57,8 +60,16 @@ any Discord OAuth application are intentionally accepted, supporting external
 clients. The required scopes are `identify guilds`; no bot token, client secret,
 or Discord gateway session is needed in the API process.
 
-Every request revalidates with Discord: there is no authorization cache or token
-persistence. Responses use `Cache-Control: no-store`. Discord 401 maps to 401,
+Read requests reuse a verified (token, guild) answer for a bounded window
+(`AccessCacheTTL`, one minute by default; negative disables it). The token is
+stored only as a SHA-256 hash, errors are never cached, and concurrent lookups
+for the same pair are collapsed into one Discord round trip (singleflight), so a
+settings page load that asks about one guild several times costs one
+verification. Writes always verify live, and a live answer replaces the cached
+one, so a member removed from the guild is refused on their next write and on
+every read after it, and within the window on reads otherwise. No token is
+persisted beyond that window. Responses use `Cache-Control: no-store`. Discord
+401 maps to 401,
 missing scope to 403, nonmembership to 403, and rate limits/outages/malformed
 upstream responses to 503. A Discord 429 with a valid cooldown of up to five
 seconds is retried once after waiting for Retry-After (or JSON retry_after),
@@ -66,8 +77,9 @@ within the request deadline. This handles the guild picker immediately preceding
 Go's membership check. Repeated limits and longer cooldowns still fail closed;
 there is no stale-authorization fallback.
 HTTP requests have timeouts and production requests do not follow redirects.
-This favors revocation checks over throughput; high-frequency polling should
-wait for a bounded cache/rate-limit design rather than retry aggressively.
+The one-minute read window is the bounded design that keeps a burst of reads
+from exhausting Discord's per-user guild-list bucket; polling faster than that
+gains nothing and should not retry aggressively on 503.
 
 Explicit, non-default `API_ADMIN_PASS` Basic Auth retains legacy platform access
 on these routes. The default `automuteus` password no longer works on game/guild
@@ -129,11 +141,24 @@ server-side policy and are not OAuth scopes to request from Discord.
 Tests use fake Discord HTTP responses and fake stores, covering route denial,
 revocation, pagination, precision, upstream failures, and game projection.
 
+`GET /guild/channels` lists the guild's text channels with the bot's verdict on
+each as a summary destination. It requires `WriteSettings`, not just
+membership: the bot often sits in private staff channels, and a channel list
+would name them. `GET /guild/roles` stays open to members because role names
+are visible to every member anyway.
+
+Both list routes answer from a per-guild cache (`DefaultListCacheTTL`, 30s,
+collapsed with singleflight) so reloads and crowds cost Discord a few bot-token
+calls a minute per guild. The bot-token client also honours `Retry-After`: a
+429 starts a cooldown for that route (or for everything, when Discord marks it
+global) during which lookups fail fast instead of producing more 429s, since
+those count toward Discord's invalid-request limit that blocks the whole host.
+
 Operator delegation is deferred. It would compare current Discord member roles
 (`guilds.members.read`) with stored `PermissionRoleIDs`. Editing authorization
-lists should remain owner/Administrator-only. Do not copy the slash-command
-fallback that grants everyone admin when both configured permission lists are
-empty.
+lists must stay behind the Discord settings permissions. The stored admin user
+ID list (`adminIDs`) is legacy: the bot no longer consults it and its slash
+subcommand is gone, so it must never grant API access either.
 
 Premium purchases are a separate capability: an authenticated purchaser may
 sponsor any guild without gaining membership or settings access. Subscription

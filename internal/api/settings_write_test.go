@@ -26,7 +26,8 @@ var errFakeStore = errors.New("fake store failure")
 var (
 	ownerAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Owner: true}
 	adminAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionAdministrator}
-	memberAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionManageServer}
+	// memberAccess is a moderator with every management bit except the two that unlock settings.
+	memberAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionManageChannels | discordgo.PermissionManageRoles | discordgo.PermissionKickMembers | discordgo.PermissionBanMembers}
 )
 
 // writeRouter builds a router whose verifier returns access for the write guild and counts how often it is asked.
@@ -131,18 +132,23 @@ func TestUpdateSettings_OwnerWritesMergedDocument(t *testing.T) {
 	}
 }
 
-func TestUpdateSettings_AdministratorMayWrite(t *testing.T) {
-	s := &fakeStore{}
-	r, _ := writeRouter(s, adminAccess)
-	if w := patchSettings(r, "valid", `{"autoRefresh":true}`); w.Code != 200 {
-		t.Fatalf("status %d: %s", w.Code, w.Body)
-	}
-	if s.saved == nil || !s.saved.AutoRefresh {
-		t.Fatal("administrator's change was not saved")
+func TestUpdateSettings_AdministratorOrManagerMayWrite(t *testing.T) {
+	manager := memberAccess
+	manager.Permissions = discordgo.PermissionManageServer
+	for name, access := range map[string]VerifiedGuildAccess{"administrator": adminAccess, "manage server": manager} {
+		s := &fakeStore{}
+		r, _ := writeRouter(s, access)
+		if w := patchSettings(r, "valid", `{"autoRefresh":true}`); w.Code != 200 {
+			t.Fatalf("%s: status %d: %s", name, w.Code, w.Body)
+		}
+		if s.saved == nil || !s.saved.AutoRefresh {
+			t.Fatalf("%s: change was not saved", name)
+		}
 	}
 }
 
-// Everyone who can read settings but is neither owner nor administrator is refused before storage is touched.
+// Everyone who can read settings but holds neither ownership nor a settings permission is refused before storage
+// is touched.
 func TestUpdateSettings_DeniedCallersNeverReachStorage(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -150,7 +156,7 @@ func TestUpdateSettings_DeniedCallersNeverReachStorage(t *testing.T) {
 		token  string
 		status int
 	}{
-		{"manage server only", memberAccess, "valid", 403},
+		{"moderator without a settings permission", memberAccess, "valid", 403},
 		{"plain member", VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true}, "valid", 403},
 		{"nonmember owner flag", VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Owner: true}, "valid", 403},
 		{"owner of another guild", VerifiedGuildAccess{UserID: "999", GuildID: "223456789012345678", Member: true, Owner: true}, "valid", 403},
@@ -616,6 +622,7 @@ const (
 	textChannelHere   = "223456789012345678"
 	voiceChannelHere  = "223456789012345679"
 	threadHere        = "223456789012345680"
+	textNoPostHere    = "223456789012345681"
 	textChannelThere  = "323456789012345678"
 	unknownChannel    = "423456789012345678"
 	otherGuildForChan = "923456789012345678"
@@ -626,15 +633,18 @@ func fakeChannels(calls *int) channelVerifierFunc {
 		if calls != nil {
 			*calls++
 		}
+		const post = discordgo.PermissionViewChannel | discordgo.PermissionSendMessages | discordgo.PermissionEmbedLinks
 		switch id {
 		case textChannelHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText, Name: "match-summaries", Permissions: post}, nil
+		case textNoPostHere:
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildText, Name: "read-only", Permissions: discordgo.PermissionViewChannel}, nil
 		case voiceChannelHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildVoice}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildVoice, Name: "voice", Permissions: post}, nil
 		case threadHere:
-			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildPublicThread}, nil
+			return ChannelInfo{ID: id, GuildID: writeGuild, Type: discordgo.ChannelTypeGuildPublicThread, Name: "thread", Permissions: post | discordgo.PermissionSendMessagesInThreads}, nil
 		case textChannelThere:
-			return ChannelInfo{ID: id, GuildID: otherGuildForChan, Type: discordgo.ChannelTypeGuildText}, nil
+			return ChannelInfo{ID: id, GuildID: otherGuildForChan, Type: discordgo.ChannelTypeGuildText, Name: "elsewhere", Permissions: post}, nil
 		default:
 			return ChannelInfo{}, errChannelNotFound
 		}
@@ -649,6 +659,7 @@ func TestUpdateSettings_SummaryChannelMustBeTextChannelInGuild(t *testing.T) {
 	}{
 		{"text channel in guild", textChannelHere, 200},
 		{"thread in guild", threadHere, 200},
+		{"text channel the bot cannot post in", textNoPostHere, 400},
 		{"voice channel in guild", voiceChannelHere, 400},
 		{"text channel in another guild", textChannelThere, 400},
 		{"unknown channel", unknownChannel, 400},
@@ -670,8 +681,11 @@ func TestUpdateSettings_SummaryChannelMustBeTextChannelInGuild(t *testing.T) {
 			if got := validationFields(t, w); len(got) != 1 || got[0] != "matchSummaryChannelID" {
 				t.Errorf("fields = %v, want [matchSummaryChannelID]", got)
 			}
+			if tc.channel == textNoPostHere && !strings.Contains(w.Body.String(), "Send Messages, Embed Links permissions") {
+				t.Errorf("missing permissions should be named: %s", w.Body)
+			}
 			if s.saved != nil {
-				t.Fatal("cross-guild or non-text channel was saved")
+				t.Fatal("cross-guild, non-text, or unpostable channel was saved")
 			}
 		})
 	}

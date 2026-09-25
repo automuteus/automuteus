@@ -59,6 +59,11 @@ type Store interface {
 	// be checked and the write must not proceed.
 	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
+	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
+	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
+	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
+	// next sees the guild.
+	BotInGuild(context.Context, string) (bool, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
 	RaiseNotice(context.Context, notice.Notice) error
@@ -68,6 +73,12 @@ type Store interface {
 type Config struct {
 	// GuildVerifier is injectable for tests; nil uses Discord HTTPS endpoints.
 	GuildVerifier GuildVerifier
+	// AccessCacheTTL is how long a verified read authorization for one (token, guild) is reused before Discord is
+	// asked again. Zero means DefaultAccessCacheTTL; negative disables caching. Writes always verify live.
+	AccessCacheTTL time.Duration
+	// ListCacheTTL is how long GET /guild/roles and GET /guild/channels reuse a guild's lists before asking Discord
+	// again. Zero means DefaultListCacheTTL; negative disables caching. PATCH validates roles against a live list.
+	ListCacheTTL  time.Duration
 	Version       string
 	Commit        string
 	ServerURL     string
@@ -80,6 +91,12 @@ type Config struct {
 	BotToken string
 	// ChannelVerifier is injectable for tests; nil uses Discord HTTPS endpoints when BotToken is set.
 	ChannelVerifier ChannelVerifier
+	// RoleLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set, since
+	// the same bot credentials list roles. Without one, operator role IDs are accepted as typed.
+	RoleLister RoleLister
+	// ChannelLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set.
+	// Without one, GET /guild/channels answers 501 and clients fall back to typing a channel ID.
+	ChannelLister ChannelLister
 }
 
 func NewRouter(config Config, store Store) *gin.Engine {
@@ -117,22 +134,59 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	botGroup := r.Group("/bot")
 	botGroup.GET("/info", handleGetInfo(store))
 	botGroup.GET("/commands", handleGetCommands())
+	botGroup.GET("/settings/defaults", handleGetSettingsDefaults())
 
 	verifier := config.GuildVerifier
 	if verifier == nil {
 		verifier = newDiscordVerifier()
 	}
-	gameGroup := r.Group("/game", guildAuthentication(config, verifier, ReadGame))
+	ttl := config.AccessCacheTTL
+	if ttl == 0 {
+		ttl = DefaultAccessCacheTTL
+	}
+	access := newAccessCache(ttl, nil)
+	gameGroup := r.Group("/game", guildAuthentication(config, verifier, access, ReadGame))
 	gameGroup.GET("/state", handleGetGameState(store))
 	gameGroup.GET("/roomcode", handleGetRoomCode(store))
 	guildGroup := r.Group("/guild")
-	guildGroup.GET("/settings", guildAuthentication(config, verifier, ReadSettings), handleGetGuildSettings(store))
+	guildGroup.GET("/settings", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildSettings(store))
 	channels := config.ChannelVerifier
 	if channels == nil && config.BotToken != "" {
 		channels = newDiscordChannelVerifier(config.BotToken)
 	}
-	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, WriteSettings), handleUpdateGuildSettings(store, channels))
-	guildGroup.GET("/premium", guildAuthentication(config, verifier, ReadPremium), handleGetGuildPremium(store))
+	roles := config.RoleLister
+	if roles == nil {
+		if lister, ok := channels.(RoleLister); ok {
+			roles = lister
+		}
+	}
+	channelList := config.ChannelLister
+	if channelList == nil {
+		if lister, ok := channels.(ChannelLister); ok {
+			channelList = lister
+		}
+	}
+	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles))
+	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
+	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
+	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
+	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
+	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.
+	listTTL := config.ListCacheTTL
+	if listTTL == 0 {
+		listTTL = DefaultListCacheTTL
+	}
+	var listedRoles RoleLister
+	if roles != nil {
+		listedRoles = cachedRoleLister{newListCache(listTTL, nil, roles.ListRoles)}
+	}
+	var listedChannels ChannelLister
+	if channelList != nil {
+		listedChannels = cachedChannelLister{newListCache(listTTL, nil, channelList.ListChannels)}
+	}
+	guildGroup.GET("/roles", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildRoles(listedRoles))
+	// Channel names can be private, so listing them takes the write permission rather than membership.
+	guildGroup.GET("/channels", guildAuthentication(config, verifier, access, WriteSettings), handleGetGuildChannels(listedChannels))
 
 	// Platform notices: warn players about maintenance, or (critical) end every running game. Raising and clearing
 	// notices requires an explicitly configured admin password; the default password is refused.
@@ -180,6 +234,23 @@ func handleGetInfo(store Store) func(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, info)
+	}
+}
+
+// SettingsDefaults godoc
+// @Summary Get Default Guild Settings
+// @Description The settings every guild starts with, and what GET /guild/settings returns for a guild that never
+// @Description changed anything. Clients compare against this to show which settings a guild has customised and to
+// @Description offer a reset. Not guild-specific and not secret, so no authentication is required.
+// @Tags bot
+// @Accept json
+// @Produce json
+// @Success 200 {object} settings.GuildSettings
+// @Router /bot/settings/defaults [get]
+func handleGetSettingsDefaults() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=300")
+		c.JSON(http.StatusOK, settings.MakeGuildSettings())
 	}
 }
 
@@ -428,9 +499,13 @@ type SettingsValidationError struct {
 // @Description /guild/settings; fields that are present replace the stored value and fields that are absent keep it.
 // @Description Voice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null
 // @Description values, and values outside the ranges the /settings slash command accepts are rejected without saving.
-// @Description Requires the guild owner or Discord Administrator permission. Changing a premium-only setting
+// @Description Requires the guild owner or the Discord Administrator or Manage Server permission. Changing a
+// @Description premium-only setting
 // @Description (match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a
-// @Description guild without premium is refused with 403 listing those fields.
+// @Description guild without premium is refused with 403 listing those fields. A new matchSummaryChannelID must pass
+// @Description the same checks as GET /guild/channel: visible to the bot, in this guild, text-capable, and granting
+// @Description the bot View Channel, Send Messages, and Embed Links. A changed permissionRoleIDs list must name roles of
+// @Description this guild (see GET /guild/roles) when the API has bot credentials.
 // @Security BasicAuth
 // @Security DiscordBearer
 // @Tags guild
@@ -451,7 +526,7 @@ type SettingsValidationError struct {
 // @Failure 501 {object} HttpError "Summary channel changes need DISCORD_BOT_TOKEN on the API"
 // @Failure 503 {object} HttpError
 // @Router /guild/settings [patch]
-func handleUpdateGuildSettings(store Store, channels ChannelVerifier) func(c *gin.Context) {
+func handleUpdateGuildSettings(store Store, channels ChannelVerifier, roles RoleLister) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		guildID := c.Query("guildID")
@@ -507,6 +582,7 @@ func handleUpdateGuildSettings(store Store, channels ChannelVerifier) func(c *gi
 		current.FillDefaults()
 		premiumBefore := current.PremiumSnapshot()
 		channelBefore := current.MatchSummaryChannelID
+		rolesBefore := append([]string(nil), current.PermissionRoleIDs...)
 		if err := settings.UnmarshalStrict(body, current); err != nil {
 			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid settings document: " + err.Error()})
 			return
@@ -539,28 +615,42 @@ func handleUpdateGuildSettings(store Store, channels ChannelVerifier) func(c *gi
 			}
 		}
 
+		// Operator role IDs decide who may control games, so a typo would silently lock people out. When the API
+		// has bot credentials, a changed list is checked against the guild's real roles; without them the IDs are
+		// accepted as typed, as they always were. The same list backs GET /guild/roles so a client can pick first.
+		if roles != nil && !sameStrings(rolesBefore, current.PermissionRoleIDs) {
+			unknown, err := unknownOperatorRoles(ctx, roles, guildID, current.PermissionRoleIDs)
+			if err != nil {
+				log.Println(err)
+				c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to verify operator roles"})
+				return
+			}
+			if len(unknown) > 0 {
+				respondSettingsFields(c, http.StatusBadRequest, "unknown operator roles", unknown...)
+				return
+			}
+		}
+
 		// The summary channel is where the bot will post on the caller's behalf. Validation only proved it is a
-		// snowflake; it must also be a text channel of this guild, or an administrator of one guild could aim the
-		// bot at a channel in another guild it shares. Clearing the channel needs no lookup.
+		// snowflake; it must also be a text channel of this guild that the bot can post embeds into, or an
+		// administrator of one guild could aim the bot at a channel in another guild it shares, or at one where
+		// summaries would silently never appear. Clearing the channel needs no lookup. The same check backs
+		// GET /guild/channel so a client can ask first.
 		if current.MatchSummaryChannelID != "" && current.MatchSummaryChannelID != channelBefore {
 			if channels == nil {
 				c.JSON(http.StatusNotImplemented, HttpError{StatusCode: http.StatusNotImplemented,
 					Error: "changing matchSummaryChannelID requires the API to be configured with DISCORD_BOT_TOKEN"})
 				return
 			}
-			info, err := channels.VerifyChannel(ctx, current.MatchSummaryChannelID)
-			switch {
-			case errors.Is(err, errChannelNotFound):
-				respondSettingsFields(c, http.StatusBadRequest, "invalid summary channel",
-					settings.FieldError{Field: "matchSummaryChannelID", Message: "channel not found, or the bot cannot see it"})
-				return
-			case err != nil:
+			check, err := checkSummaryChannel(ctx, channels, guildID, current.MatchSummaryChannelID)
+			if err != nil {
 				log.Println(err)
 				c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to verify summary channel"})
 				return
-			case info.GuildID != guildID || !discord.IsTextCapableChannel(info.Type):
+			}
+			if !check.OK {
 				respondSettingsFields(c, http.StatusBadRequest, "invalid summary channel",
-					settings.FieldError{Field: "matchSummaryChannelID", Message: "must be a text channel in this guild"})
+					settings.FieldError{Field: "matchSummaryChannelID", Message: strings.Join(check.Problems, "; ")})
 				return
 			}
 		}
@@ -585,6 +675,18 @@ func handleUpdateGuildSettings(store Store, channels ChannelVerifier) func(c *gi
 		c.Header("ETag", settingsETag(version+1))
 		c.JSON(http.StatusOK, current)
 	}
+}
+
+func sameStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func respondSettingsValidation(c *gin.Context, err error) {
@@ -643,6 +745,50 @@ func sentFields(body []byte) string {
 	}
 	sort.Strings(keys)
 	return strings.Join(keys, ", ")
+}
+
+// BotPresence says whether the bot is a member of a guild, so a client can offer an invite instead of settings
+// the bot could never apply.
+type BotPresence struct {
+	Present bool `json:"present"`
+}
+
+// GetGuildBot godoc
+// @Summary Get Guild Bot Presence
+// @Description Report whether the bot is currently a member of the given guild, based on the guild join and leave
+// @Description events the bot has processed. Any member of the guild may ask.
+// @Security BasicAuth
+// @Security DiscordBearer
+// @Tags guild
+// @Accept json
+// @Produce json
+// @Param guildID query string true "Guild ID"
+// @Success 200 {object} BotPresence
+// @Failure 400 {object} HttpError
+// @Failure 503 {object} HttpError
+// @Router /guild/bot [get]
+func handleGetGuildBot(store Store) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		guildID := c.Query("guildID")
+		if discord.ValidateSnowflake(guildID) != nil {
+			c.JSON(http.StatusBadRequest, HttpError{
+				StatusCode: http.StatusBadRequest,
+				Error:      "invalid guild ID",
+			})
+			return
+		}
+
+		present, err := store.BotInGuild(c.Request.Context(), guildID)
+		if err != nil {
+			log.Println(err)
+			c.JSON(http.StatusServiceUnavailable, HttpError{
+				StatusCode: http.StatusServiceUnavailable,
+				Error:      "Unable to check bot membership",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, BotPresence{Present: present})
+	}
 }
 
 // GetGuildPremium godoc

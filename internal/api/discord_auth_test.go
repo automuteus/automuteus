@@ -133,7 +133,7 @@ func TestBearerRoutes(t *testing.T) {
 				return tc.access, tc.err
 			})
 			r := NewRouter(Config{GuildVerifier: v, AdminPassword: "test-password"}, s)
-			for _, path := range []string{"/guild/settings?guildID=" + guild, "/guild/premium?guildID=" + guild, "/game/state?guildID=" + guild + "&connectCode=ABCDEFGH", "/game/roomcode?guildID=" + guild + "&connectCode=ABCDEFGH"} {
+			for _, path := range []string{"/guild/settings?guildID=" + guild, "/guild/premium?guildID=" + guild, "/guild/bot?guildID=" + guild, "/game/state?guildID=" + guild + "&connectCode=ABCDEFGH", "/game/roomcode?guildID=" + guild + "&connectCode=ABCDEFGH"} {
 				w := bearerRequest(r, path, tc.token)
 				if w.Code != tc.status {
 					t.Fatalf("%s: %d %s", path, w.Code, w.Body)
@@ -157,7 +157,7 @@ func TestBearerValidationAndRevocation(t *testing.T) {
 	member := true
 	calls := 0
 	s := &fakeStore{}
-	r := NewRouter(Config{GuildVerifier: verifierFunc(func(_ context.Context, _, guild string) (VerifiedGuildAccess, error) {
+	r := NewRouter(Config{AccessCacheTTL: -1, GuildVerifier: verifierFunc(func(_ context.Context, _, guild string) (VerifiedGuildAccess, error) {
 		calls++
 		return VerifiedGuildAccess{UserID: "user", GuildID: guild, Member: member}, nil
 	})}, s)

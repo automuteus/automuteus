@@ -39,7 +39,6 @@ var (
 const (
 	Language            = "language"
 	VoiceRules          = "voice-rules"
-	AdminUserIDs        = "admin-user-ids"
 	RoleIDs             = "operator-roles"
 	UnmuteDead          = "unmute-dead"
 	MapVersion          = "map-version"
@@ -175,36 +174,6 @@ var AllSettings = []Setting{
 				Type:        discordgo.ApplicationCommandOptionBoolean,
 				Name:        "value",
 				Description: "value",
-			},
-		},
-		Premium: false,
-	},
-	{
-		Name:      AdminUserIDs,
-		ShortDesc: "Bot Admins",
-		Arguments: []*discordgo.ApplicationCommandOption{
-			{
-				Name:        View,
-				Description: "View Admins",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-			},
-			{
-				Name:        Clear,
-				Description: "Clear Admins",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        User,
-				Description: "Discord user to make an Admin",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        User,
-						Description: "Discord user to make an Admin",
-						Type:        discordgo.ApplicationCommandOptionUser,
-						Required:    true,
-					},
-				},
 			},
 		},
 		Premium: false,

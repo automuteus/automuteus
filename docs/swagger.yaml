@@ -1,5 +1,69 @@
 basePath: /
 definitions:
+  api.BotPresence:
+    properties:
+      present:
+        type: boolean
+    type: object
+  api.ChannelCheck:
+    properties:
+      id:
+        type: string
+      name:
+        description: |-
+          Name is the channel name without the leading '#'. Omitted when the channel is not in the requested guild,
+          so a caller cannot use this route to learn channel names in guilds it shares with the bot but not with us.
+        type: string
+      ok:
+        type: boolean
+      problems:
+        items:
+          type: string
+        type: array
+    type: object
+  api.GuildChannel:
+    properties:
+      category:
+        description: Category is the name of the parent category, empty for a channel
+          at the top level.
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      ok:
+        description: Problems is empty exactly when OK is true; each entry is a sentence
+          a client can show for the channel.
+        type: boolean
+      problems:
+        items:
+          type: string
+        type: array
+      type:
+        allOf:
+        - $ref: '#/definitions/discordgo.ChannelType'
+        description: |-
+          Type is Discord's channel type: 0 for a text channel, 5 for an announcement channel. Threads are never
+          listed; Discord does not include them in a guild's channel list.
+    type: object
+  api.GuildRole:
+    properties:
+      color:
+        description: Color is Discord's integer RGB value; zero means the role has
+          no colour.
+        type: integer
+      id:
+        type: string
+      managed:
+        description: Managed roles belong to an integration or bot and cannot be given
+          to members by hand.
+        type: boolean
+      name:
+        type: string
+      position:
+        description: Position is Discord's display order; higher is listed first.
+        type: integer
+    type: object
   api.HttpError:
     properties:
       error:
@@ -160,6 +224,7 @@ definitions:
     - 9
     - 10
     - 11
+    format: int32
     type: integer
     x-enum-varnames:
     - ApplicationCommandOptionSubCommand
@@ -178,6 +243,7 @@ definitions:
     - 1
     - 2
     - 3
+    format: int32
     type: integer
     x-enum-varnames:
     - ChatApplicationCommand
@@ -269,6 +335,7 @@ definitions:
     - 3
     - 4
     - 5
+    format: int32
     type: integer
     x-enum-varnames:
     - FreeTier
@@ -437,6 +504,24 @@ paths:
       summary: Get Bot Info
       tags:
       - bot
+  /bot/settings/defaults:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The settings every guild starts with, and what GET /guild/settings returns for a guild that never
+        changed anything. Clients compare against this to show which settings a guild has customised and to
+        offer a reset. Not guild-specific and not secret, so no authentication is required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/settings.GuildSettings'
+      summary: Get Default Guild Settings
+      tags:
+      - bot
   /game/roomcode:
     get:
       consumes:
@@ -516,6 +601,137 @@ paths:
       summary: Get Game State
       tags:
       - game
+  /guild/bot:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Report whether the bot is currently a member of the given guild, based on the guild join and leave
+        events the bot has processed. Any member of the guild may ask.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.BotPresence'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Get Guild Bot Presence
+      tags:
+      - guild
+  /guild/channel:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Report whether the bot could post match summaries into a channel of the given guild: the channel
+        must exist and be visible to the bot, belong to the guild, be a text or announcement channel or a
+        thread in one, and grant the bot View Channel, Embed Links, and Send Messages (Send Messages in Threads
+        for a thread). The same checks are applied when PATCH /guild/settings changes
+        matchSummaryChannelID, so a client can validate before saving. Any member of the guild may ask.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      - description: Channel ID
+        in: query
+        name: channelID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ChannelCheck'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "501":
+          description: The API is not configured with DISCORD_BOT_TOKEN
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: Check a Summary Channel
+      tags:
+      - guild
+  /guild/channels:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The guild's text and announcement channels as the bot sees them, in Discord's display order with
+        their category, each marked with whether the bot could post match summaries there and, if not, why:
+        the same verdict GET /guild/channel gives for one channel and PATCH /guild/settings applies on save.
+        Threads are not listed; one can still be set by ID. Channel names can be private, so this requires
+        the same permission as changing settings: the guild owner, or Administrator or Manage Server.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.GuildChannel'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "403":
+          description: The caller may not change this guild's settings
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "404":
+          description: The bot is not in this guild
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "501":
+          description: The API is not configured with DISCORD_BOT_TOKEN
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: List Guild Channels
+      tags:
+      - guild
   /guild/premium:
     get:
       consumes:
@@ -546,6 +762,51 @@ paths:
       - BasicAuth: []
       - DiscordBearer: []
       summary: Get Guild Premium
+      tags:
+      - guild
+  /guild/roles:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        The guild's roles as the bot sees them, in Discord's display order and without @everyone, so a client
+        can offer a picker for bot operator roles and show names instead of IDs. PATCH /guild/settings rejects a
+        permissionRoleIDs entry that is not one of these. Any member of the guild may ask.
+      parameters:
+      - description: Guild ID
+        in: query
+        name: guildID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.GuildRole'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "404":
+          description: The bot is not in this guild
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "501":
+          description: The API is not configured with DISCORD_BOT_TOKEN
+          schema:
+            $ref: '#/definitions/api.HttpError'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.HttpError'
+      security:
+      - BasicAuth: []
+      - DiscordBearer: []
+      summary: List Guild Roles
       tags:
       - guild
   /guild/settings:
@@ -593,9 +854,13 @@ paths:
         /guild/settings; fields that are present replace the stored value and fields that are absent keep it.
         Voice rule and delay rows are replaced whole, so a row must list every entry. Unknown fields, null
         values, and values outside the ranges the /settings slash command accepts are rejected without saving.
-        Requires the guild owner or Discord Administrator permission. Changing a premium-only setting
+        Requires the guild owner or the Discord Administrator or Manage Server permission. Changing a
+        premium-only setting
         (match summary options, auto refresh, leaderboard options, spectator muting, room code display) on a
-        guild without premium is refused with 403 listing those fields.
+        guild without premium is refused with 403 listing those fields. A new matchSummaryChannelID must pass
+        the same checks as GET /guild/channel: visible to the bot, in this guild, text-capable, and granting
+        the bot View Channel, Send Messages, and Embed Links. A changed permissionRoleIDs list must name roles of
+        this guild (see GET /guild/roles) when the API has bot credentials.
       parameters:
       - description: Guild ID
         in: query

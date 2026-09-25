@@ -189,23 +189,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 		return command.ReinviteMeResponse(missingPerms, i.ChannelID, sett)
 	}
 
-	isAdmin, isPermissioned := false, false
-	if g.OwnerID == i.Member.User.ID || (len(sett.AdminUserIDs) == 0 && len(sett.PermissionRoleIDs) == 0) {
-		// the guild owner should always have both permissions
-		// or if both permissions are still empty, everyone gets both
-		isAdmin = true
-		isPermissioned = true
-	} else {
-		// if we have no admins, then we MUST have mods as per the check above. So ensure this user is a mod
-		if len(sett.AdminUserIDs) == 0 {
-			isAdmin = sett.HasRolePerms(i.Member)
-		} else {
-			// we have admins; make sure user is one
-			isAdmin = sett.HasAdminPerms(i.Member.User)
-		}
-		// even if we have admins, we can grant mod if the moderators role is empty; it is lesser permissions
-		isPermissioned = len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(i.Member)
-	}
+	isAdmin, isPermissioned := commandAccess(sett, g.OwnerID, i.Member)
 
 	// common gsr, but not necessarily used by all commands
 	gsr := GameStateRequest{
@@ -275,16 +259,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return resp
 
 		case command.Settings.Name:
+			// Settings are managed on the web dashboard; the same people who may change them there get the link.
 			if !isAdmin {
 				return command.InsufficientPermissionsResponse(sett)
 			}
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
-			if err != nil {
-				log.Println("Err in /settings get premium:", err)
-			}
-			setting, args := command.GetSettingsParams(i.ApplicationCommandData().Options)
-			msg := bot.HandleSettingsCommand(i.GuildID, sett, setting, args, !premium.IsExpired(premStatus, days))
-			return command.SettingsResponse(msg)
+			return command.SettingsResponse(bot.webURL, i.GuildID, sett)
 
 		case command.New.Name:
 			if !isPermissioned {
@@ -1017,3 +996,28 @@ func checkPermissions(perm int64, perms []int64) (a int64) {
 	}
 	return
 }
+
+// commandAccess decides what a member may do with the bot's slash commands. isAdmin unlocks the admin-only
+// commands (settings, download, other players' stats, and so on); isPermissioned unlocks game control (new,
+// pause, end, link, unlink).
+//
+// Admin is purely a Discord permission: the guild owner, Administrator, or Manage Server. That is the same rule
+// the API's WriteSettings policy and the web settings page apply, so whoever can change settings anywhere can
+// change them everywhere, and nobody else can. Discord resolves the member's permissions into every interaction
+// (Administrator resolves to every bit), so no extra lookup is needed. The stored admin user ID list is legacy
+// and no longer consulted.
+//
+// Game control comes from the operator roles, or everyone when that list is empty. Admin is the greater
+// privilege, so it implies game control even without an operator role.
+func commandAccess(sett *settings.GuildSettings, ownerID string, member *discordgo.Member) (isAdmin, isPermissioned bool) {
+	if member == nil || member.User == nil {
+		return false, false
+	}
+	isAdmin = ownerID == member.User.ID || member.Permissions&settingsPermissions != 0
+	isPermissioned = isAdmin || len(sett.PermissionRoleIDs) == 0 || sett.HasRolePerms(member)
+	return isAdmin, isPermissioned
+}
+
+// settingsPermissions are the Discord permissions that make a member a bot admin. Administrator implies Manage
+// Server, but Discord's computed member permissions already reflect that; both bits are listed for clarity.
+const settingsPermissions = discordgo.PermissionAdministrator | discordgo.PermissionManageServer

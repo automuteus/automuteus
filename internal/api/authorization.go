@@ -6,10 +6,11 @@ import "github.com/bwmarrin/discordgo"
 type GuildAction string
 
 const (
-	ReadGame      GuildAction = "game:read"
-	ReadPremium   GuildAction = "premium:read"
-	ReadSettings  GuildAction = "settings:read"
-	WriteSettings GuildAction = "settings:write"
+	ReadGame        GuildAction = "game:read"
+	ReadPremium     GuildAction = "premium:read"
+	ReadSettings    GuildAction = "settings:read"
+	WriteSettings   GuildAction = "settings:write"
+	ReadBotPresence GuildAction = "bot:read"
 )
 
 // VerifiedGuildAccess must be constructed from trusted Discord responses for
@@ -24,19 +25,24 @@ type VerifiedGuildAccess struct {
 	Permissions int64
 }
 
-// AllowsGuildAction is the initial, fail-closed user API policy. Even owners
-// and administrators require verified membership in the exact target guild.
-// Empty bot admin/operator settings do not grant access under this policy.
+// settingsPermissions are the Discord permissions that allow changing the bot's settings: Administrator or
+// Manage Server, Discord's own bar for configuring integrations. The bot's slash-command gate uses the same
+// bits, so the two surfaces never disagree about who may edit.
+const settingsPermissions = discordgo.PermissionAdministrator | discordgo.PermissionManageServer
+
+// AllowsGuildAction is the fail-closed user API policy. Even owners and
+// administrators require verified membership in the exact target guild.
+// The bot's stored admin user and operator role lists never grant access here.
 // Authentication is deliberately separate; this function does not verify tokens.
 func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildAction) bool {
 	if access.UserID == "" || guildID == "" || access.GuildID != guildID || !access.Member {
 		return false
 	}
 	switch action {
-	case ReadGame, ReadSettings, ReadPremium:
+	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence:
 		return true
 	case WriteSettings:
-		return access.Owner || access.Permissions&discordgo.PermissionAdministrator != 0
+		return access.Owner || access.Permissions&settingsPermissions != 0
 	default:
 		return false
 	}

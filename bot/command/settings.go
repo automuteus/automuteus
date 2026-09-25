@@ -1,88 +1,54 @@
 package command
 
 import (
-	"github.com/automuteus/automuteus/v8/bot/setting"
+	"strings"
+
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
-	"log"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+// Settings no longer edits anything itself: guild settings are managed on the web dashboard, and this command
+// hands out the link to this server's page there.
 var Settings = discordgo.ApplicationCommand{
 	Name:        "settings",
-	Description: "View or change AutoMuteUs settings",
-	Options:     settingsToCommandOptions(),
+	Description: "Get a link to the web dashboard, where AutoMuteUs settings for this server are managed",
 }
 
-func GetSettingsParams(options []*discordgo.ApplicationCommandInteractionDataOption) (string, []string) {
-	sett := setting.GetSettingByName(options[0].Name)
-	args := make([]string, len(options[0].Options))
-	// iterate over the subcommands/args we received from discord
-	for i, v := range options[0].Options {
-		var arg *discordgo.ApplicationCommandOption
-		// iterate over the arguments we know we could possibly receive, and break when we find the right one
-		for _, tempArg := range sett.Arguments {
-			if tempArg.Name == v.Name {
-				arg = tempArg
-				break
-			}
-		}
-		if arg == nil {
-			return sett.Name, args
-		}
-		// convert the value we received into the format we'd expect
-		// in this case, a subcommand that has options of its own
-		if arg.Type == discordgo.ApplicationCommandOptionSubCommand && len(v.Options) > 0 {
-			args[i] = setting.ToString(v.Options[0])
-		} else {
-			// in this case, any sort of subcommand or option/argument that can be converted directly
-			// TODO this should be more flexible, not just string arguments. But requires all the tests to change, etc
-			args[i] = setting.ToString(v)
-		}
-	}
-
-	return sett.Name, args
+// SettingsURL is the dashboard page for one guild's settings. webURL is the bot's WEB_URL, with or without a
+// trailing slash; the page itself still requires the visitor to own or manage the guild.
+func SettingsURL(webURL, guildID string) string {
+	return strings.TrimRight(webURL, "/") + "/settings?guild=" + guildID
 }
 
-func SettingsResponse(m interface{}) *discordgo.InteractionResponse {
-	content := ""
-	var embeds []*discordgo.MessageEmbed
-	switch msg := m.(type) {
-	case string:
-		content = msg
-	case discordgo.MessageEmbed:
-		embed := msg
-		embeds = append(embeds, &embed)
-	case *discordgo.MessageEmbed:
-		embeds = append(embeds, msg)
-	case nil:
-		// do nothing
-	default:
-		log.Printf("Incapable of processing sendMessage of type: %T", msg)
-	}
+// SettingsResponse is the private reply to /settings: a short explanation plus a link button to the dashboard.
+func SettingsResponse(webURL, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	url := SettingsURL(webURL, guildID)
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			//Flags:   0,
-			Content: content,
-			Embeds:  embeds,
+			Flags: discordgo.MessageFlagsEphemeral,
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID: "commands.settings.dashboard",
+				Other: "Settings for this server are managed on the web dashboard. Sign in with Discord; the server owner " +
+					"and members with Administrator or Manage Server can change them.\n<{{.URL}}>",
+			}, map[string]interface{}{
+				"URL": url,
+			}),
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.Button{
+							Style: discordgo.LinkButton,
+							URL:   url,
+							Label: sett.LocalizeMessage(&i18n.Message{
+								ID:    "commands.settings.open",
+								Other: "Open settings",
+							}),
+						},
+					},
+				},
+			},
 		},
 	}
-}
-
-func settingsToCommandOptions() []*discordgo.ApplicationCommandOption {
-	var choices []*discordgo.ApplicationCommandOption
-	for _, sett := range setting.AllSettings {
-		optionType := discordgo.ApplicationCommandOptionSubCommand
-
-		// if arguments are subcommands, then make this one a group
-		if len(sett.Arguments) > 0 && sett.Arguments[0].Type == discordgo.ApplicationCommandOptionSubCommand {
-			optionType = discordgo.ApplicationCommandOptionSubCommandGroup
-		}
-		choices = append(choices, &discordgo.ApplicationCommandOption{
-			Name:        sett.Name,
-			Description: sett.ShortDesc,
-			Type:        optionType,
-			Options:     sett.Arguments,
-		})
-	}
-	return choices
 }
