@@ -63,6 +63,7 @@
 "eventHandler.gameOver.deleteMessageFooter" = "Excluindo mensagem {{.Mins}} min de:"
 "eventHandler.gameOver.matchID" = "Fim de Jogo! Veja as estatísticas do jogo usando ID da partida: `{{.MatchID}}`\\n{{.Winners}}"
 "locale.language.name" = "Portuguese-Brazil"
+"locale.translateHint" = "Translations are community maintained. Help improve this language on [Crowdin]({{.URL}})!"
 "notices.banner.critical" = "🛑 CRITICAL NOTICE"
 "notices.banner.warning" = "⚠️ WARNING"
 "notices.critical.gameEnded" = "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\\n{{.Message}}\\nRun `/new` to start again once the notice is over."

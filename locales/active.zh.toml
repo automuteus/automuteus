@@ -63,6 +63,7 @@
 "eventHandler.gameOver.deleteMessageFooter" = "正在删除消息 {{.Mins}} 分钟："
 "eventHandler.gameOver.matchID" = "游戏结束！使用比赛ID：{{.MatchID}}\\n{{.Winners}} 查看比赛数据"
 "locale.language.name" = "Distr."
+"locale.translateHint" = "Translations are community maintained. Help improve this language on [Crowdin]({{.URL}})!"
 "notices.banner.critical" = "🛑 CRITICAL NOTICE"
 "notices.banner.warning" = "⚠️ WARNING"
 "notices.critical.gameEnded" = "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\\n{{.Message}}\\nRun `/new` to start again once the notice is over."

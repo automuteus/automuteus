@@ -17,6 +17,15 @@ import (
 	"github.com/top-gg/go-dbl"
 )
 
+// The columns each Postgres* type reads. Queries name them instead of using SELECT *, because scany refuses a
+// column the struct has no field for, so a column added to a table by a newer release would otherwise break
+// every read of that table here.
+const (
+	guildColumns = "guild_id, guild_name, premium, tx_time_unix, transferred_to, inherits_from"
+	userColumns  = "user_id, opt, vote_time_unix"
+	gameColumns  = "game_id, guild_id, connect_code, start_time, win_type, end_time, play_map, region"
+)
+
 type PgxIface interface {
 	Begin(context.Context) (pgx.Tx, error)
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
@@ -77,7 +86,7 @@ func (psqlInterface *PsqlInterface) GetGuildForDownload(guildID uint64) (*Postgr
 
 func getGuild(conn PgxIface, guildID uint64) (*PostgresGuild, error) {
 	var guilds []*PostgresGuild
-	err := pgxscan.Select(context.Background(), conn, &guilds, "SELECT * FROM guilds WHERE guild_id = $1", guildID)
+	err := pgxscan.Select(context.Background(), conn, &guilds, "SELECT "+guildColumns+" FROM guilds WHERE guild_id = $1", guildID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +178,7 @@ func getUserByString(conn PgxIface, userID string) (*PostgresUser, error) {
 
 func getUser(conn PgxIface, userID uint64) (*PostgresUser, error) {
 	var users []*PostgresUser
-	err := pgxscan.Select(context.Background(), conn, &users, "SELECT * FROM users WHERE user_id = $1", userID)
+	err := pgxscan.Select(context.Background(), conn, &users, "SELECT "+userColumns+" FROM users WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +386,7 @@ func (psqlInterface *PsqlInterface) GetGamesForGuild(guildID uint64) ([]*Postgre
 func getGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresGame, error) {
 	var games []*PostgresGame
 	// aborted matches (ended before a result) are excluded, as they are from statistics
-	err := pgxscan.Select(context.Background(), conn, &games, "SELECT * FROM games WHERE guild_id = $1 AND win_type != $2;", guildID, int16(game.Aborted))
+	err := pgxscan.Select(context.Background(), conn, &games, "SELECT "+gameColumns+" FROM games WHERE guild_id = $1 AND win_type != $2;", guildID, int16(game.Aborted))
 	if err != nil {
 		return nil, err
 	}
