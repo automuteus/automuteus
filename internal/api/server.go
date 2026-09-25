@@ -65,6 +65,8 @@ type Store interface {
 	// GuildStats builds the stats page document for a guild: the summary for everyone and, while the guild's
 	// premium is active, the leaderboards too. It is the uncached build; the router caches per guild.
 	GuildStats(context.Context, string) (GuildStats, error)
+	// AdminGuildStats is GuildStats with the leaderboards whatever the guild's premium, for operators.
+	AdminGuildStats(context.Context, string) (GuildStats, error)
 	// MatchSummary builds the match summary document for one match of a guild (guild ID, then match ID), or
 	// returns errMatchNotFound. It is the uncached build; the router caches per match.
 	MatchSummary(context.Context, string, string) (MatchSummary, error)
@@ -211,11 +213,12 @@ func NewRouter(config Config, store Store) *gin.Engine {
 		statsTTL = DefaultStatsCacheTTL
 	}
 	stats := statsCaches{
-		guild: newListCache(statsTTL, nil, store.GuildStats),
-		match: newMatchCache(statsTTL, store.MatchSummary),
-		user:  newUserStatsCache(statsTTL, store.UserStats),
+		guild:     newListCache(statsTTL, nil, store.GuildStats),
+		guildFull: newListCache(statsTTL, nil, store.AdminGuildStats),
+		match:     newMatchCache(statsTTL, store.MatchSummary),
+		user:      newUserStatsCache(statsTTL, store.UserStats),
 	}
-	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild))
+	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild, stats.guildFull))
 	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
 	guildGroup.GET("/user", guildAuthentication(config, verifier, access, ReadStats), handleGetUserStats(stats.user))
 	guildGroup.POST("/stats/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetGuildStats(store, stats))

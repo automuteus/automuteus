@@ -46,6 +46,8 @@ type fakeStore struct {
 	stats      *GuildStats
 	statsErr   error
 	statsCalls int
+	// adminStatsCalls counts AdminGuildStats, which answers like GuildStats.
+	adminStatsCalls int
 	// match, when set, is what MatchSummary returns; matchErr fails only MatchSummary.
 	match      *MatchSummary
 	matchErr   error
@@ -131,6 +133,10 @@ func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, err
 		return *s.premium, s.err
 	}
 	return premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, s.err
+}
+func (s *fakeStore) AdminGuildStats(ctx context.Context, guildID string) (GuildStats, error) {
+	s.adminStatsCalls++
+	return s.GuildStats(ctx, guildID)
 }
 func (s *fakeStore) GuildStats(_ context.Context, guildID string) (GuildStats, error) {
 	s.calls++

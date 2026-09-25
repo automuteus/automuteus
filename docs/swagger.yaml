@@ -1716,6 +1716,11 @@ paths:
         name: guildID
         required: true
         type: string
+      - description: With Basic auth, 1 includes the leaderboards whatever the guild's
+          premium. Ignored for members.
+        in: query
+        name: full
+        type: string
       produces:
       - application/json
       responses:

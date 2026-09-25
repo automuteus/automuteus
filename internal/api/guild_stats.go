@@ -131,6 +131,16 @@ type KilledBy struct {
 // concurrently and are skipped entirely for a guild whose premium is free or expired, so a free guild costs
 // one count query.
 func (s *DataStore) GuildStats(ctx context.Context, guildID string) (GuildStats, error) {
+	return s.guildStats(ctx, guildID, false)
+}
+
+// AdminGuildStats is GuildStats with the leaderboards built whatever the guild's premium, for operators looking at
+// a guild from outside. The premium record in the document is still the guild's real one.
+func (s *DataStore) AdminGuildStats(ctx context.Context, guildID string) (GuildStats, error) {
+	return s.guildStats(ctx, guildID, true)
+}
+
+func (s *DataStore) guildStats(ctx context.Context, guildID string, full bool) (GuildStats, error) {
 	record, err := s.Premium(ctx, guildID)
 	if err != nil {
 		return GuildStats{}, fmt.Errorf("premium status: %w", err)
@@ -139,10 +149,12 @@ func (s *DataStore) GuildStats(ctx context.Context, guildID string) (GuildStats,
 	if err != nil {
 		return GuildStats{}, fmt.Errorf("guild settings: %w", err)
 	}
-	return buildGuildStats(ctx, s.stats, s.redis, s.profiles, guildID, record, sett)
+	return buildGuildStats(ctx, s.stats, s.redis, s.profiles, guildID, record, sett, full)
 }
 
-func buildGuildStats(ctx context.Context, db pgxscan.Querier, client *redis.Client, profiles ProfileFetcher, guildID string, record premium.PremiumRecord, sett *settings.GuildSettings) (GuildStats, error) {
+// buildGuildStats assembles the document; full includes the leaderboards even when the premium record says the
+// guild should not see them.
+func buildGuildStats(ctx context.Context, db pgxscan.Querier, client *redis.Client, profiles ProfileFetcher, guildID string, record premium.PremiumRecord, sett *settings.GuildSettings, full bool) (GuildStats, error) {
 	gid, err := strconv.ParseUint(guildID, 10, 64)
 	if err != nil {
 		return GuildStats{}, fmt.Errorf("guild ID: %w", err)
@@ -165,7 +177,7 @@ func buildGuildStats(ctx context.Context, db pgxscan.Querier, client *redis.Clie
 		CrewmateWinrate: percent(summary.CrewmateWins, summary.GamesPlayed),
 		ImpostorWinrate: percent(summary.ImpostorWins, summary.GamesPlayed),
 	}
-	if premium.IsExpired(record.Tier, record.Days) {
+	if !full && premium.IsExpired(record.Tier, record.Days) {
 		return stats, nil
 	}
 
@@ -336,13 +348,14 @@ func round1(v float64) float64 {
 // @Accept json
 // @Produce json
 // @Param guildID query string true "Guild ID"
+// @Param full query string false "With Basic auth, 1 includes the leaderboards whatever the guild's premium. Ignored for members."
 // @Success 200 {object} GuildStats
 // @Failure 400 {object} HttpError
 // @Failure 401 {object} HttpError
 // @Failure 403 {object} HttpError
 // @Failure 500 {object} HttpError
 // @Router /guild/stats [get]
-func handleGetGuildStats(stats *listCache[GuildStats]) func(c *gin.Context) {
+func handleGetGuildStats(stats, full *listCache[GuildStats]) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		guildID := c.Query("guildID")
 		if discord.ValidateSnowflake(guildID) != nil {
@@ -352,7 +365,13 @@ func handleGetGuildStats(stats *listCache[GuildStats]) func(c *gin.Context) {
 			})
 			return
 		}
-		result, err := stats.get(c.Request.Context(), guildID)
+		cache := stats
+		// Full documents are for operators with the admin password, never for a member, and have their own
+		// cache so one can never be served to the other.
+		if c.Query("full") == "1" && !c.GetBool(memberRequestKey) {
+			cache = full
+		}
+		result, err := cache.get(c.Request.Context(), guildID)
 		if err != nil {
 			log.Printf("Guild %s stats: %v\n", guildID, err)
 			c.JSON(http.StatusInternalServerError, HttpError{

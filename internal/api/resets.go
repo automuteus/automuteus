@@ -36,8 +36,10 @@ func (s *DataStore) ResetUserStats(ctx context.Context, guildID, userID string) 
 // statsCaches are the router's cached stats documents, so a reset can drop everything it made stale.
 type statsCaches struct {
 	guild *listCache[GuildStats]
-	match *listCache[MatchSummary]
-	user  *listCache[UserStats]
+	// guildFull holds the operators' documents, built with the leaderboards regardless of premium.
+	guildFull *listCache[GuildStats]
+	match     *listCache[MatchSummary]
+	user      *listCache[UserStats]
 }
 
 // forgetGuild drops the guild's rollup, match summaries, and player documents. A player reset clears the whole guild
@@ -45,6 +47,7 @@ type statsCaches struct {
 func (s statsCaches) forgetGuild(guildID string) {
 	match := func(key string) bool { return key == guildID || strings.HasPrefix(key, guildID+"/") }
 	s.guild.forget(match)
+	s.guildFull.forget(match)
 	s.match.forget(match)
 	s.user.forget(match)
 }

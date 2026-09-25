@@ -1006,6 +1006,12 @@ const docTemplate = `{
                         "name": "guildID",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "With Basic auth, 1 includes the leaderboards whatever the guild's premium. Ignored for members.",
+                        "name": "full",
+                        "in": "query"
                     }
                 ],
                 "responses": {

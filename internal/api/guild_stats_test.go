@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -40,7 +43,7 @@ func TestBuildGuildStats_FreeGuildGetsSummaryOnly(t *testing.T) {
 		WithArgs(testGuildNum, int16(-2)).
 		WillReturnRows(summaryRows(8, 5, 2))
 
-	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.FreeTier}, settings.MakeGuildSettings())
+	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.FreeTier}, settings.MakeGuildSettings(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +66,7 @@ func TestBuildGuildStats_FreeGuildGetsSummaryOnly(t *testing.T) {
 func TestBuildGuildStats_ExpiredPremiumIsFree(t *testing.T) {
 	mock := newStatsMock(t)
 	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum, int16(-2)).WillReturnRows(summaryRows(0, 0, 0))
-	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 0}, settings.MakeGuildSettings())
+	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 0}, settings.MakeGuildSettings(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +117,7 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 		WithArgs(testGuildNum, "2", 4, 5).
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "teammate_id", "total_death", "encounter", "death_rate"}).AddRow(uint64(44), uint64(11), int64(4), int64(5), 80.0))
 
-	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 10}, sett)
+	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 10}, sett, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +174,7 @@ func TestBuildGuildStats_BoardFailureFailsTheRollup(t *testing.T) {
 		mock.ExpectQuery(`FROM users_games|FROM games g`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
 			WillReturnRows(pgxmock.NewRows([]string{"user_id"}))
 	}
-	_, err = buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, settings.MakeGuildSettings())
+	_, err = buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, settings.MakeGuildSettings(), false)
 	if !errors.Is(err, boom) {
 		t.Fatalf("err = %v, want %v", err, boom)
 	}
@@ -179,7 +182,7 @@ func TestBuildGuildStats_BoardFailureFailsTheRollup(t *testing.T) {
 
 func TestBuildGuildStats_RejectsMalformedGuild(t *testing.T) {
 	mock := newStatsMock(t)
-	if _, err := buildGuildStats(context.Background(), mock, nil, nil, "not-a-snowflake", premium.PremiumRecord{}, settings.MakeGuildSettings()); err == nil {
+	if _, err := buildGuildStats(context.Background(), mock, nil, nil, "not-a-snowflake", premium.PremiumRecord{}, settings.MakeGuildSettings(), false); err == nil {
 		t.Fatal("malformed guild ID accepted")
 	}
 }
@@ -278,4 +281,44 @@ func TestGetGuildStats(t *testing.T) {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	})
+}
+
+// TestGetGuildStatsFull checks that full=1 reaches the operators' build only under Basic auth, so a member can
+// never get the leaderboards by asking for them.
+func TestGetGuildStatsFull(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	const guild = "123456789012345678"
+	member := verifierFunc(func(_ context.Context, _, target string) (VerifiedGuildAccess, error) {
+		return VerifiedGuildAccess{UserID: "user", GuildID: target, Member: true}, nil
+	})
+	for _, tc := range []struct {
+		name        string
+		path        string
+		basic       bool
+		wantAdmin   int
+		wantRegular int
+	}{
+		{"basic auth with full", "/guild/stats?guildID=" + guild + "&full=1", true, 1, 0},
+		{"basic auth without full", "/guild/stats?guildID=" + guild, true, 0, 1},
+		{"member asking for full", "/guild/stats?guildID=" + guild + "&full=1", false, 0, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &fakeStore{stats: &GuildStats{GuildID: guild}}
+			r := NewRouter(Config{GuildVerifier: member, AdminPassword: "test-password"}, s)
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			if tc.basic {
+				req.SetBasicAuth("admin", "test-password")
+			} else {
+				req.Header.Set("Authorization", "Bearer token")
+			}
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			if w.Code != 200 {
+				t.Fatalf("%d %s", w.Code, w.Body)
+			}
+			if s.adminStatsCalls != tc.wantAdmin || s.statsCalls-s.adminStatsCalls != tc.wantRegular {
+				t.Fatalf("admin builds %d, regular builds %d", s.adminStatsCalls, s.statsCalls-s.adminStatsCalls)
+			}
+		})
+	}
 }

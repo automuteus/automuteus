@@ -116,7 +116,7 @@ func TestLiveGuildStats(t *testing.T) {
 
 	sett := settings.MakeGuildSettings()
 	sett.SetLeaderboardMin(1)
-	stats, err := buildGuildStats(ctx, pool, nil, nil, "900000000000000001", premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, sett)
+	stats, err := buildGuildStats(ctx, pool, nil, nil, "900000000000000001", premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, sett, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestLiveGuildStats(t *testing.T) {
 	}
 
 	// A guild with no games at all must still produce a valid summary from the real query.
-	empty, err := buildGuildStats(ctx, pool, nil, nil, "900000000000000002", premium.PremiumRecord{Tier: premium.FreeTier}, sett)
+	empty, err := buildGuildStats(ctx, pool, nil, nil, "900000000000000002", premium.PremiumRecord{Tier: premium.FreeTier}, sett, false)
 	if err != nil {
 		t.Fatal(err)
 	}
