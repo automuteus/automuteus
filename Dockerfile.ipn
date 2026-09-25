@@ -1,0 +1,32 @@
+# Builds the PayPal IPN listener, which records payments and grants premium.
+# Build from the repo root: docker build -f Dockerfile.ipn .
+FROM --platform=${BUILDPLATFORM} golang:1.27-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
+# hadolint ignore=DL3018
+RUN apk add --no-cache git
+WORKDIR /src
+COPY ./go.mod ./go.sum ./
+RUN go mod download
+COPY ./ ./
+# Same tag and commit versioning as Dockerfile and Dockerfile.galactus.
+# hadolint ignore=SC2155
+RUN export TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)") && \
+    export COMMIT=$(git rev-parse --short HEAD) && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -installsuffix 'static' -tags timetzdata \
+    -ldflags="-X main.version=${TAG} -X main.commit=${COMMIT}" \
+    -o /ipn ./cmd/ipn
+
+FROM alpine:3.24 AS final
+# hadolint ignore=DL3018
+RUN apk add --no-cache ca-certificates && \
+    addgroup -g 1000 ipn && \
+    adduser -HD -u 1000 -G ipn ipn && \
+    mkdir -p /app && chown ipn:ipn /app
+USER ipn
+WORKDIR /app
+COPY --from=builder /ipn /app/ipn
+# Port for inbound notifications and probes
+EXPOSE 3000
+ENTRYPOINT ["./ipn"]

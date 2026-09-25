@@ -14,8 +14,13 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -24,12 +29,20 @@ import (
 type DataStore struct {
 	redis    *redis.Client
 	postgres *pgxpool.Pool
+	// stats is the pool again, typed so tests can substitute a mock for the statistics queries.
+	stats    pgxscan.Querier
 	settings *storage.StorageInterface
+	// profiles resolves stats-page users through Discord with the bot's credentials; nil leaves only cached profiles.
+	profiles ProfileFetcher
 	config   Config
 }
 
 func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStore {
-	return &DataStore{redis: client, postgres: pool, settings: storage.NewPostgresStorage(pool, client), config: config}
+	profiles := config.ProfileFetcher
+	if profiles == nil && config.BotToken != "" {
+		profiles = newDiscordChannelVerifier(config.BotToken)
+	}
+	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool), profiles: profiles, config: config}
 }
 
 func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {
@@ -51,6 +64,55 @@ func (s *DataStore) BotInGuild(ctx context.Context, guildID string) (bool, error
 		return false, err
 	}
 	return s.redis.SIsMember(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID))).Result()
+}
+
+// BotInGuilds is BotInGuild for many guilds in one pipelined round trip, answering in the order asked. Pipelined
+// SISMEMBER rather than SMISMEMBER keeps self-hosts on Redis older than 6.2 working.
+func (s *DataStore) BotInGuilds(ctx context.Context, guildIDs []string) ([]bool, error) {
+	present := make([]bool, len(guildIDs))
+	if len(guildIDs) == 0 {
+		return present, nil
+	}
+	cmds := make([]*redis.BoolCmd, len(guildIDs))
+	pipe := s.redis.Pipeline()
+	for i, guildID := range guildIDs {
+		if err := discord.ValidateSnowflake(guildID); err != nil {
+			return nil, err
+		}
+		cmds[i] = pipe.SIsMember(ctx, rediskey.TotalGuildsSet, string(rediskey.HashGuildID(guildID)))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return nil, err
+	}
+	for i, cmd := range cmds {
+		present[i] = cmd.Val()
+	}
+	return present, nil
+}
+
+// GuildsWithStats reports, in the order asked, which guilds have a finished game for the stats page to show.
+func (s *DataStore) GuildsWithStats(ctx context.Context, guildIDs []string) ([]bool, error) {
+	ids := make([]uint64, len(guildIDs))
+	for i, guildID := range guildIDs {
+		id, err := strconv.ParseUint(guildID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("guild ID: %w", err)
+		}
+		ids[i] = id
+	}
+	found, err := pgstorage.GuildsWithStats(ctx, s.stats, ids)
+	if err != nil {
+		return nil, err
+	}
+	with := make(map[uint64]bool, len(found))
+	for _, id := range found {
+		with[id] = true
+	}
+	has := make([]bool, len(ids))
+	for i, id := range ids {
+		has[i] = with[id]
+	}
+	return has, nil
 }
 
 func (s *DataStore) Ping(ctx context.Context) error {
@@ -172,4 +234,30 @@ func (s *DataStore) Premium(ctx context.Context, guildID string) (premium.Premiu
 	pg := pgstorage.PsqlInterface{Pool: s.postgres}
 	tier, days, err := pg.GetGuildOrUserPremiumStatus(s.config.Official, nil, guildID, "")
 	return premium.PremiumRecord{Tier: tier, Days: days}, err
+}
+
+// subscriptionsUnavailable logs once when premium_subscriptions cannot be read. Self-hosted databases never have
+// the payment tables, and the official API role needs SELECT on them (see storage/payments.sql).
+var subscriptionsUnavailable sync.Once
+
+func (s *DataStore) Subscription(ctx context.Context, guildID string) (*SubscriptionStatus, error) {
+	if !s.config.Official {
+		return nil, nil
+	}
+	id, err := strconv.ParseUint(guildID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	sub, err := pgstorage.GuildSubscription(ctx, s.stats, id, time.Now())
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && (pgErr.Code == "42P01" || pgErr.Code == "42501") { // undefined_table, insufficient_privilege
+		subscriptionsUnavailable.Do(func() {
+			log.Printf("premium_subscriptions unavailable, premium pages show no subscription status: %v", err)
+		})
+		return nil, nil
+	}
+	if err != nil || sub == nil {
+		return nil, err
+	}
+	return &SubscriptionStatus{Status: sub.Status, EndsAt: sub.EndsAt().Unix(), Inherited: sub.Inherited}, nil
 }

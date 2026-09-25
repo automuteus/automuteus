@@ -21,10 +21,9 @@ import (
 // column the struct has no field for, so a column added to a table by a newer release would otherwise break
 // every read of that table here.
 const (
-	guildColumns     = "guild_id, guild_name, premium, tx_time_unix, transferred_to, inherits_from"
-	userColumns      = "user_id, opt, vote_time_unix"
-	gameColumns      = "game_id, guild_id, connect_code, start_time, win_type, end_time"
-	gameEventColumns = "event_id, user_id, game_id, event_time, event_type, payload"
+	guildColumns = "guild_id, guild_name, premium, tx_time_unix, transferred_to, inherits_from"
+	userColumns  = "user_id, opt, vote_time_unix"
+	gameColumns  = "game_id, guild_id, connect_code, start_time, win_type, end_time, play_map, region"
 )
 
 type PgxIface interface {
@@ -65,24 +64,6 @@ func (psqlInterface *PsqlInterface) Init(addr string) error {
 func insertGuild(conn PgxIface, guildID uint64, guildName string) error {
 	_, err := conn.Exec(context.Background(), "INSERT INTO guilds VALUES ($1, $2, 0);", guildID, guildName)
 	return err
-}
-
-func (psqlInterface *PsqlInterface) GetGuildForDownload(guildID uint64) (*PostgresGuild, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-
-	guild, err := getGuild(conn.Conn(), guildID)
-	if err != nil {
-		return nil, err
-	}
-	guild.Premium = int16(premium.SelfHostTier)
-	guild.TxTimeUnix = nil
-	guild.InheritsFrom = nil
-	guild.TransferredTo = nil
-	return guild, nil
 }
 
 func getGuild(conn PgxIface, guildID uint64) (*PostgresGuild, error) {
@@ -190,29 +171,8 @@ func getUser(conn PgxIface, userID uint64) (*PostgresUser, error) {
 	return nil, fmt.Errorf("no user found with ID %d", userID)
 }
 
-func (psqlInterface *PsqlInterface) GetGame(guildID, connectCode, matchID string) (*PostgresGame, error) {
-	var games []*PostgresGame
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &games, "SELECT "+gameColumns+" FROM games WHERE guild_id = $1 AND game_id = $2 AND connect_code = $3;", guildID, matchID, connectCode)
-	if err != nil {
-		return nil, err
-	}
-	if len(games) > 0 {
-		return games[0], nil
-	}
-	return nil, nil
-}
-
-func (psqlInterface *PsqlInterface) GetGameEvents(matchID string) ([]*PostgresGameEvent, error) {
-	var events []*PostgresGameEvent
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &events, "SELECT "+gameEventColumns+" FROM game_events WHERE game_id = $1 ORDER BY event_id ASC;", matchID)
-	if err != nil {
-		return nil, err
-	}
-	return events, nil
-}
-
 func insertGame(conn PgxIface, game *PostgresGame) (uint64, error) {
-	t, err := conn.Query(context.Background(), "INSERT INTO games VALUES (DEFAULT, $1, $2, $3, $4, $5) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime)
+	t, err := conn.Query(context.Background(), "INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time, play_map, region) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime, game.PlayMap, game.Region)
 	if t != nil {
 		if t.Next() {
 			g := uint64(0)
@@ -308,51 +268,12 @@ func guildOrUserPremium(conn PgxIface, dbl *dbl.Client, guildID, userID string) 
 }
 
 func getGuildPremiumStatus(conn PgxIface, guildID string, depth int) (premium.Tier, int) {
-	// if we somehow recurse too deep...
-	if depth > 3 {
-		return premium.FreeTier, 0
-	}
-
-	gid, err := strconv.ParseUint(guildID, 10, 64)
+	tier, days, err := checkedGuildPremiumStatus(context.Background(), conn, guildID, depth)
 	if err != nil {
 		log.Println(err)
 		return premium.FreeTier, 0
 	}
-
-	guild, err := getGuild(conn, gid)
-	if err != nil {
-		log.Println(err)
-		return premium.FreeTier, 0
-	}
-
-	// if this is a recursive call, then we ignore the transfer (this is how inheriting works)
-	if depth == 0 {
-		// transferred servers are always treated as free tier, even if their tier/expiry is marked otherwise (the server
-		// that premium was transferred to still uses these values, as "inherited")
-		if guild.TransferredTo != nil {
-			return premium.FreeTier, 0
-		}
-	}
-
-	daysRem := premium.NoExpiryCode
-
-	if guild.TxTimeUnix != nil {
-		diff := time.Now().Unix() - int64(*guild.TxTimeUnix)
-		// 31 - days elapsed
-		daysRem = int(premium.SubDays - (diff / SecsInADay))
-		// if the premium for this server is still active, return it (disregarding inheritance)
-		if daysRem > 0 {
-			return premium.Tier(guild.Premium), daysRem
-		}
-	}
-
-	// follow the link to the inherited server
-	// other tooling that facilitates transfers/gold sub-servers will need to be careful to avoid cyclic inheritance...
-	if guild.InheritsFrom != nil {
-		return getGuildPremiumStatus(conn, fmt.Sprintf("%d", *guild.InheritsFrom), depth+1)
-	}
-
-	return premium.Tier(guild.Premium), daysRem
+	return tier, days
 }
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {
@@ -394,91 +315,6 @@ func ensureUserExists(conn PgxIface, userID uint64) (*PostgresUser, error) {
 		return getUser(conn, userID)
 	}
 	return user, err
-}
-
-func (psqlInterface *PsqlInterface) GetGamesForGuild(guildID uint64) ([]*PostgresGame, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getGamesForGuild(conn.Conn(), guildID)
-}
-
-func getGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresGame, error) {
-	var games []*PostgresGame
-	// aborted matches (ended before a result) are excluded, as they are from statistics
-	err := pgxscan.Select(context.Background(), conn, &games, "SELECT "+gameColumns+" FROM games WHERE guild_id = $1 AND win_type != $2;", guildID, int16(game.Aborted))
-	if err != nil {
-		return nil, err
-	}
-	return games, nil
-}
-
-func (psqlInterface *PsqlInterface) GetGamesEventsForGuild(guildID uint64) ([]*PostgresGameEvent, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getGameEventsForGuild(conn.Conn(), guildID)
-}
-
-func getGameEventsForGuild(conn PgxIface, guildID uint64) ([]*PostgresGameEvent, error) {
-	var r []*PostgresGameEvent
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT event_id, user_id, game_events.game_id, event_time, event_type, payload "+
-		"FROM game_events "+
-		"INNER JOIN games gg ON gg.game_id = game_events.game_id "+
-		"WHERE gg.guild_id = $1 AND gg.win_type != $2", guildID, int16(game.Aborted))
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (psqlInterface *PsqlInterface) GetUsersForGuild(guildID uint64) ([]*PostgresUser, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return getUsersForGuild(conn.Conn(), guildID)
-}
-
-func getUsersForGuild(conn PgxIface, guildID uint64) ([]*PostgresUser, error) {
-	var r []*PostgresUser
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT DISTINCT users.user_id,opt,vote_time_unix "+
-		"FROM users "+
-		"INNER JOIN game_events ge ON users.user_id = ge.user_id "+
-		"INNER JOIN games gg ON gg.game_id = ge.game_id "+
-		// only return users who are opted in to data collection
-		"WHERE gg.guild_id = $1 AND users.opt = true", guildID)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (psqlInterface *PsqlInterface) GetUsersGamesForGuild(guildID uint64) ([]*PostgresUserGame, error) {
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-
-	return getUsersGamesForGuild(conn.Conn(), guildID)
-}
-
-func getUsersGamesForGuild(conn PgxIface, guildID uint64) ([]*PostgresUserGame, error) {
-	var r []*PostgresUserGame
-	err := pgxscan.Select(context.Background(), conn, &r, "SELECT DISTINCT users_games.user_id,guild_id,game_id,player_name,player_color,player_role,player_won "+
-		"FROM users_games "+
-		"INNER JOIN users u ON u.user_id = users_games.user_id "+
-		"WHERE guild_id = $1 AND u.opt = true", guildID)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
 }
 
 func (psqlInterface *PsqlInterface) AddInitialGame(game *PostgresGame) (uint64, error) {

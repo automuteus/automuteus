@@ -33,12 +33,35 @@ type fakeStore struct {
 	// version is the row version Settings reports; SetSettings requires it and bumps it.
 	version storage.SettingsVersion
 	// premium, when set, is what Premium returns instead of self-host; premiumErr fails only Premium.
-	premium      *premium.PremiumRecord
-	premiumErr   error
-	premiumCalls int
+	premium *premium.PremiumRecord
+	// subscription, when set, is what Subscription returns; subscriptionErr fails only Subscription.
+	subscription    *SubscriptionStatus
+	subscriptionErr error
+	premiumErr      error
+	premiumCalls    int
 	// botAbsent makes BotInGuild report false; botErr fails only BotInGuild.
 	botAbsent bool
 	botErr    error
+	// stats, when set, is what GuildStats returns; statsErr fails only GuildStats.
+	stats      *GuildStats
+	statsErr   error
+	statsCalls int
+	// adminStatsCalls counts AdminGuildStats, which answers like GuildStats.
+	adminStatsCalls int
+	// match, when set, is what MatchSummary returns; matchErr fails only MatchSummary.
+	match      *MatchSummary
+	matchErr   error
+	matchCalls int
+	// user, when set, is what UserStats returns; userErr fails only UserStats.
+	user      *UserStats
+	userErr   error
+	userCalls int
+	// botGuilds and statsGuilds are the guilds BotInGuilds and GuildsWithStats answer true for.
+	botGuilds   map[string]bool
+	statsGuilds map[string]bool
+	// resets records each stats reset as "guild" or "guild/user"; resetErr fails them after recording.
+	resets   []string
+	resetErr error
 }
 
 func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
@@ -97,6 +120,9 @@ func (s *fakeStore) ReserveSettingsWrite(context.Context, string) (time.Duration
 	s.calls++
 	return s.writeRetryAfter, s.err
 }
+func (s *fakeStore) Subscription(context.Context, string) (*SubscriptionStatus, error) {
+	return s.subscription, s.subscriptionErr
+}
 func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, error) {
 	s.calls++
 	s.premiumCalls++
@@ -108,12 +134,81 @@ func (s *fakeStore) Premium(context.Context, string) (premium.PremiumRecord, err
 	}
 	return premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, s.err
 }
+func (s *fakeStore) AdminGuildStats(ctx context.Context, guildID string) (GuildStats, error) {
+	s.adminStatsCalls++
+	return s.GuildStats(ctx, guildID)
+}
+func (s *fakeStore) GuildStats(_ context.Context, guildID string) (GuildStats, error) {
+	s.calls++
+	s.statsCalls++
+	if s.statsErr != nil {
+		return GuildStats{}, s.statsErr
+	}
+	if s.stats != nil {
+		return *s.stats, s.err
+	}
+	return GuildStats{GuildID: guildID, Summary: GuildStatsSummary{GamesPlayed: 7}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) MatchSummary(_ context.Context, guildID, matchID string) (MatchSummary, error) {
+	s.calls++
+	s.matchCalls++
+	if s.matchErr != nil {
+		return MatchSummary{}, s.matchErr
+	}
+	if s.match != nil {
+		return *s.match, s.err
+	}
+	return MatchSummary{GuildID: guildID, MatchID: matchID, Status: "finished", Roster: []MatchPlayer{}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) UserStats(_ context.Context, guildID, userID string) (UserStats, error) {
+	s.calls++
+	s.userCalls++
+	if s.userErr != nil {
+		return UserStats{}, s.userErr
+	}
+	if s.user != nil {
+		return *s.user, s.err
+	}
+	return UserStats{GuildID: guildID, UserID: userID, RecentMatches: []UserMatch{}, Players: map[string]StatsPlayer{}}, s.err
+}
+func (s *fakeStore) ResetGuildStats(_ context.Context, guildID string) (int64, error) {
+	s.calls++
+	s.resets = append(s.resets, guildID)
+	return 5, s.resetErr
+}
+func (s *fakeStore) ResetUserStats(_ context.Context, guildID, userID string) (int64, error) {
+	s.calls++
+	s.resets = append(s.resets, guildID+"/"+userID)
+	return 2, s.resetErr
+}
 func (s *fakeStore) BotInGuild(context.Context, string) (bool, error) {
 	s.calls++
 	if s.botErr != nil {
 		return false, s.botErr
 	}
 	return !s.botAbsent, s.err
+}
+func (s *fakeStore) BotInGuilds(_ context.Context, guildIDs []string) ([]bool, error) {
+	s.calls++
+	if s.botErr != nil {
+		return nil, s.botErr
+	}
+	present := make([]bool, len(guildIDs))
+	for i, id := range guildIDs {
+		present[i] = s.botGuilds[id]
+	}
+	return present, s.err
+}
+func (s *fakeStore) GuildsWithStats(_ context.Context, guildIDs []string) ([]bool, error) {
+	s.calls++
+	if s.statsErr != nil {
+		return nil, s.statsErr
+	}
+	has := make([]bool, len(guildIDs))
+	for i, id := range guildIDs {
+		has[i] = s.statsGuilds[id]
+	}
+	return has, s.err
 }
 func (s *fakeStore) Ping(context.Context) error { s.calls++; return s.err }
 

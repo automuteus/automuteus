@@ -96,7 +96,7 @@ If you want to view command usage or see the available options, type `/help` in 
 | `/privacy`  | View privacy and data collection information about the bot                                                             |                          |
 | `/info`     | View general info about the Bot                                                                                        |                          |
 | `/map`      | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
-| `/stats`    | View detailed stats about Among Us games played on the current server, or by a specific player                         | `/stats user view @Soup` |
+| `/stats`    | Get a link to the web dashboard, where stats for this server are shown and reset                                       |                          |
 | `/premium`  | View information about AutoMuteUs Premium, and the current premium status of your server                               |                          |
 
 # Privacy
@@ -193,7 +193,7 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 | `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Game/guild access and raising or clearing platform notices require a non-default value. |
 | `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
-| `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings` links to; defaults to `https://automute.us`. |
+| `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings`, `/stats`, and game over summaries link to; defaults to `https://automute.us`. |
 | `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
 
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
@@ -297,6 +297,59 @@ to `rate_limited`, and the `mute_deafen_official`, `mute_deafen_worker`, and
 general, are not yet measured. A metrics scraper and dashboards are not bundled with the
 bot yet.
 
+### Worker bot cleanup
+
+Workers maintain a small guild-ID inventory from gateway events; cleanup does not
+probe Discord membership or run from mute/deafen batches. A background sweep checks
+one guild's effective premium allowance at a time, including expiry and transfers.
+Excess workers enter a persistent Redis queue, with a stable token-hash order deciding
+which workers to retain. Servers without matches are checked too.
+
+`WORKER_CLEANUP_CHECK_INTERVAL` defaults to `5s` (minimum `1s`).
+`WORKER_CLEANUP_LEAVE_INTERVAL` defaults to `45s` (minimum `30s`); each departure
+attempt adds up to one-third of that interval as jitter, giving 45–60 seconds by
+default. Both settings accept Go durations such as `30s` or `2m`. These are shared
+fleet-wide budgets in Redis, not allowances per process. Failures consume the leave
+budget too; cleanup does not immediately retry Discord requests or catch up in bursts
+after a restart. At the default rate, 10,000 guilds take roughly 14 hours to check,
+plus any time spent on errors or Discord calls; departures drain separately.
+
+Before leaving, cleanup rechecks premium and recent game activity. Active games,
+unavailable/disconnected guild inventories, recent local voice traffic, observed rate
+limits, and database/Redis errors defer departures. A renewal can therefore cancel
+queued cleanup. Workers with incomplete startup inventories prevent cleanup until
+membership is known. Sessions that fail to open are removed from that inventory so
+they cannot permanently block healthy workers. No full Discord guild cache is needed.
+Free, Bronze, and voting-trial servers have no priority workers; Silver retains one,
+Gold three, and self-hosted installations up to 100.
+
+Monitor `automuteus_worker_cleanup_total{result}` (`checked`, `left`, `deferred`,
+`failed`, `rate_limited`), `automuteus_worker_cleanup_pending_guilds`, and
+`automuteus_worker_cleanup_oldest_check_seconds`. The gauges are each process's latest
+observation of the shared queue; use `max`, not `sum`, across processes. The age tracks
+check **attempts**; monitor failures as well to spot unsuccessful sweeps.
+
+Example PromQL for cleanup progress and backlog:
+
+```promql
+sum by (result) (increase(automuteus_worker_cleanup_total[1h]))
+max(automuteus_worker_cleanup_pending_guilds)
+max(automuteus_worker_cleanup_oldest_check_seconds)
+```
+
+Alert on a stalled sweep when deferrals keep occurring but no checks succeed:
+
+```promql
+(sum(increase(automuteus_worker_cleanup_total{result="deferred"}[30m])) > 0)
+and
+(sum(increase(automuteus_worker_cleanup_total{result="checked"}[30m])) == 0)
+```
+
+Use a window longer than the configured check interval. Also alert on an increase in
+`result="failed"` or `result="rate_limited"`. Failed lookups rotate to the back of the
+sweep and retry on a later pass, so `oldest_check_seconds` alone cannot prove checks
+are succeeding. These are query examples; no alerting service is installed by the bot.
+
 ### Platform notices
 
 Operators can show a banner on every running game's status message, or end every
@@ -332,13 +385,13 @@ Regenerate Swagger documentation with the generator matching the Go dependency:
 CGO_ENABLED=0 go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 ```
 
-### Upgrading: guild settings moved from Redis to Postgres
+### Upgrading from 8.x or earlier
 
-Guild settings are now stored in Postgres instead of Redis. No manual step is
-needed: each guild's settings are moved the first time the new version reads
-them. Guilds that are never read again can be moved with the optional sweep in
-`cmd/migrate-guild-settings`. See
-[storage/GUILD_SETTINGS_MIGRATION.md](storage/GUILD_SETTINGS_MIGRATION.md).
+Guild settings are stored in Postgres. 8.x and earlier kept them in Redis, and
+9.2.x is the last release that can move them. Upgrade to 9.2.x first and run
+its `cmd/migrate-guild-settings` sweep before moving to 10.0 or later;
+otherwise every guild falls back to the default settings. See
+[storage/GUILD_SETTINGS.md](storage/GUILD_SETTINGS.md).
 
 ### Galactus environment variables
 
@@ -363,6 +416,25 @@ Among Us. Paste a connect code or capture link from `/new`, pick a scenario such
 a full round or a player being killed, and confirm at each checkpoint that the bot
 muted, unmuted, and updated the status message as expected. Events can also be sent
 one at a time. See [the capture mock guide](cmd/capture-mock/README.md) for usage.
+
+### Seeding fake match history
+
+`go run ./cmd/seed-stats` prints SQL that records a few months of made-up
+games for one guild, so the stats pages have leaderboards to show
+on a development stack. It prints rather than connects, so it works with the
+compose stack's unpublished database ports:
+
+```sh
+go run ./cmd/seed-stats -guild <guild ID> -include <your user ID> | docker exec -i deploy-postgres-1 psql -U postgres -v ON_ERROR_STOP=1
+go run ./cmd/seed-stats -guild <guild ID> -redis | docker exec -i deploy-redis-1 redis-cli   # cache the fake players' profiles
+go run ./cmd/seed-stats -guild <guild ID> -clean | docker exec -i deploy-postgres-1 psql -U postgres   # remove them again
+```
+
+Seeded games use connect codes starting with `SEED`, which is all `-clean`
+removes. The same `-seed` always produces the same players and outcomes; only
+the timestamps follow the time of the run. Each game also gets up to `-guests`
+(default 2) unlinked players, who appear only in its events and game over
+report, as they would for a real lobby.
 
 # Similar Projects
 

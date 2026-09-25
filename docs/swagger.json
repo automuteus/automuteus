@@ -513,6 +513,83 @@
                 }
             }
         },
+        "/guild/match": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "One match of the guild: when it ran, how it ended, the map and region, and the linked players with\ntheir roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline\n(phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the\nnumber after the colon in the Match ID the bot posts when a game ends. Responses may be up to a\nminute old.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Get Match Summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "matchID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.MatchSummary"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/guild/premium": {
             "get": {
                 "security": [
@@ -547,7 +624,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/premium.PremiumRecord"
+                            "$ref": "#/definitions/api.GuildPremium"
                         }
                     },
                     "400": {
@@ -803,6 +880,367 @@
                 }
             }
         },
+        "/guild/settings/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "Put every setting of the guild back to its default. This\nincludes the match summary channel and operator roles. Premium is not checked, since the defaults\nneed none. Requires the guild owner or the Discord Administrator or Manage Server permission, and\ncounts against the same per-guild budget as PATCH /guild/settings.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Reset Guild Settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ETag from a previous GET or PATCH; the reset is refused with 412 if the settings changed since",
+                        "name": "If-Match",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The default settings, now stored",
+                        "schema": {
+                            "$ref": "#/definitions/settings.GuildSettings"
+                        },
+                        "headers": {
+                            "ETag": {
+                                "type": "string",
+                                "description": "Version of the stored settings after the reset"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Settings were changed concurrently; reload and retry",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "412": {
+                        "description": "If-Match did not match the stored version",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/guild/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "The guild statistics page in one document. Every guild gets the summary (games played and each\nside's wins); guilds with active premium also get the leaderboards,\nfive entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to\nnames and avatars through Discord where possible. Responses are built at most once a minute per guild.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Get Guild Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "With Basic auth, 1 includes the leaderboards whatever the guild's premium. Ignored for members.",
+                        "name": "full",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.GuildStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/guild/stats/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "Delete every recorded game of the guild, for every player.\nIt cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server\npermission.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Reset Guild Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StatsReset"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/guild/user": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "One player's statistics in the guild. Every guild gets the player's games, wins, and winrates overall\nand per role, and their ten latest matches; guilds with active premium also get the player's ranks\non the guild boards, streaks, survival, how often they were killed or voted out, first-target\nrate, favorite colors and names, who they played with and won or lost with, the impostors they\ndied with, games per week, and per-map records. Any member may read any player.\nResponses may be up to a minute old.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Get Player Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.UserStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/guild/user/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "Remove one player from every recorded game of this guild. Their games in other guilds are kept, and\nso are the games themselves, so the other players' stats do not change. It cannot be undone.\nAny member may reset their own stats; resetting another player's requires the guild owner or the\nDiscord Administrator or Manage Server permission.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "guild"
+                ],
+                "summary": "Reset Player Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Guild ID",
+                        "name": "guildID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StatsReset"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/open/link": {
             "get": {
                 "description": "Return html that open AmongUsCapture",
@@ -819,9 +1257,86 @@
                     }
                 }
             }
+        },
+        "/user/guilds": {
+            "get": {
+                "security": [
+                    {
+                        "DiscordBearer": []
+                    }
+                ],
+                "description": "List every guild the Discord token's user belongs to, as Discord reports them, each tagged with\nwhether the bot is in it and whether it has recorded games. The list comes from the token, so it\nnever reveals the bot's presence in guilds the caller is not a member of.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "List the User's Guilds",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.GuildEntry"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/api.HttpError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "api.Activity": {
+            "type": "object",
+            "properties": {
+                "until": {
+                    "type": "integer"
+                },
+                "weeks": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "api.BoardRank": {
+            "type": "object",
+            "properties": {
+                "players": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.BotPresence": {
             "type": "object",
             "properties": {
@@ -848,6 +1363,96 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.ColorShare": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "games": {
+                    "type": "integer"
+                },
+                "share": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.DiedWith": {
+            "type": "object",
+            "properties": {
+                "deaths": {
+                    "type": "integer"
+                },
+                "games": {
+                    "type": "integer"
+                },
+                "impostorId": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.DuoWinrate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "teammateId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.Fate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "times": {
+                    "type": "integer"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.FirstTarget": {
+            "type": "object",
+            "properties": {
+                "crewmateGames": {
+                    "description": "CrewmateGames is how many games the player was a crewmate in, the denominator of Rate.",
+                    "type": "integer"
+                },
+                "firstDeaths": {
+                    "description": "FirstDeaths is how many games this player was the first to die in.",
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
                 }
             }
         },
@@ -884,6 +1489,122 @@
                 }
             }
         },
+        "api.GuildEntry": {
+            "type": "object",
+            "properties": {
+                "botPresent": {
+                    "description": "BotPresent is BotInGuild for this guild: whether the bot last saw itself join rather than leave.",
+                    "type": "boolean"
+                },
+                "hasStats": {
+                    "description": "HasStats is whether the guild has a finished game for the stats page to show. It stays true after the bot\nleaves, since the games remain until reset.",
+                    "type": "boolean"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "boolean"
+                },
+                "permissions": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.GuildLeaderboards": {
+            "type": "object",
+            "properties": {
+                "bestCrewmateDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "bestImpostorDuo": {
+                    "description": "The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID\nfirst. Best is highest winrate first; worst is lowest first.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "crewmateWinrate": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "firstTarget": {
+                    "description": "FirstTarget ranks players by how often they were the first to die.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.FirstTarget"
+                    }
+                },
+                "impostorWinrate": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "killedBy": {
+                    "description": "KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.\nThe game never reports who made a kill, so a death counts against every impostor of that game.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.KilledBy"
+                    }
+                },
+                "minGames": {
+                    "description": "MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by\nrate. The impostor duo boards use a fixed floor of two shared games instead.",
+                    "type": "integer"
+                },
+                "mostGames": {
+                    "description": "MostGames ranks players by games recorded, with no minimum.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerGames"
+                    }
+                },
+                "winrate": {
+                    "description": "Winrate ranks players by winrate across both roles.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayerWinrate"
+                    }
+                },
+                "worstCrewmateDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                },
+                "worstImpostorDuo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DuoWinrate"
+                    }
+                }
+            }
+        },
+        "api.GuildPremium": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "subscription": {
+                    "$ref": "#/definitions/api.SubscriptionStatus"
+                },
+                "tier": {
+                    "$ref": "#/definitions/premium.Tier"
+                }
+            }
+        },
         "api.GuildRole": {
             "type": "object",
             "properties": {
@@ -903,6 +1624,64 @@
                 },
                 "position": {
                     "description": "Position is Discord's display order; higher is listed first.",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.GuildStats": {
+            "type": "object",
+            "properties": {
+                "generatedAt": {
+                    "description": "GeneratedAt is the Unix time the rollup was built; responses may be served from a short cache.",
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "leaderboards": {
+                    "description": "Leaderboards is omitted for guilds whose premium is free or expired.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.GuildLeaderboards"
+                        }
+                    ]
+                },
+                "players": {
+                    "description": "Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with\nthe bot's credentials. IDs nothing knows are absent and the page shows\nthe ID itself.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatsPlayer"
+                    }
+                },
+                "premium": {
+                    "description": "Premium is the guild's premium status the rollup was built under, so the page can explain a missing\nleaderboards section without a second request.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/premium.PremiumRecord"
+                        }
+                    ]
+                },
+                "summary": {
+                    "$ref": "#/definitions/api.GuildStatsSummary"
+                }
+            }
+        },
+        "api.GuildStatsSummary": {
+            "type": "object",
+            "properties": {
+                "crewmateWinrate": {
+                    "type": "number"
+                },
+                "crewmateWins": {
+                    "type": "integer"
+                },
+                "gamesPlayed": {
+                    "type": "integer"
+                },
+                "impostorWinrate": {
+                    "type": "number"
+                },
+                "impostorWins": {
                     "type": "integer"
                 }
             }
@@ -941,6 +1720,202 @@
                 }
             }
         },
+        "api.KilledBy": {
+            "type": "object",
+            "properties": {
+                "deaths": {
+                    "description": "Deaths is how many of the shared games the crewmate died in.",
+                    "type": "integer"
+                },
+                "games": {
+                    "description": "Games is how many games the two shared as crewmate and impostor, the denominator of Rate.",
+                    "type": "integer"
+                },
+                "impostorId": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.MapRecord": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "map": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.MatchEvent": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name and Color identify the player of a player event, as they appeared in game.",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "Offset is seconds since the match started.",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "Type is \"tasks\" or \"discussion\" for a phase beginning, or \"death\", \"exile\", or \"disconnect\" for a player.",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "UserID is set on a player event only when that player is on the roster, so an opted-out or reset player's\nlink is never revealed.",
+                    "type": "string"
+                }
+            }
+        },
+        "api.MatchPlayer": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color is the in-game color key (red, blue, ... coral). The game over report carries no colors, so an\nunlinked player has one only if a timeline event named them; otherwise it is empty.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the in-game name the player used in this match.",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Role is \"crewmate\" or \"impostor\".",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "UserID is set for players linked to a Discord user; absent for everyone else.",
+                    "type": "string"
+                },
+                "won": {
+                    "description": "Won is false for everyone when the result is unknown.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.MatchSummary": {
+            "type": "object",
+            "properties": {
+                "endTime": {
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "map": {
+                    "description": "Map is skeld, mira, polus, dleks, airship, or fungle, and Region is na, eu, or as. Each is absent for\nmatches recorded before they were stored, or when the capture never reported a lobby.",
+                    "type": "string"
+                },
+                "matchId": {
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Players maps every user ID in the roster to a name and picture, resolved as for GET /guild/stats.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatsPlayer"
+                    }
+                },
+                "premium": {
+                    "description": "Premium is the guild's premium status the summary was built under, so the page can explain a missing\ntimeline without a second request.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/premium.PremiumRecord"
+                        }
+                    ]
+                },
+                "region": {
+                    "type": "string"
+                },
+                "result": {
+                    "description": "Result is how a finished match ended: crewmateVote, crewmateTasks, crewmateDisconnect, impostorVote,\nimpostorKill, impostorSabotage, impostorDisconnect, or unknown. Absent unless finished.",
+                    "type": "string"
+                },
+                "roster": {
+                    "description": "Roster lists the players of the match, impostors first. Linked players carry a user ID. When the capture's\ngame over report was kept (matches since it started being recorded), everyone else in the lobby is listed\ntoo, by in-game name; otherwise only linked players are, and nobody is until the match ends.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MatchPlayer"
+                    }
+                },
+                "rosterComplete": {
+                    "description": "RosterComplete reports whether Roster came with the game over report and so names every player. When\nfalse, unlinked and opted-out players are missing and the page should say so.",
+                    "type": "boolean"
+                },
+                "startTime": {
+                    "description": "StartTime and EndTime are Unix times. EndTime is absent while the match is in progress.",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Status is \"finished\", \"inProgress\", or \"aborted\" (ended by /end or the platform before the game reported a\nresult). Only finished matches count toward statistics.",
+                    "type": "string"
+                },
+                "timeline": {
+                    "description": "Timeline is omitted for guilds whose premium is free or expired.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.MatchTimeline"
+                        }
+                    ]
+                },
+                "winner": {
+                    "description": "Winner is \"crewmate\" or \"impostor\"; absent when there is no known winner.",
+                    "type": "string"
+                }
+            }
+        },
+        "api.MatchTimeline": {
+            "type": "object",
+            "properties": {
+                "deaths": {
+                    "type": "integer"
+                },
+                "disconnects": {
+                    "type": "integer"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MatchEvent"
+                    }
+                },
+                "exiles": {
+                    "type": "integer"
+                },
+                "meetings": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.NameShare": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "share": {
+                    "type": "number"
+                }
+            }
+        },
         "api.NoticeRequest": {
             "type": "object",
             "properties": {
@@ -952,6 +1927,62 @@
                     "description": "Severity is warning or critical. Critical ends every running game and blocks new ones.",
                     "type": "string",
                     "example": "warning"
+                }
+            }
+        },
+        "api.PlayedWith": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "share": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PlayerGames": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PlayerWinrate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.RoleRecord": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
                 }
             }
         },
@@ -980,6 +2011,357 @@
                     "items": {
                         "$ref": "#/definitions/settings.FieldError"
                     }
+                }
+            }
+        },
+        "api.StatsPlayer": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "Avatar is a Discord CDN image URL: the user's avatar for this guild, else their global avatar, else the\ndefault Discord assigns them. Always set when the profile was resolved through Discord.",
+                    "type": "string"
+                },
+                "globalName": {
+                    "description": "GlobalName is the display name the user chose for all of Discord, if any.",
+                    "type": "string"
+                },
+                "nickname": {
+                    "description": "Nickname is the user's name in this guild, if they set one.",
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.StatsReset": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Streaks": {
+            "type": "object",
+            "properties": {
+                "bestLoss": {
+                    "type": "integer"
+                },
+                "bestWin": {
+                    "type": "integer"
+                },
+                "current": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.SubscriptionStatus": {
+            "type": "object",
+            "properties": {
+                "endsAt": {
+                    "description": "EndsAt is when the current paid period runs out, in unix seconds.",
+                    "type": "integer",
+                    "example": 1793000000
+                },
+                "inherited": {
+                    "description": "Inherited is set when the subscription belongs to the server this one inherits premium from.",
+                    "type": "boolean"
+                },
+                "status": {
+                    "description": "Status is active (renews each period) or cancelled (paid up until endsAt, then stops).",
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "cancelled"
+                    ],
+                    "example": "active"
+                }
+            }
+        },
+        "api.Survival": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "survived": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.Teammate": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.UserFates": {
+            "type": "object",
+            "properties": {
+                "killedAsCrewmate": {
+                    "$ref": "#/definitions/api.Fate"
+                },
+                "votedOutAsCrewmate": {
+                    "$ref": "#/definitions/api.Fate"
+                },
+                "votedOutAsImpostor": {
+                    "$ref": "#/definitions/api.Fate"
+                }
+            }
+        },
+        "api.UserFirstTarget": {
+            "type": "object",
+            "properties": {
+                "crewmateGames": {
+                    "type": "integer"
+                },
+                "firstDeaths": {
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.UserMatch": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "endTime": {
+                    "type": "integer"
+                },
+                "map": {
+                    "description": "Map is absent for matches recorded before maps were stored.",
+                    "type": "string"
+                },
+                "matchId": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "result": {
+                    "description": "Result uses the keys of MatchSummary.Result.",
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "startTime": {
+                    "type": "integer"
+                },
+                "won": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.UserRanks": {
+            "type": "object",
+            "properties": {
+                "crewmateWinrate": {
+                    "$ref": "#/definitions/api.BoardRank"
+                },
+                "games": {
+                    "$ref": "#/definitions/api.BoardRank"
+                },
+                "impostorWinrate": {
+                    "$ref": "#/definitions/api.BoardRank"
+                },
+                "winrate": {
+                    "$ref": "#/definitions/api.BoardRank"
+                }
+            }
+        },
+        "api.UserStats": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "description": "Details is omitted for guilds whose premium is free or expired.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.UserStatsDetails"
+                        }
+                    ]
+                },
+                "generatedAt": {
+                    "description": "GeneratedAt is the Unix time the document was built; responses may be served from a short cache.",
+                    "type": "integer"
+                },
+                "guildId": {
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Players maps the player and every user ID named in Details to a name and picture, resolved as for\nGET /guild/stats.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.StatsPlayer"
+                    }
+                },
+                "premium": {
+                    "description": "Premium is the guild's premium status the document was built under.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/premium.PremiumRecord"
+                        }
+                    ]
+                },
+                "recentMatches": {
+                    "description": "RecentMatches are the player's latest finished matches, newest first, at most ten. Their match IDs work\nwith GET /guild/match.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.UserMatch"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/api.UserStatsSummary"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UserStatsDetails": {
+            "type": "object",
+            "properties": {
+                "activity": {
+                    "$ref": "#/definitions/api.Activity"
+                },
+                "bestCrewmateTeammates": {
+                    "description": "The teammate boards rank players who shared a role with the player. Best is highest winrate first;\nworst is lowest first.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Teammate"
+                    }
+                },
+                "bestImpostorTeammates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Teammate"
+                    }
+                },
+                "colors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ColorShare"
+                    }
+                },
+                "fates": {
+                    "$ref": "#/definitions/api.UserFates"
+                },
+                "firstTarget": {
+                    "description": "FirstTarget is how often the player was the first to die, of their crewmate games.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.UserFirstTarget"
+                        }
+                    ]
+                },
+                "killedBy": {
+                    "description": "KilledBy ranks impostors by how often the player died, as a crewmate, with them in the game. The game\nnever reports who made a kill, so a death counts against every impostor of that game.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.DiedWith"
+                    }
+                },
+                "maps": {
+                    "description": "Maps is the player's record per map, most played first, over the games whose map was recorded.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.MapRecord"
+                    }
+                },
+                "minGames": {
+                    "description": "MinGames is the guild's leaderboard minimum: the games the player needs to be ranked by winrate, and a\ncrewmate teammate or impostor needs to be listed. Impostor teammates need two shared games instead.",
+                    "type": "integer"
+                },
+                "names": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.NameShare"
+                    }
+                },
+                "playedWith": {
+                    "description": "PlayedWith ranks the linked players the player shared the most games with.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PlayedWith"
+                    }
+                },
+                "ranks": {
+                    "$ref": "#/definitions/api.UserRanks"
+                },
+                "streaks": {
+                    "$ref": "#/definitions/api.Streaks"
+                },
+                "survival": {
+                    "description": "Survival is how often the player was still alive at the end of their crewmate games.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Survival"
+                        }
+                    ]
+                },
+                "worstCrewmateTeammates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Teammate"
+                    }
+                },
+                "worstImpostorTeammates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Teammate"
+                    }
+                }
+            }
+        },
+        "api.UserStatsSummary": {
+            "type": "object",
+            "properties": {
+                "crewmate": {
+                    "$ref": "#/definitions/api.RoleRecord"
+                },
+                "firstGame": {
+                    "description": "FirstGame and LastGame are the start times of the player's first and latest games; absent with no games.",
+                    "type": "integer"
+                },
+                "games": {
+                    "type": "integer"
+                },
+                "impostor": {
+                    "$ref": "#/definitions/api.RoleRecord"
+                },
+                "lastGame": {
+                    "type": "integer"
+                },
+                "winrate": {
+                    "type": "number"
+                },
+                "wins": {
+                    "type": "integer"
                 }
             }
         },

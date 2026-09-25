@@ -85,6 +85,9 @@ var adoptSources = [...]AdoptSource{AdoptAnnounce, AdoptDiscovery, AdoptGuildCre
 
 // Metrics holds every Prometheus collector for one bot process, across all of its shards.
 type Metrics struct {
+	workerCleanup        *prometheus.CounterVec
+	workerCleanupPending prometheus.Gauge
+	workerCleanupOldest  prometheus.Gauge
 	// operations are activity counters, not an exact count of HTTP requests or successful responses.
 	operations *prometheus.CounterVec
 
@@ -110,6 +113,18 @@ var DefaultMetrics = NewMetrics(prometheus.DefaultRegisterer)
 
 func NewMetrics(registry prometheus.Registerer) *Metrics {
 	m := &Metrics{
+		workerCleanup: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "automuteus_worker_cleanup_total",
+			Help: "Background worker cleanup checks, departures, deferrals, and failures.",
+		}, []string{"result"}),
+		workerCleanupPending: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "automuteus_worker_cleanup_pending_guilds",
+			Help: "Latest observed fleet-wide number of guilds queued for worker departures.",
+		}),
+		workerCleanupOldest: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "automuteus_worker_cleanup_oldest_check_seconds",
+			Help: "Latest observed age of the oldest scheduled guild check attempt across the fleet.",
+		}),
 		operations: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "automuteus_discord_operations_total",
 			Help: "Coarse Discord message activity and observed rate limits in this process; not an exact HTTP request count.",
@@ -189,6 +204,10 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 	registry.MustRegister(m.operations, m.voiceChanges, m.workerFailures, m.captureTasks, m.muteBatchDuration,
 		m.activeGames, m.gamesStarted, m.gamesEnded, m.cleanupFailures,
 		m.leaseLost, m.leaseWaits, m.gamesAdopted, m.gamesHandedOver)
+	for _, result := range []string{"checked", "left", "deferred", "failed", "rate_limited"} {
+		m.workerCleanup.WithLabelValues(result)
+	}
+	registry.MustRegister(m.workerCleanup, m.workerCleanupPending, m.workerCleanupOldest)
 	return m
 }
 
@@ -210,6 +229,13 @@ func (m *Metrics) RecordVoiceChange(route VoiceRoute, applied bool) {
 // RecordWorkerFailure counts a worker-token attempt that failed; the user is retried on another route.
 func (m *Metrics) RecordWorkerFailure() {
 	m.workerFailures.Inc()
+}
+
+func (m *Metrics) RecordWorkerCleanup(result string) { m.workerCleanup.WithLabelValues(result).Inc() }
+
+func (m *Metrics) SetWorkerCleanupStatus(pending, oldestSeconds float64) {
+	m.workerCleanupPending.Set(pending)
+	m.workerCleanupOldest.Set(oldestSeconds)
 }
 
 // RecordCaptureTask counts one task handed to (or withheld from) a capture client.

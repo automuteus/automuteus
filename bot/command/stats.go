@@ -1,95 +1,65 @@
 package command
 
 import (
-	"github.com/automuteus/automuteus/v8/bot/setting"
+	"strconv"
+	"strings"
+
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-const (
-	Match = "match"
-	Guild = "guild"
-)
+const Guild = "guild"
 
+// Stats no longer shows or clears anything itself: stats are viewed, and reset, on the web dashboard, and this
+// command hands out the link to this server's page there.
 var Stats = discordgo.ApplicationCommand{
 	Name:        "stats",
-	Description: "View or clear stats from games played with AutoMuteUs",
-	Options: []*discordgo.ApplicationCommandOption{
-		{
-			Name:        setting.View,
-			Description: "View stats",
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        User,
-					Description: "User stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        User,
-							Description: "User whose stats you want to view",
-							Type:        discordgo.ApplicationCommandOptionUser,
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        Match,
-					Description: "Match stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        Match,
-							Description: "Match ID whose stats you want to view",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        Guild,
-					Description: "View this guild's stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-			},
-		},
-		{
-			Name:        setting.Clear,
-			Description: "Clear stats",
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        User,
-					Description: "User stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        User,
-							Description: "User whose stats you want to clear",
-							Type:        discordgo.ApplicationCommandOptionUser,
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        Guild,
-					Description: "Reset this guild's stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-			},
-		},
-	},
+	Description: "Get a link to the web dashboard, where stats from games played on this server are shown",
 }
 
-func GetStatsParams(s *discordgo.Session, guildID string, options []*discordgo.ApplicationCommandInteractionDataOption) (action string, opType string, id string) {
-	action = options[0].Name
-	opType = options[0].Options[0].Name
-	switch opType {
-	case User:
-		id = options[0].Options[0].Options[0].UserValue(s).ID
-	case Guild:
-		id = guildID
-	case Match:
-		id = options[0].Options[0].Options[0].StringValue()
+// StatsURL is the dashboard page for one guild's stats. webURL is the bot's WEB_URL, with or without a trailing
+// slash; the page itself still requires the visitor to be a member of the guild.
+func StatsURL(webURL, guildID string) string {
+	return strings.TrimRight(webURL, "/") + "/stats?guild=" + guildID
+}
+
+// MatchURL is the dashboard page for one recorded match of a guild, or "" for a game that was never recorded.
+func MatchURL(webURL, guildID string, matchID int64) string {
+	if matchID <= 0 {
+		return ""
 	}
-	return action, opType, id
+	return strings.TrimRight(webURL, "/") + "/stats/match?guild=" + guildID + "&match=" + strconv.FormatInt(matchID, 10)
+}
+
+// StatsResponse is the private reply to /stats: a short explanation plus a link button to the dashboard.
+func StatsResponse(webURL, guildID string, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+	url := StatsURL(webURL, guildID)
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+			Content: sett.LocalizeMessage(&i18n.Message{
+				ID: "commands.stats.dashboard",
+				Other: "Stats for this server are on the web dashboard. Sign in with Discord to see the leaderboards, " +
+					"any player's stats and match details, or to reset your own stats.\n<{{.URL}}>",
+			}, map[string]interface{}{
+				"URL": url,
+			}),
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.Button{
+							Style: discordgo.LinkButton,
+							Label: sett.LocalizeMessage(&i18n.Message{
+								ID:    "commands.stats.open",
+								Other: "Open stats",
+							}),
+							URL: url,
+						},
+					},
+				},
+			},
+		},
+	}
 }

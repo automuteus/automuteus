@@ -70,10 +70,6 @@ var Help = discordgo.ApplicationCommand{
 					Name:  Debug.Name,
 					Value: Debug.Name,
 				},
-				{
-					Name:  Download.Name,
-					Value: Download.Name,
-				},
 			},
 			Required: false,
 		},

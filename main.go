@@ -21,9 +21,9 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/logging"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	storage2 "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-redis/redis/v8"
 
 	"github.com/automuteus/automuteus/v8/storage"
 
@@ -37,9 +37,9 @@ var (
 )
 
 const (
-	DefaultURL                   = "http://localhost:8123"
+	DefaultURL = "http://localhost:8123"
 	// DefaultWebURL is where /settings sends people when WEB_URL is unset: the hosted dashboard.
-	DefaultWebURL = "https://automute.us"
+	DefaultWebURL                = "https://automute.us"
 	DefaultMaxRequests5Sec int64 = 5 // Discord allows ~10 member modifications per 10s per guild
 )
 
@@ -172,11 +172,7 @@ func discordMainWrapper() error {
 	if err != nil {
 		return err
 	}
-	// Settings that are still in Redis from older versions are moved to
-	// Postgres the first time each guild is read.
-	legacySettings := redis.NewClient(&redis.Options{Addr: redisAddr, Password: redisPassword})
-	defer legacySettings.Close()
-	storageInterface := storage.NewPostgresStorage(psql.Pool, legacySettings)
+	storageInterface := storage.NewPostgresStorage(psql.Pool)
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -220,6 +216,13 @@ func discordMainWrapper() error {
 		extraTokens = strings.Split(extraTokenStr, ",")
 	}
 
+	var cleanupConfig tokenprovider.CleanupConfig
+	if len(extraTokens) > 0 {
+		cleanupConfig, err = tokenprovider.CleanupConfigFromEnv()
+		if err != nil {
+			return err
+		}
+	}
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
 		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
@@ -234,6 +237,13 @@ func discordMainWrapper() error {
 		bots[i].SetTokenProvider(tokenProvider)
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
+	if len(extraTokens) > 0 {
+		if err := tokenProvider.StartCleanup(cleanupConfig, func(ctx context.Context, guildID string) (premium.Tier, int, error) {
+			return psql.GetGuildPremiumStatus(ctx, isOfficial, guildID)
+		}); err != nil {
+			return err
+		}
+	}
 
 	// readiness reflects this process's own dependencies: every shard's gateway session, Redis, and Postgres
 	for i, shard := range shards {
@@ -279,6 +289,28 @@ func discordMainWrapper() error {
 			}
 		}
 		log.Println("Finishing registering all commands!")
+		// Commands dropped from command.All would otherwise stay registered with Discord, and keep being offered,
+		// until someone deleted them by hand.
+		known := map[string]bool{}
+		for _, v := range command.All {
+			known[v.Name] = true
+		}
+		for _, guild := range slashCommandGuildIds {
+			existing, err := bots[0].PrimarySession.ApplicationCommands(bots[0].PrimarySession.State.User.ID, guild)
+			if err != nil {
+				log.Printf("Cannot list registered commands: %v\n", err)
+				continue
+			}
+			for _, cmd := range existing {
+				if known[cmd.Name] {
+					continue
+				}
+				log.Printf("Removing retired command %s\n", cmd.Name)
+				if err := bots[0].PrimarySession.ApplicationCommandDelete(bots[0].PrimarySession.State.User.ID, guild, cmd.ID); err != nil {
+					log.Printf("Cannot remove command %s: %v\n", cmd.Name, err)
+				}
+			}
+		}
 	}
 
 	<-sc
@@ -318,10 +350,10 @@ func discordMainWrapper() error {
 	for _, v := range bots {
 		v.AnnounceGames()
 	}
+	tokenProvider.Close()
 	for _, v := range bots {
 		v.Close()
 	}
-	tokenProvider.Close()
 	return nil
 }
 

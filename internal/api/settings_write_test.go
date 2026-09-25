@@ -24,8 +24,8 @@ const writeGuild = "123456789012345678"
 var errFakeStore = errors.New("fake store failure")
 
 var (
-	ownerAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Owner: true}
-	adminAccess  = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionAdministrator}
+	ownerAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Owner: true}
+	adminAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionAdministrator}
 	// memberAccess is a moderator with every management bit except the two that unlock settings.
 	memberAccess = VerifiedGuildAccess{UserID: "999", GuildID: writeGuild, Member: true, Permissions: discordgo.PermissionManageChannels | discordgo.PermissionManageRoles | discordgo.PermissionKickMembers | discordgo.PermissionBanMembers}
 )

@@ -11,7 +11,18 @@ const (
 	ReadSettings    GuildAction = "settings:read"
 	WriteSettings   GuildAction = "settings:write"
 	ReadBotPresence GuildAction = "bot:read"
+	// ReadStats is the guild statistics page. Any member may see it.
+	ReadStats GuildAction = "stats:read"
+	// ResetStats deletes a guild's recorded games, or any player's part in them. It takes the same permissions as
+	// changing the settings. Players may also reset their own part; see AllowsUserStatsReset.
+	ResetStats GuildAction = "stats:reset"
 )
+
+// verifiesLive reports whether an action must be authorized against Discord on every request rather than from
+// the short-lived access cache, so a revoked permission stops a change at once.
+func (a GuildAction) verifiesLive() bool {
+	return a == WriteSettings || a == ResetStats
+}
 
 // VerifiedGuildAccess must be constructed from trusted Discord responses for
 // this user and guild, never from request bodies or client-supplied headers.
@@ -39,11 +50,20 @@ func AllowsGuildAction(access VerifiedGuildAccess, guildID string, action GuildA
 		return false
 	}
 	switch action {
-	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence:
+	case ReadGame, ReadSettings, ReadPremium, ReadBotPresence, ReadStats:
 		return true
-	case WriteSettings:
+	case WriteSettings, ResetStats:
 		return access.Owner || access.Permissions&settingsPermissions != 0
 	default:
 		return false
 	}
+}
+
+// AllowsUserStatsReset is the policy for removing one player from a guild's games: anyone who may reset the guild's
+// stats may reset any player's, and any member may reset their own. Either way only this guild's games change.
+func AllowsUserStatsReset(access VerifiedGuildAccess, guildID, userID string) bool {
+	if AllowsGuildAction(access, guildID, ResetStats) {
+		return true
+	}
+	return userID != "" && access.UserID == userID && AllowsGuildAction(access, guildID, ReadStats)
 }

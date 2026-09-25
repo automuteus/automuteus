@@ -27,7 +27,7 @@ func newSettingsStore(t *testing.T) (*DataStore, pgxmock.PgxPoolIface) {
 		}
 		mock.Close()
 	})
-	return &DataStore{settings: storage.NewPostgresStorage(mock, nil)}, mock
+	return &DataStore{settings: storage.NewPostgresStorage(mock)}, mock
 }
 
 func TestDataStoreSetSettings_WritesValidDocument(t *testing.T) {

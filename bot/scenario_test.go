@@ -66,6 +66,10 @@ func TestProcessJob_LobbyToTasks_StartsMatchAndMutesLinkedPlayers(t *testing.T) 
 	if len(deps.recorder.games) != 1 || deps.recorder.games[0].ConnectCode != scenarioConnectCode {
 		t.Fatalf("recorder games = %+v", deps.recorder.games)
 	}
+	// no lobby event was seen, so the map and region are unknown rather than defaulted
+	if g := deps.recorder.games[0]; g.PlayMap != nil || g.Region != nil {
+		t.Errorf("map/region = %v/%v, want nil/nil without a lobby event", g.PlayMap, g.Region)
+	}
 
 	// the configured lobby->tasks delay was honored (without actually sleeping)
 	wantDelay := time.Second * time.Duration(sett.GetDelay(game.LOBBY, game.TASKS))
@@ -138,5 +142,62 @@ func TestVoiceStateChange_JoiningTrackedChannelMidGameMutesLinkedUser(t *testing
 	}
 	if u, _ := deps.store.get().GetUser("11"); u.ShouldBeMute != wantMute || u.ShouldBeDeaf != wantDeaf {
 		t.Errorf("stored intent for bob not updated: %+v", u)
+	}
+}
+
+func TestProcessJob_LobbyToTasks_RecordsMapAndRegion(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	deps.store.put(runningGame(deps, game.LOBBY))
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.LobbyJob, Payload: `{"LobbyCode":"ABCDEF","Region":2,"Map":4}`}, sett, premium.FreeTier, gsr)
+	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+
+	if len(deps.recorder.games) != 1 {
+		t.Fatalf("recorder games = %+v", deps.recorder.games)
+	}
+	g := deps.recorder.games[0]
+	if g.PlayMap == nil || *g.PlayMap != int16(game.AIRSHIP) {
+		t.Errorf("play map = %v, want %d", g.PlayMap, game.AIRSHIP)
+	}
+	if g.Region == nil || *g.Region != int16(game.EU) {
+		t.Errorf("region = %v, want %d", g.Region, game.EU)
+	}
+}
+
+func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	dgs := runningGame(deps, game.TASKS)
+	addLinkedUser(dgs, "10", "alice", true, false, false)
+	dgs.MatchID = 7
+	dgs.MatchStartUnix = time.Now().Unix() - 60
+	deps.store.put(dgs)
+
+	payload := `{"GameOverReason":3,"PlayerInfos":[{"Name":"alice","IsImpostor":true},{"Name":"unlinked","IsImpostor":false}]}`
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.GameOverJob, Payload: payload}, sett, premium.FreeTier, gsr)
+
+	eventually(t, "the match result to be recorded", func() bool {
+		deps.recorder.mu.Lock()
+		defer deps.recorder.mu.Unlock()
+		return len(deps.recorder.updates) == 1
+	})
+	deps.recorder.mu.Lock()
+	defer deps.recorder.mu.Unlock()
+	if deps.recorder.updates[0] != 7 {
+		t.Fatalf("result recorded for match %d, want 7", deps.recorder.updates[0])
+	}
+	// the raw payload is kept, so unlinked players' roles survive even though only linked players get a result row
+	if len(deps.recorder.events) != 1 {
+		t.Fatalf("events = %+v, want the game over event only", deps.recorder.events)
+	}
+	if e := deps.recorder.events[0]; e.GameID != 7 || e.EventType != int16(task.GameOverJob) || e.Payload != payload || e.UserID != nil {
+		t.Fatalf("event = %+v", e)
+	}
+	if got := deps.store.get(); got.MatchID != -1 {
+		t.Fatalf("match still open after game over: %d", got.MatchID)
 	}
 }

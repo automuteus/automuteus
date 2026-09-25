@@ -7,14 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 )
@@ -36,18 +34,14 @@ type RedisParameters struct {
 }
 
 // StorageInterface persists guild settings in Postgres. A guild with no row
-// uses the built-in defaults. When a legacy Redis client is supplied, a guild
-// missing from Postgres is read from its old Redis record on first access, and
-// that record is moved into Postgres and removed from Redis at the same time.
+// uses the built-in defaults.
 type StorageInterface struct {
-	db     settingsDB
-	legacy *redis.Client
+	db settingsDB
 }
 
-// NewPostgresStorage borrows both connections; it closes neither. legacy may
-// be nil once no deployment has settings left in Redis.
-func NewPostgresStorage(db settingsDB, legacy *redis.Client) *StorageInterface {
-	return &StorageInterface{db: db, legacy: legacy}
+// NewPostgresStorage borrows the connection; it does not close it.
+func NewPostgresStorage(db settingsDB) *StorageInterface {
+	return &StorageInterface{db: db}
 }
 
 // ApplyGuildSettingsSchema is idempotent and safe to run from several
@@ -117,51 +111,10 @@ func (s *StorageInterface) LoadGuildSettingsVersion(ctx context.Context, guildID
 	hash := string(rediskey.HashGuildID(guildID))
 
 	result, version, err := s.loadPostgres(ctx, hash)
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return result, version, err
-	}
-	if s.legacy == nil {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return settings.MakeGuildSettings(), NoSettingsRow, nil
 	}
-
-	key := rediskey.GuildSettings(rediskey.HashedID(hash))
-	blob, err := s.legacy.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
-		// No legacy record either. But a concurrent first reader may have moved
-		// it into Postgres between our two reads (its insert happens before its
-		// Redis delete), so look at Postgres once more before concluding that
-		// the guild has never changed a setting.
-		result, version, err := s.loadPostgres(ctx, hash)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return settings.MakeGuildSettings(), NoSettingsRow, nil
-		}
-		return result, version, err
-	}
-	if err != nil {
-		return nil, NoSettingsRow, fmt.Errorf("read legacy settings: %w", err)
-	}
-	legacy, err := decodeLegacySettings(blob, false)
-	if err != nil {
-		// The old reader treated an unreadable record as defaults. Keep that,
-		// and leave the record in place so the sweep can report it.
-		log.Printf("Legacy Redis settings for guild %s are unreadable; using defaults: %v\n", guildID, err)
-		return settings.MakeGuildSettings(), NoSettingsRow, nil
-	}
-	inserted, err := importLegacySettings(ctx, s.db, s.legacy, key, hash, legacy)
-	if err != nil {
-		// The Redis record is still there, so the next read retries the move.
-		log.Printf("Could not move legacy settings for guild %s to Postgres: %v\n", guildID, err)
-		if inserted {
-			// The row exists now (only the Redis delete failed) and a fresh row is at version 1.
-			return legacy, 1, nil
-		}
-		return legacy, NoSettingsRow, nil
-	}
-	if !inserted {
-		// Another writer created the row first; it is authoritative.
-		return s.loadPostgres(ctx, hash)
-	}
-	return legacy, 1, nil
+	return result, version, err
 }
 
 // SetGuildSettings replaces the stored settings with its own timeout. Callers
@@ -189,38 +142,17 @@ func (s *StorageInterface) SetGuildSettingsContext(ctx context.Context, guildID 
 	if err != nil {
 		return err
 	}
-	if _, err := s.db.Exec(ctx, upsertSettings, args...); err != nil {
-		return err
-	}
-	// Postgres is read first, so a legacy record that outlives this delete is
-	// inert; it is only removed here to keep Redis tidy.
-	if err := s.deleteLegacy(ctx, hash); err != nil {
-		log.Println(err)
-	}
-	return nil
+	_, err = s.db.Exec(ctx, upsertSettings, args...)
+	return err
 }
 
-// DeleteGuildSettings returns the guild to the built-in defaults. The legacy
-// record goes first: if it outlived the row, the next read would revive it.
+// DeleteGuildSettings returns the guild to the built-in defaults.
 func (s *StorageInterface) DeleteGuildSettings(guildID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), settingsTimeout)
 	defer cancel()
 	hash := string(rediskey.HashGuildID(guildID))
-	if err := s.deleteLegacy(ctx, hash); err != nil {
-		return err
-	}
 	_, err := s.db.Exec(ctx, "DELETE FROM guild_settings WHERE guild_hash = $1", hash)
 	return err
-}
-
-func (s *StorageInterface) deleteLegacy(ctx context.Context, hash string) error {
-	if s.legacy == nil {
-		return nil
-	}
-	if err := s.legacy.Del(ctx, rediskey.GuildSettings(rediskey.HashedID(hash))).Err(); err != nil {
-		return fmt.Errorf("delete legacy settings: %w", err)
-	}
-	return nil
 }
 
 func (s *StorageInterface) loadPostgres(ctx context.Context, hash string) (*settings.GuildSettings, SettingsVersion, error) {
@@ -312,62 +244,4 @@ func documentUnlessDefault(value, defaultValue interface{}) (interface{}, error)
 		return nil, nil
 	}
 	return blob, nil
-}
-
-// legacySettingsRecord is the shape of a Redis settings record: today's
-// fields plus fields from features that were removed years ago. Old records
-// still carry those, and the old reader ignored them, so strict decoding
-// accepts and discards them rather than failing the whole record. Any other
-// unknown field is still rejected. Only the names are checked; their values
-// are never used.
-type legacySettingsRecord struct {
-	settings.GuildSettings
-	// Prefix commands, replaced by slash commands.
-	CommandPrefix json.RawMessage `json:"commandPrefix"`
-	// Channel tracking before /new took the voice channel from the caller.
-	DefaultTrackedChannel json.RawMessage `json:"defaultTrackedChannel"`
-	// Renaming members to their in-game names.
-	ApplyNicknames json.RawMessage `json:"applyNicknames"`
-}
-
-// decodeLegacySettings decodes a Redis record into a zero struct exactly as
-// the old reader did, so fields absent from old records keep their zero
-// values instead of acquiring today's defaults. strict additionally rejects
-// unknown fields, which the typed columns would otherwise silently drop,
-// except the retired fields listed on legacySettingsRecord.
-func decodeLegacySettings(blob []byte, strict bool) (*settings.GuildSettings, error) {
-	trimmed := bytes.TrimSpace(blob)
-	if len(trimmed) == 0 || trimmed[0] != '{' {
-		return nil, errors.New("settings must be a JSON object")
-	}
-	decoder := json.NewDecoder(bytes.NewReader(trimmed))
-	if strict {
-		decoder.DisallowUnknownFields()
-	}
-	var record legacySettingsRecord
-	if err := decoder.Decode(&record); err != nil {
-		return nil, err
-	}
-	if decoder.More() {
-		return nil, errors.New("unexpected data after settings object")
-	}
-	return &record.GuildSettings, nil
-}
-
-// importLegacySettings inserts a legacy record if the guild has no row yet,
-// then removes the Redis record. Postgres is never overwritten: a row that
-// already exists was written by the new code and is authoritative.
-func importLegacySettings(ctx context.Context, db settingsDB, client *redis.Client, key, hash string, sett *settings.GuildSettings) (bool, error) {
-	args, err := settingsArgs(hash, sett)
-	if err != nil {
-		return false, err
-	}
-	tag, err := db.Exec(ctx, insertIfAbsent, args...)
-	if err != nil {
-		return false, err
-	}
-	if err := client.Del(ctx, key).Err(); err != nil {
-		return tag.RowsAffected() == 1, fmt.Errorf("delete legacy settings: %w", err)
-	}
-	return tag.RowsAffected() == 1, nil
 }

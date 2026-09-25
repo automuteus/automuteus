@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -74,9 +73,6 @@ func (s *StorageInterface) SetGuildSettingsIfVersion(ctx context.Context, guildI
 	}
 	if tag.RowsAffected() != 1 {
 		return ErrSettingsConflict
-	}
-	if err := s.deleteLegacy(ctx, hash); err != nil {
-		log.Println(err)
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
@@ -194,7 +195,9 @@ func (bot *Bot) consumeQueue(gl *slog.Logger, guildID string, dgsRequest GameSta
 
 		correlatedUserID := bot.processJob(job, sett, premTier, dgsRequest)
 
-		if job.JobType != task.ConnectionJob {
+		// Game over is recorded by dumpGameToPostgres instead: by the time this goroutine reads the state, the
+		// match has been closed, and it could even read the next match's ID.
+		if job.JobType != task.ConnectionJob && job.JobType != task.GameOverJob {
 			gameEvent := storage.PostgresGameEvent{
 				GameID:    -1,
 				UserID:    nil,
@@ -300,7 +303,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 						buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
 					}
 				}
-				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String(), command.MatchURL(bot.webURL, dgsRequest.GuildID, dgs.MatchID))
 				channelID := bot.summaryChannel(dgsRequest.GuildID, sett, dgs.GameStateMsg.MessageChannelID)
 				msg, err := bot.discord.ChannelMessageSendEmbed(channelID, embed)
 				if delTime > 0 && err == nil {
@@ -310,7 +313,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 				}
 			}
-			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult)
+			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult, payload)
 
 			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
 			// read-only). This means the original msg is refreshed, not the gameover message
@@ -612,6 +615,15 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 		WinType:     -1,
 		EndTime:     -1,
 	}
+	_, regionName, playMap := dgs.GameData.GetRoomRegionMap()
+	if playMap >= 0 && playMap != game.EMPTYMAP {
+		m := int16(playMap)
+		pgame.PlayMap = &m
+	}
+	if region, ok := game.RegionFromString(regionName); ok {
+		r := int16(region)
+		pgame.Region = &r
+	}
 	i, err := psql.AddInitialGame(pgame)
 	if err != nil {
 		gl.Error("failed to record match start", "err", err)
@@ -619,12 +631,24 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 	return i
 }
 
-func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover) {
+// dumpGameToPostgres records a match's result and linked players, and keeps the capture's game over payload as an
+// event of the match: it is the only record of every player's role, linked or not.
+func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover, payload string) {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
 		gl.Debug("no active match; not recording game result")
 		return
 	}
 	end := time.Now().Unix()
+
+	err := psql.AddEvent(&storage.PostgresGameEvent{
+		GameID:    dgs.MatchID,
+		EventTime: int32(end),
+		EventType: int16(task.GameOverJob),
+		Payload:   payload,
+	})
+	if err != nil {
+		gl.Error("failed to record game over event", "match", dgs.MatchID, "err", err)
+	}
 
 	userGames := make([]*storage.PostgresUserGame, 0)
 
@@ -683,7 +707,7 @@ func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameO
 			})
 		}
 	}
-	err := psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
+	err = psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
 	if err != nil {
 		gl.Error("failed to record match result", "match", dgs.MatchID, "err", err)
 		return

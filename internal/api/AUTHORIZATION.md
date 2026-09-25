@@ -109,9 +109,14 @@ neither Discord token is exposed in the public session. Browser-supplied
 Authorization headers and extra query parameters are not forwarded. No CORS
 support is needed for this server-to-server flow.
 
-The web `/api/guilds` route still calls Discord directly because this API has no
-guild-list endpoint. It uses the same refresh-aware helper and preserves all
-member guilds for the premium picker. The web `/settings` page now consumes the
+The web `/api/guilds` route forwards the session token to `GET /user/guilds`,
+which lists the token's guilds from Discord and tags each with `botPresent` (the
+bot's Redis guild set) and `hasStats` (a finished game in Postgres). The list
+comes from the token, never from the caller, so bot presence is only revealed for
+the caller's own guilds. Only a Bearer token is accepted there; the admin password
+has no guild list. The web pages filter the list: stats pages keep guilds with
+stats or the bot, settings keeps guilds with the bot that the user can manage, and
+the premium picker keeps every guild. The web `/settings` page now consumes the
 settings route with a server selector and read-only setting groups.
 See the sibling web README for usage, status handling, and refresh limitations.
 
@@ -153,6 +158,64 @@ calls a minute per guild. The bot-token client also honours `Retry-After`: a
 429 starts a cooldown for that route (or for everything, when Discord marks it
 global) during which lookups fail fast instead of producing more 429s, since
 those count toward Discord's invalid-request limit that blocks the whole host.
+
+`GET /guild/stats` is the stats page in one document (`GuildStats` in
+`guild_stats.go`). Any member may read it.
+Every guild gets the summary (finished games and each side's wins); the
+leaderboards are included only while the guild's premium is active, so a free
+guild costs one count query. The premium boards run concurrently and are trimmed in SQL to the
+guild's leaderboard minimum, five entries each (the leaderboard size setting is
+no longer consulted; it is being retired), rather than ranking every player
+and keeping the top few in Go. User IDs are resolved to a name and avatar
+through Discord with the bot's token (`player_profiles.go`: the member record,
+else the global user record for someone who left), cached in Redis for twelve
+hours with misses remembered for one; a user nothing resolves is shown by ID. The
+Discord phase of one build has a four-second budget, after which the remaining
+users are shown by ID, and a 429 on one member lookup pauses every member lookup in that guild
+(cooldowns are kept per Discord route bucket, not per full path). Only Discord CDN URLs are
+produced, and avatar hashes are checked before being put in one. The
+rollup is cached per guild (`DefaultStatsCacheTTL`, one minute, collapsed with
+singleflight); a premium change is visible within that window.
+
+`GET /guild/match?guildID=...&matchID=...` is one match (`MatchSummary` in
+`match_summary.go`), readable by any member under the same `ReadStats` action.
+The match ID is the number after the colon in the ID the bot posts at game
+over; the lookup is by guild and match together, so an ID from another guild is
+404. Every guild gets the header (status, times, result, map, region) and the
+linked roster; the event timeline is included only while premium is active,
+as `/stats match` was. The capture connect code is never returned,
+since it may still name a live capture session. A timeline event carries a
+user ID only when that user is on the match's roster, so an opted-out or reset
+player's link is not revealed through the events table. The roster also lists
+unlinked players, by in-game name and role, from the capture's game over
+report, which the bot keeps as an event of the match since it started doing
+so; that report is in-game information every player saw, so it is not
+premium-gated. An opted-out or reset player appears there unlinked. Summaries are cached
+per guild and match for the stats TTL; a missing match is not cached.
+
+`GET /guild/user?guildID=...&userID=...` is one player's statistics in the guild
+(`UserStats` in `user_stats.go`), readable by any member under the same
+`ReadStats` action, since the guild boards already name every ranked player. Every guild gets the player's
+record and ten latest matches; ranks, streaks, fates, favorites, teammates,
+activity, and per-map records are included only while premium is active. The
+player need not be a current member: a player with no recorded games gets a zero
+summary, not a 404, so the response does not reveal whether someone opted out.
+Documents are cached per guild and player for the stats TTL.
+
+Three POST routes reset data, each verified live against Discord on every call
+like PATCH. `POST /guild/stats/reset?guildID=...` deletes every recorded game of
+the guild (players and events go by cascade), and
+`POST /guild/user/reset?guildID=...&userID=...` removes one player from the
+guild's games while keeping the games, so other players' stats do not change.
+The guild reset takes the `ResetStats` action, which has the same bar as
+`WriteSettings`. The player reset uses `AllowsUserStatsReset`: `ResetStats`
+covers any player, and any verified member may reset themselves. The player reset never touches
+other guilds. Both drop
+the guild's cached stats, match, and player documents. Both answer with the
+number of games affected. `POST /guild/settings/reset?guildID=...` takes
+`WriteSettings`. It writes the defaults over the row conditionally, honoring
+`If-Match` and bumping the version rather than deleting the row. It counts
+against the PATCH write budget and skips the premium check.
 
 Operator delegation is deferred. It would compare current Discord member roles
 (`guilds.members.read`) with stored `PermissionRoleIDs`. Editing authorization

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	schema "github.com/automuteus/automuteus/v8/storage"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -30,7 +31,7 @@ func TestReadsTolerateNewColumns(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, stmt := range []string{
-		"ALTER TABLE games ADD COLUMN IF NOT EXISTS play_map smallint, ADD COLUMN IF NOT EXISTS region smallint",
+		"ALTER TABLE games ADD COLUMN IF NOT EXISTS live_test_extra smallint",
 		"ALTER TABLE guilds ADD COLUMN IF NOT EXISTS live_test_extra smallint",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS live_test_extra smallint",
 		"ALTER TABLE game_events ADD COLUMN IF NOT EXISTS live_test_extra smallint",
@@ -40,7 +41,8 @@ func TestReadsTolerateNewColumns(t *testing.T) {
 		}
 	}
 
-	const guildID, userID uint64 = 900000000000000001, 900000000000000002
+	// IDs are unique across the live tests that share TEST_POSTGRES_URL; internal/api uses ...001 onward.
+	const guildID, userID uint64 = 900000000000000051, 900000000000000052
 	cleanup := func() {
 		pool.Exec(ctx, "DELETE FROM game_events WHERE game_id IN (SELECT game_id FROM games WHERE guild_id = $1)", guildID)
 		pool.Exec(ctx, "DELETE FROM games WHERE guild_id = $1", guildID)
@@ -62,27 +64,25 @@ func TestReadsTolerateNewColumns(t *testing.T) {
 		t.Fatal(err)
 	}
 	uid := userID
-	if err := db.AddEvent(&PostgresGameEvent{UserID: &uid, GameID: int64(gameID), EventTime: 2, EventType: 1, Payload: "{}"}); err != nil {
+	if err := db.AddEvent(&PostgresGameEvent{UserID: &uid, GameID: int64(gameID), EventTime: 2, EventType: int16(capture.Player), Payload: "{}"}); err != nil {
 		t.Fatal(err)
 	}
-	matchID := strconv.FormatUint(gameID, 10)
 
-	if g, err := db.GetGuildForDownload(guildID); err != nil || g == nil || g.GuildID != guildID {
-		t.Errorf("GetGuildForDownload = %+v, %v", g, err)
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Release()
+	if g, err := getGuild(conn.Conn(), guildID); err != nil || g == nil || g.GuildID != guildID {
+		t.Errorf("getGuild = %+v, %v", g, err)
 	}
 	if u, err := db.GetUserByString(strconv.FormatUint(userID, 10)); err != nil || u.UserID != userID {
 		t.Errorf("GetUserByString = %+v, %v", u, err)
 	}
-	if g, err := db.GetGame(strconv.FormatUint(guildID, 10), "ABCDEFGH", matchID); err != nil || g == nil || uint64(g.GameID) != gameID {
-		t.Errorf("GetGame = %+v, %v", g, err)
+	if g, err := GuildMatch(ctx, pool, guildID, int64(gameID)); err != nil || g == nil {
+		t.Errorf("GuildMatch = %+v, %v", g, err)
 	}
-	if games, err := db.GetGamesForGuild(guildID); err != nil || len(games) != 1 {
-		t.Errorf("GetGamesForGuild = %+v, %v", games, err)
-	}
-	if events, err := db.GetGameEvents(matchID); err != nil || len(events) != 1 {
-		t.Errorf("GetGameEvents = %+v, %v", events, err)
-	}
-	if events, err := db.GetGamesEventsForGuild(guildID); err != nil || len(events) != 1 {
-		t.Errorf("GetGamesEventsForGuild = %+v, %v", events, err)
+	if events, err := MatchEvents(ctx, pool, int64(gameID)); err != nil || len(events) != 1 {
+		t.Errorf("MatchEvents = %+v, %v", events, err)
 	}
 }

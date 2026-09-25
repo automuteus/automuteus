@@ -23,3 +23,16 @@ func ApplySchemas(ctx context.Context, db settingsDB, official bool) error {
 	}
 	return nil
 }
+
+//go:embed payments.sql
+var paymentsSchema string
+
+// ApplyPaymentsSchema creates the payment tables cmd/ipn writes. Neither the bot nor the API calls it: the official
+// database gets payments.sql applied by hand, since the listener's role has no DDL rights. It exists for tests and
+// fresh databases.
+func ApplyPaymentsSchema(ctx context.Context, db settingsDB) error {
+	if _, err := db.Exec(ctx, "BEGIN; SELECT pg_advisory_xact_lock(754810024);\n"+paymentsSchema+";\nCOMMIT;"); err != nil {
+		return fmt.Errorf("apply payments schema: %w", err)
+	}
+	return nil
+}

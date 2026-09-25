@@ -30,10 +30,12 @@ func (tokenProvider *TokenProvider) BlacklistTokenForDuration(guildID, hToken st
 	return tokenProvider.client.Set(context.Background(), rediskey.MuteBlacklist(guildID, hToken), "1", duration).Err()
 }
 
-// tokenUsable decides whether a secondary bot session can issue a member modification for the guild right now: it
-// must not be blacklisted, and its Discord rate-limit bucket for the guild (tracked by discordgo from response
-// headers) must have budget left.
+// tokenUsable skips workers known to be absent or blacklisted, and requires budget
+// in the guild's Discord rate-limit bucket (tracked by discordgo from response headers).
 func (tokenProvider *TokenProvider) tokenUsable(guildID, hToken string, sess *discordgo.Session) bool {
+	if tokenProvider.workerKnownAbsent(hToken, guildID) {
+		return false
+	}
 	if tokenProvider.isBlacklisted(guildID, hToken) {
 		return false
 	}
@@ -50,6 +52,8 @@ func (tokenProvider *TokenProvider) attemptOnSecondaryTokens(guildID, userID str
 	if len(tokenProvider.activeSessions) > 0 {
 		sess, hToken := tokenProvider.getSession(guildID, tokenSubset)
 		if sess != nil {
+			// Maintenance yields briefly to workers currently handling voice traffic.
+			tokenProvider.pauseWorker(hToken, 5*time.Second)
 			err := task.ApplyMuteDeaf(sess, guildID, userID, request.Mute, request.Deaf)
 			if err != nil {
 				l.Error("secondary bot voice change failed", "token", hToken, "err", err)

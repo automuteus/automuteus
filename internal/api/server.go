@@ -59,11 +59,34 @@ type Store interface {
 	// be checked and the write must not proceed.
 	ReserveSettingsWrite(context.Context, string) (time.Duration, error)
 	Premium(context.Context, string) (premium.PremiumRecord, error)
+	// Subscription is what the payment listener knows about the subscription paying for a guild's premium, or nil
+	// when none is tracked (premium from before the listener, granted by hand, or a self-hosted bot).
+	Subscription(context.Context, string) (*SubscriptionStatus, error)
+	// GuildStats builds the stats page document for a guild: the summary for everyone and, while the guild's
+	// premium is active, the leaderboards too. It is the uncached build; the router caches per guild.
+	GuildStats(context.Context, string) (GuildStats, error)
+	// AdminGuildStats is GuildStats with the leaderboards whatever the guild's premium, for operators.
+	AdminGuildStats(context.Context, string) (GuildStats, error)
+	// MatchSummary builds the match summary document for one match of a guild (guild ID, then match ID), or
+	// returns errMatchNotFound. It is the uncached build; the router caches per match.
+	MatchSummary(context.Context, string, string) (MatchSummary, error)
+	// UserStats builds the player stats document for one player of a guild (guild ID, then user ID). It is the
+	// uncached build; the router caches per guild and player.
+	UserStats(context.Context, string, string) (UserStats, error)
+	// ResetGuildStats deletes every recorded game of a guild and returns how many there were.
+	ResetGuildStats(context.Context, string) (int64, error)
+	// ResetUserStats removes one player from every recorded game of one guild (guild ID, then user ID), leaving
+	// the games and other guilds alone, and returns how many games the player was removed from.
+	ResetUserStats(context.Context, string, string) (int64, error)
 	// BotInGuild reports whether the bot currently has a member record for the guild, from the set the bot
 	// maintains on GuildCreate and GuildDelete. It reflects the last gateway events the bot saw, not a live
 	// Discord lookup, so a removal that happened while every shard was offline is not visible until the bot
 	// next sees the guild.
 	BotInGuild(context.Context, string) (bool, error)
+	// BotInGuilds is BotInGuild for many guilds at once, answering in the order asked.
+	BotInGuilds(context.Context, []string) ([]bool, error)
+	// GuildsWithStats reports, in the order asked, which guilds have at least one finished game recorded.
+	GuildsWithStats(context.Context, []string) ([]bool, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
 	RaiseNotice(context.Context, notice.Notice) error
@@ -73,12 +96,18 @@ type Store interface {
 type Config struct {
 	// GuildVerifier is injectable for tests; nil uses Discord HTTPS endpoints.
 	GuildVerifier GuildVerifier
+	// GuildLister is injectable for tests; nil uses GuildVerifier when it can also list guilds, as the Discord one
+	// can. Without one, GET /user/guilds answers 501.
+	GuildLister GuildLister
 	// AccessCacheTTL is how long a verified read authorization for one (token, guild) is reused before Discord is
 	// asked again. Zero means DefaultAccessCacheTTL; negative disables caching. Writes always verify live.
 	AccessCacheTTL time.Duration
 	// ListCacheTTL is how long GET /guild/roles and GET /guild/channels reuse a guild's lists before asking Discord
 	// again. Zero means DefaultListCacheTTL; negative disables caching. PATCH validates roles against a live list.
-	ListCacheTTL  time.Duration
+	ListCacheTTL time.Duration
+	// StatsCacheTTL is how long GET /guild/stats reuses a guild's rollup, and GET /guild/match a match summary,
+	// before building it again. Zero means DefaultStatsCacheTTL; negative disables caching.
+	StatsCacheTTL time.Duration
 	Version       string
 	Commit        string
 	ServerURL     string
@@ -97,6 +126,9 @@ type Config struct {
 	// ChannelLister is injectable for tests; nil uses the Discord-backed channel verifier when BotToken is set.
 	// Without one, GET /guild/channels answers 501 and clients fall back to typing a channel ID.
 	ChannelLister ChannelLister
+	// ProfileFetcher is injectable for tests; nil uses Discord with BotToken when set. Without one the stats page
+	// shows only profiles already cached, and user IDs for everyone else.
+	ProfileFetcher ProfileFetcher
 }
 
 func NewRouter(config Config, store Store) *gin.Engine {
@@ -145,6 +177,13 @@ func NewRouter(config Config, store Store) *gin.Engine {
 		ttl = DefaultAccessCacheTTL
 	}
 	access := newAccessCache(ttl, nil)
+	guildList := config.GuildLister
+	if guildList == nil {
+		if lister, ok := verifier.(GuildLister); ok {
+			guildList = lister
+		}
+	}
+	r.GET("/user/guilds", handleGetUserGuilds(guildList, store))
 	gameGroup := r.Group("/game", guildAuthentication(config, verifier, access, ReadGame))
 	gameGroup.GET("/state", handleGetGameState(store))
 	gameGroup.GET("/roomcode", handleGetRoomCode(store))
@@ -169,6 +208,25 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles))
 	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
 	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
+	statsTTL := config.StatsCacheTTL
+	if statsTTL == 0 {
+		statsTTL = DefaultStatsCacheTTL
+	}
+	stats := statsCaches{
+		guild:     newListCache(statsTTL, nil, store.GuildStats),
+		guildFull: newListCache(statsTTL, nil, store.AdminGuildStats),
+		match:     newMatchCache(statsTTL, store.MatchSummary),
+		user:      newUserStatsCache(statsTTL, store.UserStats),
+	}
+	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild, stats.guildFull))
+	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
+	guildGroup.GET("/user", guildAuthentication(config, verifier, access, ReadStats), handleGetUserStats(stats.user))
+	guildGroup.POST("/stats/reset", guildAuthentication(config, verifier, access, ResetStats), handleResetGuildStats(store, stats))
+	// Players may reset their own stats, as with /stats user reset, so this policy also looks at the target.
+	guildGroup.POST("/user/reset", guildAuthorization(config, verifier, access, true, func(c *gin.Context, a VerifiedGuildAccess, guildID string) bool {
+		return AllowsUserStatsReset(a, guildID, c.Query("userID"))
+	}), handleResetUserStats(store, stats))
+	guildGroup.POST("/settings/reset", guildAuthentication(config, verifier, access, WriteSettings), handleResetGuildSettings(store))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
 	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.
@@ -791,6 +849,23 @@ func handleGetGuildBot(store Store) func(c *gin.Context) {
 	}
 }
 
+// GuildPremium is a guild's premium tier and days remaining, plus the subscription paying for it when the payment
+// listener tracks one.
+type GuildPremium struct {
+	premium.PremiumRecord
+	Subscription *SubscriptionStatus `json:"subscription,omitempty"`
+}
+
+// SubscriptionStatus describes the subscription behind a guild's premium.
+type SubscriptionStatus struct {
+	// Status is active (renews each period) or cancelled (paid up until endsAt, then stops).
+	Status string `json:"status" enums:"active,cancelled" example:"active"`
+	// EndsAt is when the current paid period runs out, in unix seconds.
+	EndsAt int64 `json:"endsAt" example:"1793000000"`
+	// Inherited is set when the subscription belongs to the server this one inherits premium from.
+	Inherited bool `json:"inherited,omitempty"`
+}
+
 // GetGuildPremium godoc
 // @Summary Get Guild Premium
 // @Description Get the premium status for a given guild
@@ -800,7 +875,7 @@ func handleGetGuildBot(store Store) func(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param guildID query string true "Guild ID"
-// @Success 200 {object} premium.PremiumRecord
+// @Success 200 {object} GuildPremium
 // @Failure 400 {object} HttpError
 // @Failure 500 {object} HttpError
 // @Router /guild/premium [get]
@@ -823,7 +898,18 @@ func handleGetGuildPremium(store Store) func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, record)
+		response := GuildPremium{PremiumRecord: record}
+		if !premium.IsExpired(record.Tier, record.Days) {
+			// Only the subscription behind premium that is in force is worth showing; a lapsed one says nothing
+			// the days remaining do not.
+			sub, err := store.Subscription(c.Request.Context(), guildID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, HttpError{StatusCode: http.StatusInternalServerError, Error: "unable to read subscription"})
+				return
+			}
+			response.Subscription = sub
+		}
+		c.JSON(http.StatusOK, response)
 	}
 }
 

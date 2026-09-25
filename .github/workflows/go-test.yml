@@ -46,8 +46,11 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # -p 1 runs packages one at a time. The live tests in internal/api, internal/ipn, pkg/storage, and storage
+      # share this one Postgres, and pkg/storage's TestReadsTolerateNewColumns takes exclusive table locks
+      # (ALTER TABLE) while the others insert, which deadlocks when packages overlap.
       - name: test
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -p 1 -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
