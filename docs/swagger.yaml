@@ -216,7 +216,7 @@ definitions:
           $ref: '#/definitions/api.StatsPlayer'
         description: |-
           Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with
-          the bot's credentials or from the names the bot cached. IDs nothing knows are absent and the page shows
+          the bot's credentials. IDs nothing knows are absent and the page shows
           the ID itself.
         type: object
       premium:
@@ -1341,8 +1341,8 @@ paths:
       - application/json
       description: |-
         One match of the guild: when it ran, how it ended, the map and region, and the linked players with
-        their roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline the /stats match slash
-        command shows (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the
+        their roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline
+        (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the
         number after the colon in the Match ID the bot posts when a game ends. Responses may be up to a
         minute old.
       parameters:
@@ -1591,7 +1591,7 @@ paths:
   /guild/settings/reset:
     post:
       description: |-
-        Put every setting of the guild back to its default, like the /settings reset slash command. This
+        Put every setting of the guild back to its default. This
         includes the match summary channel and operator roles. Premium is not checked, since the defaults
         need none. Requires the guild owner or the Discord Administrator or Manage Server permission, and
         counts against the same per-guild budget as PATCH /guild/settings.
@@ -1657,9 +1657,9 @@ paths:
       - application/json
       description: |-
         The guild statistics page in one document. Every guild gets the summary (games played and each
-        side's wins); guilds with active premium also get the leaderboards the /stats guild slash command
-        shows, five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to the
-        names the bot last cached where available. Responses are built at most once a minute per guild.
+        side's wins); guilds with active premium also get the leaderboards,
+        five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to
+        names and avatars through Discord where possible. Responses are built at most once a minute per guild.
       parameters:
       - description: Guild ID
         in: query
@@ -1698,7 +1698,7 @@ paths:
   /guild/stats/reset:
     post:
       description: |-
-        Delete every recorded game of the guild, for every player, like the /stats guild reset slash command.
+        Delete every recorded game of the guild, for every player.
         It cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server
         permission.
       parameters:
@@ -1745,8 +1745,8 @@ paths:
         and per role, and their ten latest matches; guilds with active premium also get the player's ranks
         on the guild boards, streaks, survival, how often they were killed or voted out, first-target
         rate, favorite colors and names, who they played with and won or lost with, the impostors they
-        died with, games per week, and per-map records. Any member may read any player, as with the /stats
-        user slash command. Responses may be up to a minute old.
+        died with, games per week, and per-map records. Any member may read any player.
+        Responses may be up to a minute old.
       parameters:
       - description: Guild ID
         in: query

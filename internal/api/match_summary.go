@@ -27,8 +27,8 @@ import (
 var errMatchNotFound = errors.New("match not found")
 
 // MatchSummary is the GET /guild/match response: one match of a guild. The header and roster are always present;
-// Timeline is present only while the guild's premium is active, matching what the /stats match slash command
-// shows. Enumerations are stable lowercase keys so the page can translate them.
+// Timeline is present only while the guild's premium is active, as the /stats match slash command did
+// before it was retired. Enumerations are stable lowercase keys so the page can translate them.
 type MatchSummary struct {
 	GuildID string `json:"guildId"`
 	MatchID string `json:"matchId"`
@@ -358,8 +358,8 @@ func buildMatchTimeline(start int64, events []*pgstorage.PostgresGameEvent, onRo
 // MatchSummary godoc
 // @Summary Get Match Summary
 // @Description One match of the guild: when it ran, how it ended, the map and region, and the linked players with
-// @Description their roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline the /stats match slash
-// @Description command shows (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the
+// @Description their roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline
+// @Description (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the
 // @Description number after the colon in the Match ID the bot posts when a game ends. Responses may be up to a
 // @Description minute old.
 // @Security BasicAuth

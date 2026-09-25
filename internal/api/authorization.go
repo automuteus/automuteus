@@ -11,7 +11,7 @@ const (
 	ReadSettings    GuildAction = "settings:read"
 	WriteSettings   GuildAction = "settings:write"
 	ReadBotPresence GuildAction = "bot:read"
-	// ReadStats is the guild statistics page. Any member may see it, as any member may run /stats guild.
+	// ReadStats is the guild statistics page. Any member may see it.
 	ReadStats GuildAction = "stats:read"
 	// ResetStats deletes a guild's recorded games, or any player's part in them. It takes the same permissions as
 	// changing the settings. Players may also reset their own part; see AllowsUserStatsReset.

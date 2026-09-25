@@ -115,7 +115,7 @@ type Config struct {
 	// Without one, GET /guild/channels answers 501 and clients fall back to typing a channel ID.
 	ChannelLister ChannelLister
 	// ProfileFetcher is injectable for tests; nil uses Discord with BotToken when set. Without one the stats page
-	// shows only the names the bot cached, and no avatars.
+	// shows only profiles already cached, and user IDs for everyone else.
 	ProfileFetcher ProfileFetcher
 }
 

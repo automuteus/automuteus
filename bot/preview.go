@@ -32,7 +32,7 @@ func PreviewEmbeds(sett *settings.GuildSettings, n *notice.Notice) []PreviewEmbe
 		{"lobby-paused", lobbyMessage(paused, emojis, sett)},
 		{"tasks", gamePlayMessage(previewState(game.TASKS), emojis, sett)},
 		{"discussion", gamePlayMessage(previewState(game.DISCUSS), emojis, sett)},
-		{"gameover", gameOverMessage(previewState(game.GAMEOVER), emojis, sett, "<@100000000000000001>, <@100000000000000002> won as Crewmate")},
+		{"gameover", gameOverMessage(previewState(game.GAMEOVER), emojis, sett, "<@100000000000000001>, <@100000000000000002> won as Crewmate", "")},
 	}
 	for _, p := range previews {
 		applyNotice(p.Embed, n, sett)

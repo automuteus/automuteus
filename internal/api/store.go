@@ -28,7 +28,7 @@ type DataStore struct {
 	// stats is the pool again, typed so tests can substitute a mock for the statistics queries.
 	stats    pgxscan.Querier
 	settings *storage.StorageInterface
-	// profiles resolves stats-page users through Discord with the bot's credentials; nil leaves only cached names.
+	// profiles resolves stats-page users through Discord with the bot's credentials; nil leaves only cached profiles.
 	profiles ProfileFetcher
 	config   Config
 }

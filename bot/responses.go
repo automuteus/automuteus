@@ -272,7 +272,9 @@ func lobbyMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSe
 	return &msg
 }
 
-func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings, winners string) *discordgo.MessageEmbed {
+// gameOverMessage is the game's summary. matchURL, when set, is the match's page on the web dashboard, which the
+// title links to.
+func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.GuildSettings, winners, matchURL string) *discordgo.MessageEmbed {
 	_, _, playMap := dgs.GameData.GetRoomRegionMap()
 
 	listResp := dgs.ToEmojiEmbedFields(emojis, sett)
@@ -303,7 +305,7 @@ func gameOverMessage(dgs *GameState, emojis AlivenessEmojis, sett *settings.Guil
 	}
 
 	msg := discordgo.MessageEmbed{
-		URL:         "",
+		URL:         matchURL,
 		Type:        "",
 		Title:       sett.LocalizeMessage(amongus.ToLocale(game.GAMEOVER)),
 		Description: desc,

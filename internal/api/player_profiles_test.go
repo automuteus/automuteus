@@ -108,8 +108,8 @@ func (f *stallingFetcher) FetchProfile(ctx context.Context, _, _ string) (StatsP
 	return StatsPlayer{}, errChannelUnavailable
 }
 
-// A Discord that never answers must not hold the stats response: the budget expires, the unresolved users get
-// the bot's cached names, and nothing is cached as a miss.
+// A Discord that never answers must not hold the stats response: the budget expires, the unresolved users are
+// left for the page to show by ID, and nothing is cached as a miss.
 func TestResolvePlayersGivesUpWithinBudget(t *testing.T) {
 	previous := profileFetchBudget
 	profileFetchBudget = 50 * time.Millisecond
@@ -118,17 +118,14 @@ func TestResolvePlayersGivesUpWithinBudget(t *testing.T) {
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	defer client.Close()
-	if err := rediskey.SetCachedUserInfo(ctx, client, bob, profileGuild, "bob:Bobby:0"); err != nil {
-		t.Fatal(err)
-	}
 	f := &stallingFetcher{}
 	start := time.Now()
 	players := resolvePlayers(ctx, client, f, profileGuild, []string{alice, bob, carol})
 	if elapsed := time.Since(start); elapsed > time.Second {
 		t.Fatalf("resolution took %v", elapsed)
 	}
-	if len(players) != 1 || players[bob].Nickname != "Bobby" {
-		t.Errorf("players = %+v, want only bob from the bot's cache", players)
+	if len(players) != 0 {
+		t.Errorf("players = %+v, want none", players)
 	}
 	for _, id := range []string{alice, bob, carol} {
 		if mr.Exists(rediskey.CachedPlayerProfile(id, profileGuild)) {
@@ -183,30 +180,24 @@ func TestResolvePlayers(t *testing.T) {
 	fetcher := &fakeFetcher{profiles: map[string]StatsPlayer{
 		alice: {Username: "alice", Nickname: "Al", Avatar: "https://cdn.discordapp.com/embed/avatars/0.png"},
 	}}
-	// bob is known only to the bot's name cache; carol is known to nobody.
-	if err := rediskey.SetCachedUserInfo(ctx, client, bob, profileGuild, "bob:Bobby:0"); err != nil {
-		t.Fatal(err)
-	}
+	// bob and carol are unknown to Discord.
 
 	players := resolvePlayers(ctx, client, fetcher, profileGuild, []string{alice, bob, carol})
 	if players[alice] != fetcher.profiles[alice] {
 		t.Errorf("alice = %+v", players[alice])
 	}
-	if players[bob] != (StatsPlayer{Username: "bob", Nickname: "Bobby"}) {
-		t.Errorf("bob = %+v", players[bob])
-	}
-	if _, ok := players[carol]; ok {
-		t.Errorf("carol resolved to %+v", players[carol])
+	if len(players) != 1 {
+		t.Errorf("unknown users resolved: %+v", players)
 	}
 	if len(fetcher.calls) != 3 {
 		t.Fatalf("Discord asked %d times, want once per user: %v", len(fetcher.calls), fetcher.calls)
 	}
 
 	// Second round: alice is served from the profile cache, and the misses for bob and carol are remembered, so
-	// Discord is not asked at all. bob still gets the name the bot cached.
+	// Discord is not asked at all.
 	fetcher.calls = nil
 	players = resolvePlayers(ctx, client, fetcher, profileGuild, []string{alice, bob, carol})
-	if players[alice] != fetcher.profiles[alice] || players[bob].Nickname != "Bobby" || len(players) != 2 {
+	if players[alice] != fetcher.profiles[alice] || len(players) != 1 {
 		t.Errorf("second round = %+v", players)
 	}
 	if len(fetcher.calls) != 0 {
@@ -219,14 +210,11 @@ func TestResolvePlayers(t *testing.T) {
 		t.Errorf("miss TTL = %v", mr.TTL(rediskey.CachedPlayerProfile(carol, profileGuild)))
 	}
 
-	// Discord being down leaves the bot's names as the answer and caches nothing.
+	// Discord being down resolves nobody and caches nothing.
 	mr.FlushAll()
-	if err := rediskey.SetCachedUserInfo(ctx, client, bob, profileGuild, "bob:Bobby:0"); err != nil {
-		t.Fatal(err)
-	}
 	down := &fakeFetcher{err: errChannelUnavailable}
 	players = resolvePlayers(ctx, client, down, profileGuild, []string{alice, bob})
-	if len(players) != 1 || players[bob].Username != "bob" {
+	if len(players) != 0 {
 		t.Errorf("with Discord down = %+v", players)
 	}
 	if mr.Exists(rediskey.CachedPlayerProfile(bob, profileGuild)) {
@@ -236,7 +224,7 @@ func TestResolvePlayers(t *testing.T) {
 	// Without a fetcher (no bot token) the profile cache is still honoured, as the seed tool fills it.
 	cacheProfile(ctx, client, profileGuild, alice, StatsPlayer{Username: "seeded"}, profileCacheTTL)
 	players = resolvePlayers(ctx, client, nil, profileGuild, []string{alice, bob, carol})
-	if players[alice].Username != "seeded" || players[bob].Username != "bob" || len(players) != 2 {
+	if players[alice].Username != "seeded" || len(players) != 1 {
 		t.Errorf("without fetcher = %+v", players)
 	}
 

@@ -180,27 +180,6 @@ func getUser(conn PgxIface, userID uint64) (*PostgresUser, error) {
 	return nil, fmt.Errorf("no user found with ID %d", userID)
 }
 
-func (psqlInterface *PsqlInterface) GetGame(guildID, connectCode, matchID string) (*PostgresGame, error) {
-	var games []*PostgresGame
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &games, "SELECT * FROM games WHERE guild_id = $1 AND game_id = $2 AND connect_code = $3;", guildID, matchID, connectCode)
-	if err != nil {
-		return nil, err
-	}
-	if len(games) > 0 {
-		return games[0], nil
-	}
-	return nil, nil
-}
-
-func (psqlInterface *PsqlInterface) GetGameEvents(matchID string) ([]*PostgresGameEvent, error) {
-	var events []*PostgresGameEvent
-	err := pgxscan.Select(context.Background(), psqlInterface.Pool, &events, "SELECT * FROM game_events WHERE game_id = $1 ORDER BY event_id ASC;", matchID)
-	if err != nil {
-		return nil, err
-	}
-	return events, nil
-}
-
 func insertGame(conn PgxIface, game *PostgresGame) (uint64, error) {
 	t, err := conn.Query(context.Background(), "INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time, play_map, region) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime, game.PlayMap, game.Region)
 	if t != nil {

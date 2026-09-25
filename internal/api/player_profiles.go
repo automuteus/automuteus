@@ -35,7 +35,7 @@ type ProfileFetcher interface {
 }
 
 const (
-	// profileCacheTTL matches the bot's own name cache. Names and avatars change rarely, and one build of a
+	// profileCacheTTL is how long a resolved profile is reused. Names and avatars change rarely, and one build of a
 	// guild's stats names at most a few dozen users.
 	profileCacheTTL = 12 * time.Hour
 	// profileMissTTL is how long a user Discord did not know is left alone before asking again.
@@ -47,7 +47,7 @@ const (
 
 // profileFetchBudget bounds the whole Discord phase of one rollup. Profiles are optional, and the stats request
 // has its own deadline, so a slow or unreachable Discord must not hold the response: whoever is unresolved when
-// the budget runs out gets the bot's cached name instead. A variable so tests can shorten it.
+// the budget runs out is shown by ID. A variable so tests can shorten it.
 var profileFetchBudget = 4 * time.Second
 
 // FetchProfile reads the user's member record in the guild, for their nickname and guild avatar, and falls back
@@ -121,18 +121,17 @@ func DefaultAvatarURL(userID, discriminator string) string {
 	return "https://cdn.discordapp.com/embed/avatars/" + strconv.FormatUint(index, 10) + ".png"
 }
 
-// resolvePlayers finds a name and picture for each user named on the boards, in this order: the API's own
-// profile cache; Discord, through the bot's credentials, when a fetcher is configured (the answer is cached,
-// including a miss); and finally the names the bot cached for the guild, which carry no picture. Users nothing
-// knows are absent from the result and the page shows their ID. Lookups are a convenience, so no failure here
-// fails the rollup.
+// resolvePlayers finds a name and picture for each user named on the boards: from the API's own profile cache,
+// else from Discord, through the bot's credentials, when a fetcher is configured (the answer is cached,
+// including a miss). Users nothing knows are absent from the result and the page shows their ID. Lookups are a
+// convenience, so no failure here fails the rollup.
 func resolvePlayers(ctx context.Context, client *redis.Client, fetcher ProfileFetcher, guildID string, userIDs []string) map[string]StatsPlayer {
 	players := make(map[string]StatsPlayer, len(userIDs))
 	if len(userIDs) == 0 {
 		return players
 	}
-	// pending is who Discord may be asked about; unresolved is who is left for the bot's name cache.
-	pending, unresolved := userIDs, []string{}
+	// pending is who Discord may be asked about.
+	pending := userIDs
 	if client != nil {
 		cached, err := cachedProfiles(ctx, client, guildID, userIDs)
 		if err != nil {
@@ -146,34 +145,19 @@ func resolvePlayers(ctx context.Context, client *redis.Client, fetcher ProfileFe
 					pending = append(pending, id)
 				case p.Username != "":
 					players[id] = p
-				default:
-					// A cached miss is not asked about again until it expires, but the bot may still know a name.
-					unresolved = append(unresolved, id)
 				}
+				// A cached miss is not asked about again until it expires.
 			}
 		}
 	}
 	if fetcher != nil && len(pending) > 0 {
-		unresolved = append(unresolved, fetchProfiles(ctx, client, fetcher, guildID, pending, players)...)
-	} else {
-		unresolved = append(unresolved, pending...)
-	}
-	if client != nil && len(unresolved) > 0 {
-		names, err := cachedPlayerNames(ctx, client, guildID, unresolved)
-		if err != nil {
-			log.Printf("Guild %s stats: could not read cached player names: %v\n", guildID, err)
-			return players
-		}
-		for id, p := range names {
-			players[id] = p
-		}
+		fetchProfiles(ctx, client, fetcher, guildID, pending, players)
 	}
 	return players
 }
 
-// fetchProfiles asks Discord about each pending user and records the answers in players and the cache. It
-// returns the users it could not settle, so the caller can try the bot's name cache for them.
-func fetchProfiles(ctx context.Context, client *redis.Client, fetcher ProfileFetcher, guildID string, pending []string, players map[string]StatsPlayer) []string {
+// fetchProfiles asks Discord about each pending user and records the answers in players and the cache.
+func fetchProfiles(ctx context.Context, client *redis.Client, fetcher ProfileFetcher, guildID string, pending []string, players map[string]StatsPlayer) {
 	type outcome struct {
 		id      string
 		profile StatsPlayer
@@ -193,7 +177,6 @@ func fetchProfiles(ctx context.Context, client *redis.Client, fetcher ProfileFet
 		})
 	}
 	_ = g.Wait()
-	unresolved := make([]string, 0)
 	for _, r := range results {
 		switch {
 		case r.err == nil:
@@ -201,13 +184,9 @@ func fetchProfiles(ctx context.Context, client *redis.Client, fetcher ProfileFet
 			cacheProfile(ctx, client, guildID, r.id, r.profile, profileCacheTTL)
 		case errors.Is(r.err, errChannelNotFound):
 			cacheProfile(ctx, client, guildID, r.id, StatsPlayer{}, profileMissTTL)
-			unresolved = append(unresolved, r.id)
-		default:
-			// Unavailable, or the budget ran out: nothing is cached, so the next build tries again.
-			unresolved = append(unresolved, r.id)
 		}
+		// Otherwise Discord was unavailable, or the budget ran out: nothing is cached, so the next build tries again.
 	}
-	return unresolved
 }
 
 func cachedProfiles(ctx context.Context, client *redis.Client, guildID string, userIDs []string) (map[string]StatsPlayer, error) {

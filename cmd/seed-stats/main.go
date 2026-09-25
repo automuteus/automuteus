@@ -1,6 +1,6 @@
-// seed-stats writes fake match history for one guild so the stats page and /stats command have something to
-// show on a development stack. It prints SQL (and, with -redis, redis-cli commands for the players' cached
-// names) rather than connecting anywhere, so it works against containers with no published ports:
+// seed-stats writes fake match history for one guild so the stats pages have something to show
+// on a development stack. It prints SQL (and, with -redis, redis-cli commands for the players' cached
+// profiles) rather than connecting anywhere, so it works against containers with no published ports:
 //
 //	go run ./cmd/seed-stats -guild 123456789012345678 | docker exec -i deploy-postgres-1 psql -U postgres
 //	go run ./cmd/seed-stats -guild 123456789012345678 -redis | docker exec -i deploy-redis-1 redis-cli
@@ -98,19 +98,16 @@ func run() error {
 	if *redis {
 		for _, p := range team {
 			if p.username == "" && p.nickname == "" {
-				continue // a real user with no name given; the bot caches theirs when they next use it
+				continue // a real user with no name given; the API fetches theirs from Discord
 			}
 			username := p.username
 			if username == "" {
 				username = p.nickname
 			}
-			// The bot stores "username:nickname:discriminator"; see bot.CheckOrFetchCachedUserData.
-			fmt.Printf("SET %s %q EX %d\n", rediskey.CachedUserInfoOnGuild(fmt.Sprint(p.id), fmt.Sprint(*guild)),
-				fmt.Sprintf("%s:%s:0", username, p.nickname), int(rediskey.CachedUserDataExpiration.Seconds()))
 			// The API's profile record, which it would otherwise try to fetch from Discord for these fake IDs.
 			profile, _ := json.Marshal(map[string]string{"username": username, "nickname": p.nickname})
 			fmt.Printf("SET %s %s EX %d\n", rediskey.CachedPlayerProfile(fmt.Sprint(p.id), fmt.Sprint(*guild)),
-				strconv.Quote(string(profile)), int(rediskey.CachedUserDataExpiration.Seconds()))
+				strconv.Quote(string(profile)), int((12 * time.Hour).Seconds()))
 		}
 		return nil
 	}

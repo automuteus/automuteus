@@ -51,7 +51,7 @@ func (s statsCaches) forgetGuild(guildID string) {
 
 // ResetGuildStats godoc
 // @Summary Reset Guild Stats
-// @Description Delete every recorded game of the guild, for every player, like the /stats guild reset slash command.
+// @Description Delete every recorded game of the guild, for every player.
 // @Description It cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server
 // @Description permission.
 // @Security BasicAuth
@@ -129,7 +129,7 @@ func handleResetUserStats(store Store, caches statsCaches) func(c *gin.Context) 
 
 // ResetGuildSettings godoc
 // @Summary Reset Guild Settings
-// @Description Put every setting of the guild back to its default, like the /settings reset slash command. This
+// @Description Put every setting of the guild back to its default. This
 // @Description includes the match summary channel and operator roles. Premium is not checked, since the defaults
 // @Description need none. Requires the guild owner or the Discord Administrator or Manage Server permission, and
 // @Description counts against the same per-guild budget as PATCH /guild/settings.

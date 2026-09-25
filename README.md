@@ -96,7 +96,7 @@ If you want to view command usage or see the available options, type `/help` in 
 | `/privacy`  | View privacy and data collection information about the bot                                                             |                          |
 | `/info`     | View general info about the Bot                                                                                        |                          |
 | `/map`      | View an image of an in-game map in the text channel. Provide the name of the map, and if you want the detailed version | `/map skeld true`        |
-| `/stats`    | View detailed stats about Among Us games played on the current server, or by a specific player                         | `/stats user view @Soup` |
+| `/stats`    | Get a link to the web dashboard, where stats for this server are shown and reset                                       |                          |
 | `/premium`  | View information about AutoMuteUs Premium, and the current premium status of your server                               |                          |
 
 # Privacy
@@ -193,7 +193,7 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 | `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Game/guild access and raising or clearing platform notices require a non-default value. |
 | `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
-| `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings` links to; defaults to `https://automute.us`. |
+| `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings`, `/stats`, and game over summaries link to; defaults to `https://automute.us`. |
 | `AUTOMUTEUS_OFFICIAL` | no | Same presence-based official mode as the bot; must match the bot deployment. |
 
 `/live` checks the API process; `/ready` checks Redis and Postgres. Both are served
@@ -367,13 +367,13 @@ one at a time. See [the capture mock guide](cmd/capture-mock/README.md) for usag
 ### Seeding fake match history
 
 `go run ./cmd/seed-stats` prints SQL that records a few months of made-up
-games for one guild, so the stats page and `/stats` have leaderboards to show
+games for one guild, so the stats pages have leaderboards to show
 on a development stack. It prints rather than connects, so it works with the
 compose stack's unpublished database ports:
 
 ```sh
 go run ./cmd/seed-stats -guild <guild ID> -include <your user ID> | docker exec -i deploy-postgres-1 psql -U postgres -v ON_ERROR_STOP=1
-go run ./cmd/seed-stats -guild <guild ID> -redis | docker exec -i deploy-redis-1 redis-cli   # cache the fake players' names
+go run ./cmd/seed-stats -guild <guild ID> -redis | docker exec -i deploy-redis-1 redis-cli   # cache the fake players' profiles
 go run ./cmd/seed-stats -guild <guild ID> -clean | docker exec -i deploy-postgres-1 psql -U postgres   # remove them again
 ```
 

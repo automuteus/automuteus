@@ -8,13 +8,11 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/georgysavva/scany/pgxscan"
@@ -34,12 +32,11 @@ const leaderboardSize = 5
 
 // impostorDuoMinGames is the fixed floor for the impostor duo boards. Two players are impostors together far
 // less often than crewmates, so the guild's leaderboard minimum would leave those boards empty for most guilds.
-// The /stats slash command uses the same floor.
 const impostorDuoMinGames = 2
 
 // GuildStats is the GET /guild/stats response: everything the stats page shows for one guild in one document.
-// Summary is always present. Leaderboards is present only while the guild's premium is active, matching what
-// the /stats guild slash command shows; a free guild sees no key at all rather than empty boards.
+// Summary is always present. Leaderboards is present only while the guild's premium is active, as with the
+// retired /stats guild slash command; a free guild sees no key at all rather than empty boards.
 type GuildStats struct {
 	GuildID string `json:"guildId"`
 	// Premium is the guild's premium status the rollup was built under, so the page can explain a missing
@@ -51,7 +48,7 @@ type GuildStats struct {
 	// Leaderboards is omitted for guilds whose premium is free or expired.
 	Leaderboards *GuildLeaderboards `json:"leaderboards,omitempty"`
 	// Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with
-	// the bot's credentials or from the names the bot cached. IDs nothing knows are absent and the page shows
+	// the bot's credentials. IDs nothing knows are absent and the page shows
 	// the ID itself.
 	Players map[string]StatsPlayer `json:"players"`
 }
@@ -132,7 +129,7 @@ type KilledBy struct {
 
 // GuildStats builds the stats page document for a guild. The summary is one query; the premium boards run
 // concurrently and are skipped entirely for a guild whose premium is free or expired, so a free guild costs
-// the same as the slash command does.
+// one count query.
 func (s *DataStore) GuildStats(ctx context.Context, guildID string) (GuildStats, error) {
 	record, err := s.Premium(ctx, guildID)
 	if err != nil {
@@ -312,29 +309,6 @@ func (b *GuildLeaderboards) userIDs() []string {
 	return ids
 }
 
-// cachedPlayerNames reads the names the bot cached (see bot.CheckOrFetchCachedUserData) for the given users.
-// They carry no avatar. A nil client, as in tests, yields no names.
-func cachedPlayerNames(ctx context.Context, client *redis.Client, guildID string, userIDs []string) (map[string]StatsPlayer, error) {
-	players := make(map[string]StatsPlayer, len(userIDs))
-	if client == nil || len(userIDs) == 0 {
-		return players, nil
-	}
-	infos, err := rediskey.GetCachedUserInfos(ctx, client, guildID, userIDs)
-	if err != nil {
-		return nil, err
-	}
-	for id, info := range infos {
-		// The bot stores "username:nickname:discriminator". Discriminators are gone from Discord, so only the
-		// first two matter; a nickname holding a colon would have confused the bot's own reader as well.
-		parts := strings.SplitN(info, ":", 3)
-		if len(parts) < 3 || parts[0] == "" {
-			continue
-		}
-		players[id] = StatsPlayer{Username: parts[0], Nickname: parts[1]}
-	}
-	return players, nil
-}
-
 func snowflake(id uint64) string {
 	return strconv.FormatUint(id, 10)
 }
@@ -353,9 +327,9 @@ func round1(v float64) float64 {
 // GuildStats godoc
 // @Summary Get Guild Stats
 // @Description The guild statistics page in one document. Every guild gets the summary (games played and each
-// @Description side's wins); guilds with active premium also get the leaderboards the /stats guild slash command
-// @Description shows, five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to the
-// @Description names the bot last cached where available. Responses are built at most once a minute per guild.
+// @Description side's wins); guilds with active premium also get the leaderboards,
+// @Description five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to
+// @Description names and avatars through Discord where possible. Responses are built at most once a minute per guild.
 // @Security BasicAuth
 // @Security DiscordBearer
 // @Tags guild

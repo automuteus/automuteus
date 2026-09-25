@@ -99,12 +99,8 @@ func RoomCodesForConnCode(connCode string) string {
 	return "automuteus:roomcode:" + connCode
 }
 
-func CachedUserInfoOnGuild(userID, guildID string) string {
-	return "automuteus:cache:userinfo:" + guildID + ":" + userID
-}
-
-// CachedPlayerProfile holds the API's richer record of a user in a guild (name, nickname, avatar) as JSON, for
-// the stats page. The bot's CachedUserInfoOnGuild record stays as the fallback for names.
+// CachedPlayerProfile holds the API's record of a user in a guild (name, nickname, avatar) as JSON, for
+// the stats page.
 func CachedPlayerProfile(userID, guildID string) string {
 	return "automuteus:cache:profile:" + guildID + ":" + userID
 }

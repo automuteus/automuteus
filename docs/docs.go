@@ -530,7 +530,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "One match of the guild: when it ran, how it ended, the map and region, and the linked players with\ntheir roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline the /stats match slash\ncommand shows (phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the\nnumber after the colon in the Match ID the bot posts when a game ends. Responses may be up to a\nminute old.",
+                "description": "One match of the guild: when it ran, how it ended, the map and region, and the linked players with\ntheir roles and results; for matches whose game over report was kept, unlinked players too. Guilds with active premium also get the timeline\n(phases, deaths, exiles, and disconnects, with seconds since the start). matchID is the\nnumber after the colon in the Match ID the bot posts when a game ends. Responses may be up to a\nminute old.",
                 "consumes": [
                     "application/json"
                 ],
@@ -897,7 +897,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "Put every setting of the guild back to its default, like the /settings reset slash command. This\nincludes the match summary channel and operator roles. Premium is not checked, since the defaults\nneed none. Requires the guild owner or the Discord Administrator or Manage Server permission, and\ncounts against the same per-guild budget as PATCH /guild/settings.",
+                "description": "Put every setting of the guild back to its default. This\nincludes the match summary channel and operator roles. Premium is not checked, since the defaults\nneed none. Requires the guild owner or the Discord Administrator or Manage Server permission, and\ncounts against the same per-guild budget as PATCH /guild/settings.",
                 "produces": [
                     "application/json"
                 ],
@@ -988,7 +988,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "The guild statistics page in one document. Every guild gets the summary (games played and each\nside's wins); guilds with active premium also get the leaderboards the /stats guild slash command\nshows, five entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to the\nnames the bot last cached where available. Responses are built at most once a minute per guild.",
+                "description": "The guild statistics page in one document. Every guild gets the summary (games played and each\nside's wins); guilds with active premium also get the leaderboards,\nfive entries per board, honouring the guild's leaderboard minimum. User IDs are resolved to\nnames and avatars through Discord where possible. Responses are built at most once a minute per guild.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1052,7 +1052,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "Delete every recorded game of the guild, for every player, like the /stats guild reset slash command.\nIt cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server\npermission.",
+                "description": "Delete every recorded game of the guild, for every player.\nIt cannot be undone. Requires the guild owner or the Discord Administrator or Manage Server\npermission.",
                 "produces": [
                     "application/json"
                 ],
@@ -1113,7 +1113,7 @@ const docTemplate = `{
                         "DiscordBearer": []
                     }
                 ],
-                "description": "One player's statistics in the guild. Every guild gets the player's games, wins, and winrates overall\nand per role, and their ten latest matches; guilds with active premium also get the player's ranks\non the guild boards, streaks, survival, how often they were killed or voted out, first-target\nrate, favorite colors and names, who they played with and won or lost with, the impostors they\ndied with, games per week, and per-map records. Any member may read any player, as with the /stats\nuser slash command. Responses may be up to a minute old.",
+                "description": "One player's statistics in the guild. Every guild gets the player's games, wins, and winrates overall\nand per role, and their ten latest matches; guilds with active premium also get the player's ranks\non the guild boards, streaks, survival, how often they were killed or voted out, first-target\nrate, favorite colors and names, who they played with and won or lost with, the impostors they\ndied with, games per week, and per-map records. Any member may read any player.\nResponses may be up to a minute old.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1554,7 +1554,7 @@ const docTemplate = `{
                     ]
                 },
                 "players": {
-                    "description": "Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with\nthe bot's credentials or from the names the bot cached. IDs nothing knows are absent and the page shows\nthe ID itself.",
+                    "description": "Players maps every user ID named in the leaderboards to a name and picture, resolved through Discord with\nthe bot's credentials. IDs nothing knows are absent and the page shows\nthe ID itself.",
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/api.StatsPlayer"

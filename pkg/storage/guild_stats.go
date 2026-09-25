@@ -9,9 +9,9 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
-// The guild-wide statistics below back the HTTP API's stats page. Unlike the older PsqlInterface rankings used by
-// the /stats slash command, they take a context, return errors instead of logging them, and push the leaderboard
-// minimum and size into SQL so a page load never scans every player of a guild only to keep the top few.
+// The guild-wide statistics below back the HTTP API's stats page. They take a context, return errors instead of
+// logging them, and push the leaderboard minimum and size into SQL so a page load never scans every player of a
+// guild only to keep the top few.
 // They accept any pgxscan.Querier so a pool, a connection, or a mock can serve them.
 
 // GuildSummary counts the finished games of a guild and how many each side won. Aborted and still-running games

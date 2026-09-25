@@ -3,9 +3,7 @@ package bot
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,15 +14,12 @@ import (
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/setting"
 	redis_common "github.com/automuteus/automuteus/v8/common"
-	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
-
-var MatchIDRegex = regexp.MustCompile(`^[A-Z0-9]{8}:[0-9]+$`)
 
 var DownloadPermissions = []int64{
 	discordgo.PermissionAttachFiles,
@@ -41,10 +36,6 @@ var VoicePermissions = []int64{
 }
 
 const (
-	resetUserConfirmedID          = "reset-user-confirmed"
-	resetUserCanceledID           = "reset-user-canceled"
-	resetGuildConfirmedID         = "reset-guild-confirmed"
-	resetGuildCanceledID          = "reset-guild-canceled"
 	downloadGuildConfirmedID      = "download-guild-confirmed"
 	downloadUsersConfirmedID      = "download-users-confirmed"
 	downloadUsersGamesConfirmedID = "download-users-games-confirmed"
@@ -404,77 +395,8 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			return command.MapResponse(mapType, detailed)
 
 		case command.Stats.Name:
-			action, opType, id := command.GetStatsParams(bot.PrimarySession, i.GuildID, i.ApplicationCommandData().Options)
-			prem := true
-			tier, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
-			if err != nil {
-				log.Println("Error in /stats getPremium:", err)
-			}
-			if premium.IsExpired(tier, days) {
-				prem = false
-			}
-			if action == setting.View {
-				var embed *discordgo.MessageEmbed
-				switch opType {
-				case command.User:
-					embed = bot.UserStatsEmbed(id, i.GuildID, sett, prem)
-				case command.Guild:
-					embed = bot.GuildStatsEmbed(i.GuildID, sett, prem)
-				case command.Match:
-					if MatchIDRegex.Match([]byte(id)) {
-						tokens := strings.Split(id, ":")
-						embed = bot.GameStatsEmbed(i.GuildID, tokens[1], tokens[0], prem, sett)
-					} else {
-						err := fmt.Errorf("invalid match code provided: %s, should resemble something like `1A2B3C4D:12345`", id)
-						return command.PrivateErrorResponse(command.Stats.Name+" "+command.Match, err, sett)
-					}
-				}
-				if embed != nil {
-					return &discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{
-							Embeds: []*discordgo.MessageEmbed{
-								embed,
-							},
-						},
-					}
-				}
-			} else if action == setting.Clear {
-				// id mismatch applies to user ids AND guild ID (guildId *always* != author.id, therefore, must be admin)
-				if id != i.Member.User.ID && !isAdmin {
-					return command.InsufficientPermissionsResponse(sett)
-				}
-				var content string
-				var components []discordgo.MessageComponent
-				switch opType {
-				case command.User:
-					content = sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.user.reset.confirmation",
-						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for {{.User}}?\nThis process cannot be undone!",
-					},
-						map[string]interface{}{
-							"User": discord.MentionByUserID(id),
-						})
-					components = confirmationComponents(resetUserConfirmedID, resetUserCanceledID, sett)
-				case command.Guild:
-					content = sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.guild.reset.confirmation",
-						Other: "⚠️**Are you sure?**⚠️\nDo you really want to reset the stats for **{{.Guild}}**?\nThis process cannot be undone!",
-					},
-						map[string]interface{}{
-							"Guild": g.Name,
-						})
-					components = confirmationComponents(resetGuildConfirmedID, resetGuildCanceledID, sett)
-				}
-				return &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Flags:      1 << 6, //private message
-						Content:    content,
-						Components: components,
-					},
-				}
-			}
+			// Stats are viewed and reset on the web dashboard, which any member of the server may open.
+			return command.StatsResponse(bot.webURL, i.GuildID, sett)
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
@@ -656,82 +578,6 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return resp
 			}
 
-		case resetUserConfirmedID:
-			var content string
-			// i.Message.Mentions is the list of the mentions in the original message.
-			// in this case we can gather target user since the original message contains only one mention,
-			// like "Do you really want to reset the stats for @kurokobo?".
-			// a bit dirty way but works :P
-			if len(i.Message.Mentions) == 1 {
-				id := i.Message.Mentions[0].ID
-				err := bot.PostgresInterface.DeleteAllGamesForUserInServer(i.GuildID, id)
-				if err != nil {
-					content = sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.user.reset.error",
-						Other: "Encountered an error resetting the stats for {{.User}}: {{.Error}}",
-					},
-						map[string]interface{}{
-							"User":  discord.MentionByUserID(id),
-							"Error": err.Error(),
-						})
-				} else {
-					content = sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.user.reset.success",
-						Other: "Successfully reset the stats for {{.User}}!",
-					},
-						map[string]interface{}{
-							"User": discord.MentionByUserID(id),
-						})
-				}
-			} else {
-				content = sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.stats.user.reset.notfound",
-					Other: "Failed to gather user from message!",
-				})
-			}
-			if i.Message.MessageReference != nil {
-				bot.deleteComponentInParentMessage(s, i)
-			}
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Flags:      1 << 6, //private message
-					Content:    content,
-					Components: []discordgo.MessageComponent{},
-				},
-			}
-
-		case resetGuildConfirmedID:
-			var content string
-			err := bot.PostgresInterface.DeleteAllGamesForServer(i.GuildID)
-			if err != nil {
-				content = sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.stats.guild.reset.error",
-					Other: "Encountered an error resetting the stats for this guild: {{.Error}}",
-				},
-					map[string]interface{}{
-						"Error": err.Error(),
-					})
-			} else {
-				content = sett.LocalizeMessage(&i18n.Message{
-					ID:    "commands.stats.guild.reset.success",
-					Other: "Successfully reset the stats for **{{.Guild}}**!",
-				},
-					map[string]interface{}{
-						"Guild": g.Name,
-					})
-			}
-			if i.Message.MessageReference != nil {
-				bot.deleteComponentInParentMessage(s, i)
-			}
-			return &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Flags:      1 << 6, //private message
-					Content:    content,
-					Components: []discordgo.MessageComponent{},
-				},
-			}
 		case downloadGuildConfirmedID:
 			guild, err := bot.PostgresInterface.GetGuildForDownload(gid)
 			if err != nil {
@@ -864,10 +710,6 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				}
 			}
 		case downloadCanceledID:
-			fallthrough
-		case resetUserCanceledID:
-			fallthrough
-		case resetGuildCanceledID:
 			if i.Message.MessageReference != nil {
 				bot.deleteComponentInParentMessage(s, i)
 			}

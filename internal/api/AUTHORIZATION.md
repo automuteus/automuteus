@@ -155,20 +155,18 @@ global) during which lookups fail fast instead of producing more 429s, since
 those count toward Discord's invalid-request limit that blocks the whole host.
 
 `GET /guild/stats` is the stats page in one document (`GuildStats` in
-`guild_stats.go`). Any member may read it, as any member may run `/stats guild`.
+`guild_stats.go`). Any member may read it.
 Every guild gets the summary (finished games and each side's wins); the
-leaderboards are included only while the guild's premium is active, so the
-free tier shows exactly what the slash command shows and a free guild costs one
-count query. The premium boards run concurrently and are trimmed in SQL to the
+leaderboards are included only while the guild's premium is active, so a free
+guild costs one count query. The premium boards run concurrently and are trimmed in SQL to the
 guild's leaderboard minimum, five entries each (the leaderboard size setting is
 no longer consulted; it is being retired), rather than ranking every player
 and keeping the top few in Go. User IDs are resolved to a name and avatar
 through Discord with the bot's token (`player_profiles.go`: the member record,
 else the global user record for someone who left), cached in Redis for twelve
-hours with misses remembered for one, and failing that the names the bot cached
-for the guild (the same Redis records `/stats` uses). The Discord phase of one
-build has a four-second budget, after which the remaining users get cached
-names, and a 429 on one member lookup pauses every member lookup in that guild
+hours with misses remembered for one; a user nothing resolves is shown by ID. The
+Discord phase of one build has a four-second budget, after which the remaining
+users are shown by ID, and a 429 on one member lookup pauses every member lookup in that guild
 (cooldowns are kept per Discord route bucket, not per full path). Only Discord CDN URLs are
 produced, and avatar hashes are checked before being put in one. The
 rollup is cached per guild (`DefaultStatsCacheTTL`, one minute, collapsed with
@@ -180,7 +178,7 @@ The match ID is the number after the colon in the ID the bot posts at game
 over; the lookup is by guild and match together, so an ID from another guild is
 404. Every guild gets the header (status, times, result, map, region) and the
 linked roster; the event timeline is included only while premium is active,
-as `/stats match` is premium-only. The capture connect code is never returned,
+as `/stats match` was. The capture connect code is never returned,
 since it may still name a live capture session. A timeline event carries a
 user ID only when that user is on the match's roster, so an opted-out or reset
 player's link is not revealed through the events table. The roster also lists
@@ -192,8 +190,7 @@ per guild and match for the stats TTL; a missing match is not cached.
 
 `GET /guild/user?guildID=...&userID=...` is one player's statistics in the guild
 (`UserStats` in `user_stats.go`), readable by any member under the same
-`ReadStats` action, since any member may run `/stats user` on anyone and the
-guild boards already name every ranked player. Every guild gets the player's
+`ReadStats` action, since the guild boards already name every ranked player. Every guild gets the player's
 record and ten latest matches; ranks, streaks, fates, favorites, teammates,
 activity, and per-map records are included only while premium is active. The
 player need not be a current member: a player with no recorded games gets a zero
@@ -207,9 +204,8 @@ the guild (players and events go by cascade), and
 guild's games while keeping the games, so other players' stats do not change.
 The guild reset takes the `ResetStats` action, which has the same bar as
 `WriteSettings`. The player reset uses `AllowsUserStatsReset`: `ResetStats`
-covers any player, and any verified member may reset themselves, as with
-`/stats user reset`. The player reset never touches other guilds, and since
-this change neither does the slash command. Both drop
+covers any player, and any verified member may reset themselves. The player reset never touches
+other guilds. Both drop
 the guild's cached stats, match, and player documents. Both answer with the
 number of games affected. `POST /guild/settings/reset?guildID=...` takes
 `WriteSettings`. It writes the defaults over the row conditionally, honoring

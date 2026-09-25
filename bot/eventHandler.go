@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
@@ -302,7 +303,7 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 						buf.WriteString(fmt.Sprintf(" won as %s", roleStr))
 					}
 				}
-				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String())
+				embed := gameOverMessage(dgs, bot.StatusEmojis, sett, buf.String(), command.MatchURL(bot.webURL, dgsRequest.GuildID, dgs.MatchID))
 				channelID := bot.summaryChannel(dgsRequest.GuildID, sett, dgs.GameStateMsg.MessageChannelID)
 				msg, err := bot.discord.ChannelMessageSendEmbed(channelID, embed)
 				if delTime > 0 && err == nil {

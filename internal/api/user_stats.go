@@ -527,8 +527,8 @@ func (d *UserStatsDetails) userIDs(userID string) []string {
 // @Description and per role, and their ten latest matches; guilds with active premium also get the player's ranks
 // @Description on the guild boards, streaks, survival, how often they were killed or voted out, first-target
 // @Description rate, favorite colors and names, who they played with and won or lost with, the impostors they
-// @Description died with, games per week, and per-map records. Any member may read any player, as with the /stats
-// @Description user slash command. Responses may be up to a minute old.
+// @Description died with, games per week, and per-map records. Any member may read any player.
+// @Description Responses may be up to a minute old.
 // @Security BasicAuth
 // @Security DiscordBearer
 // @Tags guild
