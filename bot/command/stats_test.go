@@ -63,3 +63,19 @@ func TestStatsCommandHasNoOptions(t *testing.T) {
 		t.Errorf("/stats should take no options now that stats live on the dashboard: %+v", Stats.Options)
 	}
 }
+
+func TestStatsResponseButtonHasAnEmoji(t *testing.T) {
+	resp := StatsResponse("https://automute.us/", "123456789012345678", settings.MakeGuildSettings())
+	row, ok := resp.Data.Components[0].(discordgo.ActionsRow)
+	if !ok || len(row.Components) != 1 {
+		t.Fatalf("expected one action row with one button, got %+v", resp.Data.Components)
+	}
+	button, ok := row.Components[0].(discordgo.Button)
+	if !ok {
+		t.Fatalf("expected a button, got %T", row.Components[0])
+	}
+	// discordgo 0.27 always serializes the emoji; an empty name is rejected by Discord (COMPONENT_INVALID_EMOJI)
+	if button.Style != discordgo.LinkButton || button.Emoji.Name == "" {
+		t.Errorf("button = %+v", button)
+	}
+}

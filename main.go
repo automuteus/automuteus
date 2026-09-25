@@ -225,16 +225,22 @@ func discordMainWrapper() error {
 	}
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = bot.MakeAndStartBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
+		bots[i] = bot.MakeBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}
 	}
 
-	// initialize the token provider using the first shard's redis client and primary session
+	// The provider is wired to every shard before any of them connects: a shard adopts running games as soon as
+	// it is online and mutes through the provider, which used to be nil for the first seconds of a pod's life.
 	bots[0].InitTokenProvider(tokenProvider)
 	for i := 0; i < len(shards); i++ {
 		bots[i].SetTokenProvider(tokenProvider)
+	}
+	for i, shard := range shards {
+		if err := bots[i].Start(); err != nil {
+			log.Fatalf("bot %d failed to start: %v", shard, err)
+		}
 	}
 	tokenProvider.PopulateAndStartSessions(extraTokens)
 	if len(extraTokens) > 0 {

@@ -47,6 +47,10 @@ func TestSettingsResponse(t *testing.T) {
 	if button.Style != discordgo.LinkButton || button.URL != want || button.Label == "" {
 		t.Errorf("button = %+v", button)
 	}
+	// discordgo 0.27 always serializes the emoji; an empty name is rejected by Discord (COMPONENT_INVALID_EMOJI)
+	if button.Emoji.Name == "" {
+		t.Error("the button must carry an emoji")
+	}
 }
 
 func TestSettingsCommandHasNoOptions(t *testing.T) {

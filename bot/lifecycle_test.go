@@ -373,3 +373,12 @@ func TestAnnounceGame_PublishesOneGame(t *testing.T) {
 		t.Fatal("new game not announced")
 	}
 }
+
+// A shard must never reach the gateway without a voice provider: within seconds of connecting it adopts running
+// games and mutes through the provider, which is exactly the nil dereference that crashed pods on startup.
+func TestStart_RefusesWithoutAVoiceProvider(t *testing.T) {
+	err := (&Bot{}).Start()
+	if err == nil {
+		t.Fatal("Start succeeded with no voice provider")
+	}
+}

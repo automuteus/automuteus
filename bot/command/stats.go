@@ -56,6 +56,9 @@ func StatsResponse(webURL, guildID string, sett *settings.GuildSettings) *discor
 								Other: "Open stats",
 							}),
 							URL: url,
+							// Every button needs an emoji: discordgo 0.27 serializes a missing one as an empty
+							// name, which Discord rejects with COMPONENT_INVALID_EMOJI.
+							Emoji: discordgo.ComponentEmoji{Name: "📊"},
 						},
 					},
 				},
