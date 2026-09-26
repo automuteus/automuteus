@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -182,5 +183,26 @@ func TestListCache_BuildHasItsOwnDeadline(t *testing.T) {
 	}
 	if time.Since(start) > time.Second {
 		t.Fatal("the build ran past its deadline")
+	}
+}
+
+func TestListCache_PanicInFetchIsAnError(t *testing.T) {
+	var calls int32
+	cache := newListCache(30*time.Second, nil, func(_ context.Context, guildID string) ([]GuildRole, error) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			var roles []GuildRole
+			_ = roles[0] // a data-dependent bug in one build
+		}
+		return []GuildRole{{ID: guildID, Name: "r"}}, nil
+	})
+	if _, err := cache.get(context.Background(), writeGuild); err == nil || !strings.Contains(err.Error(), "panicked") {
+		t.Fatalf("err = %v, want the panic as an error", err)
+	}
+	// nothing was cached, and the next request builds again
+	if list, err := cache.get(context.Background(), writeGuild); err != nil || len(list) != 1 {
+		t.Fatalf("get after panic = %v, %v", list, err)
+	}
+	if calls != 2 {
+		t.Fatalf("fetches = %d, want the failed build not cached", calls)
 	}
 }

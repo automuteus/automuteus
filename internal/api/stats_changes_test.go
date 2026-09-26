@@ -18,6 +18,7 @@ func TestDataStore_StatsChangesRelayAnnouncements(t *testing.T) {
 	defer cancel()
 
 	store := NewStore(client, nil, Config{})
+	other := NewStore(client, nil, Config{})
 	changes := store.StatsChanges(ctx)
 	// give the subscription a moment to be registered before publishing
 	deadline := time.Now().Add(2 * time.Second)
@@ -28,7 +29,11 @@ func TestDataStore_StatsChangesRelayAnnouncements(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	if err := store.AnnounceStatsChanged(ctx, "123456789012345678"); err != nil {
+	// a replica's own announcement is skipped: it already forgot before announcing
+	if err := store.AnnounceStatsChanged(ctx, "023456789012345678"); err != nil {
+		t.Fatal(err)
+	}
+	if err := other.AnnounceStatsChanged(ctx, "123456789012345678"); err != nil {
 		t.Fatal(err)
 	}
 	if err := notice.AnnounceStatsChanged(ctx, client); err != nil {
@@ -38,7 +43,7 @@ func TestDataStore_StatsChangesRelayAnnouncements(t *testing.T) {
 	if err := client.Publish(ctx, "automuteus:stats:changed", "{").Err(); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.AnnounceStatsChanged(ctx, "223456789012345678"); err != nil {
+	if err := other.AnnounceStatsChanged(ctx, "223456789012345678"); err != nil {
 		t.Fatal(err)
 	}
 

@@ -214,9 +214,6 @@ func NewRouter(config Config, store Store) *gin.Engine {
 			channelList = lister
 		}
 	}
-	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles))
-	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
-	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
 	statsTTL := config.StatsCacheTTL
 	if statsTTL == 0 {
 		statsTTL = DefaultStatsCacheTTL
@@ -234,6 +231,10 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	if changes := store.StatsChanges(context.Background()); changes != nil {
 		go stats.applyChanges(changes)
 	}
+	// The settings writers get the caches too: the leaderboard minimum shapes every stats document.
+	guildGroup.PATCH("/settings", guildAuthentication(config, verifier, access, WriteSettings), handleUpdateGuildSettings(store, channels, roles, stats))
+	guildGroup.GET("/premium", guildAuthentication(config, verifier, access, ReadPremium), handleGetGuildPremium(store))
+	guildGroup.GET("/bot", guildAuthentication(config, verifier, access, ReadBotPresence), handleGetGuildBot(store))
 	guildGroup.GET("/stats", guildAuthentication(config, verifier, access, ReadStats), handleGetGuildStats(stats.guild, stats.guildFull))
 	guildGroup.GET("/match", guildAuthentication(config, verifier, access, ReadStats), handleGetMatchSummary(stats.match))
 	guildGroup.GET("/user", guildAuthentication(config, verifier, access, ReadStats), handleGetUserStats(stats.user))
@@ -242,7 +243,7 @@ func NewRouter(config Config, store Store) *gin.Engine {
 	guildGroup.POST("/user/reset", guildAuthorization(config, verifier, access, true, func(c *gin.Context, a VerifiedGuildAccess, guildID string) bool {
 		return AllowsUserStatsReset(a, guildID, c.Query("userID"))
 	}), handleResetUserStats(store, stats))
-	guildGroup.POST("/settings/reset", guildAuthentication(config, verifier, access, WriteSettings), handleResetGuildSettings(store))
+	guildGroup.POST("/settings/reset", guildAuthentication(config, verifier, access, WriteSettings), handleResetGuildSettings(store, stats))
 	guildGroup.GET("/channel", guildAuthentication(config, verifier, access, ReadSettings), handleGetGuildChannel(channels))
 	// The list routes are served from a short per-guild cache so a page held on refresh, or a busy guild, costs
 	// Discord a few calls a minute rather than a few per load. PATCH keeps the live lister for role validation.
@@ -600,7 +601,7 @@ type SettingsValidationError struct {
 // @Failure 501 {object} HttpError "Summary channel changes need DISCORD_BOT_TOKEN on the API"
 // @Failure 503 {object} HttpError
 // @Router /guild/settings [patch]
-func handleUpdateGuildSettings(store Store, channels ChannelVerifier, roles RoleLister) func(c *gin.Context) {
+func handleUpdateGuildSettings(store Store, channels ChannelVerifier, roles RoleLister, caches statsCaches) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		guildID := c.Query("guildID")
@@ -657,6 +658,7 @@ func handleUpdateGuildSettings(store Store, channels ChannelVerifier, roles Role
 		premiumBefore := current.PremiumSnapshot()
 		channelBefore := current.MatchSummaryChannelID
 		rolesBefore := append([]string(nil), current.PermissionRoleIDs...)
+		leaderboardMinBefore := current.GetLeaderboardMin()
 		if err := settings.UnmarshalStrict(body, current); err != nil {
 			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid settings document: " + err.Error()})
 			return
@@ -746,6 +748,7 @@ func handleUpdateGuildSettings(store Store, channels ChannelVerifier, roles Role
 			return
 		}
 		log.Printf("[API] Guild %s settings updated by %s (version %d -> %d): %s", guildID, requestActor(c), version, version+1, sentFields(body))
+		forgetStatsIfLeaderboardMinChanged(c, store, caches, guildID, leaderboardMinBefore, current.GetLeaderboardMin())
 		c.Header("ETag", settingsETag(version+1))
 		c.JSON(http.StatusOK, current)
 	}

@@ -86,8 +86,21 @@ func (s statsCaches) applyChanges(changes <-chan notice.StatsChanged) {
 	}
 }
 
+// forgetStatsIfLeaderboardMinChanged drops and announces the guild's stats documents after a settings write that
+// moved the leaderboard minimum, the one setting the documents are built from: it decides who ranks on the
+// guild's boards and where a player stands. Other settings leave the documents as they are, so they keep their
+// cache.
+func forgetStatsIfLeaderboardMinChanged(c *gin.Context, store Store, caches statsCaches, guildID string, before, after int) {
+	if before == after {
+		return
+	}
+	caches.forgetGuild(guildID)
+	announceStatsChanged(c, store, guildID)
+}
+
 // announceStatsChanged tells the other replicas what this one just forgot. The local caches were already dropped,
-// so a failed announcement only leaves the others to their TTL.
+// so a failed announcement only leaves the others to their TTL; the store keeps this replica from hearing its own
+// announcement and dropping them again.
 func announceStatsChanged(c *gin.Context, store Store, guildID string) {
 	if err := store.AnnounceStatsChanged(c.Request.Context(), guildID); err != nil {
 		log.Printf("Guild %s stats change announcement: %v\n", guildID, err)
@@ -196,7 +209,7 @@ func handleResetUserStats(store Store, caches statsCaches) func(c *gin.Context) 
 // @Failure 429 {object} HttpError
 // @Failure 503 {object} HttpError
 // @Router /guild/settings/reset [post]
-func handleResetGuildSettings(store Store) func(c *gin.Context) {
+func handleResetGuildSettings(store Store, caches statsCaches) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		guildID := c.Query("guildID")
@@ -216,7 +229,7 @@ func handleResetGuildSettings(store Store) func(c *gin.Context) {
 				Error: fmt.Sprintf("Too many settings changes for this guild; at most %d per %s", SettingsWriteLimit, SettingsWriteWindow)})
 			return
 		}
-		_, version, err := store.Settings(ctx, guildID)
+		before, version, err := store.Settings(ctx, guildID)
 		if err != nil {
 			log.Println(err)
 			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "Unable to load guild settings"})
@@ -242,6 +255,7 @@ func handleResetGuildSettings(store Store) func(c *gin.Context) {
 			return
 		}
 		log.Printf("[API] Guild %s settings reset to defaults by %s (version %d -> %d)", guildID, requestActor(c), version, version+1)
+		forgetStatsIfLeaderboardMinChanged(c, store, caches, guildID, before.GetLeaderboardMin(), defaults.GetLeaderboardMin())
 		c.Header("ETag", settingsETag(version+1))
 		c.JSON(http.StatusOK, defaults)
 	}

@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -256,6 +258,158 @@ func TestListCache_ForgetDiscardsAFetchInFlight(t *testing.T) {
 	if v, _ := c.get(context.Background(), "g"); v != 2 {
 		t.Fatalf("fresh build was not cached: got %d", v)
 	}
+}
+
+// A change in one guild must not throw away another guild's build. A large guild's rollup outlives the requests
+// that want it, and if every game finished elsewhere discarded it, the guild would 503 and rebuild forever.
+func TestListCache_ForgetOfAnotherKeyKeepsAFetchInFlight(t *testing.T) {
+	started, release := make(chan struct{}), make(chan struct{})
+	var builds int32
+	c := newListCache(time.Hour, nil, func(_ context.Context, key string) (string, error) {
+		n := atomic.AddInt32(&builds, 1)
+		if key == "a" && n == 1 {
+			close(started)
+			<-release
+		}
+		return fmt.Sprintf("%s%d", key, n), nil
+	})
+	done := make(chan string)
+	go func() {
+		v, _ := c.get(context.Background(), "a")
+		done <- v
+	}()
+	<-started
+	// b's own change: its entry and any build of b or of its matches and players, never a's.
+	forgetB := func(key string) bool { return key == "b" || strings.HasPrefix(key, "b/") }
+	c.forget(forgetB)
+	if _, err := c.get(context.Background(), "b"); err != nil {
+		t.Fatal(err)
+	}
+	c.forget(forgetB)
+	close(release)
+	if v := <-done; v != "a1" {
+		t.Fatalf("in-flight caller got %q", v)
+	}
+	if v, _ := c.get(context.Background(), "a"); v != "a1" {
+		t.Fatalf("a's build was discarded by b's changes: got %q", v)
+	}
+	if v, _ := c.get(context.Background(), "b"); v != "b3" {
+		t.Fatalf("b was not rebuilt after its own change: got %q", v)
+	}
+	if n := atomic.LoadInt32(&builds); n != 3 {
+		t.Fatalf("builds = %d, want a once and b twice", n)
+	}
+}
+
+// A forget that matches the key of a build in flight, whether for that guild or for every guild, discards it.
+func TestListCache_ForgetMatchingTheKeyDiscardsAFetchInFlight(t *testing.T) {
+	for name, match := range map[string]func(string) bool{
+		"guild": func(key string) bool { return key == "g" },
+		"all":   func(string) bool { return true },
+	} {
+		t.Run(name, func(t *testing.T) {
+			started, release := make(chan struct{}), make(chan struct{})
+			var builds int32
+			c := newListCache(time.Hour, nil, func(context.Context, string) (int32, error) {
+				n := atomic.AddInt32(&builds, 1)
+				if n == 1 {
+					close(started)
+					<-release
+				}
+				return n, nil
+			})
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				c.get(context.Background(), "g")
+			}()
+			<-started
+			c.forget(match)
+			close(release)
+			<-done
+			if v, _ := c.get(context.Background(), "g"); v != 2 {
+				t.Fatalf("stale build was cached: got %d", v)
+			}
+		})
+	}
+}
+
+// The leaderboard minimum is built into every stats document, so a settings write that moves it must drop the
+// guild's documents here and tell the other replicas, or the boards show the old cut-off for the rest of the TTL.
+func TestSettingsWrite_LeaderboardMinChangeDropsAndAnnouncesStats(t *testing.T) {
+	t.Run("PATCH", func(t *testing.T) {
+		s := &fakeStore{}
+		r, _ := writeRouter(s, ownerAccess)
+		statsPath := "/guild/stats?guildID=" + writeGuild
+		userPath := "/guild/user?guildID=" + writeGuild + "&userID=223456789012345678"
+		for _, path := range []string{statsPath, userPath, statsPath} {
+			if w := bearerRequest(r, path, "valid"); w.Code != 200 {
+				t.Fatalf("%s: %d %s", path, w.Code, w.Body)
+			}
+		}
+		if s.statsCalls != 1 || s.userCalls != 1 {
+			t.Fatalf("builds before the change: guild %d, user %d; want one each", s.statsCalls, s.userCalls)
+		}
+		// a change to another setting leaves the documents cached
+		if w := patchSettings(r, "valid", `{"unmuteDeadDuringTasks":true}`); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		bearerRequest(r, statsPath, "valid")
+		if s.statsCalls != 1 || len(s.announced) != 0 {
+			t.Fatalf("an unrelated setting: builds %d, announced %v; want the rollup kept and nothing announced", s.statsCalls, s.announced)
+		}
+		// echoing the stored minimum back is not a change either
+		if w := patchSettings(r, "valid", `{"leaderboardMin":3}`); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		bearerRequest(r, statsPath, "valid")
+		if s.statsCalls != 1 || len(s.announced) != 0 {
+			t.Fatalf("the same minimum: builds %d, announced %v; want the rollup kept and nothing announced", s.statsCalls, s.announced)
+		}
+		s.stored = s.saved
+		if w := patchSettings(r, "valid", `{"leaderboardMin":5}`); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		if len(s.announced) != 1 || len(s.announced[0]) != 1 || s.announced[0][0] != writeGuild {
+			t.Fatalf("announced %v, want the guild once", s.announced)
+		}
+		for _, path := range []string{statsPath, userPath} {
+			if w := bearerRequest(r, path, "valid"); w.Code != 200 {
+				t.Fatalf("%s: %d %s", path, w.Code, w.Body)
+			}
+		}
+		if s.statsCalls != 2 || s.userCalls != 2 {
+			t.Fatalf("builds after the change: guild %d, user %d; want both rebuilt", s.statsCalls, s.userCalls)
+		}
+	})
+
+	t.Run("reset", func(t *testing.T) {
+		changed := settings.MakeGuildSettings()
+		changed.SetLeaderboardMin(5)
+		s := &fakeStore{stored: changed}
+		r, _ := writeRouter(s, ownerAccess)
+		statsPath := "/guild/stats?guildID=" + writeGuild
+		bearerRequest(r, statsPath, "valid")
+		if w := postReset(r, "/guild/settings/reset?guildID="+writeGuild, "valid", ""); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		if len(s.announced) != 1 || len(s.announced[0]) != 1 || s.announced[0][0] != writeGuild {
+			t.Fatalf("announced %v, want the guild once", s.announced)
+		}
+		bearerRequest(r, statsPath, "valid")
+		if s.statsCalls != 2 {
+			t.Fatalf("builds = %d, want the rollup rebuilt with the default minimum", s.statsCalls)
+		}
+		// a reset of a guild already at the default minimum changes no document
+		s.stored = s.saved
+		if w := postReset(r, "/guild/settings/reset?guildID="+writeGuild, "valid", ""); w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		bearerRequest(r, statsPath, "valid")
+		if s.statsCalls != 2 || len(s.announced) != 1 {
+			t.Fatalf("a reset at the default: builds %d, announced %v; want the rollup kept and no new announcement", s.statsCalls, s.announced)
+		}
+	})
 }
 
 func TestResetSettings_StoresDefaultsAndBumpsVersion(t *testing.T) {

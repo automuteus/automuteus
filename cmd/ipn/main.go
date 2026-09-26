@@ -17,7 +17,9 @@ import (
 
 	"github.com/automuteus/automuteus/v8/internal/ipn"
 	"github.com/automuteus/automuteus/v8/pkg/logging"
+	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -31,10 +33,13 @@ type config struct {
 	receiver    string
 	port        string
 	sandbox     bool
+	// redis is optional: with an address, premium changes are announced to the API's stats caches.
+	redis redis.Options
 }
 
 func configFromEnv(getenv func(string) string) (config, error) {
-	c := config{receiver: getenv("IPN_EMAIL"), port: getenv("IPN_PORT"), sandbox: getenv("IPN_SANDBOX") != ""}
+	c := config{receiver: getenv("IPN_EMAIL"), port: getenv("IPN_PORT"), sandbox: getenv("IPN_SANDBOX") != "",
+		redis: redis.Options{Addr: getenv("REDIS_ADDR"), Username: getenv("REDIS_USER"), Password: getenv("REDIS_PASS")}}
 	for _, key := range []string{"POSTGRES_ADDR", "IPN_POSTGRES_USER", "IPN_POSTGRES_PASS", "IPN_EMAIL"} {
 		if getenv(key) == "" {
 			return c, fmt.Errorf("%s is required", key)
@@ -78,6 +83,18 @@ func run(ctx context.Context) error {
 	}
 
 	listener := &ipn.Listener{DB: pool, Verifier: ipn.NewPayPalVerifier(cfg.sandbox), Receiver: cfg.receiver, Sandbox: cfg.sandbox}
+	if cfg.redis.Addr != "" {
+		client := redis.NewClient(&cfg.redis)
+		defer client.Close()
+		if err := client.Ping(startupCtx).Err(); err != nil {
+			return fmt.Errorf("connect Redis: %w", err)
+		}
+		listener.Announce = func(ctx context.Context, guildIDs ...string) error {
+			return notice.AnnounceStatsChanged(ctx, client, guildIDs...)
+		}
+	} else {
+		log.Println("No REDIS_ADDR; premium changes are not announced to the API, whose stats pages update on their cache TTL")
+	}
 	mux := http.NewServeMux()
 	mux.Handle("/paypal-ipn", listener)
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
