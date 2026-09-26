@@ -56,6 +56,11 @@ type fakeStore struct {
 	user      *UserStats
 	userErr   error
 	userCalls int
+	// announced records every AnnounceStatsChanged call; announceErr fails them. changes, when set, is what
+	// StatsChanges returns, so a test can feed the router announcements.
+	announced   [][]string
+	announceErr error
+	changes     chan notice.StatsChanged
 	// botGuilds and statsGuilds are the guilds BotInGuilds and GuildsWithStats answer true for.
 	botGuilds   map[string]bool
 	statsGuilds map[string]bool
@@ -80,6 +85,15 @@ func (s *fakeStore) ClearNotice(context.Context) error {
 	s.calls++
 	s.notice = nil
 	return s.err
+}
+
+func (s *fakeStore) AnnounceStatsChanged(_ context.Context, guildIDs ...string) error {
+	s.announced = append(s.announced, append([]string(nil), guildIDs...))
+	return s.announceErr
+}
+
+func (s *fakeStore) StatsChanges(context.Context) <-chan notice.StatsChanged {
+	return s.changes
 }
 
 func (s *fakeStore) Info(context.Context) (Info, error) {

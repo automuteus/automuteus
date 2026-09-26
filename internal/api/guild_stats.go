@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -21,10 +22,31 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// DefaultStatsCacheTTL bounds how long GET /guild/stats reuses a guild's rollup. Statistics only change when a
-// game ends, and the premium boards are several self-joins over the guild's whole history, so a page held on
-// refresh or a crowd opening the same guild should cost Postgres one build a minute, not one per view.
-const DefaultStatsCacheTTL = time.Minute
+// DefaultStatsCacheTTL bounds how long GET /guild/stats reuses a guild's rollup when no change is announced.
+// Statistics only change when a match is recorded, aborted, or reset, and the bot announces each of those over
+// Redis (see Store.StatsChanges), so the TTL is only a backstop for announcements lost while a replica was
+// reconnecting. The premium boards are several self-joins over the guild's whole history, so the backstop is
+// long: a crowd holding a big guild's page open should cost Postgres one build per change, not one a minute.
+const DefaultStatsCacheTTL = 15 * time.Minute
+
+// DefaultStatsBuildTimeout bounds one build of a stats document. It is far longer than the request deadline on
+// purpose: the largest guilds' rollups take longer than a request, so the first request answers 503 with a
+// Retry-After while the build finishes in the background and lands in the cache for the retry. The API's
+// API_STATS_BUILD_TIMEOUT raises it for a deployment whose largest guilds need longer; beyond a few minutes the
+// queries or indexes need work, not more patience.
+const DefaultStatsBuildTimeout = 2 * time.Minute
+
+// stillBuildingRetryAfter is the Retry-After (in seconds) sent with a 503 while a document is being built.
+const stillBuildingRetryAfter = "5"
+
+// respondStillBuilding answers a request that gave up waiting on a build that is still running.
+func respondStillBuilding(c *gin.Context, what string) {
+	c.Header("Retry-After", stillBuildingRetryAfter)
+	c.JSON(http.StatusServiceUnavailable, HttpError{
+		StatusCode: http.StatusServiceUnavailable,
+		Error:      what + " are still being built; retry in a few seconds",
+	})
+}
 
 // leaderboardSize is how many entries every board holds. The bot's leaderboard size setting is not consulted: on
 // a page a fixed count keeps the boards the same height, and the setting is being retired.
@@ -359,6 +381,8 @@ func round1(v float64) float64 {
 // @Failure 401 {object} HttpError
 // @Failure 403 {object} HttpError
 // @Failure 500 {object} HttpError
+// @Failure 503 {object} HttpError "The rollup is still being built; retry after the Retry-After header"
+// @Header 503 {string} Retry-After "Seconds to wait before retrying"
 // @Router /guild/stats [get]
 func handleGetGuildStats(stats, full *listCache[GuildStats]) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -377,6 +401,11 @@ func handleGetGuildStats(stats, full *listCache[GuildStats]) func(c *gin.Context
 			cache = full
 		}
 		result, err := cache.get(c.Request.Context(), guildID)
+		if errors.Is(err, errStillBuilding) {
+			log.Printf("Guild %s stats: request gave up waiting; the build continues\n", guildID)
+			respondStillBuilding(c, "guild statistics")
+			return
+		}
 		if err != nil {
 			log.Printf("Guild %s stats: %v\n", guildID, err)
 			c.JSON(http.StatusInternalServerError, HttpError{

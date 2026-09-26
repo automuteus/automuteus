@@ -57,6 +57,15 @@ func configFromEnv(getenv func(string) string) (config, error) {
 	if c.api.CaptureHost == "" {
 		c.api.CaptureHost = "http://localhost:8123"
 	}
+	// The largest guilds' stats rollups can outlast the default build budget; an operator raises it here rather
+	// than the request deadline, which the proxies in front of the API bound.
+	if raw := getenv("API_STATS_BUILD_TIMEOUT"); raw != "" {
+		d, err := time.ParseDuration(raw)
+		if err != nil || d <= 0 {
+			return c, errors.New("API_STATS_BUILD_TIMEOUT must be a positive duration such as 5m")
+		}
+		c.api.StatsBuildTimeout = d
+	}
 	return c, nil
 }
 

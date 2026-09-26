@@ -122,6 +122,9 @@ func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 	if got := deps.recorder.aborted; len(got) != 2 {
 		t.Errorf("aborted matches = %v, want both", got)
 	}
+	if got := deps.notices.statsAnnouncements(); len(got) != 2 {
+		t.Errorf("stats announcements = %v, want one per aborted match", got)
+	}
 	for _, u := range []uint64{10, 11, 20, 21} {
 		if !unmutedUsers(deps)[u] {
 			t.Errorf("user %d was not unmuted", u)

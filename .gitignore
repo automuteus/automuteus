@@ -41,3 +41,5 @@ AGENTS.md
 CLAUDE.md
 .claude/
 .serena/
+# Grafana dashboard exports are meant to be committed
+!grafana/*.json

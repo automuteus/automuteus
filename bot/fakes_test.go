@@ -281,8 +281,9 @@ func (f fakeSettings) LoadGuildSettings(context.Context, string) (*settings.Guil
 }
 
 type fakeNotices struct {
-	mu sync.Mutex
-	n  *notice.Notice
+	mu        sync.Mutex
+	n         *notice.Notice
+	announced [][]string
 }
 
 func (f *fakeNotices) Active(context.Context) (*notice.Notice, error) {
@@ -295,6 +296,20 @@ func (f *fakeNotices) set(n *notice.Notice) {
 	f.mu.Lock()
 	f.n = n
 	f.mu.Unlock()
+}
+
+func (f *fakeNotices) AnnounceStatsChanged(_ context.Context, guildIDs ...string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.announced = append(f.announced, append([]string(nil), guildIDs...))
+	return nil
+}
+
+// statsAnnouncements returns every stats change announced so far, one guild list per announcement.
+func (f *fakeNotices) statsAnnouncements() [][]string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([][]string(nil), f.announced...)
 }
 
 type fakeMetrics struct {

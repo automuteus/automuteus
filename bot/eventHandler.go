@@ -313,7 +313,11 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 					bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 1)
 				}
 			}
-			go dumpGameToPostgres(gl, *dgs, bot.recorder, gameOverResult, payload)
+			go func(dgs GameState, gameOver game.Gameover, payload string) {
+				if dumpGameToPostgres(gl, dgs, bot.recorder, gameOver, payload) {
+					bot.announceStatsChanged(dgs.GuildID)
+				}
+			}(*dgs, gameOverResult, payload)
 
 			// refresh the game message if the setting is marked (it is not locked, the previous dgs is
 			// read-only). This means the original msg is refreshed, not the gameover message
@@ -633,10 +637,10 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 
 // dumpGameToPostgres records a match's result and linked players, and keeps the capture's game over payload as an
 // event of the match: it is the only record of every player's role, linked or not.
-func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover, payload string) {
+func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameOver game.Gameover, payload string) bool {
 	if dgs.MatchID < 0 || dgs.MatchStartUnix < 0 {
 		gl.Debug("no active match; not recording game result")
-		return
+		return false
 	}
 	end := time.Now().Unix()
 
@@ -710,7 +714,8 @@ func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameO
 	err = psql.UpdateGameAndPlayers(dgs.MatchID, int16(gameOver.GameOverReason), end, userGames)
 	if err != nil {
 		gl.Error("failed to record match result", "match", dgs.MatchID, "err", err)
-		return
+		return false
 	}
 	gl.Info("match recorded", "match", dgs.MatchID, "players", len(userGames), "reason", gameOver.GameOverReason)
+	return true
 }

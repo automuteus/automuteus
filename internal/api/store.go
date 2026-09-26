@@ -3,6 +3,8 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,6 +37,9 @@ type DataStore struct {
 	// profiles resolves stats-page users through Discord with the bot's credentials; nil leaves only cached profiles.
 	profiles ProfileFetcher
 	config   Config
+	// origin names this replica in its stats change announcements, so StatsChanges can skip the echo of what
+	// this replica already forgot itself.
+	origin string
 }
 
 func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStore {
@@ -42,7 +47,16 @@ func NewStore(client *redis.Client, pool *pgxpool.Pool, config Config) *DataStor
 	if profiles == nil && config.BotToken != "" {
 		profiles = newDiscordChannelVerifier(config.BotToken)
 	}
-	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool), profiles: profiles, config: config}
+	return &DataStore{redis: client, postgres: pool, stats: pool, settings: storage.NewPostgresStorage(pool), profiles: profiles, config: config, origin: newOrigin()}
+}
+
+// newOrigin is a random ID unique enough to tell replicas apart; it only ever has to differ from theirs.
+func newOrigin() string {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return strconv.FormatInt(time.Now().UnixNano(), 36)
+	}
+	return hex.EncodeToString(b[:])
 }
 
 func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {
@@ -55,6 +69,47 @@ func (s *DataStore) RaiseNotice(ctx context.Context, n notice.Notice) error {
 
 func (s *DataStore) ClearNotice(ctx context.Context) error {
 	return notice.Clear(ctx, s.redis)
+}
+
+func (s *DataStore) AnnounceStatsChanged(ctx context.Context, guildIDs ...string) error {
+	return notice.PublishStatsChanged(ctx, s.redis, notice.StatsChanged{GuildIDs: guildIDs, Origin: s.origin})
+}
+
+// StatsChanges subscribes to the bot's stats change announcements and relays them until ctx ends or the Redis
+// client closes. This store's own announcements are skipped: the caller forgot before announcing, and forgetting
+// again would discard a rebuild already under way. The subscription reconnects by itself; announcements
+// published meanwhile are missed, which the stats cache TTL covers.
+func (s *DataStore) StatsChanges(ctx context.Context) <-chan notice.StatsChanged {
+	sub := notice.SubscribeStatsChanged(ctx, s.redis)
+	out := make(chan notice.StatsChanged, 64)
+	go func() {
+		defer close(out)
+		defer sub.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-sub.Channel():
+				if !ok {
+					return
+				}
+				change, err := notice.DecodeStatsChanged([]byte(msg.Payload))
+				if err != nil {
+					log.Printf("malformed stats change announcement: %v", err)
+					continue
+				}
+				if change.Origin != "" && change.Origin == s.origin {
+					continue
+				}
+				select {
+				case out <- *change:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return out
 }
 
 // BotInGuild checks the same Redis set the bot adds to on GuildCreate and removes from on GuildDelete, so the

@@ -24,6 +24,9 @@ import (
 // NoticeSource reads the active platform notice.
 type NoticeSource interface {
 	Active(ctx context.Context) (*notice.Notice, error)
+	// AnnounceStatsChanged tells the API's stats caches that the named guilds' recorded history changed, or every
+	// guild's when none is named.
+	AnnounceStatsChanged(ctx context.Context, guildIDs ...string) error
 }
 
 type redisNotices struct {
@@ -32,6 +35,20 @@ type redisNotices struct {
 
 func (r redisNotices) Active(ctx context.Context) (*notice.Notice, error) {
 	return notice.Active(ctx, r.client)
+}
+
+func (r redisNotices) AnnounceStatsChanged(ctx context.Context, guildIDs ...string) error {
+	return notice.AnnounceStatsChanged(ctx, r.client, guildIDs...)
+}
+
+// announceStatsChanged tells the API that the named guilds' stats (every guild's, when none is named) are stale.
+// Failures are logged only: the API's cache TTL bounds how long the page stays behind if the announcement is lost.
+func (bot *Bot) announceStatsChanged(guildIDs ...string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := bot.notices.AnnounceStatsChanged(ctx, guildIDs...); err != nil {
+		bot.log.Error("failed to announce stats change", "guilds", guildIDs, "err", err)
+	}
 }
 
 var _ NoticeSource = redisNotices{}
@@ -220,6 +237,7 @@ func (bot *Bot) finishGame(dgs *GameState, reason server.EndReason, message stri
 			result = errors.Join(result, err)
 		} else {
 			gl.Info("match aborted", "match", dgs.MatchID)
+			bot.announceStatsChanged(dgs.GuildID)
 		}
 	}
 

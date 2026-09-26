@@ -375,6 +375,8 @@ func buildMatchTimeline(start int64, events []*pgstorage.PostgresGameEvent, onRo
 // @Failure 403 {object} HttpError
 // @Failure 404 {object} HttpError
 // @Failure 500 {object} HttpError
+// @Failure 503 {object} HttpError "The summary is still being built; retry after the Retry-After header"
+// @Header 503 {string} Retry-After "Seconds to wait before retrying"
 // @Router /guild/match [get]
 func handleGetMatchSummary(matches *listCache[MatchSummary]) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -400,6 +402,10 @@ func handleGetMatchSummary(matches *listCache[MatchSummary]) func(c *gin.Context
 				StatusCode: http.StatusNotFound,
 				Error:      "match not found",
 			})
+			return
+		}
+		if errors.Is(err, errStillBuilding) {
+			respondStillBuilding(c, "match summaries")
 			return
 		}
 		if err != nil {

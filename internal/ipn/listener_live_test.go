@@ -18,10 +18,11 @@ import (
 const receiver = "shop@example.com"
 
 type fakeVerifier struct {
-	mu     sync.Mutex
-	answer bool
-	err    error
-	calls  int
+	mu        sync.Mutex
+	answer    bool
+	err       error
+	calls     int
+	announced []string
 }
 
 func (f *fakeVerifier) Verify(context.Context, []byte) (bool, error) {
@@ -86,7 +87,25 @@ func liveListener(t *testing.T, now time.Time) (*Listener, *pgxpool.Pool, *fakeV
 		t.Fatal(err)
 	}
 	v := &fakeVerifier{answer: true}
-	return &Listener{DB: pool, Verifier: v, Receiver: receiver, Now: func() time.Time { return now }}, owner, v
+	return &Listener{DB: pool, Verifier: v, Receiver: receiver, Now: func() time.Time { return now }, Announce: v.announce}, owner, v
+}
+
+// announce records the guilds the listener says changed, as the API's stats caches would hear them.
+func (f *fakeVerifier) announce(_ context.Context, guildIDs ...string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.announced = append(f.announced, guildIDs...)
+	return nil
+}
+
+func expectAnnounced(t *testing.T, v *fakeVerifier, want ...string) {
+	t.Helper()
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if strings.Join(v.announced, ",") != strings.Join(want, ",") {
+		t.Fatalf("announced %v, want %v", v.announced, want)
+	}
+	v.announced = nil
 }
 
 // notification builds a form body the way PayPal sends it.
@@ -153,10 +172,13 @@ func TestLiveSubscriptionLifecycle(t *testing.T) {
 	if count(t, db, "SELECT count(*) FROM guilds WHERE guild_id = $1::numeric", g) != 0 {
 		t.Fatal("a signup alone granted premium")
 	}
+	expectAnnounced(t, v) // nothing changed yet
 	pay1 := notification("t2", first, "txn_type", "subscr_payment", "txn_id", "TX1", "subscr_id", "I-A", "custom", g,
 		"item_name", "AutoMuteUs Silver", "mc_gross", "3.50", "payment_status", "Completed", "first_name", "Zo\xeb")
 	handle(t, l, pay1, http.StatusOK)
 	expectGuild(t, db, g, 2, first.Unix())
+	// the API's stats caches are told once the premium row changed
+	expectAnnounced(t, v, g)
 
 	// A retry of a processed notification changes nothing and is not re-verified.
 	calls := v.calls
@@ -164,6 +186,7 @@ func TestLiveSubscriptionLifecycle(t *testing.T) {
 	if v.calls != calls || count(t, db, "SELECT count(*) FROM transactions WHERE tx_id = 'TX1'") != 1 {
 		t.Fatal("retry was reprocessed")
 	}
+	expectAnnounced(t, v)
 
 	second := now.Add(-2 * 24 * time.Hour)
 	handle(t, l, notification("t3", second, "txn_type", "subscr_payment", "txn_id", "TX2", "subscr_id", "I-A", "custom", g,

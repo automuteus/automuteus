@@ -42,6 +42,7 @@ and `IpnTrackID`. There is now one row per PayPal transaction, updated as its st
 | `IPN_EMAIL` | the PayPal account's email; notifications for other receivers grant nothing |
 | `IPN_PORT` | default 3000 |
 | `IPN_SANDBOX` | any value: verify against the PayPal sandbox and accept only sandbox notifications |
+| `REDIS_ADDR`, `REDIS_USER`, `REDIS_PASS` | optional; the bot's Redis. With it, every premium change is announced so the API's cached stats pages rebuild at once instead of on their TTL |
 
 The listener also serves `GET /` for liveness and `GET /ready` for readiness; `/ready` pings the database.
 
