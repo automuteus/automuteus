@@ -31,8 +31,9 @@ const DefaultStatsCacheTTL = 15 * time.Minute
 
 // DefaultStatsBuildTimeout bounds one build of a stats document. It is far longer than the request deadline on
 // purpose: the largest guilds' rollups take longer than a request, so the first request answers 503 with a
-// Retry-After while the build finishes in the background and lands in the cache for the retry. Beyond this the
-// guild is too large for on-demand rollups and the queries or indexes need work, not more patience.
+// Retry-After while the build finishes in the background and lands in the cache for the retry. The API's
+// API_STATS_BUILD_TIMEOUT raises it for a deployment whose largest guilds need longer; beyond a few minutes the
+// queries or indexes need work, not more patience.
 const DefaultStatsBuildTimeout = 2 * time.Minute
 
 // stillBuildingRetryAfter is the Retry-After (in seconds) sent with a 503 while a document is being built.

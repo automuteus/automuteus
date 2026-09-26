@@ -191,6 +191,7 @@ See [API authorization](internal/api/AUTHORIZATION.md) for scopes, response diff
 | `API_PORT` | no | Executable's listening port; defaults to `5000`. Compose maps its host `API_PORT` to container `SERVICE_PORT`. |
 | `API_SERVER_URL` | no | Public API URL for Swagger; defaults to `http://localhost`. Also retain this on bots for capture links. |
 | `API_ADMIN_PASS` | no | Basic Auth password for user `admin`; defaults to `automuteus`. Game/guild access and raising or clearing platform notices require a non-default value. |
+| `API_STATS_BUILD_TIMEOUT` | no | How long one build of a stats document (`/guild/stats`, `/guild/user`, `/guild/match`) may run, as a Go duration such as `5m`; defaults to `2m`. A request that outlasts its own deadline answers `503` with `Retry-After` while the build finishes and is cached for the retry, so this is the ceiling for the largest guilds, not a request timeout. |
 | `LOG_FORMAT`, `LOG_LEVEL` | no | `text` (default) or `json`; `debug`, `info` (default), `warn`, or `error`. Shared by the bot, API, and Galactus. |
 | `HOST` | no | Public Galactus URL for capture links; defaults to `http://localhost:8123`. |
 | `WEB_URL` | no | Bot only: public URL of the web dashboard, which `/settings`, `/stats`, and game over summaries link to; defaults to `https://automute.us`. |
