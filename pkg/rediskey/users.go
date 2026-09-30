@@ -3,7 +3,7 @@ package rediskey
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
 

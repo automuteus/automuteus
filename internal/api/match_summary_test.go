@@ -13,7 +13,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/gin-gonic/gin"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 const testMatchNum = int64(42)

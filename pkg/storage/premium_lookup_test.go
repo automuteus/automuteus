@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 func TestCheckedGuildPremiumStatus(t *testing.T) {

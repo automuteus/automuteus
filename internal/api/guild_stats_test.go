@@ -15,7 +15,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/gin-gonic/gin"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 const testGuildNum = uint64(123456789012345678)

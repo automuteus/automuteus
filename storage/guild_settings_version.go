@@ -9,7 +9,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // SettingsVersion counts writes to a guild's settings row. It is 1 when the

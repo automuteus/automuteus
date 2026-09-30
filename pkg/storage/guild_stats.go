@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/georgysavva/scany/pgxscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 )
 
 // The guild-wide statistics below back the HTTP API's stats page. They take a context, return errors instead of

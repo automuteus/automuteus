@@ -8,7 +8,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/locale"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/storage"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 const testGuildID = "123456789012345678"
@@ -28,6 +28,16 @@ func newSettingsStore(t *testing.T) (*DataStore, pgxmock.PgxPoolIface) {
 		mock.Close()
 	})
 	return &DataStore{settings: storage.NewPostgresStorage(mock)}, mock
+}
+
+// anyArgs matches a statement by its argument count alone; pgxmock treats an expectation without WithArgs as
+// taking no arguments.
+func anyArgs(n int) []interface{} {
+	args := make([]interface{}, n)
+	for i := range args {
+		args[i] = pgxmock.AnyArg()
+	}
+	return args
 }
 
 func TestDataStoreSetSettings_WritesValidDocument(t *testing.T) {
@@ -146,7 +156,7 @@ func TestDataStoreSetSettings_ConditionalUpdate(t *testing.T) {
 
 func TestDataStoreSetSettings_ConflictPassesThrough(t *testing.T) {
 	store, mock := newSettingsStore(t)
-	mock.ExpectExec(`UPDATE guild_settings SET`).WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+	mock.ExpectExec(`UPDATE guild_settings SET`).WithArgs(anyArgs(17)...).WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 	err := store.SetSettings(context.Background(), testGuildID, settings.MakeGuildSettings(), 4)
 	if !errors.Is(err, storage.ErrSettingsConflict) {
 		t.Fatalf("want ErrSettingsConflict, got %v", err)

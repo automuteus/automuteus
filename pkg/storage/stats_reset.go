@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Execer is the part of a pool or transaction the stats resets need.

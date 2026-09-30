@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 )
 
 // Subscription is what the payment listener (cmd/ipn) knows about the subscription paying for a guild's premium.

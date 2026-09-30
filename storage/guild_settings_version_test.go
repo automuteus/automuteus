@@ -10,8 +10,8 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/jackc/pgx/v4"
-	"github.com/pashagolub/pgxmock"
+	"github.com/jackc/pgx/v5"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 // versionPlaceholder is the positional parameter the expected version occupies: after the hash and every column.
@@ -49,7 +49,7 @@ func TestLoadVersionReturnsRowVersion(t *testing.T) {
 
 func TestLoadVersionMissingRowIsNoSettingsRow(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(anyArgs(1)...).WillReturnError(pgx.ErrNoRows)
 	sett, version, err := NewPostgresStorage(mock).LoadGuildSettingsVersion(context.Background(), "123")
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +63,7 @@ func TestLoadVersionMissingRowIsNoSettingsRow(t *testing.T) {
 func TestLoadVersionFailureDoesNotReturnSettings(t *testing.T) {
 	mock := newMock(t)
 	failure := errors.New("database unavailable")
-	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WillReturnError(failure)
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(anyArgs(1)...).WillReturnError(failure)
 	sett, _, err := NewPostgresStorage(mock).LoadGuildSettingsVersion(context.Background(), "123")
 	if !errors.Is(err, failure) || sett != nil {
 		t.Fatalf("got %v, %v", sett, err)
@@ -73,7 +73,7 @@ func TestLoadVersionFailureDoesNotReturnSettings(t *testing.T) {
 // A row must never report a version below 1: that would let a conditional write treat it as absent.
 func TestLoadVersionRejectsImpossibleVersion(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(anyArgs(1)...).
 		WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(selectRow(defaultRow(), 0)...))
 	sett, _, err := NewPostgresStorage(mock).LoadGuildSettingsVersion(context.Background(), "123")
 	if err == nil || sett != nil {
@@ -85,7 +85,7 @@ func TestLoadVersionRejectsImpossibleVersion(t *testing.T) {
 // the row between the two: exactly one SELECT is issued.
 func TestLoadVersionIsASingleQuery(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").
+	mock.ExpectQuery("SELECT .* FROM guild_settings WHERE guild_hash").WithArgs(anyArgs(1)...).
 		WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(selectRow(defaultRow(), 3)...))
 	if _, version, err := NewPostgresStorage(mock).LoadGuildSettingsVersion(context.Background(), "123"); err != nil || version != 3 {
 		t.Fatalf("version=%d err=%v", version, err)
@@ -108,7 +108,7 @@ func TestSetIfVersionCreatesMissingRow(t *testing.T) {
 // A row that appeared between the read and the write is a conflict, not an overwrite.
 func TestSetIfVersionCreateConflictsWhenRowAppeared(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectExec(`INSERT INTO guild_settings .* DO NOTHING`).WillReturnResult(pgxmock.NewResult("INSERT", 0))
+	mock.ExpectExec(`INSERT INTO guild_settings .* DO NOTHING`).WithArgs(anyArgs(16)...).WillReturnResult(pgxmock.NewResult("INSERT", 0))
 	err := NewPostgresStorage(mock).SetGuildSettingsIfVersion(context.Background(), "123", settings.MakeGuildSettings(), NoSettingsRow)
 	if !errors.Is(err, ErrSettingsConflict) {
 		t.Fatalf("want ErrSettingsConflict, got %v", err)
@@ -132,7 +132,7 @@ func TestSetIfVersionUpdatesMatchingRow(t *testing.T) {
 
 func TestSetIfVersionUpdateConflictsWhenVersionMoved(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectExec(`UPDATE guild_settings SET`).WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+	mock.ExpectExec(`UPDATE guild_settings SET`).WithArgs(anyArgs(17)...).WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 	err := NewPostgresStorage(mock).SetGuildSettingsIfVersion(context.Background(), "123", settings.MakeGuildSettings(), 3)
 	if !errors.Is(err, ErrSettingsConflict) {
 		t.Fatalf("want ErrSettingsConflict, got %v", err)
@@ -142,7 +142,7 @@ func TestSetIfVersionUpdateConflictsWhenVersionMoved(t *testing.T) {
 func TestSetIfVersionReportsStorageFailure(t *testing.T) {
 	mock := newMock(t)
 	failure := errors.New("connection reset")
-	mock.ExpectExec(`UPDATE guild_settings SET`).WillReturnError(failure)
+	mock.ExpectExec(`UPDATE guild_settings SET`).WithArgs(anyArgs(17)...).WillReturnError(failure)
 	err := NewPostgresStorage(mock).SetGuildSettingsIfVersion(context.Background(), "123", settings.MakeGuildSettings(), 3)
 	if !errors.Is(err, failure) || errors.Is(err, ErrSettingsConflict) {
 		t.Fatalf("want the storage error, got %v", err)

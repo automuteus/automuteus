@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -431,7 +431,7 @@ func (l *Listener) Reconcile(ctx context.Context) error {
 	var changed []string
 	for _, g := range guilds {
 		var did bool
-		err := l.DB.BeginFunc(ctx, func(tx pgx.Tx) (err error) {
+		err := pgx.BeginFunc(ctx, l.DB, func(tx pgx.Tx) (err error) {
 			did, err = recompute(ctx, tx, g, now)
 			return err
 		})

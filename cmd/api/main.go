@@ -20,7 +20,7 @@ import (
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Set by the same release tag/commit ldflags as the bot and Galactus.
@@ -111,11 +111,14 @@ func run(ctx context.Context) error {
 	// then costs about a second per query, most of their runtime. None of the API's queries run long enough to
 	// earn it back.
 	poolConfig.ConnConfig.RuntimeParams["jit"] = "off"
-	pool, err := pgxpool.ConnectConfig(startupCtx, poolConfig)
+	pool, err := pgxpool.NewWithConfig(startupCtx, poolConfig)
 	if err != nil {
 		return fmt.Errorf("connect Postgres: %w", err)
 	}
 	defer pool.Close()
+	if err := pool.Ping(startupCtx); err != nil {
+		return fmt.Errorf("connect Postgres: %w", err)
+	}
 	if err := storage.ApplySchemas(startupCtx, pool, cfg.api.Official); err != nil {
 		return err
 	}

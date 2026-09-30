@@ -2,8 +2,7 @@ package storage
 
 import (
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/jackc/pgconn"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 	"time"
 )
@@ -116,7 +115,7 @@ func TestInsertUser(t *testing.T) {
 	}
 
 	mock.ExpectExec("^INSERT INTO users VALUES ((.+), true, NULL)(.+)$").
-		WithArgs(UserIDInt).WillReturnResult(pgconn.CommandTag{})
+		WithArgs(UserIDInt).WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err = insertUser(mock, UserIDInt)
 	if err != nil {
@@ -199,17 +198,17 @@ func TestOptUser(t *testing.T) {
 	// expect to de-op the user
 	mock.ExpectExec("^UPDATE users SET opt = (.+) WHERE user_id = (.+)$").
 		WithArgs(false, UserIDInt).
-		WillReturnResult(pgconn.CommandTag{})
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	// expect the respective game_events to be unlinked from the user
 	mock.ExpectExec("^UPDATE game_events SET user_id = NULL WHERE user_id = (.+)$").
 		WithArgs(UserIDInt).
-		WillReturnResult(pgconn.CommandTag{})
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	// expect all the user's games to be deleted
 	mock.ExpectExec("^DELETE FROM users_games WHERE user_id = (.+)$").
 		WithArgs(UserIDInt).
-		WillReturnResult(pgconn.CommandTag{})
+		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
 	err = optUser(mock, UserIDInt, false)
 	if err != nil {

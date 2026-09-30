@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/automuteus/automuteus/v8/pkg/capture"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 )
 
 // The single-match reads below back the HTTP API's match summary page. Like the guild statistics, they take a

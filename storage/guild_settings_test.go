@@ -9,8 +9,8 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/jackc/pgx/v4"
-	"github.com/pashagolub/pgxmock"
+	"github.com/jackc/pgx/v5"
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 const fixturePath = "../pkg/settings/testdata/guild_settings_v8.json"
@@ -59,6 +59,16 @@ func newMock(t *testing.T) pgxmock.PgxPoolIface {
 		mock.Close()
 	})
 	return mock
+}
+
+// anyArgs matches a statement by its argument count alone; pgxmock treats an expectation without WithArgs as
+// taking no arguments.
+func anyArgs(n int) []interface{} {
+	args := make([]interface{}, n)
+	for i := range args {
+		args[i] = pgxmock.AnyArg()
+	}
+	return args
 }
 
 // defaultRow is what a row written from MakeGuildSettings looks like: both
@@ -110,7 +120,7 @@ func TestLoadResolvesNullDocumentsToDefaults(t *testing.T) {
 func TestLoadDecodesStoredDocuments(t *testing.T) {
 	mock := newMock(t)
 	want := loadFixture(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WithArgs(anyArgs(1)...).WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(
 		want.AdminUserIDs, want.PermissionRoleIDs, want.Language, mustMarshal(t, want.VoiceRules), want.MapVersion,
 		mustMarshal(t, want.Delays), want.DeleteGameSummaryMinutes, want.UnmuteDeadDuringTasks, want.AutoRefresh,
 		want.MatchSummaryChannelID, want.LeaderboardMention, want.LeaderboardSize, want.LeaderboardMin,
@@ -124,7 +134,7 @@ func TestLoadDecodesStoredDocuments(t *testing.T) {
 
 func TestLoadMissingGuildReturnsDefaultsWithoutWriting(t *testing.T) {
 	mock := newMock(t)
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WithArgs(anyArgs(1)...).WillReturnError(pgx.ErrNoRows)
 	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +145,7 @@ func TestLoadMissingGuildReturnsDefaultsWithoutWriting(t *testing.T) {
 func TestLoadFailureDoesNotReturnDefaults(t *testing.T) {
 	mock := newMock(t)
 	failure := errors.New("database unavailable")
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnError(failure)
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WithArgs(anyArgs(1)...).WillReturnError(failure)
 	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if !errors.Is(err, failure) || got != nil {
 		t.Fatalf("got %v, %v", got, err)
@@ -146,7 +156,7 @@ func TestLoadMalformedDocumentFails(t *testing.T) {
 	mock := newMock(t)
 	row := selectRow(defaultRow(), 1)
 	row[3] = []byte(`[1]`)
-	mock.ExpectQuery("SELECT .* FROM guild_settings").WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(row...))
+	mock.ExpectQuery("SELECT .* FROM guild_settings").WithArgs(anyArgs(1)...).WillReturnRows(pgxmock.NewRows(selectColumns).AddRow(row...))
 	got, err := NewPostgresStorage(mock).LoadGuildSettings(context.Background(), "123")
 	if err == nil || got != nil {
 		t.Fatalf("malformed document did not fail: %v, %v", got, err)

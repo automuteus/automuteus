@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/storage"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const receiver = "shop@example.com"
@@ -41,7 +41,7 @@ func liveListener(t *testing.T, now time.Time) (*Listener, *pgxpool.Pool, *fakeV
 		t.Skip("set disposable TEST_POSTGRES_URL")
 	}
 	ctx := context.Background()
-	owner, err := pgxpool.Connect(ctx, url)
+	owner, err := pgxpool.New(ctx, url)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func liveListener(t *testing.T, now time.Time) (*Listener, *pgxpool.Pool, *fakeV
 		t.Fatal(err)
 	}
 	cfg.ConnConfig.User, cfg.ConnConfig.Password = "ipn_test_user", "ipn"
-	pool, err := pgxpool.ConnectConfig(ctx, cfg)
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
