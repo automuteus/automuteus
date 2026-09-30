@@ -12,7 +12,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type liveEnv struct {
@@ -28,7 +28,7 @@ func newLiveEnv(t *testing.T) *liveEnv {
 		t.Skip("set a disposable TEST_POSTGRES_URL")
 	}
 	ctx := context.Background()
-	pool, err := pgxpool.Connect(ctx, url)
+	pool, err := pgxpool.New(ctx, url)
 	if err != nil {
 		t.Fatal(err)
 	}

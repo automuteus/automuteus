@@ -10,10 +10,10 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/top-gg/go-dbl"
 )
 
@@ -53,8 +53,13 @@ type PsqlParameters struct {
 }
 
 func (psqlInterface *PsqlInterface) Init(addr string) error {
-	dbpool, err := pgxpool.Connect(context.Background(), addr)
+	dbpool, err := pgxpool.New(context.Background(), addr)
 	if err != nil {
+		return err
+	}
+	// pgxpool.New connects lazily; fail here rather than on the first query
+	if err := dbpool.Ping(context.Background()); err != nil {
+		dbpool.Close()
 		return err
 	}
 	psqlInterface.Pool = dbpool

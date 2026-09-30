@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
-	"github.com/georgysavva/scany/pgxscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 )
 
 // GetGuildPremiumStatus preserves errors for decisions such as worker eviction.

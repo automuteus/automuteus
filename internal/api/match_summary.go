@@ -17,7 +17,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
-	"github.com/georgysavva/scany/pgxscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )

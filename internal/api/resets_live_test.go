@@ -7,7 +7,7 @@ import (
 
 	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // TestLiveStatsResets checks the reset statements against a real Postgres: a player reset stays inside its guild
@@ -18,7 +18,7 @@ func TestLiveStatsResets(t *testing.T) {
 		t.Skip("set disposable TEST_POSTGRES_URL")
 	}
 	ctx := context.Background()
-	pool, err := pgxpool.Connect(ctx, url)
+	pool, err := pgxpool.New(ctx, url)
 	if err != nil {
 		t.Fatal(err)
 	}

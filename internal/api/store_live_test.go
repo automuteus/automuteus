@@ -14,7 +14,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestLiveAPIWithoutBotProcess(t *testing.T) {
@@ -23,7 +23,7 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 		t.Skip("set disposable TEST_POSTGRES_URL and TEST_REDIS_ADDR")
 	}
 	ctx := context.Background()
-	pool, err := pgxpool.Connect(ctx, url)
+	pool, err := pgxpool.New(ctx, url)
 	if err != nil {
 		t.Fatal(err)
 	}

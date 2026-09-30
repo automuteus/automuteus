@@ -1,8 +1,7 @@
 package storage
 
 import (
-	"github.com/jackc/pgconn"
-	"github.com/pashagolub/pgxmock"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 	"time"
 )
@@ -194,11 +193,11 @@ func TestCanRevertTransferMock(t *testing.T) {
 	// correct case; expect inherits and transferred to be wiped from both servers
 	mock.ExpectExec("^UPDATE guilds SET inherits_from = NULL WHERE guild_id = (.+)$").
 		WithArgs("321").
-		WillReturnResult(pgconn.CommandTag{})
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	mock.ExpectExec("^UPDATE guilds SET transferred_to = NULL WHERE guild_id = (.+)$").
 		WithArgs("123").
-		WillReturnResult(pgconn.CommandTag{})
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	err = revertPremiumTransfer(mock, "123", "321")
 	if err != nil {

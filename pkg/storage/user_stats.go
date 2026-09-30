@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/georgysavva/scany/pgxscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 )
 
 // The per-player statistics below back the HTTP API's player stats page. They follow the guild statistics'

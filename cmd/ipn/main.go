@@ -20,7 +20,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -73,11 +73,14 @@ func run(ctx context.Context) error {
 	log.Printf("ipn %s-%s (sandbox=%t)", version, commit, cfg.sandbox)
 	startupCtx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
-	pool, err := pgxpool.Connect(startupCtx, cfg.postgresURL)
+	pool, err := pgxpool.New(startupCtx, cfg.postgresURL)
 	if err != nil {
 		return fmt.Errorf("connect Postgres: %w", err)
 	}
 	defer pool.Close()
+	if err := pool.Ping(startupCtx); err != nil {
+		return fmt.Errorf("connect Postgres: %w", err)
+	}
 	if err := ipn.CheckSchema(startupCtx, pool); err != nil {
 		return err
 	}
