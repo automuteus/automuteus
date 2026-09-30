@@ -13,7 +13,7 @@ require (
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/mux v1.8.1
 	github.com/hesh915/go-socket.io-client v0.0.0-20200925034401-83ee73793ba4
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.10.0 // held below v5.11.0 until pgxmock implements pgx.Rows.TypeMap
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/pashagolub/pgxmock/v4 v4.9.0
 	github.com/prometheus/client_golang v1.24.1
