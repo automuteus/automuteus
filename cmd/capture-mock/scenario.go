@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
@@ -63,11 +62,16 @@ func phase(p game.Phase) step {
 	}
 }
 
+var actionVerbs = map[game.PlayerAction]string{
+	game.JOINED: "joins", game.LEFT: "leaves", game.DIED: "dies", game.CHANGECOLOR: "changes color",
+	game.FORCEUPDATED: "is force updated", game.DISCONNECTED: "disconnects", game.EXILED: "is exiled",
+}
+
+func playerLabel(name string, action game.PlayerAction, color int) string {
+	return fmt.Sprintf("player %s %s (%s)", name, actionVerbs[action], game.GetColorStringForInt(color))
+}
+
 func player(name string, action game.PlayerAction, color int, impostor bool) step {
-	labels := map[game.PlayerAction]string{
-		game.JOINED: "joins", game.LEFT: "leaves", game.DIED: "dies", game.CHANGECOLOR: "changes color",
-		game.FORCEUPDATED: "is force updated", game.DISCONNECTED: "disconnects", game.EXILED: "is exiled",
-	}
 	p := game.Player{
 		Action:       action,
 		Color:        color,
@@ -75,7 +79,7 @@ func player(name string, action game.PlayerAction, color int, impostor bool) ste
 		Disconnected: action == game.DISCONNECTED,
 	}
 	return step{
-		label: fmt.Sprintf("player %s %s (%s)", name, labels[action], game.GetColorStringForInt(color)),
+		label: playerLabel(name, action, color),
 		send: func(s *session, you string) error {
 			p.Name = strings.ReplaceAll(name, self, you)
 			return s.player(p, impostor)
@@ -85,7 +89,7 @@ func player(name string, action game.PlayerAction, color int, impostor bool) ste
 
 func gameover(result game.GameResult) step {
 	return step{
-		label: fmt.Sprintf("gameover %d", result),
+		label: fmt.Sprintf("gameover %s", resultNames[result]),
 		send:  func(s *session, _ string) error { return s.gameover(result) },
 	}
 }
@@ -223,57 +227,74 @@ func concat(parts ...[]step) []step {
 	return steps
 }
 
-// runScenario sends each step in order and records the operator's answer at
-// each checkpoint. A failed send stops immediately; quitting at a checkpoint
-// returns errAborted after sending the bot back to the menu, so nobody is left
-// muted by a half-played round.
-func runScenario(p *prompts, s *session, sc scenario, you string) ([]checkResult, error) {
-	fill := func(text string) string { return strings.ReplaceAll(text, self, you) }
-	fmt.Fprintf(p.out, "\n== %s ==\n%s\n\n", sc.name, sc.description)
-	var results []checkResult
-	for _, st := range sc.steps {
-		switch {
-		case st.send != nil:
-			fmt.Fprintf(p.out, "-> %s\n", fill(st.label))
-			if err := st.send(s, you); err != nil {
-				return results, err
-			}
-		case st.expect != "":
-			observed, quit := p.observe(fill(st.expect))
-			if p.err != nil {
-				return results, p.err
-			}
-			if quit {
-				if err := s.phase(game.MENU); err != nil {
-					return results, err
-				}
-				return results, errAborted
-			}
-			results = append(results, checkResult{fill(st.expect), observed})
-		default:
-			fmt.Fprintf(p.out, "!! %s\n", fill(st.label))
-		}
-	}
-	return results, nil
+// scenarioRun plays a scenario one checkpoint at a time so a UI can wait
+// for the operator's answer between calls.
+type scenarioRun struct {
+	sc      scenario
+	s       *session
+	you     string
+	next    int
+	results []checkResult
 }
 
-func report(out io.Writer, sc scenario, results []checkResult, err error) {
-	observed := 0
+func newRun(s *session, sc scenario, you string) *scenarioRun {
+	return &scenarioRun{sc: sc, s: s, you: you}
+}
+
+func (r *scenarioRun) fill(text string) string { return strings.ReplaceAll(text, self, r.you) }
+
+// advance sends steps until the next checkpoint and returns what it did, with
+// the checkpoint text; an empty checkpoint means the scenario has finished. A
+// failed send stops immediately.
+func (r *scenarioRun) advance() (entries []logEntry, checkpoint string, err error) {
+	for r.next < len(r.sc.steps) {
+		st := r.sc.steps[r.next]
+		switch {
+		case st.send != nil:
+			if err := st.send(r.s, r.you); err != nil {
+				return entries, "", err
+			}
+			entries = append(entries, logEntry{entrySent, r.fill(st.label)})
+		case st.expect != "":
+			return entries, r.fill(st.expect), nil
+		default:
+			entries = append(entries, logEntry{entryNote, r.fill(st.label)})
+		}
+		r.next++
+	}
+	return entries, "", nil
+}
+
+// progress reports how many checkpoints have been answered, out of all of them.
+func (r *scenarioRun) progress() (answered, total int) {
+	for _, st := range r.sc.steps {
+		if st.expect != "" {
+			total++
+		}
+	}
+	return len(r.results), total
+}
+
+// answer records the operator's answer at the current checkpoint.
+func (r *scenarioRun) answer(observed bool) {
+	r.results = append(r.results, checkResult{r.fill(r.sc.steps[r.next].expect), observed})
+	r.next++
+}
+
+// abort sends the bot back to the menu, so nobody is left muted by a
+// half-played round, and reports errAborted.
+func (r *scenarioRun) abort() error {
+	if err := r.s.phase(game.MENU); err != nil {
+		return err
+	}
+	return errAborted
+}
+
+func tally(results []checkResult) (observed int) {
 	for _, r := range results {
 		if r.observed {
 			observed++
 		}
 	}
-	fmt.Fprintf(out, "\n%s: %d/%d checks observed", sc.name, observed, len(results))
-	if err != nil {
-		fmt.Fprintf(out, " (%v)", err)
-	}
-	fmt.Fprintln(out)
-	for _, r := range results {
-		mark := "  ok  "
-		if !r.observed {
-			mark = "  FAIL"
-		}
-		fmt.Fprintf(out, "%s %s\n", mark, r.expect)
-	}
+	return observed
 }

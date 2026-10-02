@@ -16,6 +16,22 @@ type emitter interface {
 type session struct {
 	client  emitter
 	players []game.PlayerInfo
+	view    gameView
+}
+
+// gameView mirrors what has been sent since the last lobby, for the status
+// panel. It only changes after a successful send.
+type gameView struct {
+	phase    game.Phase
+	lobby    game.Lobby
+	hasLobby bool
+	// players holds each present player's latest event; leaving or
+	// disconnecting removes them.
+	players []game.Player
+}
+
+func newSession(client emitter) *session {
+	return &session{client: client, view: gameView{phase: game.UNINITIALIZED}}
 }
 
 func (s *session) send(event string, payload interface{}) error {
@@ -33,6 +49,7 @@ func (s *session) phase(phase game.Phase) error {
 	if err := s.client.Emit(capture.StateEvent, strconv.Itoa(int(phase))); err != nil {
 		return fmt.Errorf("send state: %w", err)
 	}
+	s.view.phase = phase
 	return nil
 }
 
@@ -41,6 +58,7 @@ func (s *session) lobby(lobby game.Lobby) error {
 		return err
 	}
 	s.players = nil
+	s.view.lobby, s.view.hasLobby, s.view.players = lobby, true, nil
 	// Emit in order on the same connection; no arbitrary delay is needed.
 	return s.phase(game.LOBBY)
 }
@@ -49,6 +67,7 @@ func (s *session) player(player game.Player, impostor bool) error {
 	if err := s.send(capture.PlayerEvent, player); err != nil {
 		return err
 	}
+	s.view.update(player)
 	for i := range s.players {
 		if s.players[i].Name == player.Name {
 			s.players[i].IsImpostor = impostor
@@ -78,5 +97,25 @@ func (s *session) gameover(result game.GameResult) error {
 		return err
 	}
 	s.players = nil
+	// Everyone is back in the lobby and alive, as in the game.
+	for i := range s.view.players {
+		s.view.players[i].IsDead = false
+	}
 	return s.phase(game.LOBBY)
+}
+
+func (v *gameView) update(player game.Player) {
+	for i := range v.players {
+		if v.players[i].Name == player.Name {
+			if player.Action == game.LEFT || player.Action == game.DISCONNECTED {
+				v.players = append(v.players[:i], v.players[i+1:]...)
+			} else {
+				v.players[i] = player
+			}
+			return
+		}
+	}
+	if player.Action != game.LEFT && player.Action != game.DISCONNECTED {
+		v.players = append(v.players, player)
+	}
 }

@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
@@ -37,9 +35,17 @@ func (e *recordingEmitter) Emit(name string, args ...interface{}) error {
 func TestRoundProtocol(t *testing.T) {
 	e := &recordingEmitter{}
 	s := &session{client: e}
-	input := "l\nABCDEF\n0\n5\np\n0\nPlayer One\n0\nno\nno\nyes\ns\n1\ng\n3\nq\n"
-	if err := commandLoop(newPrompts(strings.NewReader(input), io.Discard), s); err != nil {
-		t.Fatal(err)
+	for _, send := range []func() error{
+		func() error { return s.lobby(game.Lobby{LobbyCode: "ABCDEF", Region: game.NA, PlayMap: game.FUNGLE}) },
+		func() error {
+			return s.player(game.Player{Action: game.JOINED, Name: "Player One", Color: game.Red}, true)
+		},
+		func() error { return s.phase(game.TASKS) },
+		func() error { return s.gameover(game.ImpostorByKill) },
+	} {
+		if err := send(); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Literal event names and JSON fields intentionally pin the external protocol.
 	want := []sentEvent{
@@ -109,18 +115,44 @@ func TestSendFailures(t *testing.T) {
 		})
 	}
 	e := &recordingEmitter{failAt: 2}
-	err := commandLoop(newPrompts(strings.NewReader("l\n\n\n\ns\n1\nq\n"), io.Discard), &session{client: e})
-	if !errors.Is(err, errSend) || len(e.events) != 2 {
-		t.Fatalf("continued after failed follow-up state: err=%v, events=%v", err, e.events)
+	s := newSession(e)
+	if err := s.lobby(game.Lobby{LobbyCode: "ABCDEF"}); !errors.Is(err, errSend) || len(e.events) != 2 || s.view.phase != game.UNINITIALIZED {
+		t.Fatalf("failed follow-up state was hidden or recorded: err=%v, events=%v, view=%+v", err, e.events, s.view)
 	}
 }
 
-func TestIncompleteInputDoesNotSend(t *testing.T) {
-	for _, input := range []string{"", "l\n", "l\nCODE\n", "p\n0\nPlayer One\n", "s\n", "g\n", "invalid\n"} {
-		e := &recordingEmitter{}
-		err := commandLoop(newPrompts(strings.NewReader(input), io.Discard), &session{client: e})
-		if !errors.Is(err, io.EOF) || len(e.events) != 0 {
-			t.Errorf("input %q: err=%v, events=%v", input, err, e.events)
+func TestViewMirrorsSentEvents(t *testing.T) {
+	s := newSession(&recordingEmitter{})
+	for _, send := range []func() error{
+		func() error { return s.lobby(game.Lobby{LobbyCode: "ABCDEF", PlayMap: game.POLUS}) },
+		func() error { return s.player(game.Player{Action: game.JOINED, Name: "One", Color: game.Red}, false) },
+		func() error { return s.player(game.Player{Action: game.JOINED, Name: "Two", Color: game.Blue}, false) },
+		func() error {
+			return s.player(game.Player{Action: game.JOINED, Name: "Three", Color: game.Lime}, false)
+		},
+		func() error { return s.phase(game.TASKS) },
+		func() error {
+			return s.player(game.Player{Action: game.DIED, Name: "One", Color: game.Red, IsDead: true}, false)
+		},
+		func() error {
+			return s.player(game.Player{Action: game.DISCONNECTED, Name: "Two", Color: game.Blue}, false)
+		},
+	} {
+		if err := send(); err != nil {
+			t.Fatal(err)
 		}
+	}
+	v := s.view
+	if !v.hasLobby || v.lobby.LobbyCode != "ABCDEF" || v.phase != game.TASKS || len(v.players) != 2 || !v.players[0].IsDead || v.players[1].Name != "Three" {
+		t.Fatalf("view = %+v", v)
+	}
+	if err := s.gameover(game.HumansByTask); err != nil {
+		t.Fatal(err)
+	}
+	if s.view.phase != game.LOBBY || len(s.view.players) != 2 || s.view.players[0].IsDead {
+		t.Fatalf("gameover must return everyone to the lobby alive: %+v", s.view)
+	}
+	if err := s.lobby(game.Lobby{LobbyCode: "NEWCODE"}); err != nil || len(s.view.players) != 0 {
+		t.Fatalf("new lobby kept old players: err=%v, view=%+v", err, s.view)
 	}
 }

@@ -1,13 +1,35 @@
 package main
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+// playAll answers every checkpoint with observed, as the operator would.
+func playAll(r *scenarioRun, observed bool) ([]logEntry, error) {
+	var log []logEntry
+	for {
+		entries, checkpoint, err := r.advance()
+		log = append(log, entries...)
+		if err != nil || checkpoint == "" {
+			return log, err
+		}
+		log = append(log, logEntry{entryInfo, checkpoint})
+		r.answer(observed)
+	}
+}
+
+func scenarioNamed(t *testing.T, name string) scenario {
+	for _, sc := range scenarios {
+		if sc.name == name {
+			return sc
+		}
+	}
+	t.Fatalf("no scenario %q", name)
+	return scenario{}
+}
 
 func countChecks(sc scenario) int {
 	n := 0
@@ -19,27 +41,27 @@ func countChecks(sc scenario) int {
 	return n
 }
 
-// Every scenario must play through on "yes" answers, name the operator's player
-// where it says {you}, and leave the bot in the lobby so the next scenario
-// starts clean.
+// Every scenario must play through, name the operator's player where it says
+// {you}, and leave the bot in the lobby so the next scenario starts clean.
 func TestScenariosPlayThrough(t *testing.T) {
 	for _, sc := range scenarios {
 		t.Run(sc.name, func(t *testing.T) {
 			e := &recordingEmitter{}
-			var out bytes.Buffer
-			p := newPrompts(strings.NewReader(strings.Repeat("y\n", countChecks(sc))), &out)
-			results, err := runScenario(p, &session{client: e}, sc, "Operator")
+			r := newRun(newSession(e), sc, "Operator")
+			log, err := playAll(r, true)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(results) != countChecks(sc) || countChecks(sc) == 0 {
-				t.Fatalf("recorded %d results for %d checkpoints", len(results), countChecks(sc))
+			if len(r.results) != countChecks(sc) || countChecks(sc) == 0 || tally(r.results) != len(r.results) {
+				t.Fatalf("recorded %v for %d checkpoints", r.results, countChecks(sc))
 			}
 			if len(e.events) == 0 || e.events[0].name != "lobby" || e.events[len(e.events)-1] != (sentEvent{"state", "0"}) {
 				t.Fatalf("scenario must open with a lobby and end in the lobby phase: %v", e.events)
 			}
-			if strings.Contains(out.String(), self) {
-				t.Fatalf("operator name not substituted in output:\n%s", out.String())
+			for _, entry := range log {
+				if strings.Contains(entry.text, self) {
+					t.Fatalf("operator name not substituted in %q", entry.text)
+				}
 			}
 			named := false
 			for _, ev := range e.events {
@@ -58,8 +80,7 @@ func TestScenariosPlayThrough(t *testing.T) {
 // Pins the wire sequence of the baseline scenario.
 func TestFullRoundProtocol(t *testing.T) {
 	e := &recordingEmitter{}
-	p := newPrompts(strings.NewReader(strings.Repeat("y\n", 10)), io.Discard)
-	if _, err := runScenario(p, &session{client: e}, scenarios[0], "Operator"); err != nil {
+	if _, err := playAll(newRun(newSession(e), scenarios[0], "Operator"), true); err != nil {
 		t.Fatal(err)
 	}
 	want := []sentEvent{
@@ -82,14 +103,7 @@ func TestFullRoundProtocol(t *testing.T) {
 
 func TestImpostorRoleReportedAtGameover(t *testing.T) {
 	e := &recordingEmitter{}
-	var sc scenario
-	for _, candidate := range scenarios {
-		if candidate.name == "Impostor victory" {
-			sc = candidate
-		}
-	}
-	p := newPrompts(strings.NewReader(strings.Repeat("y\n", countChecks(sc))), io.Discard)
-	if _, err := runScenario(p, &session{client: e}, sc, "Operator"); err != nil {
+	if _, err := playAll(newRun(newSession(e), scenarioNamed(t, "Impostor victory"), "Operator"), true); err != nil {
 		t.Fatal(err)
 	}
 	last := e.events[len(e.events)-2]
@@ -98,12 +112,31 @@ func TestImpostorRoleReportedAtGameover(t *testing.T) {
 	}
 }
 
-func TestQuitReturnsBotToMenu(t *testing.T) {
+func TestAnswersAreRecorded(t *testing.T) {
+	r := newRun(newSession(&recordingEmitter{}), scenarioNamed(t, "Lobby changes"), "Operator")
+	for i := 0; ; i++ {
+		_, checkpoint, err := r.advance()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if checkpoint == "" {
+			break
+		}
+		r.answer(i != 1)
+	}
+	if len(r.results) != 4 || tally(r.results) != 3 || r.results[1].observed || !strings.Contains(r.results[0].expect, "Operator (red)") {
+		t.Fatalf("results = %v", r.results)
+	}
+}
+
+func TestAbortReturnsBotToMenu(t *testing.T) {
 	e := &recordingEmitter{}
-	p := newPrompts(strings.NewReader("q\n"), io.Discard)
-	results, err := runScenario(p, &session{client: e}, scenarios[0], "Operator")
-	if !errors.Is(err, errAborted) || len(results) != 0 {
-		t.Fatalf("err=%v, results=%v", err, results)
+	r := newRun(newSession(e), scenarios[0], "Operator")
+	if _, checkpoint, err := r.advance(); err != nil || checkpoint == "" {
+		t.Fatalf("checkpoint=%q, err=%v", checkpoint, err)
+	}
+	if err := r.abort(); !errors.Is(err, errAborted) || len(r.results) != 0 {
+		t.Fatalf("err=%v, results=%v", err, r.results)
 	}
 	if last := e.events[len(e.events)-1]; last != (sentEvent{"state", "3"}) {
 		t.Fatalf("aborting must send the menu phase so nobody stays muted; last event %v", last)
@@ -113,53 +146,10 @@ func TestQuitReturnsBotToMenu(t *testing.T) {
 	}
 }
 
-func TestIncompleteAnswersStopScenario(t *testing.T) {
-	for _, input := range []string{"", "maybe\n", "y\n"} {
-		e := &recordingEmitter{}
-		p := newPrompts(strings.NewReader(input), io.Discard)
-		_, err := runScenario(p, &session{client: e}, scenarios[0], "Operator")
-		if !errors.Is(err, io.EOF) {
-			t.Errorf("input %q: err=%v", input, err)
-		}
-		if last := e.events[len(e.events)-1]; last.name == "state" && last.payload == "3" {
-			t.Errorf("input %q: EOF is not an operator quit, must not send the menu phase", input)
-		}
-	}
+func TestFailedSendStopsScenario(t *testing.T) {
 	e := &recordingEmitter{failAt: 3}
-	_, err := runScenario(newPrompts(strings.NewReader("y\n"), io.Discard), &session{client: e}, scenarios[0], "Operator")
-	if !errors.Is(err, errSend) || len(e.events) != 3 {
-		t.Fatalf("failed send must stop the scenario: err=%v, events=%v", err, e.events)
-	}
-}
-
-func TestReportMarksUnobservedChecks(t *testing.T) {
-	var out bytes.Buffer
-	report(&out, scenario{name: "Demo"}, []checkResult{{"first", true}, {"second", false}}, errAborted)
-	got := out.String()
-	for _, want := range []string{"Demo: 1/2 checks observed (scenario aborted)", "  ok   first", "  FAIL second"} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("report missing %q:\n%s", want, got)
-		}
-	}
-}
-
-func TestMenuLoop(t *testing.T) {
-	// Lobby-changes scenario (4 checks) answered with a mix, an invalid choice,
-	// manual mode and back, then quit.
-	lobbyChanges := len(scenarios)
-	input := "Operator\n" + string(rune('0'+lobbyChanges)) + "\ny\nn\ny\ny\n99\nM\ns\n3\nq\nQ\n"
-	e := &recordingEmitter{}
-	var out bytes.Buffer
-	if err := menuLoop(newPrompts(strings.NewReader(input), &out), &session{client: e}); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(out.String(), "Lobby changes: 3/4 checks observed") || !strings.Contains(out.String(), "Choose a scenario number, M, or Q.") {
-		t.Fatalf("unexpected output:\n%s", out.String())
-	}
-	if last := e.events[len(e.events)-1]; last != (sentEvent{"state", "3"}) {
-		t.Fatalf("manual mode did not send the chosen state: %v", e.events)
-	}
-	if err := menuLoop(newPrompts(strings.NewReader("Operator\n1\n"), io.Discard), &session{client: &recordingEmitter{}}); !errors.Is(err, io.EOF) {
-		t.Fatalf("EOF inside a scenario must end the program: %v", err)
+	log, err := playAll(newRun(newSession(e), scenarios[0], "Operator"), true)
+	if !errors.Is(err, errSend) || len(e.events) != 3 || len(log) != 1 {
+		t.Fatalf("failed send must stop the scenario: err=%v, events=%v, log=%v", err, e.events, log)
 	}
 }

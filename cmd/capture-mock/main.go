@@ -4,188 +4,60 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/signal"
-	"strconv"
-	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/automuteus/automuteus/v8/pkg/capture"
-	"github.com/automuteus/automuteus/v8/pkg/game"
 	socketio "github.com/hesh915/go-socket.io-client"
 )
 
 func main() {
-	if err := run(); err != nil && !errors.Is(err, io.EOF) {
+	if err := run(); err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	p := newPrompts(os.Stdin, os.Stdout)
-	var host, code string
-	for {
-		input := p.text("Connect code or aucapture:// link", "")
-		if p.err != nil {
-			return p.err
-		}
-		var err error
-		host, code, err = parseConnection(input)
-		if err == nil {
-			break
-		}
-		fmt.Fprintln(p.out, err)
-	}
-	log.Printf("Connecting to %s", host)
-	client, err := socketio.NewClient(host, &socketio.Options{Transport: "websocket", Query: make(map[string]string)})
+	var program *tea.Program
+	// Socket callbacks only start after connecting, by which time program is set.
+	m := newModel(func(msg tea.Msg) { program.Send(msg) })
+	program = tea.NewProgram(m)
+	final, err := program.Run()
 	if err != nil {
-		return fmt.Errorf("connect to Galactus: %w", err)
-	}
-	disconnected := make(chan struct{}, 1)
-	if err := client.On("disconnection", func() {
-		select {
-		case disconnected <- struct{}{}:
-		default:
-		}
-	}); err != nil {
 		return err
 	}
-	if err := client.On("error", func() { log.Print("Galactus reported a socket error") }); err != nil {
-		return err
-	}
-	if err := client.On("message", func(msg string) { log.Printf("Galactus: %s", msg) }); err != nil {
-		return err
-	}
-	if err := client.Emit(capture.ConnectCodeEvent, code); err != nil {
-		return fmt.Errorf("send connect code: %w", err)
-	}
-	log.Print("Connect code sent")
-	interrupted := make(chan os.Signal, 1)
-	signal.Notify(interrupted, os.Interrupt)
-	defer signal.Stop(interrupted)
-	done := make(chan error, 1)
-	go func() { done <- menuLoop(p, &session{client: client}) }()
-	select {
-	case err := <-done:
-		return err
-	case <-disconnected:
-		return errors.New("disconnected from Galactus")
-	case <-interrupted:
-		return nil
-	}
+	return final.(*model).err
 }
 
-// menuLoop offers the scripted scenarios, with the manual event loop as an
-// escape hatch for anything a scenario does not cover.
-func menuLoop(p *prompts, s *session) error {
-	you := p.text("Name of the player you will link to (your Discord name auto-links)", "Player One")
-	if p.err != nil {
-		return p.err
-	}
-	for {
-		fmt.Fprintln(p.out, "\nScenarios:")
-		for i, sc := range scenarios {
-			fmt.Fprintf(p.out, "  %d %s: %s\n", i+1, sc.name, sc.description)
-		}
-		fmt.Fprintln(p.out, "  M Send events manually\n  Q Quit")
-		n := 0
-		for n == 0 {
-			choice := p.text("Scenario", "1")
-			if p.err != nil {
-				return p.err
-			}
-			switch strings.ToUpper(choice) {
-			case "Q":
-				return nil
-			case "M":
-				if err := commandLoop(p, s); err != nil {
-					return err
-				}
-				n = -1
-			default:
-				n, _ = strconv.Atoi(choice)
-				if n < 1 || n > len(scenarios) {
-					fmt.Fprintln(p.out, "Choose a scenario number, M, or Q.")
-					n = 0
-				}
-			}
-		}
-		if n < 0 {
-			continue
-		}
-		results, err := runScenario(p, s, scenarios[n-1], you)
-		report(p.out, scenarios[n-1], results, err)
-		if err != nil && !errors.Is(err, errAborted) {
-			return err
-		}
-	}
-}
+type connectedMsg struct{ client *socketio.Client }
+type connectFailedMsg struct{ err error }
 
-// commandLoop sends individual events chosen field by field; Q returns to the menu.
-func commandLoop(p *prompts, s *session) error {
-	for {
-		command := p.text("L Lobby / S State / P Player / G Gameover / Q Back", "")
-		if p.err != nil {
-			return p.err
+// fatalMsg ends the program with an error, e.g. when Galactus disconnects.
+type fatalMsg struct{ err error }
+
+// connect dials Galactus and sends the connect code. Socket events are
+// delivered to the program through send, since they arrive on other goroutines.
+func connect(host, code string, send func(tea.Msg)) tea.Cmd {
+	return func() tea.Msg {
+		client, err := socketio.NewClient(host, &socketio.Options{Transport: "websocket", Query: make(map[string]string)})
+		if err != nil {
+			return connectFailedMsg{fmt.Errorf("connect to Galactus: %w", err)}
 		}
-		var send func() error
-		switch strings.ToUpper(command) {
-		case "Q":
-			return nil
-		case "L":
-			lobby := game.Lobby{LobbyCode: p.text("Lobby code", "TESTCODE")}
-			lobby.Region = game.Region(p.choice("Region", int(game.NA), map[int]string{
-				int(game.NA): game.NA.ToString(), int(game.AS): game.AS.ToString(), int(game.EU): game.EU.ToString(),
-			}))
-			maps := make(map[int]string)
-			for value, label := range game.MapNames {
-				maps[int(value)] = label
+		handlers := map[string]interface{}{
+			"disconnection": func() { send(fatalMsg{errors.New("disconnected from Galactus")}) },
+			"error":         func() { send(logEntry{entryError, "Galactus reported a socket error"}) },
+			"message":       func(msg string) { send(logEntry{entryGalactus, "Galactus: " + msg}) },
+		}
+		for event, handler := range handlers {
+			if err := client.On(event, handler); err != nil {
+				return connectFailedMsg{err}
 			}
-			lobby.PlayMap = game.PlayMap(p.choice("Map", int(game.SKELD), maps))
-			send = func() error { return s.lobby(lobby) }
-		case "S":
-			phases := make(map[int]string)
-			for value, label := range game.PhaseNames {
-				phases[int(value)] = string(label)
-			}
-			phase := game.Phase(p.choice("State", int(game.LOBBY), phases))
-			send = func() error { return s.phase(phase) }
-		case "P":
-			player := game.Player{Action: game.PlayerAction(p.choice("Player action", int(game.JOINED), map[int]string{
-				int(game.JOINED): "JOINED", int(game.LEFT): "LEFT", int(game.DIED): "DIED",
-				int(game.CHANGECOLOR): "CHANGECOLOR", int(game.FORCEUPDATED): "FORCEUPDATED",
-				int(game.DISCONNECTED): "DISCONNECTED", int(game.EXILED): "EXILED",
-			}))}
-			player.Name = p.text("Player name", "Player")
-			colors := make(map[int]string)
-			for label, value := range game.ColorStrings {
-				colors[value] = label
-			}
-			player.Color = p.choice("Color", game.Red, colors)
-			player.IsDead = p.boolean("Is dead?", player.Action == game.DIED || player.Action == game.EXILED)
-			player.Disconnected = p.boolean("Disconnected?", player.Action == game.DISCONNECTED)
-			impostor := p.boolean("Is impostor? (sent at gameover)", s.isImpostor(player.Name))
-			send = func() error { return s.player(player, impostor) }
-		case "G":
-			result := game.GameResult(p.choice("Game result", int(game.HumansByVote), map[int]string{
-				int(game.HumansByVote): "HumansByVote", int(game.HumansByTask): "HumansByTask",
-				int(game.ImpostorByVote): "ImpostorByVote", int(game.ImpostorByKill): "ImpostorByKill",
-				int(game.ImpostorBySabotage): "ImpostorBySabotage", int(game.ImpostorDisconnect): "ImpostorDisconnect",
-				int(game.HumansDisconnect): "HumansDisconnect", int(game.Unknown): "Unknown",
-			}))
-			send = func() error { return s.gameover(result) }
-		default:
-			fmt.Fprintln(p.out, "Choose L, S, P, G, or Q.")
-			continue
 		}
-		if p.err != nil {
-			return p.err
+		if err := client.Emit(capture.ConnectCodeEvent, code); err != nil {
+			return connectFailedMsg{fmt.Errorf("send connect code: %w", err)}
 		}
-		// Stop on a failed send: continuing would hide a partially sent sequence.
-		if err := send(); err != nil {
-			return err
-		}
+		return connectedMsg{client}
 	}
 }
