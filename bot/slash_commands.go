@@ -9,7 +9,6 @@ import (
 	"github.com/automuteus/automuteus/v8/internal/server"
 
 	"github.com/automuteus/automuteus/v8/bot/command"
-	"github.com/automuteus/automuteus/v8/bot/setting"
 	redis_common "github.com/automuteus/automuteus/v8/common"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
@@ -399,21 +398,21 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Debug.Name:
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
-			if action == setting.View {
+			if action == command.View {
 				if opType == command.User {
 					cached, err := bot.RedisInterface.GetUsernameOrUserIDMappings(i.GuildID, id)
 					log.Println("View user cache")
-					return command.DebugResponse(setting.View, cached, nil, id, err, sett)
+					return command.DebugResponse(command.View, cached, nil, id, err, sett)
 				} else if opType == command.GameState {
 					state := bot.RedisInterface.GetReadOnlyDiscordGameState(gsr)
 					if state != nil {
 						jBytes, err := json.MarshalIndent(state, "", "  ")
-						return command.DebugResponse(setting.View, nil, jBytes, id, err, sett)
+						return command.DebugResponse(command.View, nil, jBytes, id, err, sett)
 					} else {
 						return command.DeadlockGameStateResponse(command.Debug.Name, sett)
 					}
 				}
-			} else if action == setting.Clear {
+			} else if action == command.Clear {
 				if opType == command.User {
 					if id != i.Member.User.ID {
 						if !isAdmin {
@@ -421,7 +420,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 						}
 					}
 					err := bot.RedisInterface.DeleteLinksByUserID(i.GuildID, id)
-					return command.DebugResponse(setting.Clear, nil, nil, id, err, sett)
+					return command.DebugResponse(command.Clear, nil, nil, id, err, sett)
 				}
 			} else if action == command.Unmute {
 				// prob shouldn't be constructing the GameState explicitly like this... okay so long as we don't reuse it
