@@ -14,7 +14,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/top-gg/go-dbl"
 )
 
 // The interfaces below are the seams between the game-event logic (phase transitions, player updates, voice changes,
@@ -54,9 +53,9 @@ type ReminderStore interface {
 	SnoozeReminder(ctx context.Context, guildID string, kind ReminderKind, d time.Duration) error
 }
 
-// PremiumSource answers what premium tier a guild (or user) currently holds.
+// PremiumSource answers what premium tier a guild currently holds.
 type PremiumSource interface {
-	GetGuildOrUserPremiumStatus(official bool, dbl *dbl.Client, guildID, userID string) (premium.Tier, int, error)
+	GetGuildPremiumStatus(ctx context.Context, official bool, guildID string) (premium.Tier, int, error)
 }
 
 // GameRecorder persists match history.
@@ -153,7 +152,7 @@ func (bot *Bot) gameLog(gsr GameStateRequest) *slog.Logger {
 
 // premiumTier resolves the effective premium tier for a guild, treating expired premium as free.
 func (bot *Bot) premiumTier(guildID string) premium.Tier {
-	tier, days, _ := bot.premiumSource.GetGuildOrUserPremiumStatus(bot.official, nil, guildID, "")
+	tier, days, _ := bot.premiumSource.GetGuildPremiumStatus(context.Background(), bot.official, guildID)
 	if premium.IsExpired(tier, days) {
 		return premium.FreeTier
 	}

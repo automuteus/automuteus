@@ -98,8 +98,6 @@
 "responses.premiumResponse.Stats" = "📊 Game Stats and Leaderboards"
 "responses.premiumResponse.StatsDesc" = "Premium users have access to a full suite of player stats and leaderboards!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
-"responses.premiumResponse.TopGG" = "or\\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\\n(One time per user)\\n\\n"
-"responses.premiumResponse.Trial" = "You're currently on a TRIAL of AutoMuteUs Premium\\n\\n"
 "softban.ignoring" = "I'm ignoring you for the next 5 minutes, stop spamming"
 "softban.warning" = "Please stop spamming commands"
 "state.phase.DISCUSSION" = "DISCUSSION"

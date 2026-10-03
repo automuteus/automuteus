@@ -18,7 +18,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/token"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/top-gg/go-dbl"
 	"log"
 	"log/slog"
 	"os"
@@ -66,8 +65,6 @@ type Bot struct {
 	// games this shard is subscribed to, keyed by connect code; guarded by ChannelsMapLock
 	activeGameRequests map[string]GameStateRequest
 
-	TopGGClient *dbl.Client
-
 	RedisInterface *RedisInterface
 
 	StorageInterface *storage.StorageInterface
@@ -88,7 +85,7 @@ type Bot struct {
 // The split matters: the voice provider must be installed (SetTokenProvider) before the gateway opens, because a
 // pod adopts its twin's running games within seconds of connecting and mutes through that provider.
 // TODO collapse these fields into proper structs?
-func MakeBot(version, commit, botToken, topGGToken, url, webURL, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
+func MakeBot(version, commit, botToken, url, webURL, emojiGuildID string, numShards, shardID int, redisInterface *RedisInterface, storageInterface *storage.StorageInterface, psql *storageutils.PsqlInterface, logPath string) *Bot {
 	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Println("error creating Discord session,", err)
@@ -141,16 +138,6 @@ func MakeBot(version, commit, botToken, topGGToken, url, webURL, emojiGuildID st
 	configureStateTracking(dg)
 
 	bot.botToken = botToken
-
-	if topGGToken != "" {
-		dblClient, err := dbl.NewClient(topGGToken)
-		if err != nil {
-			log.Println("Error creating Top.gg client: ", err)
-		}
-		bot.TopGGClient = dblClient
-	} else {
-		log.Println("No TOP_GG_TOKEN provided")
-	}
 
 	return &bot
 }
@@ -411,8 +398,8 @@ func (bot *Bot) newGame(dgs *GameState) (_ command.NewStatus, activeGames int64)
 
 		dgs.Reset()
 	} else {
-		premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(
-			bot.official, bot.TopGGClient, dgs.GuildID, dgs.GameStateMsg.LeaderID)
+		premStatus, days, err := bot.PostgresInterface.GetGuildPremiumStatus(
+			context.Background(), bot.official, dgs.GuildID)
 		if err != nil {
 			log.Println("Error in /newgame get premium:", err)
 		}

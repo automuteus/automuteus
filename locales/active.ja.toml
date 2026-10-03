@@ -87,8 +87,6 @@
 "responses.premiumResponse.Stats" = "📊 ゲームの統計とリーダーボード"
 "responses.premiumResponse.StatsDesc" = "プレミアムユーザーは、フル機能のゲームの統計とリーダーボードを利用できます！"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs プレミアム 💎"
-"responses.premiumResponse.TopGG" = "もしくは\\n[top.gg で Automuteus Bot に投票](https://top.gg/bot/753795015830011944) して 12 時間の無料プレミアム版を利用できます！ \\n（一人 1 回）\\n\\n"
-"responses.premiumResponse.Trial" = "あなたは現在 AutoMuteUs プレミアムの試用中です\\n\\n"
 "softban.ignoring" = "5 分間、あなたからの操作は受け付けません。連投をやめてください。"
 "softban.warning" = "コマンド連打はお控えください。"
 "state.phase.DISCUSSION" = "緊急会議"

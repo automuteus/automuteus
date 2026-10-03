@@ -92,7 +92,6 @@ func TestWorkerCleanupEvictsWithoutVoiceTraffic(t *testing.T) {
 	}{
 		{"free", premium.FreeTier, premium.NoExpiryCode, 0},
 		{"bronze", premium.BronzeTier, premium.NoExpiryCode, 0},
-		{"trial", premium.TrialTier, premium.NoExpiryCode, 0},
 		{"silver", premium.SilverTier, premium.NoExpiryCode, 1},
 		{"gold", premium.GoldTier, premium.NoExpiryCode, 3},
 		{"expired_gold", premium.GoldTier, 0, 0},

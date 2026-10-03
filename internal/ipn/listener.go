@@ -316,19 +316,17 @@ type candidate struct {
 	tracked bool
 }
 
-// rank orders tiers by what they unlock; Trial sits below the paid tiers so buying one replaces it.
+// rank orders tiers by what they unlock.
 func rank(t premium.Tier) int {
 	switch t {
-	case premium.TrialTier:
-		return 1
 	case premium.BronzeTier:
-		return 2
+		return 1
 	case premium.SilverTier:
-		return 3
+		return 2
 	case premium.GoldTier:
-		return 4
+		return 3
 	case premium.SelfHostTier:
-		return 5
+		return 4
 	}
 	return 0
 }

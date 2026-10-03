@@ -87,8 +87,6 @@
 "responses.premiumResponse.Stats" = "📊 Статистика игр и таблицы лидеров"
 "responses.premiumResponse.StatsDesc" = "Пользователям Премиума доступна полная статистика игроков и таблицы лидеров!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Премиум 💎"
-"responses.premiumResponse.TopGG" = "или\\n[Проголосуйте за бота на top.gg](https://top.gg/bot/753795015830011944) и получите 12 часов Премиума бесплатно!\\n(Один раз на пользователя)\\n\\n"
-"responses.premiumResponse.Trial" = "Сейчас у вас ПРОБНЫЙ период AutoMuteUs Премиум\\n\\n"
 "softban.ignoring" = "Я игнорирую вас следующие 5 минут, хватит спамить"
 "softban.warning" = "Пожалуйста, не спамьте командами"
 "state.phase.DISCUSSION" = "ОБСУЖДЕНИЕ"

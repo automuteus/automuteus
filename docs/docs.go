@@ -2713,7 +2713,7 @@ const docTemplate = `{
                 "BronzeTier",
                 "SilverTier",
                 "GoldTier",
-                "TrialTier",
+                "_",
                 "SelfHostTier"
             ]
         },

@@ -92,7 +92,6 @@ func TestStartReminder(t *testing.T) {
 			want: &Reminder{Kind: ReminderMissingWorkers, Tier: premium.GoldTier, Present: 1, Needed: 2}, wantClaim: true},
 		{name: "inventory unknown", tier: premium.GoldTier, workers: fakeWorkers{present: 0, total: 3, known: false}},
 		{name: "bronze has no workers to invite", tier: premium.BronzeTier, workers: fakeWorkers{present: 0, total: 3, known: true}},
-		{name: "trial has no workers to invite", tier: premium.TrialTier, workers: fakeWorkers{present: 0, total: 3, known: true}},
 		{name: "free", tier: premium.FreeTier, workers: fakeWorkers{present: 0, total: 3, known: true}},
 		{name: "self-hosted", tier: premium.SelfHostTier, workers: fakeWorkers{present: 0, total: 3, known: true}},
 		{name: "shown within the cooldown", tier: premium.GoldTier, workers: fakeWorkers{present: 0, total: 3, known: true}, heldBack: true, wantClaim: true},

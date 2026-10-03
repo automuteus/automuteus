@@ -26,7 +26,6 @@ var PremiumBotConstraints = map[premium.Tier]int{
 	premium.BronzeTier:   0,
 	premium.SilverTier:   1,
 	premium.GoldTier:     3,
-	premium.TrialTier:    0, // Voting trials do not include priority workers; see invitesResponse.
 	premium.SelfHostTier: 100,
 }
 

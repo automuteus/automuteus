@@ -387,7 +387,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildPremiumStatus(ctx, bot.official, i.GuildID)
 			if err != nil {
 				log.Println("Err in /premium get guild prem:", err)
 			}

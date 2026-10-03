@@ -119,7 +119,7 @@ func invitesResponse(tier premium.Tier, status BotStatus, sett *settings.GuildSe
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier == premium.FreeTier || tier == premium.BronzeTier || tier == premium.TrialTier {
+	if tier == premium.FreeTier || tier == premium.BronzeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `/premium` to see more details about AutoMuteUs Premium",
@@ -189,7 +189,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier != premium.FreeTier && tier != premium.TrialTier {
+	if tier != premium.FreeTier {
 		if daysRem > 0 || daysRem == premium.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
@@ -249,18 +249,6 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 			"BaseURL": BasePremiumURL,
 			"GuildID": guildID,
 		})
-		if tier == premium.TrialTier {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.premiumResponse.Trial",
-				Other: "You're currently on a TRIAL of AutoMuteUs Premium\n\n",
-			})
-		} else {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID: "responses.premiumResponse.TopGG",
-				Other: "or\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\n" +
-					"(One time per user)\n\n",
-			})
-		}
 		fields = []*discordgo.MessageEmbedField{
 			{
 				Name: sett.LocalizeMessage(&i18n.Message{

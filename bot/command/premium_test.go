@@ -54,7 +54,6 @@ func TestOfferedBots(t *testing.T) {
 		{name: "silver keeps the bot it has", tier: premium.SilverTier, members: []string{amu3},
 			want: []OfferedBot{{ID: amu3, Member: true}}},
 		{name: "bronze", tier: premium.BronzeTier},
-		{name: "trial", tier: premium.TrialTier},
 		{name: "self-hosted", tier: premium.SelfHostTier},
 	}
 	for _, tt := range tests {

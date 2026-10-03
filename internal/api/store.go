@@ -287,7 +287,7 @@ func (s *DataStore) Premium(ctx context.Context, guildID string) (premium.Premiu
 		return premium.PremiumRecord{}, err
 	}
 	pg := pgstorage.PsqlInterface{Pool: s.postgres}
-	tier, days, err := pg.GetGuildOrUserPremiumStatus(s.config.Official, nil, guildID, "")
+	tier, days, err := pg.GetGuildPremiumStatus(ctx, s.config.Official, guildID)
 	return premium.PremiumRecord{Tier: tier, Days: days}, err
 }
 

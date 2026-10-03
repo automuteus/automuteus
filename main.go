@@ -191,8 +191,6 @@ func discordMainWrapper() error {
 	health := server.NewHealth(livenessGrace)
 	go server.StartHealthCheckServer("8080", health)
 
-	topGGToken := os.Getenv("TOP_GG_TOKEN")
-
 	taskTimeoutms := capture.DefaultCaptureBotTimeout
 
 	taskTimeoutmsStr := os.Getenv("ACK_TIMEOUT_MS")
@@ -225,7 +223,7 @@ func discordMainWrapper() error {
 	}
 	bots := make([]*bot.Bot, len(shards))
 	for i, shard := range shards {
-		bots[i] = bot.MakeBot(version, commit, discordToken, topGGToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
+		bots[i] = bot.MakeBot(version, commit, discordToken, url, webURL, emojiGuildID, numShards, int(shard), &redisClient, storageInterface, &psql, logPath)
 		if bots[i] == nil {
 			log.Fatalf("bot %d failed to initialize; did you provide a valid Discord Bot Token?", shard)
 		}

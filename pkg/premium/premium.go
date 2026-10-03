@@ -7,7 +7,8 @@ const (
 	BronzeTier
 	SilverTier
 	GoldTier
-	TrialTier
+	// 4 was the top.gg voting trial; the slot stays reserved so tiers stored in guilds.premium keep their meaning.
+	_
 	SelfHostTier
 )
 
@@ -16,7 +17,7 @@ var TierStrings = []string{
 	"Bronze",
 	"Silver",
 	"Gold",
-	"Trial",
+	"Trial", // retired; kept so a stored 4 still has a name
 	"SelfHost",
 }
 

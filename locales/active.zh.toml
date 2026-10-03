@@ -87,8 +87,6 @@
 "responses.premiumResponse.Stats" = "📊 游戏统计与排行榜"
 "responses.premiumResponse.StatsDesc" = "高级版用户可以查看全套玩家统计数据和排行榜！"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs 高级版 💎"
-"responses.premiumResponse.TopGG" = "或者\\n[在 top.gg 上为机器人投票](https://top.gg/bot/753795015830011944)，即可免费获得 12 小时高级版！\\n（每位用户限一次）\\n\\n"
-"responses.premiumResponse.Trial" = "你目前正在试用 AutoMuteUs 高级版\\n\\n"
 "softban.ignoring" = "接下来 5 分钟我将忽略你，请停止刷屏"
 "softban.warning" = "请停止刷屏发送命令"
 "state.phase.DISCUSSION" = "讨论"

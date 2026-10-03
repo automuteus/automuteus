@@ -22,9 +22,8 @@ type PostgresGame struct {
 }
 
 type PostgresUser struct {
-	UserID       uint64 `db:"user_id"`
-	Opt          bool   `db:"opt"`
-	VoteTimeUnix *int32 `db:"vote_time_unix"`
+	UserID uint64 `db:"user_id"`
+	Opt    bool   `db:"opt"`
 }
 
 type PostgresUserGame struct {
