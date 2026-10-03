@@ -60,6 +60,8 @@ type Bot struct {
 	sleep         func(time.Duration)
 	log           *slog.Logger
 	notices       NoticeSource
+	workers       WorkerInventory
+	reminders     ReminderStore
 
 	// games this shard is subscribed to, keyed by connect code; guarded by ChannelsMapLock
 	activeGameRequests map[string]GameStateRequest
@@ -315,7 +317,7 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 	}
 
 	deleted := dgs.DeleteGameStateMsg(bot.discord, false) // delete the old message
-	created := dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
+	created := dgs.CreateMessage(bot.discord, bot.statusContent(dgs, sett), dgs.GameStateMsg.MessageChannelID, dgs.GameStateMsg.LeaderID)
 
 	if deleted && created {
 		bot.metrics.RecordDiscordRequests(server.MessageCreateDelete, 2)

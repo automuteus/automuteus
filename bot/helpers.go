@@ -46,8 +46,9 @@ func sendEmbedWithComponents(s DiscordClient, channelID string, message *discord
 	return msg
 }
 
-func editMessageEmbed(s DiscordClient, channelID string, messageID string, message *discordgo.MessageEmbed) *discordgo.Message {
+func editMessageEmbed(s DiscordClient, channelID string, messageID string, message *discordgo.MessageEmbed, components []discordgo.MessageComponent) *discordgo.Message {
 	me := discordgo.NewMessageEdit(channelID, messageID).SetEmbed(message)
+	me.Components = components
 	msg, err := s.ChannelMessageEditComplex(me)
 	if err != nil {
 		log.Println("Error when attempting to edit complex message", err)

@@ -51,12 +51,19 @@ func (dgs *GameState) DeleteGameStateMsg(s DiscordClient, reset bool) bool {
 	return retValue
 }
 
-var DeferredEdits = make(map[string]*discordgo.MessageEmbed)
+// statusContent is what a status message shows. Edits always send the components too, so controls that depend on
+// the game's state (such as a reminder's dismiss button) appear and disappear along with the embed.
+type statusContent struct {
+	embed      *discordgo.MessageEmbed
+	components []discordgo.MessageComponent
+}
+
+var DeferredEdits = make(map[string]statusContent)
 var DeferredEditsLock = sync.Mutex{}
 
 // Note this is not a pointer; we never expect the underlying DGS to change on an edit
-func (dgs GameState) dispatchEdit(s DiscordClient, sleep func(time.Duration), me *discordgo.MessageEmbed) (newEdit bool) {
-	if !ValidFields(me) {
+func (dgs GameState) dispatchEdit(s DiscordClient, sleep func(time.Duration), content statusContent) (newEdit bool) {
+	if !ValidFields(content.embed) {
 		return false
 	}
 
@@ -68,7 +75,7 @@ func (dgs GameState) dispatchEdit(s DiscordClient, sleep func(time.Duration), me
 		newEdit = true
 	}
 	// whether or not it's found, replace the contents with the new message
-	DeferredEdits[dgs.GameStateMsg.MessageID] = me
+	DeferredEdits[dgs.GameStateMsg.MessageID] = content
 	DeferredEditsLock.Unlock()
 	return newEdit
 }
@@ -100,16 +107,18 @@ func deferredEditWorker(s DiscordClient, sleep func(time.Duration), channelID, m
 	sleep(time.Second * time.Duration(DeferredEditSeconds))
 
 	DeferredEditsLock.Lock()
-	me := DeferredEdits[messageID]
+	content, ok := DeferredEdits[messageID]
 	delete(DeferredEdits, messageID)
 	DeferredEditsLock.Unlock()
 
-	if me != nil {
-		editMessageEmbed(s, channelID, messageID, me)
+	if ok && content.embed != nil {
+		editMessageEmbed(s, channelID, messageID, content.embed, content.components)
 	}
 }
 
-func (dgs *GameState) CreateMessage(s DiscordClient, me *discordgo.MessageEmbed, channelID string, authorID string) bool {
+// statusComponents are the controls under a game's status message: the color select, and the reminder's dismiss
+// button while it has one.
+func (dgs *GameState) statusComponents(sett *settings.GuildSettings) []discordgo.MessageComponent {
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -121,7 +130,11 @@ func (dgs *GameState) CreateMessage(s DiscordClient, me *discordgo.MessageEmbed,
 			},
 		},
 	}
-	msg := sendEmbedWithComponents(s, channelID, me, components)
+	return append(components, reminderComponents(dgs.Reminder, sett)...)
+}
+
+func (dgs *GameState) CreateMessage(s DiscordClient, content statusContent, channelID string, authorID string) bool {
+	msg := sendEmbedWithComponents(s, channelID, content.embed, content.components)
 	if msg != nil {
 		dgs.GameStateMsg.LeaderID = authorID
 		dgs.GameStateMsg.MessageChannelID = msg.ChannelID
@@ -136,7 +149,7 @@ func (bot *Bot) DispatchRefreshOrEdit(readOnlyDgs *GameState, dgsRequest GameSta
 	if readOnlyDgs.shouldRefresh() {
 		bot.RefreshGameStateMessage(dgsRequest, sett)
 	} else {
-		edited := readOnlyDgs.dispatchEdit(bot.discord, bot.sleep, bot.gameStateResponse(readOnlyDgs, sett))
+		edited := readOnlyDgs.dispatchEdit(bot.discord, bot.sleep, bot.statusContent(readOnlyDgs, sett))
 		if edited {
 			bot.metrics.RecordDiscordRequests(server.MessageEdit, 1)
 		}

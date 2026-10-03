@@ -115,6 +115,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 }
 
 func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, userID string, sett *settings.GuildSettings, g *discordgo.Guild, connCode string) {
+	reminder := bot.startReminder(guildID)
 	lock, dgs := bot.store.GetDiscordGameStateAndLock(GameStateRequest{
 		GuildID:     guildID,
 		TextChannel: textChannelID,
@@ -131,6 +132,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 	dgs.DeleteGameStateMsg(bot.discord, true)
 
 	dgs.Running = true
+	dgs.Reminder = reminder
 
 	if voiceChannelID != "" {
 		dgs.VoiceChannel = voiceChannelID
@@ -141,7 +143,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 		}
 	}
 
-	_ = dgs.CreateMessage(bot.discord, bot.gameStateResponse(dgs, sett), textChannelID, userID)
+	_ = dgs.CreateMessage(bot.discord, bot.statusContent(dgs, sett), textChannelID, userID)
 
 	// release the lock
 	bot.store.SetDiscordGameState(dgs, lock)

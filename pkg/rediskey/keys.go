@@ -108,3 +108,9 @@ func RoomCodesForConnCode(connCode string) string {
 func CachedPlayerProfile(userID, guildID string) string {
 	return "automuteus:cache:profile:" + guildID + ":" + userID
 }
+
+// Reminder exists while a guild should not be shown the named status-message reminder again: for a day after it was
+// last shown, or longer after an admin dismissed it. See bot/reminders.go.
+func Reminder(guildID, kind string) string {
+	return "automuteus:reminders:" + guildID + ":" + kind
+}

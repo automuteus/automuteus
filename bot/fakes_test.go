@@ -244,6 +244,7 @@ func (f *fakeDiscord) ChannelMessageSendComplex(channelID string, data *discordg
 	if data.Embed != nil {
 		msg.Embeds = []*discordgo.MessageEmbed{data.Embed}
 	}
+	msg.Components = data.Components
 	return msg, nil
 }
 

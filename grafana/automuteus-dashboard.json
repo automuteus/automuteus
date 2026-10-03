@@ -4443,6 +4443,272 @@
           "version": "13.0.1+security-01"
         }
       }
+    },
+    "panel-36": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "${ds_prometheus}"
+                    },
+                    "group": "prometheus",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "editorMode": "code",
+                      "expr": "max by (worker) (automuteus_worker_guilds{job=~\"$job\"})",
+                      "instant": false,
+                      "legendFormat": "{{worker}}",
+                      "range": true
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              },
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "${ds_prometheus}"
+                    },
+                    "group": "prometheus",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "editorMode": "code",
+                      "expr": "max by (worker) (automuteus_worker_guild_limit{job=~\"$job\"})",
+                      "instant": false,
+                      "legendFormat": "{{worker}} limit",
+                      "range": true
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "B"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Servers each worker bot is in (max across pods; every pod sees every worker). Dashed lines are Discord's limit for unverified workers; verified workers have none. A worker at its limit cannot be invited to new premium servers.",
+        "id": 36,
+        "links": [],
+        "title": "Servers per Worker Bot",
+        "vizConfig": {
+          "group": "timeseries",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "axisBorderShow": false,
+                  "axisCenteredZero": false,
+                  "axisColorMode": "text",
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "barWidthFactor": 0.6,
+                  "drawStyle": "line",
+                  "fillOpacity": 10,
+                  "gradientMode": "none",
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "viz": false
+                  },
+                  "insertNulls": false,
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2,
+                  "pointSize": 4,
+                  "scaleDistribution": {
+                    "type": "linear"
+                  },
+                  "showPoints": "never",
+                  "showValues": false,
+                  "spanNulls": false,
+                  "stacking": {
+                    "group": "A",
+                    "mode": "none"
+                  },
+                  "thresholdsStyle": {
+                    "mode": "off"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": 0
+                    }
+                  ]
+                },
+                "unit": "short",
+                "min": 0
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byRegexp",
+                    "options": ".* limit$"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.lineStyle",
+                      "value": {
+                        "dash": [
+                          10,
+                          10
+                        ],
+                        "fill": "dash"
+                      }
+                    },
+                    {
+                      "id": "custom.fillOpacity",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "annotations": {
+                "clustering": -1,
+                "multiLane": false
+              },
+              "legend": {
+                "calcs": [
+                  "mean",
+                  "max",
+                  "lastNotNull"
+                ],
+                "displayMode": "list",
+                "placement": "bottom",
+                "showLegend": true
+              },
+              "tooltip": {
+                "hideZeros": false,
+                "mode": "multi",
+                "sort": "desc"
+              }
+            }
+          },
+          "version": "13.0.1+security-01"
+        }
+      }
+    },
+    "panel-37": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "${ds_prometheus}"
+                    },
+                    "group": "prometheus",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "editorMode": "code",
+                      "expr": "max by (worker) (automuteus_worker_guilds{job=~\"$job\"}) / max by (worker) (automuteus_worker_guild_limit{job=~\"$job\"})",
+                      "instant": true,
+                      "legendFormat": "{{worker}}",
+                      "range": false
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Share of Discord's server limit each unverified worker bot has used. Verified workers are not shown.",
+        "id": 37,
+        "links": [],
+        "title": "Worker Server Limit Used",
+        "vizConfig": {
+          "group": "bargauge",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "orange",
+                      "value": 0.8
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.9
+                    }
+                  ]
+                },
+                "unit": "percentunit",
+                "decimals": 0,
+                "min": 0,
+                "max": 1
+              },
+              "overrides": []
+            },
+            "options": {
+              "displayMode": "gradient",
+              "legend": {
+                "calcs": [],
+                "displayMode": "list",
+                "placement": "bottom",
+                "showLegend": false
+              },
+              "maxVizHeight": 300,
+              "minVizHeight": 16,
+              "minVizWidth": 8,
+              "namePlacement": "left",
+              "orientation": "horizontal",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "showUnfilled": true,
+              "sizing": "auto",
+              "valueMode": "color"
+            }
+          },
+          "version": "13.0.1+security-01"
+        }
+      }
     }
   },
   "layout": {
@@ -4934,6 +5200,32 @@
                       "width": 6,
                       "x": 18,
                       "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-36"
+                      },
+                      "height": 8,
+                      "width": 16,
+                      "x": 0,
+                      "y": 8
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-37"
+                      },
+                      "height": 8,
+                      "width": 8,
+                      "x": 16,
+                      "y": 8
                     }
                   }
                 ]

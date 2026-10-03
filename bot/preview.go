@@ -4,6 +4,7 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/notice"
+	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/bwmarrin/discordgo"
 )
@@ -26,10 +27,16 @@ func PreviewEmbeds(sett *settings.GuildSettings, n *notice.Notice) []PreviewEmbe
 	paused := previewState(game.LOBBY)
 	paused.Running = false
 
+	reminded := previewState(game.LOBBY)
+	reminded.Reminder = &Reminder{Kind: ReminderMissingWorkers, Tier: premium.GoldTier, Present: 1, Needed: 3}
+	remindedLobby := lobbyMessage(reminded, emojis, sett)
+	applyReminder(remindedLobby, reminded.Reminder, sett)
+
 	previews := []PreviewEmbed{
 		{"menu-unlinked", menuMessage(unlinked, emojis, sett)},
 		{"lobby", lobbyMessage(previewState(game.LOBBY), emojis, sett)},
 		{"lobby-paused", lobbyMessage(paused, emojis, sett)},
+		{"lobby-reminder", remindedLobby},
 		{"tasks", gamePlayMessage(previewState(game.TASKS), emojis, sett)},
 		{"discussion", gamePlayMessage(previewState(game.DISCUSS), emojis, sett)},
 		{"gameover", gameOverMessage(previewState(game.GAMEOVER), emojis, sett, "<@100000000000000001>, <@100000000000000002> won as Crewmate", "")},

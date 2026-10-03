@@ -394,7 +394,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			if premium.IsExpired(premStatus, days) {
 				premStatus = premium.FreeTier
 			}
-			return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, sett)
+			return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, bot.workerStatus(i.GuildID), sett)
 
 		case command.Debug.Name:
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
@@ -501,6 +501,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return resp
 			}
 
+		case dismissReminderID:
+			if !isAdmin {
+				return command.InsufficientPermissionsResponse(sett)
+			}
+			return bot.dismissReminder(gsr, sett)
 		}
 	}
 

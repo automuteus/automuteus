@@ -29,6 +29,9 @@ type GameState struct {
 	GameStateMsg GameStateMessage `json:"gameStateMessage"`
 
 	GameData amongus.GameData `json:"amongUsData"`
+
+	// Reminder is shown at the bottom of the status message for the whole game; see reminders.go.
+	Reminder *Reminder `json:"reminder,omitempty"`
 }
 
 func NewDiscordGameState(guildID string) *GameState {
@@ -49,6 +52,7 @@ func (dgs *GameState) Reset() {
 	dgs.VoiceChannel = ""
 	dgs.GameStateMsg = MakeGameStateMessage()
 	dgs.GameData = amongus.NewGameData()
+	dgs.Reminder = nil
 }
 
 func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s DiscordClient, userID string) (UserData, bool) {
