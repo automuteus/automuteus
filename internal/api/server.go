@@ -89,7 +89,7 @@ type Store interface {
 	GuildsWithStats(context.Context, []string) ([]bool, error)
 	Ping(context.Context) error
 	ActiveNotice(context.Context) (*notice.Notice, error)
-	RaiseNotice(context.Context, notice.Notice) error
+	RaiseNotice(context.Context, notice.Kind) error
 	ClearNotice(context.Context) error
 	// AnnounceStatsChanged tells every API replica that the named guilds' recorded history changed (every guild's
 	// when none is named), so their cached stats documents are dropped.
@@ -934,12 +934,10 @@ func handleGetGuildPremium(store Store) func(c *gin.Context) {
 
 // NoticeRequest is the body of POST /admin/notice. The notice stays active until DELETE /admin/notice.
 type NoticeRequest struct {
-	// Severity is warning or critical. Critical ends every running game and blocks new ones.
-	Severity string `json:"severity" example:"warning"`
-	Message  string `json:"message" example:"Database maintenance in progress; expect some lag."`
+	// Kind picks a preset notice, shown in each server's language. bot_update is a warning banner; maintenance is
+	// critical: it ends every running game and blocks new ones.
+	Kind string `json:"kind" enums:"bot_update,maintenance" example:"bot_update"`
 }
-
-const maxNoticeMessageLength = 500
 
 func requireConfiguredPassword(config Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -976,8 +974,9 @@ func handleGetNotice(store Store) func(c *gin.Context) {
 }
 
 // @Summary Raise a platform notice
-// @Description Shows a banner on every game status message until cleared. A critical notice also ends every
-// @Description running game (unmuting everyone, recording the matches as aborted) and blocks /new while active.
+// @Description Shows a preset banner on every game status message until cleared. bot_update is a warning;
+// @Description maintenance is critical: it also ends every running game (unmuting everyone, recording the matches
+// @Description as aborted) and blocks /new while active.
 // @Tags admin
 // @Accept json
 // @Produce json
@@ -995,24 +994,18 @@ func handlePostNotice(store Store) func(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "invalid notice body"})
 			return
 		}
-		sev := notice.Severity(strings.ToLower(req.Severity))
-		msg := strings.TrimSpace(req.Message)
-		switch {
-		case !sev.Valid():
-			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "severity must be warning or critical"})
-			return
-		case msg == "" || len(msg) > maxNoticeMessageLength:
-			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: fmt.Sprintf("message must be 1-%d characters", maxNoticeMessageLength)})
+		kind := notice.Kind(strings.ToLower(strings.TrimSpace(req.Kind)))
+		if !kind.Valid() {
+			c.JSON(http.StatusBadRequest, HttpError{StatusCode: http.StatusBadRequest, Error: "kind must be bot_update or maintenance"})
 			return
 		}
-		n := notice.Notice{Severity: sev, Message: msg}
-		if err := store.RaiseNotice(c.Request.Context(), n); err != nil {
+		if err := store.RaiseNotice(c.Request.Context(), kind); err != nil {
 			c.JSON(http.StatusServiceUnavailable, HttpError{StatusCode: http.StatusServiceUnavailable, Error: "failed to raise notice"})
 			return
 		}
 		active, err := store.ActiveNotice(c.Request.Context())
 		if err != nil || active == nil {
-			c.JSON(http.StatusOK, n)
+			c.JSON(http.StatusOK, kind.Notice())
 			return
 		}
 		c.JSON(http.StatusOK, active)

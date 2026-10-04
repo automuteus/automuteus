@@ -49,7 +49,7 @@
                         "BasicAuth": []
                     }
                 ],
-                "description": "Shows a banner on every game status message until cleared. A critical notice also ends every\nrunning game (unmuting everyone, recording the matches as aborted) and blocks /new while active.",
+                "description": "Shows a preset banner on every game status message until cleared. bot_update is a warning;\nmaintenance is critical: it also ends every running game (unmuting everyone, recording the matches\nas aborted) and blocks /new while active.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1955,14 +1955,14 @@
         "api.NoticeRequest": {
             "type": "object",
             "properties": {
-                "message": {
+                "kind": {
+                    "description": "Kind picks a preset notice, shown in each server's language. bot_update is a warning banner; maintenance is\ncritical: it ends every running game and blocks new ones.",
                     "type": "string",
-                    "example": "Database maintenance in progress; expect some lag."
-                },
-                "severity": {
-                    "description": "Severity is warning or critical. Critical ends every running game and blocks new ones.",
-                    "type": "string",
-                    "example": "warning"
+                    "enum": [
+                        "bot_update",
+                        "maintenance"
+                    ],
+                    "example": "bot_update"
                 }
             }
         },
@@ -2654,17 +2654,36 @@
                 }
             }
         },
+        "notice.Kind": {
+            "type": "string",
+            "enum": [
+                "bot_update",
+                "maintenance"
+            ],
+            "x-enum-varnames": [
+                "BotUpdate",
+                "Maintenance"
+            ]
+        },
         "notice.Notice": {
             "type": "object",
             "properties": {
                 "issuedAt": {
                     "type": "integer"
                 },
+                "kind": {
+                    "$ref": "#/definitions/notice.Kind"
+                },
                 "message": {
                     "type": "string"
                 },
                 "severity": {
-                    "$ref": "#/definitions/notice.Severity"
+                    "description": "Severity and Message are derived from Kind when the notice is raised. Message is the English text, for bots\nthat predate kinds and still render it as the banner.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/notice.Severity"
+                        }
+                    ]
                 }
             }
         },

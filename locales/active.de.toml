@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 WICHTIGER HINWEIS"
 "notices.banner.warning" = "⚠️ WARNUNG"
 "notices.critical.gameEnded" = "🛑 **Dieses Spiel wurde vom AutoMuteUs-Team beendet und alle wurden entstummt.**\\n{{.Message}}\\nFühre `/new` aus, um neu zu starten, sobald der Hinweis vorbei ist."
+"notices.kind.botUpdate" = "AutoMuteUs wird gerade aktualisiert, daher kann der Bot ein paar Minuten lang langsam reagieren."
+"notices.kind.maintenance" = "AutoMuteUs ist wegen Wartungsarbeiten nicht verfügbar."
 "notices.shutdown.gameEnded" = "🛑 **Der Capture-Dienst von AutoMuteUs startet neu, daher wurde dieses Spiel beendet und alle wurden entstummt.**\\nFühre in einer Minute `/new` aus, um neu zu starten."
 "processplayer.error" = "Fehler beim Stumm- oder Taubschalten von {{.User}}. Hat der Bot die Berechtigung, Benutzer in {{.VoiceChannel}} stumm- und taubzuschalten?"
 "responses.lobbyMessage.Footer.Text" = "Wähle unten deine Farbe im Spiel aus! (oder {{.X}} zum Verlassen)"

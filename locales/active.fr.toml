@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 AVIS CRITIQUE"
 "notices.banner.warning" = "⚠️ AVERTISSEMENT"
 "notices.critical.gameEnded" = "🛑 **Cette partie a été arrêtée par l'équipe d'AutoMuteUs et le micro de tout le monde a été réactivé.**\\n{{.Message}}\\nLancez `/new` pour recommencer une fois l'avis levé."
+"notices.kind.botUpdate" = "AutoMuteUs est en cours de mise à jour, le bot peut donc mettre du temps à répondre pendant quelques minutes."
+"notices.kind.maintenance" = "AutoMuteUs est en maintenance."
 "notices.shutdown.gameEnded" = "🛑 **Le service de capture d'AutoMuteUs redémarre : cette partie a donc été arrêtée et le micro de tout le monde a été réactivé.**\\nLancez `/new` d'ici une minute pour recommencer."
 "processplayer.error" = "Erreur lors du mute ou de la mise en sourdine de {{.User}}. Le bot a-t-il la permission de rendre muets et de mettre en sourdine les membres dans {{.VoiceChannel}} ?"
 "responses.lobbyMessage.Footer.Text" = "Choisissez votre couleur en jeu dans le menu ci-dessous ! (ou {{.X}} pour quitter)"

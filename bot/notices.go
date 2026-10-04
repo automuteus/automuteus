@@ -85,10 +85,19 @@ func applyNotice(embed *discordgo.MessageEmbed, n *notice.Notice, sett *settings
 	}
 	banner := &discordgo.MessageEmbedField{
 		Name:   name,
-		Value:  "**" + n.Message + "**",
+		Value:  "**" + noticeText(n, sett) + "**",
 		Inline: false,
 	}
 	embed.Fields = append([]*discordgo.MessageEmbedField{banner}, embed.Fields...)
+}
+
+// noticeText is n's message in the guild's language. A notice of a kind this build doesn't know (raised by a newer
+// API mid-rollout, or stored before kinds existed) falls back to the English text stored with it.
+func noticeText(n *notice.Notice, sett *settings.GuildSettings) string {
+	if m := n.Kind.Message(); m != nil {
+		return sett.LocalizeMessage(m)
+	}
+	return n.Message
 }
 
 // listenForNotices reacts to published events until the subscription is closed. It is started once per shard.
@@ -133,13 +142,13 @@ func (bot *Bot) handleEvent(e *notice.Event) {
 	case e.NoticeChanged:
 		n := bot.activeNotice()
 		if n != nil && n.Severity == notice.Critical {
-			bot.log.Info("critical notice active; ending all games", "message", n.Message, "games", len(games))
+			bot.log.Info("critical notice active; ending all games", "kind", n.Kind, "games", len(games))
 			forEachGame(games, func(gsr GameStateRequest) {
 				sett := bot.settingsForCleanup(gsr)
 				bot.stopGame(gsr, server.EndReasonCriticalNotice, sett.LocalizeMessage(&i18n.Message{
 					ID:    "notices.critical.gameEnded",
 					Other: "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\n{{.Message}}\nRun `/new` to start again once the notice is over.",
-				}, map[string]interface{}{"Message": n.Message}))
+				}, map[string]interface{}{"Message": noticeText(n, sett)}))
 			})
 			return
 		}

@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 重要通知"
 "notices.banner.warning" = "⚠️ 警告"
 "notices.critical.gameEnded" = "🛑 **AutoMuteUs 团队已结束这局游戏，所有人都已解除静音。**\\n{{.Message}}\\n通知结束后，运行 `/new` 重新开始。"
+"notices.kind.botUpdate" = "AutoMuteUs 正在更新，因此机器人在几分钟内可能响应较慢。"
+"notices.kind.maintenance" = "AutoMuteUs 正在维护中。"
 "notices.shutdown.gameEnded" = "🛑 **AutoMuteUs 捕获服务正在重启，因此这局游戏已结束，所有人都已解除静音。**\\n请一分钟后运行 `/new` 重新开始。"
 "processplayer.error" = "为 {{.User}} 静音或拒听时出错。机器人是否拥有在 {{.VoiceChannel}} 中将用户静音/拒听的权限？"
 "responses.lobbyMessage.Footer.Text" = "请在下方选择你的游戏内颜色！（或选择 {{.X}} 离开）"

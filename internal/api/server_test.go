@@ -73,11 +73,12 @@ func (s *fakeStore) ActiveNotice(context.Context) (*notice.Notice, error) {
 	s.calls++
 	return s.notice, s.err
 }
-func (s *fakeStore) RaiseNotice(_ context.Context, n notice.Notice) error {
+func (s *fakeStore) RaiseNotice(_ context.Context, k notice.Kind) error {
 	s.calls++
 	if s.err != nil {
 		return s.err
 	}
+	n := k.Notice()
 	s.notice = &n
 	return nil
 }
@@ -327,7 +328,7 @@ func TestNoticeEndpoints(t *testing.T) {
 	s := &fakeStore{}
 	r := NewRouter(Config{AdminPassword: "test-password"}, s)
 
-	if w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"severity":"warning","message":"x"}`, ""); w.Code != 401 {
+	if w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"kind":"bot_update"}`, ""); w.Code != 401 {
 		t.Fatalf("unauthenticated post: %d", w.Code)
 	}
 	if w := adminRequest(t, r, http.MethodGet, "/admin/notice", "", "test-password"); w.Code != 404 {
@@ -335,10 +336,10 @@ func TestNoticeEndpoints(t *testing.T) {
 	}
 	for _, body := range []string{
 		`not json`,
-		`{"severity":"loud","message":"x"}`,
-		`{"severity":"info","message":"x"}`,
-		`{"severity":"warning","message":"   "}`,
-		`{"severity":"warning","message":"` + strings.Repeat("a", 501) + `"}`,
+		`{}`,
+		`{"kind":"warning"}`,
+		`{"kind":"critical"}`,
+		`{"severity":"warning","message":"free-form text is no longer accepted"}`,
 	} {
 		if w := adminRequest(t, r, http.MethodPost, "/admin/notice", body, "test-password"); w.Code != 400 {
 			t.Errorf("body %q: got %d, want 400", body, w.Code)
@@ -348,11 +349,11 @@ func TestNoticeEndpoints(t *testing.T) {
 		t.Fatal("invalid requests raised a notice")
 	}
 
-	w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"severity":"Warning","message":" DB maintenance "}`, "test-password")
-	if w.Code != 200 || s.notice == nil || s.notice.Severity != notice.Warning || s.notice.Message != "DB maintenance" {
+	w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"kind":" Bot_Update "}`, "test-password")
+	if w.Code != 200 || s.notice == nil || s.notice.Kind != notice.BotUpdate || s.notice.Severity != notice.Warning {
 		t.Fatalf("raise: %d %s; stored %+v", w.Code, w.Body, s.notice)
 	}
-	if w := adminRequest(t, r, http.MethodGet, "/admin/notice", "", "test-password"); w.Code != 200 || !strings.Contains(w.Body.String(), `"severity":"warning"`) {
+	if w := adminRequest(t, r, http.MethodGet, "/admin/notice", "", "test-password"); w.Code != 200 || !strings.Contains(w.Body.String(), `"kind":"bot_update"`) {
 		t.Fatalf("get: %d %s", w.Code, w.Body)
 	}
 	if w := adminRequest(t, r, http.MethodDelete, "/admin/notice", "", "test-password"); w.Code != 204 || s.notice != nil {
@@ -360,7 +361,7 @@ func TestNoticeEndpoints(t *testing.T) {
 	}
 
 	s.err = errors.New("redis down")
-	if w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"severity":"critical","message":"x"}`, "test-password"); w.Code != 503 || strings.Contains(w.Body.String(), "redis down") {
+	if w := adminRequest(t, r, http.MethodPost, "/admin/notice", `{"kind":"maintenance"}`, "test-password"); w.Code != 503 || strings.Contains(w.Body.String(), "redis down") {
 		t.Fatalf("dependency failure: %d %s", w.Code, w.Body)
 	}
 }
@@ -370,7 +371,7 @@ func TestNoticeEndpointsRefuseDefaultPassword(t *testing.T) {
 	s := &fakeStore{}
 	r := NewRouter(Config{}, s) // no admin password configured: the default "automuteus" is in effect
 	for _, method := range []string{http.MethodPost, http.MethodDelete} {
-		w := adminRequest(t, r, method, "/admin/notice", `{"severity":"critical","message":"x"}`, "automuteus")
+		w := adminRequest(t, r, method, "/admin/notice", `{"kind":"maintenance"}`, "automuteus")
 		if w.Code != 403 {
 			t.Errorf("%s under default password: got %d, want 403", method, w.Code)
 		}
@@ -389,7 +390,7 @@ func TestNoticeEndpointsRefuseExplicitDefaultPassword(t *testing.T) {
 	s := &fakeStore{}
 	r := NewRouter(Config{AdminPassword: "automuteus"}, s)
 	for _, method := range []string{http.MethodPost, http.MethodDelete} {
-		w := adminRequest(t, r, method, "/admin/notice", `{"severity":"critical","message":"x"}`, "automuteus")
+		w := adminRequest(t, r, method, "/admin/notice", `{"kind":"maintenance"}`, "automuteus")
 		if w.Code != http.StatusForbidden {
 			t.Errorf("%s with explicitly configured default password: got %d, want 403", method, w.Code)
 		}
