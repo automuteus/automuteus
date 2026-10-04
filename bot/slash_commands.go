@@ -528,60 +528,6 @@ func (bot *Bot) linkOrUnlinkAndRespond(dgs *GameState, userID, testValue string,
 	}
 }
 
-// deleteComponentInParentMessage deletes any components from parent messages.
-// this is required for safety. if the resetting process takes over 2 seconds,
-// since RESET/Cancel buttons remain forever once the button has been clicked.
-func (bot *Bot) deleteComponentInParentMessage(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	me := discordgo.NewMessageEdit(i.ChannelID, i.Message.ID)
-	me.Components = []discordgo.MessageComponent{}
-	_, err := s.ChannelMessageEditComplex(me)
-	if err != nil {
-		log.Println("Error when attempting to edit complex message", err)
-	}
-}
-
-func confirmationComponents(confirmedID string, canceledID string, sett *settings.GuildSettings) []discordgo.MessageComponent {
-	return []discordgo.MessageComponent{
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{
-					CustomID: confirmedID,
-					Style:    discordgo.DangerButton,
-					Label: sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.reset.button.proceed",
-						Other: "Confirm",
-					}),
-					Emoji: discordgo.ComponentEmoji{Name: ThumbsUp},
-				},
-				discordgo.Button{
-					CustomID: canceledID,
-					Style:    discordgo.SecondaryButton,
-					Label: sett.LocalizeMessage(&i18n.Message{
-						ID:    "commands.stats.reset.button.cancel",
-						Other: "Cancel",
-					}),
-					Emoji: discordgo.ComponentEmoji{Name: X},
-				},
-			},
-		},
-	}
-}
-
-func resetCancelResponse(sett *settings.GuildSettings) *discordgo.InteractionResponse {
-	content := sett.LocalizeMessage(&i18n.Message{
-		ID:    "commands.stats.reset.canceled",
-		Other: "Operation has been canceled",
-	})
-	return &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseUpdateMessage,
-		Data: &discordgo.InteractionResponseData{
-			Flags:      1 << 6, //private message
-			Content:    content,
-			Components: []discordgo.MessageComponent{},
-		},
-	}
-}
-
 func softbanResponse(banned bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	if banned {
 		return &discordgo.InteractionResponse{

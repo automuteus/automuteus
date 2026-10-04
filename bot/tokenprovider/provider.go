@@ -80,10 +80,6 @@ func (tp *TokenProvider) Init(client *redis.Client, sess *discordgo.Session) {
 	tp.primarySession = sess
 }
 
-//func rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
-//	log.Println(rl.Message)
-//}
-
 func (tokenProvider *TokenProvider) PopulateAndStartSessions(tokens []string) {
 	tokenProvider.membershipMu.Lock()
 	tokenProvider.configuredWorkers += len(tokens)
@@ -282,10 +278,6 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	}
 
 	return latestErr
-}
-
-func (tokenProvider *TokenProvider) rateLimitEventCallback(sess *discordgo.Session, rl *discordgo.RateLimit) {
-	log.Println(rl.Message)
 }
 
 func (tokenProvider *TokenProvider) waitForAck(pubsub *redis.PubSub, result chan<- bool) {
