@@ -72,6 +72,16 @@ const (
 
 var cleanupSteps = [...]CleanupStep{CleanupUnmute, CleanupRecordMatch, CleanupNotify}
 
+// ReminderAction is what happened to a status-message reminder (see bot/reminders.go).
+type ReminderAction string
+
+const (
+	ReminderShown     ReminderAction = "shown"     // put at the bottom of a game's status message
+	ReminderDismissed ReminderAction = "dismissed" // hidden for a week by an admin
+)
+
+var reminderActions = [...]ReminderAction{ReminderShown, ReminderDismissed}
+
 // AdoptSource is how a process came to subscribe to a game another process created.
 type AdoptSource string
 
@@ -85,18 +95,16 @@ var adoptSources = [...]AdoptSource{AdoptAnnounce, AdoptDiscovery, AdoptGuildCre
 
 // Metrics holds every Prometheus collector for one bot process, across all of its shards.
 type Metrics struct {
-	workerCleanup        *prometheus.CounterVec
-	workerCleanupPending prometheus.Gauge
-	workerCleanupOldest  prometheus.Gauge
-	workerGuilds         *prometheus.GaugeVec
-	workerGuildLimit     *prometheus.GaugeVec
+	workerGuilds     *prometheus.GaugeVec
+	workerGuildLimit *prometheus.GaugeVec
+	reminders        *prometheus.CounterVec
 	// operations are activity counters, not an exact count of HTTP requests or successful responses.
 	operations *prometheus.CounterVec
 
 	voiceChanges      *prometheus.CounterVec
 	workerFailures    prometheus.Counter
 	captureTasks      *prometheus.CounterVec
-	muteBatchDuration prometheus.Histogram
+	muteBatchDuration *prometheus.HistogramVec
 
 	activeGames     prometheus.Gauge
 	gamesStarted    prometheus.Counter
@@ -115,18 +123,6 @@ var DefaultMetrics = NewMetrics(prometheus.DefaultRegisterer)
 
 func NewMetrics(registry prometheus.Registerer) *Metrics {
 	m := &Metrics{
-		workerCleanup: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "automuteus_worker_cleanup_total",
-			Help: "Background worker cleanup checks, departures, deferrals, and failures.",
-		}, []string{"result"}),
-		workerCleanupPending: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "automuteus_worker_cleanup_pending_guilds",
-			Help: "Latest observed fleet-wide number of guilds queued for worker departures.",
-		}),
-		workerCleanupOldest: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "automuteus_worker_cleanup_oldest_check_seconds",
-			Help: "Latest observed age of the oldest scheduled guild check attempt across the fleet.",
-		}),
 		workerGuilds: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "automuteus_worker_guilds",
 			Help: "Servers each worker bot is a member of, as last seen by this process's gateway for it.",
@@ -135,6 +131,10 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			Name: "automuteus_worker_guild_limit",
 			Help: "Most servers Discord lets each worker bot join. Absent for verified bots, which have no limit.",
 		}, []string{"worker"}),
+		reminders: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "automuteus_reminders_total",
+			Help: "Status-message reminders put on games, and hidden for a week by admins, by kind.",
+		}, []string{"kind", "action"}),
 		operations: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "automuteus_discord_operations_total",
 			Help: "Coarse Discord message activity and observed rate limits in this process; not an exact HTTP request count.",
@@ -151,11 +151,11 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			Name: "automuteus_capture_mute_tasks_total",
 			Help: "Mute/deafen tasks routed to capture clients, by result. Games without a capture client able to mute are not counted.",
 		}, []string{"result"}),
-		muteBatchDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+		muteBatchDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "automuteus_mute_batch_duration_seconds",
-			Help:    "Wall time to apply one batch of mute/deafen changes across all routes.",
+			Help:    "Wall time to apply one batch of mute/deafen changes across all routes, by whether the guild's tier includes priority mute bots.",
 			Buckets: []float64{0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30},
-		}),
+		}, []string{"workers"}),
 		activeGames: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "automuteus_active_games",
 			Help: "Games whose capture events this process is currently subscribed to.",
@@ -214,10 +214,7 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 	registry.MustRegister(m.operations, m.voiceChanges, m.workerFailures, m.captureTasks, m.muteBatchDuration,
 		m.activeGames, m.gamesStarted, m.gamesEnded, m.cleanupFailures,
 		m.leaseLost, m.leaseWaits, m.gamesAdopted, m.gamesHandedOver)
-	for _, result := range []string{"checked", "left", "deferred", "failed", "rate_limited"} {
-		m.workerCleanup.WithLabelValues(result)
-	}
-	registry.MustRegister(m.workerCleanup, m.workerCleanupPending, m.workerCleanupOldest, m.workerGuilds, m.workerGuildLimit)
+	registry.MustRegister(m.workerGuilds, m.workerGuildLimit, m.reminders)
 	return m
 }
 
@@ -241,13 +238,6 @@ func (m *Metrics) RecordWorkerFailure() {
 	m.workerFailures.Inc()
 }
 
-func (m *Metrics) RecordWorkerCleanup(result string) { m.workerCleanup.WithLabelValues(result).Inc() }
-
-func (m *Metrics) SetWorkerCleanupStatus(pending, oldestSeconds float64) {
-	m.workerCleanupPending.Set(pending)
-	m.workerCleanupOldest.Set(oldestSeconds)
-}
-
 // SetWorkerGuilds records how many servers a worker bot is in, and how many it may join; limit 0 means no limit.
 func (m *Metrics) SetWorkerGuilds(worker string, guilds, limit int) {
 	m.workerGuilds.WithLabelValues(worker).Set(float64(guilds))
@@ -263,9 +253,14 @@ func (m *Metrics) RecordCaptureTask(result CaptureTaskResult) {
 	m.captureTasks.WithLabelValues(string(result)).Inc()
 }
 
-// ObserveMuteBatch records how long one ModifyUsers call took end to end.
-func (m *Metrics) ObserveMuteBatch(elapsed time.Duration) {
-	m.muteBatchDuration.Observe(elapsed.Seconds())
+// ObserveMuteBatch records how long one ModifyUsers call took end to end. workers is whether the guild's tier
+// includes priority mute bots, so the slow-mute threshold can be tuned against the guilds it applies to.
+func (m *Metrics) ObserveMuteBatch(elapsed time.Duration, workers bool) {
+	label := "none"
+	if workers {
+		label = "included"
+	}
+	m.muteBatchDuration.WithLabelValues(label).Observe(elapsed.Seconds())
 }
 
 // AddActiveGames adjusts the process-wide count when a shard starts or stops
@@ -302,6 +297,21 @@ func (m *Metrics) RecordLeaseWait() {
 // so a new caller cannot grow the metric's cardinality.
 func (m *Metrics) RecordGameAdopted(source AdoptSource) {
 	m.gamesAdopted.WithLabelValues(string(source.known())).Inc()
+}
+
+// ExposeReminderKinds exposes every action for each reminder kind as zero, like the other labeled counters. The kinds
+// are defined by the bot, so it calls this at startup.
+func (m *Metrics) ExposeReminderKinds(kinds ...string) {
+	for _, kind := range kinds {
+		for _, action := range reminderActions {
+			m.reminders.WithLabelValues(kind, string(action))
+		}
+	}
+}
+
+// RecordReminder counts one reminder of kind being shown on a game or dismissed.
+func (m *Metrics) RecordReminder(kind string, action ReminderAction) {
+	m.reminders.WithLabelValues(kind, string(action)).Inc()
 }
 
 // RecordGameHandedOver counts a game whose lease this process released mid-burst while draining.

@@ -169,7 +169,7 @@ const DefaultMaxWorkers = 8
 
 var UnresponsiveCaptureBlacklistDuration = time.Minute * time.Duration(5)
 
-func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock lock.Lock) error {
+func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, request task.UserModifyRequest, voicelock lock.Lock) (task.ModifyResult, error) {
 	if voicelock != nil {
 		defer voicelock.Release(context.Background())
 	}
@@ -178,7 +178,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 
 	gid, gerr := strconv.ParseUint(guildID, 10, 64)
 	if gerr != nil {
-		return gerr
+		return task.ModifyResult{}, gerr
 	}
 	limit := PremiumBotConstraints[request.Premium]
 	capture := tokenProvider.newCaptureRoute(guildID, connectCode, l)
@@ -267,7 +267,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 	close(tasksChannel)
 
 	elapsed := time.Since(start)
-	tokenProvider.metrics.ObserveMuteBatch(elapsed)
+	tokenProvider.metrics.ObserveMuteBatch(elapsed, limit > 0)
 
 	summary := l.With("users", len(request.Users), "worker", mdsc.Worker, "capture", mdsc.Capture,
 		"official", mdsc.Official, "capture_throttled", mdsc.RateLimit, "elapsed", elapsed)
@@ -277,7 +277,7 @@ func (tokenProvider *TokenProvider) ModifyUsers(guildID, connectCode string, req
 		summary.Info("voice changes issued")
 	}
 
-	return latestErr
+	return task.ModifyResult{MuteDeafenSuccessCounts: mdsc, Elapsed: elapsed}, latestErr
 }
 
 func (tokenProvider *TokenProvider) waitForAck(pubsub *redis.PubSub, result chan<- bool) {

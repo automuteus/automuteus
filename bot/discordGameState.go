@@ -32,6 +32,8 @@ type GameState struct {
 
 	// Reminder is shown at the bottom of the status message for the whole game; see reminders.go.
 	Reminder *Reminder `json:"reminder,omitempty"`
+	// SlowMutes counts this game's slow rounds of mutes, toward ReminderSlowMutes.
+	SlowMutes int `json:"slowMutes,omitempty"`
 }
 
 func NewDiscordGameState(guildID string) *GameState {
@@ -53,6 +55,7 @@ func (dgs *GameState) Reset() {
 	dgs.GameStateMsg = MakeGameStateMessage()
 	dgs.GameData = amongus.NewGameData()
 	dgs.Reminder = nil
+	dgs.SlowMutes = 0
 }
 
 func (dgs *GameState) checkCacheAndAddUser(g *discordgo.Guild, s DiscordClient, userID string) (UserData, bool) {

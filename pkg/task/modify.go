@@ -3,6 +3,7 @@ package task
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/bwmarrin/discordgo"
@@ -62,4 +63,19 @@ type MuteDeafenSuccessCounts struct {
 	Capture   int64 `json:"capture"`
 	Official  int64 `json:"official"`
 	RateLimit int64 `json:"ratelimit"`
+}
+
+// ModifyResult reports how one batch of mute/deafen changes was applied and how long it took.
+type ModifyResult struct {
+	MuteDeafenSuccessCounts
+	Elapsed time.Duration
+}
+
+// Add folds another batch's result into r, as when one round of changes is sent as a priority batch and the rest.
+func (r *ModifyResult) Add(o ModifyResult) {
+	r.Worker += o.Worker
+	r.Capture += o.Capture
+	r.Official += o.Official
+	r.RateLimit += o.RateLimit
+	r.Elapsed += o.Elapsed
 }
