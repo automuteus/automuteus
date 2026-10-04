@@ -81,7 +81,6 @@ func (tp *TokenProvider) StartCleanup(cfg CleanupConfig, lookup PremiumLookup) e
 				return
 			case <-ticker.C:
 				if err := c.step(ctx); err != nil && ctx.Err() == nil {
-					tp.metrics.RecordWorkerCleanup("failed")
 					tp.logger("").Warn("worker cleanup failed; will retry on a later sweep", "err", err)
 				}
 			}
@@ -109,7 +108,6 @@ func (c *workerCleanup) step(parent context.Context) error {
 	}()
 	guilds, unavailable, ready := c.tp.membershipSnapshot()
 	if !ready {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	if err := c.syncInventory(ctx, guilds); err != nil {
@@ -127,7 +125,7 @@ func (c *workerCleanup) step(parent context.Context) error {
 	if err := c.depart(ctx); err != nil {
 		return err
 	}
-	return c.observe(ctx)
+	return nil
 }
 
 func (c *workerCleanup) syncInventory(ctx context.Context, guilds map[string][]string) error {
@@ -184,14 +182,12 @@ func (c *workerCleanup) scan(ctx context.Context, guilds map[string][]string, un
 		return err
 	}
 	if unavailable[guild] {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	limit, err := c.limit(ctx, guild)
 	if err != nil {
 		return err
 	}
-	c.tp.metrics.RecordWorkerCleanup("checked")
 	if len(guilds[guild]) > limit {
 		return c.tp.client.ZAddNX(ctx, rediskey.WorkerCleanupPending, &redis.Z{Score: float64(time.Now().UnixMilli()), Member: guild}).Err()
 	}
@@ -217,7 +213,6 @@ func (c *workerCleanup) depart(ctx context.Context) error {
 	}
 	guilds, unavailable, ready := c.tp.membershipSnapshot()
 	if !ready || unavailable[guild] {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	workers := guilds[guild]
@@ -238,13 +233,11 @@ func (c *workerCleanup) depart(ctx context.Context) error {
 		return err
 	}
 	if active > 0 {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	// Retain the first N workers in stable token-hash order, regardless of recent usage.
 	key := workers[len(workers)-1]
 	if !c.tp.workerQuiet(key) {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	paused, err := c.tp.client.Exists(ctx, rediskey.WorkerCleanupPause(key)).Result()
@@ -262,7 +255,6 @@ func (c *workerCleanup) depart(ctx context.Context) error {
 	wait := sess.Ratelimiter.GetWaitTime(bucket, 1)
 	bucket.Unlock()
 	if wait > 0 {
-		c.tp.metrics.RecordWorkerCleanup("deferred")
 		return nil
 	}
 	// Reserve the fleet-wide budget BEFORE the HTTP call. Failures also spend it.
@@ -288,32 +280,13 @@ func (c *workerCleanup) depart(ctx context.Context) error {
 			if pauseErr := c.tp.extendWorkerPause(ctx, key, delay); pauseErr != nil {
 				return pauseErr
 			}
-			c.tp.metrics.RecordWorkerCleanup("rate_limited")
 		}
 		return err
 	}
 	c.tp.workerGuildDelete(key, &discordgo.GuildDelete{Guild: &discordgo.Guild{ID: guild}})
-	c.tp.metrics.RecordWorkerCleanup("left")
 	c.tp.logger(guild).Info("worker left server above premium allowance", "token", key, "limit", limit)
 	if len(workers)-1 <= limit {
 		return c.tp.client.ZRem(ctx, rediskey.WorkerCleanupPending, guild).Err()
 	}
-	return nil
-}
-
-func (c *workerCleanup) observe(ctx context.Context) error {
-	pending, err := c.tp.client.ZCard(ctx, rediskey.WorkerCleanupPending).Result()
-	if err != nil {
-		return err
-	}
-	oldest, err := c.tp.client.ZRangeWithScores(ctx, rediskey.WorkerCleanupSchedule, 0, 0).Result()
-	if err != nil {
-		return err
-	}
-	age := 0.0
-	if len(oldest) > 0 {
-		age = max(0, float64(time.Now().UnixMilli())/1000-oldest[0].Score/1000)
-	}
-	c.tp.metrics.SetWorkerCleanupStatus(float64(pending), age)
 	return nil
 }

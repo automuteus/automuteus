@@ -232,11 +232,15 @@ func TestModifyUsers_NoCaptureClient_GoesStraightToPrimary(t *testing.T) {
 	h := newHarness(t, ackTimeout)
 
 	start := time.Now()
-	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+	res, err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil)
+	if err != nil {
 		t.Fatalf("ModifyUsers: %v", err)
 	}
 	if got := h.primary.count(); got != 6 {
 		t.Fatalf("primary bot applied %d mutes, want 6", got)
+	}
+	if res.Official != 6 || res.Capture != 0 || res.Worker != 0 || res.Elapsed <= 0 {
+		t.Errorf("result = %+v, want 6 changes by the primary bot and a positive elapsed time", res)
 	}
 	if n := h.cmds.get("publish"); n != 0 {
 		t.Errorf("published %d capture tasks with no capture client, want 0", n)
@@ -267,7 +271,7 @@ func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing
 
 	// first batch of the game: the capture path is tried and found unresponsive
 	start := time.Now()
-	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+	if _, err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
 		t.Fatalf("ModifyUsers: %v", err)
 	}
 	if got := h.primary.count(); got != 6 {
@@ -298,7 +302,7 @@ func TestModifyUsers_UnresponsiveCapture_EveryUserStillMutedByPrimary(t *testing
 	// second batch: the capture client is now known to be unresponsive, so no task is published and nothing waits
 	h.cmds.reset()
 	start = time.Now()
-	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+	if _, err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
 		t.Fatalf("ModifyUsers: %v", err)
 	}
 	if got := h.primary.count(); got != 12 {
@@ -322,8 +326,12 @@ func TestModifyUsers_ResponsiveCapture_UsesCaptureClientNotPrimary(t *testing.T)
 	h := newHarness(t, time.Second)
 	h.startFakeCaptureClient(t)
 
-	if err := h.tp.ModifyUsers(testGuild, testCode, batch(3), nil); err != nil {
+	res, err := h.tp.ModifyUsers(testGuild, testCode, batch(3), nil)
+	if err != nil {
 		t.Fatalf("ModifyUsers: %v", err)
+	}
+	if res.Capture != 3 || res.Official != 0 {
+		t.Errorf("result = %+v, want 3 changes by the capture client", res)
 	}
 	if got := h.primary.count(); got != 0 {
 		t.Errorf("primary bot applied %d mutes, want 0 when the capture client acks", got)
@@ -350,7 +358,7 @@ func TestModifyUsers_CaptureRateLimit_DefersToPrimaryWithoutBlacklisting(t *test
 	h.startFakeCaptureClient(t)
 	h.tp.maxRequests5Seconds = 2
 
-	if err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
+	if _, err := h.tp.ModifyUsers(testGuild, testCode, batch(6), nil); err != nil {
 		t.Fatalf("ModifyUsers: %v", err)
 	}
 	// the capture client got at most its budget; everyone else went to the primary bot; nothing was blacklisted
@@ -432,7 +440,7 @@ func BenchmarkModifyUsers_NoCaptureClient_FirstBatch(b *testing.B) {
 		b.StopTimer()
 		h.redis.FlushAll()
 		b.StartTimer()
-		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+		if _, err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -449,7 +457,7 @@ func BenchmarkModifyUsers_UnresponsiveCapture_FirstBatch(b *testing.B) {
 		h.redis.FlushAll()
 		h.captureReady(b)
 		b.StartTimer()
-		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+		if _, err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -462,13 +470,13 @@ func BenchmarkModifyUsers_UnresponsiveCapture_Blacklisted(b *testing.B) {
 	h := newHarness(b, 5*time.Millisecond)
 	h.captureReady(b)
 	req := batch(6)
-	if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+	if _, err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 		b.Fatal(err)
 	}
 	h.cmds.reset()
 	h.primary.reset()
 	for b.Loop() {
-		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+		if _, err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -481,7 +489,7 @@ func BenchmarkModifyUsers_ResponsiveCapture(b *testing.B) {
 	h.startFakeCaptureClient(b)
 	req := batch(6)
 	for b.Loop() {
-		if err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
+		if _, err := h.tp.ModifyUsers(testGuild, testCode, req, nil); err != nil {
 			b.Fatal(err)
 		}
 	}

@@ -36,7 +36,7 @@ type GameStateStore interface {
 
 // VoiceModifier applies mute/deafen changes to Discord users.
 type VoiceModifier interface {
-	ModifyUsers(guildID, connectCode string, req task.UserModifyRequest, l lock.Lock) error
+	ModifyUsers(guildID, connectCode string, req task.UserModifyRequest, l lock.Lock) (task.ModifyResult, error)
 }
 
 // WorkerInventory reports which worker bots are members of a guild, and which can't join any more servers.
@@ -100,6 +100,7 @@ type Metrics interface {
 	RecordLeaseWait()
 	RecordGameAdopted(source server.AdoptSource)
 	RecordGameHandedOver()
+	RecordReminder(kind string, action server.ReminderAction)
 }
 
 // Compile-time checks that the production types satisfy the seams.
@@ -127,6 +128,7 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 	bot.metrics = server.DefaultMetrics
 	bot.notices = redisNotices{client: redisInterface.client}
 	bot.reminders = redisReminders{client: redisInterface.client}
+	server.DefaultMetrics.ExposeReminderKinds(reminderKindNames()...)
 	bot.sleep = time.Sleep
 	bot.log = slog.Default()
 }

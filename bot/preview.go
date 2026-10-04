@@ -32,12 +32,18 @@ func PreviewEmbeds(sett *settings.GuildSettings, n *notice.Notice) []PreviewEmbe
 	remindedLobby := lobbyMessage(reminded, emojis, sett)
 	applyReminder(remindedLobby, reminded.Reminder, sett)
 
+	slow := previewState(game.TASKS)
+	slow.Reminder = &Reminder{Kind: ReminderSlowMutes, Tier: premium.FreeTier, Seconds: 7}
+	slowTasks := gamePlayMessage(slow, emojis, sett)
+	applyReminder(slowTasks, slow.Reminder, sett)
+
 	previews := []PreviewEmbed{
 		{"menu-unlinked", menuMessage(unlinked, emojis, sett)},
 		{"lobby", lobbyMessage(previewState(game.LOBBY), emojis, sett)},
 		{"lobby-paused", lobbyMessage(paused, emojis, sett)},
 		{"lobby-reminder", remindedLobby},
 		{"tasks", gamePlayMessage(previewState(game.TASKS), emojis, sett)},
+		{"tasks-slow-mutes", slowTasks},
 		{"discussion", gamePlayMessage(previewState(game.DISCUSS), emojis, sett)},
 		{"gameover", gameOverMessage(previewState(game.GAMEOVER), emojis, sett, "<@100000000000000001>, <@100000000000000002> won as Crewmate", "")},
 	}

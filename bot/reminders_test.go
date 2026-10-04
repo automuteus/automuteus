@@ -3,12 +3,17 @@ package bot
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/internal/server"
+	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
+	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -155,7 +160,13 @@ func TestReminder_ShownAtStartAndDismissedForAWeek(t *testing.T) {
 		t.Fatalf("status message has no dismiss button: %+v", msg.Components)
 	}
 
+	if got := deps.metrics.reminderCount(ReminderMissingWorkers, server.ReminderShown); got != 1 {
+		t.Errorf("reminders shown = %d, want 1", got)
+	}
 	resp := bot.dismissReminder(GameStateRequest{GuildID: scenarioGuild, TextChannel: scenarioTextChannel}, deps.settings)
+	if got := deps.metrics.reminderCount(ReminderMissingWorkers, server.ReminderDismissed); got != 1 {
+		t.Errorf("reminders dismissed = %d, want 1", got)
+	}
 	if resp == nil || resp.Data == nil || resp.Data.Flags&discordgo.MessageFlagsEphemeral == 0 {
 		t.Fatalf("dismiss response = %+v, want an ephemeral confirmation", resp)
 	}
@@ -202,6 +213,130 @@ func hasDismissButton(rows []discordgo.MessageComponent) bool {
 			if b, ok := c.(discordgo.Button); ok && b.CustomID == dismissReminderID {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func TestSlowMuteReminder(t *testing.T) {
+	slow := task.ModifyResult{MuteDeafenSuccessCounts: task.MuteDeafenSuccessCounts{Official: 6}, Elapsed: 6200 * time.Millisecond}
+	tests := []struct {
+		name      string
+		tier      premium.Tier
+		round     task.ModifyResult
+		users     int
+		prior     int // slow rounds the game already had
+		reminded  bool
+		stopped   bool
+		heldBack  bool
+		claimErr  error
+		want      bool
+		wantCount int
+	}{
+		{name: "second slow round on free", tier: premium.FreeTier, round: slow, users: 6, prior: 1, want: true, wantCount: 2},
+		{name: "second slow round on bronze", tier: premium.BronzeTier, round: slow, users: 6, prior: 1, want: true, wantCount: 2},
+		{name: "first slow round only counts", tier: premium.FreeTier, round: slow, users: 6, wantCount: 1},
+		{name: "silver has priority mute bots", tier: premium.SilverTier, round: slow, users: 6, prior: 1, wantCount: 1},
+		{name: "self-hosted", tier: premium.SelfHostTier, round: slow, users: 6, prior: 1, wantCount: 1},
+		{name: "too few users", tier: premium.FreeTier, round: slow, users: SlowMuteMinUsers - 1, prior: 1, wantCount: 1},
+		{name: "under the threshold", tier: premium.FreeTier, users: 6, prior: 1, wantCount: 1,
+			round: task.ModifyResult{MuteDeafenSuccessCounts: task.MuteDeafenSuccessCounts{Official: 6}, Elapsed: SlowMuteThreshold - time.Millisecond}},
+		{name: "capture client did most of it", tier: premium.FreeTier, users: 6, prior: 1, wantCount: 1,
+			round: task.ModifyResult{MuteDeafenSuccessCounts: task.MuteDeafenSuccessCounts{Official: 3, Capture: 3}, Elapsed: 6 * time.Second}},
+		{name: "game already has a reminder", tier: premium.FreeTier, round: slow, users: 6, prior: 1, reminded: true, wantCount: 1},
+		{name: "game ended during the mutes", tier: premium.FreeTier, round: slow, users: 6, prior: 1, stopped: true, wantCount: 1},
+		{name: "shown within cooldown", tier: premium.FreeTier, round: slow, users: 6, prior: 1, heldBack: true, wantCount: 2},
+		{name: "claim fails", tier: premium.FreeTier, round: slow, users: 6, prior: 1, claimErr: errors.New("redis down"), wantCount: 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bot, deps := newTestBot(t)
+			reminders := newFakeReminders()
+			reminders.claimErr = tt.claimErr
+			if tt.heldBack {
+				reminders.held[scenarioGuild+":"+string(ReminderSlowMutes)] = ReminderCooldown
+			}
+			bot.reminders = reminders
+			dgs := runningGame(deps, game.TASKS)
+			dgs.SlowMutes = tt.prior
+			dgs.Running = !tt.stopped
+			if tt.reminded {
+				dgs.Reminder = &Reminder{Kind: ReminderMissingWorkers}
+			}
+			deps.store.put(dgs)
+
+			got := bot.slowMuteReminder(GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}, tt.tier, tt.round, tt.users)
+			if tt.want {
+				want := Reminder{Kind: ReminderSlowMutes, Tier: tt.tier, Seconds: 6}
+				if got == nil || *got != want {
+					t.Fatalf("reminder = %+v, want %+v", got, want)
+				}
+				if stored := deps.store.get().Reminder; stored == nil || *stored != want {
+					t.Errorf("game carries %+v, want %+v", stored, want)
+				}
+				if held := reminders.heldFor(scenarioGuild, ReminderSlowMutes); held != ReminderCooldown {
+					t.Errorf("held back for %v, want %v", held, ReminderCooldown)
+				}
+			} else if got != nil {
+				t.Fatalf("reminder = %+v, want none", got)
+			}
+			wantShown := 0
+			if tt.want {
+				wantShown = 1
+			}
+			if got := deps.metrics.reminderCount(ReminderSlowMutes, server.ReminderShown); got != wantShown {
+				t.Errorf("reminders shown = %d, want %d", got, wantShown)
+			}
+			if count := deps.store.get().SlowMutes; count != tt.wantCount {
+				t.Errorf("slow rounds = %d, want %d", count, tt.wantCount)
+			}
+		})
+	}
+}
+
+// Slow mutes in two rounds of a Free game put the reminder on the status edit that follows the second round.
+func TestSlowMuteReminder_ShownMidGame(t *testing.T) {
+	bot, deps := newTestBot(t)
+	bot.reminders = newFakeReminders()
+	deps.voice.elapsed = 7 * time.Second
+	sett := settings.MakeGuildSettings()
+
+	var voiceStates []*discordgo.VoiceState
+	for i := 0; i < SlowMuteMinUsers; i++ {
+		voiceStates = append(voiceStates, inChannel(strconv.Itoa(10+i), trackedChannel))
+	}
+	dgs := runningGame(deps, game.LOBBY, voiceStates...)
+	for i := 0; i < SlowMuteMinUsers; i++ {
+		addLinkedUserWithColor(dgs, strconv.Itoa(10+i), "player"+strconv.Itoa(i), i, true, false, false)
+	}
+	deps.store.put(dgs)
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+
+	bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+	if got := deps.store.get(); got.Reminder != nil || got.SlowMutes != 1 {
+		t.Fatalf("after one slow round: reminder %+v, slow rounds %d; want none and 1", got.Reminder, got.SlowMutes)
+	}
+	bot.processJob(phaseJob(game.DISCUSS), sett, premium.FreeTier, gsr)
+	if got := deps.store.get().Reminder; got == nil || got.Kind != ReminderSlowMutes || got.Seconds != 7 {
+		t.Fatalf("after two slow rounds: reminder %+v, want a 7 second slow-mute reminder", got)
+	}
+
+	eventually(t, "a status edit showing the reminder", func() bool {
+		deps.discord.mu.Lock()
+		defer deps.discord.mu.Unlock()
+		for _, edit := range deps.discord.edits {
+			if hasSlowMuteField(edit.Embeds[0]) && hasDismissButton(edit.Components) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func hasSlowMuteField(embed *discordgo.MessageEmbed) bool {
+	for _, f := range embed.Fields {
+		if strings.Contains(f.Name, "Muting is slow") && strings.Contains(f.Value, "Silver and Gold") {
+			return true
 		}
 	}
 	return false
