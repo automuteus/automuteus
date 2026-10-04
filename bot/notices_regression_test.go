@@ -53,15 +53,15 @@ type observedNoticeVoice struct {
 	before func()
 }
 
-func (v observedNoticeVoice) ModifyUsers(guild, code string, req task.UserModifyRequest, l lock.Lock) error {
+func (v observedNoticeVoice) ModifyUsers(guild, code string, req task.UserModifyRequest, l lock.Lock) (task.ModifyResult, error) {
 	if v.before != nil {
 		v.before()
 	}
-	err := v.fakeVoice.ModifyUsers(guild, code, req, l)
+	res, err := v.fakeVoice.ModifyUsers(guild, code, req, l)
 	if v.called != nil {
 		v.called <- struct{}{}
 	}
-	return err
+	return res, err
 }
 
 func TestStopGame_StopsStateBeforeUnmutingAndReportsFailure(t *testing.T) {

@@ -33,7 +33,8 @@ func (bot *Bot) applyToSingle(dgs *GameState, premTier premium.Tier, userID stri
 		},
 	}
 	// nil lock because this is an override; we don't care about legitimately obtaining the lock
-	return bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+	_, err := bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+	return err
 }
 
 func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf bool) error {
@@ -78,7 +79,8 @@ func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf boo
 			Users:   users,
 		}
 		// nil lock because this is an override; we don't care about legitimately obtaining the lock
-		return bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+		_, err := bot.voice.ModifyUsers(dgs.GuildID, dgs.ConnectCode, req, nil)
+		return err
 	}
 	return nil
 }
@@ -145,8 +147,9 @@ func computeVoiceChanges(dgs *GameState, sett *settings.GuildSettings, voiceStat
 	return users, priorityRequests
 }
 
-// handleTrackedMembers moves/mutes players according to the current game state
-func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier premium.Tier, delay int, handlePriority HandlePriority, gsr GameStateRequest) {
+// handleTrackedMembers moves/mutes players according to the current game state. If the changes were slow enough to
+// start a slow-mute reminder, it returns that reminder so the caller's status edit can show it.
+func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier premium.Tier, delay int, handlePriority HandlePriority, gsr GameStateRequest) *Reminder {
 
 	gl := bot.gameLog(gsr)
 	lock, dgs := bot.store.GetDiscordGameStateAndLock(gsr)
@@ -158,7 +161,7 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 
 	if err != nil || g == nil {
 		lock.Release(ctx)
-		return
+		return nil
 	}
 
 	// make sure every member currently in voice is in our user cache before deciding on changes
@@ -180,6 +183,8 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 		bot.sleep(time.Second * time.Duration(delay))
 	}
 
+	// players hear the priority and remaining batches as one round of mutes, so they're judged together
+	var round task.ModifyResult
 	if dgs.Running && len(users) > 0 {
 		gl.Info("applying voice changes", "changes", len(users), "priority", priorityRequests, "phase", game.PhaseNames[dgs.GameData.GetPhase()])
 		if priorityRequests > 0 {
@@ -188,7 +193,8 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 				Users:   users[:priorityRequests],
 			}
 			// no lock; we're not done yet
-			err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, nil)
+			res, err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, nil)
+			round.Add(res)
 			if err != nil {
 				gl.Error("failed to issue priority voice changes", "err", err)
 			}
@@ -198,7 +204,8 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 					Premium: premTier,
 					Users:   rem,
 				}
-				err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+				res, err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+				round.Add(res)
 				if err != nil {
 					gl.Error("failed to issue voice changes", "err", err)
 				}
@@ -211,14 +218,16 @@ func (bot *Bot) handleTrackedMembers(sett *settings.GuildSettings, premTier prem
 				Premium: premTier,
 				Users:   users,
 			}
-			err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+			res, err := bot.issueMutesAndRecord(dgs.GuildID, dgs.ConnectCode, req, voiceLock)
+			round.Add(res)
 			if err != nil {
 				gl.Error("failed to issue voice changes", "err", err)
 			}
 		}
 	}
+	return bot.slowMuteReminder(gsr, premTier, round, len(users))
 }
 
-func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserModifyRequest, lock lock.Lock) error {
+func (bot *Bot) issueMutesAndRecord(guildID, connectCode string, req task.UserModifyRequest, lock lock.Lock) (task.ModifyResult, error) {
 	return bot.voice.ModifyUsers(guildID, connectCode, req, lock)
 }

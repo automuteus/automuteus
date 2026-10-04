@@ -182,32 +182,28 @@ func TestMetricsLeaseAndHandoverCounters(t *testing.T) {
 	}
 }
 
-func TestMetricsWorkerCleanup(t *testing.T) {
+func TestMetricsReminders(t *testing.T) {
 	registry := prometheus.NewRegistry()
 	m := NewMetrics(registry)
-	for _, result := range []string{"checked", "left", "deferred", "failed", "rate_limited"} {
-		m.RecordWorkerCleanup(result)
-	}
-	counts := counterValues(t, registry, "automuteus_worker_cleanup_total", "result")
-	if len(counts) != 5 {
-		t.Fatalf("unexpected cleanup labels: %v", counts)
-	}
-	for result, count := range counts {
-		if count != 1 {
-			t.Errorf("cleanup %s = %v, want 1", result, count)
-		}
-	}
-	m.SetWorkerCleanupStatus(12, 600)
+	m.ExposeReminderKinds("missing-workers", "slow-mutes")
+	m.RecordReminder("slow-mutes", ReminderShown)
+	m.RecordReminder("slow-mutes", ReminderShown)
+	m.RecordReminder("slow-mutes", ReminderDismissed)
+
 	response := httptest.NewRecorder()
 	metricsHandler(registry).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	for _, line := range []string{
-		`automuteus_worker_cleanup_total{result="checked"} 1`,
-		"automuteus_worker_cleanup_pending_guilds 12",
-		"automuteus_worker_cleanup_oldest_check_seconds 600",
+		`automuteus_reminders_total{action="shown",kind="slow-mutes"} 2`,
+		`automuteus_reminders_total{action="dismissed",kind="slow-mutes"} 1`,
+		`automuteus_reminders_total{action="shown",kind="missing-workers"} 0`,
+		`automuteus_reminders_total{action="dismissed",kind="missing-workers"} 0`,
 	} {
 		if !strings.Contains(response.Body.String(), line) {
-			t.Errorf("metrics endpoint missing %q", line)
+			t.Errorf("metrics endpoint missing %q:\n%s", line, response.Body.String())
 		}
+	}
+	if strings.Contains(response.Body.String(), "automuteus_worker_cleanup") {
+		t.Error("worker cleanup metrics are still exposed")
 	}
 }
 
@@ -221,8 +217,9 @@ func TestMetricsVoiceOutcomesAndBatchDuration(t *testing.T) {
 	metrics.RecordWorkerFailure()
 	metrics.RecordCaptureTask(CaptureTaskThrottled)
 	metrics.RecordCaptureTask(CaptureTaskUnacked)
-	metrics.ObserveMuteBatch(300 * time.Millisecond)
-	metrics.ObserveMuteBatch(7 * time.Second)
+	metrics.ObserveMuteBatch(300*time.Millisecond, false)
+	metrics.ObserveMuteBatch(7*time.Second, false)
+	metrics.ObserveMuteBatch(time.Second, true)
 
 	want := []struct {
 		route   VoiceRoute
@@ -259,9 +256,10 @@ func TestMetricsVoiceOutcomesAndBatchDuration(t *testing.T) {
 	body := response.Body.String()
 	for _, line := range []string{
 		"# TYPE automuteus_mute_batch_duration_seconds histogram",
-		`automuteus_mute_batch_duration_seconds_bucket{le="0.5"} 1`,
-		`automuteus_mute_batch_duration_seconds_bucket{le="10"} 2`,
-		"automuteus_mute_batch_duration_seconds_count 2",
+		`automuteus_mute_batch_duration_seconds_bucket{workers="none",le="0.5"} 1`,
+		`automuteus_mute_batch_duration_seconds_bucket{workers="none",le="10"} 2`,
+		`automuteus_mute_batch_duration_seconds_count{workers="none"} 2`,
+		`automuteus_mute_batch_duration_seconds_count{workers="included"} 1`,
 		"# TYPE automuteus_active_games gauge",
 	} {
 		if !strings.Contains(body, line) {

@@ -227,7 +227,10 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 		dgs.ConnectCode = dgsRequest.ConnectCode
 		bot.store.SetDiscordGameState(dgs, lock)
 
-		bot.handleTrackedMembers(sett, premTier, 0, NoPriority, dgsRequest)
+		if r := bot.handleTrackedMembers(sett, premTier, 0, NoPriority, dgsRequest); r != nil {
+			// dgs was read before the mutes, so the status edit below needs the new reminder copied onto it
+			dgs.Reminder = r
+		}
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
 	case task.LobbyJob:
@@ -563,7 +566,9 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 		fallthrough
 	case game.LOBBY:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(sett, premTier, delay, NoPriority, dgsRequest)
+		if r := bot.handleTrackedMembers(sett, premTier, delay, NoPriority, dgsRequest); r != nil {
+			dgs.Reminder = r
+		}
 
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
@@ -575,12 +580,16 @@ func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest,
 			priority = NoPriority
 		}
 
-		bot.handleTrackedMembers(sett, premTier, delay, priority, dgsRequest)
+		if r := bot.handleTrackedMembers(sett, premTier, delay, priority, dgsRequest); r != nil {
+			dgs.Reminder = r
+		}
 		bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 
 	case game.DISCUSS:
 		delay := sett.Delays.GetDelay(oldPhase, phase)
-		bot.handleTrackedMembers(sett, premTier, delay, DeadPriority, dgsRequest)
+		if r := bot.handleTrackedMembers(sett, premTier, delay, DeadPriority, dgsRequest); r != nil {
+			dgs.Reminder = r
+		}
 
 		if sett.AutoRefresh {
 			bot.RefreshGameStateMessage(dgsRequest, sett)
