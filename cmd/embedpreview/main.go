@@ -2,7 +2,7 @@
 // reviewed without running the bot. It can post through a webhook (no bot needed) or with a bot token.
 //
 //	go run ./cmd/embedpreview -webhook https://discord.com/api/webhooks/<id>/<token>
-//	go run ./cmd/embedpreview -token <bot token> -channel <channel id> -severity warning -message "Expect some lag"
+//	go run ./cmd/embedpreview -token <bot token> -channel <channel id> -notice bot_update
 package main
 
 import (
@@ -31,23 +31,23 @@ func main() {
 
 func run() error {
 	var (
-		webhook  = flag.String("webhook", "", "Discord webhook URL to post through (no bot token needed)")
-		token    = flag.String("token", os.Getenv("DISCORD_BOT_TOKEN"), "bot token to post with (or DISCORD_BOT_TOKEN); requires -channel")
-		channel  = flag.String("channel", "", "channel ID to post to when using -token")
-		severity = flag.String("severity", "", "render every embed with an active notice of this severity: warning or critical")
-		message  = flag.String("message", "This is a preview notice.", "notice text to render when -severity is set")
-		only     = flag.String("only", "", "comma-separated preview names to send (default: all)")
-		list     = flag.Bool("list", false, "print the preview names and exit")
+		webhook = flag.String("webhook", "", "Discord webhook URL to post through (no bot token needed)")
+		token   = flag.String("token", os.Getenv("DISCORD_BOT_TOKEN"), "bot token to post with (or DISCORD_BOT_TOKEN); requires -channel")
+		channel = flag.String("channel", "", "channel ID to post to when using -token")
+		kind    = flag.String("notice", "", "render every embed with an active notice of this kind: bot_update or maintenance")
+		only    = flag.String("only", "", "comma-separated preview names to send (default: all)")
+		list    = flag.Bool("list", false, "print the preview names and exit")
 	)
 	flag.Parse()
 
 	var n *notice.Notice
-	if *severity != "" {
-		sev := notice.Severity(strings.ToLower(*severity))
-		if !sev.Valid() {
-			return errors.New("severity must be warning or critical")
+	if *kind != "" {
+		k := notice.Kind(strings.ToLower(*kind))
+		if !k.Valid() {
+			return errors.New("notice must be bot_update or maintenance")
 		}
-		n = &notice.Notice{Severity: sev, Message: *message}
+		kn := k.Notice()
+		n = &kn
 	}
 
 	previews := bot.PreviewEmbeds(settings.MakeGuildSettings(), n)

@@ -354,18 +354,20 @@ are succeeding. These are query examples; no alerting service is installed by th
 ### Platform notices
 
 Operators can show a banner on every running game's status message, or end every
-game, through `/admin/notice` (Basic Auth as `admin`, non-default `API_ADMIN_PASS`):
+game, through `/admin/notice` (Basic Auth as `admin`, non-default `API_ADMIN_PASS`).
+Notices are presets rather than free text, so each server sees them in its own
+language (translated on Crowdin like the rest of the bot):
 
 ```sh
-# warn players; games keep running; the banner stays until you DELETE the notice
+# bot_update: warn that the bot is being rolled out; games keep running; the banner stays until you DELETE the notice
 curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
   -H 'Content-Type: application/json' \
-  -d '{"severity":"warning","message":"Database maintenance in progress; expect some lag."}'
+  -d '{"kind":"bot_update"}'
 
-# end every running game (players are unmuted, matches recorded as aborted) and block /new until cleared
+# maintenance: end every running game (players are unmuted, matches recorded as aborted) and block /new until cleared
 curl -u admin:$API_ADMIN_PASS -X POST $API/admin/notice \
   -H 'Content-Type: application/json' \
-  -d '{"severity":"critical","message":"AutoMuteUs is going down for maintenance."}'
+  -d '{"kind":"maintenance"}'
 
 curl -u admin:$API_ADMIN_PASS $API/admin/notice            # show the active notice
 curl -u admin:$API_ADMIN_PASS -X DELETE $API/admin/notice  # clear it
@@ -377,7 +379,7 @@ that actually lose their capture connection; no notice is raised. Preview how th
 in a channel of your choice without running the bot:
 
 ```sh
-go run ./cmd/embedpreview -webhook <discord webhook url> -severity warning -message "Expect some lag"
+go run ./cmd/embedpreview -webhook <discord webhook url> -notice bot_update
 ```
 
 Regenerate Swagger documentation with the generator matching the Go dependency:

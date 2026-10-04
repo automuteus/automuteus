@@ -41,20 +41,21 @@ func TestRaiseActiveClear(t *testing.T) {
 	mr, client, sub := setup(t)
 	ctx := context.Background()
 
-	for _, bad := range []Notice{{Severity: "info", Message: "x"}, {Severity: "loud", Message: "x"}, {Severity: Warning}} {
+	for _, bad := range []Kind{"", "warning", "critical", "BOT_UPDATE"} {
 		if err := Raise(ctx, client, bad); err != ErrInvalid {
-			t.Errorf("Raise(%+v) = %v, want ErrInvalid", bad, err)
+			t.Errorf("Raise(%q) = %v, want ErrInvalid", bad, err)
 		}
 	}
 	if n, err := Active(ctx, client); err != nil || n != nil {
 		t.Fatalf("expected no active notice, got %+v, %v", n, err)
 	}
 
-	if err := Raise(ctx, client, Notice{Severity: Warning, Message: "db maintenance"}); err != nil {
+	if err := Raise(ctx, client, BotUpdate); err != nil {
 		t.Fatal(err)
 	}
+	// bots that predate kinds read Severity and Message, so both are stored alongside the kind
 	got, err := Active(ctx, client)
-	if err != nil || got == nil || got.Severity != Warning || got.Message != "db maintenance" || got.IssuedAt == 0 {
+	if err != nil || got == nil || got.Kind != BotUpdate || got.Severity != Warning || got.Message != BotUpdate.Message().Other || got.IssuedAt == 0 {
 		t.Fatalf("active = %+v, %v", got, err)
 	}
 	if ttl := mr.TTL(rediskey.ActiveNotice); ttl != 0 {
@@ -65,10 +66,10 @@ func TestRaiseActiveClear(t *testing.T) {
 	}
 
 	// raising again replaces the active notice
-	if err := Raise(ctx, client, Notice{Severity: Critical, Message: "going down"}); err != nil {
+	if err := Raise(ctx, client, Maintenance); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := Active(ctx, client); got == nil || got.Severity != Critical {
+	if got, _ := Active(ctx, client); got == nil || got.Kind != Maintenance || got.Severity != Critical {
 		t.Fatalf("active after replace = %+v", got)
 	}
 	receive(t, sub)

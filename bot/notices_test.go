@@ -111,7 +111,7 @@ func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 	first, _ := seedTwoMatches(t, bot, deps)
 	done := standInSubscriber(bot, first)
 
-	deps.notices.set(&notice.Notice{Severity: notice.Critical, Message: "platform going down"})
+	deps.notices.set(&notice.Notice{Kind: notice.Maintenance, Severity: notice.Critical})
 	bot.handleEvent(&notice.Event{NoticeChanged: true})
 
 	select {
@@ -136,7 +136,7 @@ func TestHandleEvent_CriticalNoticeEndsEveryGameOnTheShard(t *testing.T) {
 		}
 	}
 	for _, ch := range []string{scenarioTextChannel, secondTextChannel} {
-		if !strings.Contains(postedIn(deps, ch), "platform going down") {
+		if !strings.Contains(postedIn(deps, ch), notice.Maintenance.Message().Other) {
 			t.Errorf("end-of-game message with the notice missing from channel %s", ch)
 		}
 	}
@@ -188,7 +188,7 @@ func TestHandleEvent_ShutdownOnlyEndsListedGames(t *testing.T) {
 func TestHandleEvent_WarningRefreshesStatusMessagesAndLeavesGamesRunning(t *testing.T) {
 	bot, deps := newTestBot(t)
 	seedTwoMatches(t, bot, deps)
-	deps.notices.set(&notice.Notice{Severity: notice.Warning, Message: "expect some lag"})
+	deps.notices.set(&notice.Notice{Kind: notice.BotUpdate, Severity: notice.Warning})
 
 	bot.handleEvent(&notice.Event{NoticeChanged: true})
 
@@ -268,10 +268,14 @@ func TestGameStateResponse_ShowsActiveNoticeBanner(t *testing.T) {
 		name      string
 		n         *notice.Notice
 		wantTitle string
+		wantText  string
 		wantColor int
 	}{
-		{"critical", &notice.Notice{Severity: notice.Critical, Message: "going down"}, "CRITICAL", discord.RED},
-		{"warning", &notice.Notice{Severity: notice.Warning, Message: "degraded"}, "WARNING", discord.YELLOW},
+		{"critical", &notice.Notice{Kind: notice.Maintenance, Severity: notice.Critical}, "CRITICAL", notice.Maintenance.Message().Other, discord.RED},
+		{"warning", &notice.Notice{Kind: notice.BotUpdate, Severity: notice.Warning}, "WARNING", notice.BotUpdate.Message().Other, discord.YELLOW},
+		// a kind this build doesn't know, or a notice stored before kinds existed, shows the stored English text
+		{"unknown kind", &notice.Notice{Kind: "from_the_future", Severity: notice.Warning, Message: "degraded"}, "WARNING", "degraded", discord.YELLOW},
+		{"no kind", &notice.Notice{Severity: notice.Critical, Message: "going down"}, "CRITICAL", "going down", discord.RED},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -281,8 +285,8 @@ func TestGameStateResponse_ShowsActiveNoticeBanner(t *testing.T) {
 				t.Fatal("no fields on embed")
 			}
 			banner := embed.Fields[0]
-			if !strings.Contains(banner.Name, c.wantTitle) || !strings.Contains(banner.Value, c.n.Message) || banner.Inline {
-				t.Errorf("banner = %+v, want full-width %s containing %q", banner, c.wantTitle, c.n.Message)
+			if !strings.Contains(banner.Name, c.wantTitle) || !strings.Contains(banner.Value, c.wantText) || banner.Inline {
+				t.Errorf("banner = %+v, want full-width %s containing %q", banner, c.wantTitle, c.wantText)
 			}
 			if embed.Color != c.wantColor {
 				t.Errorf("color = %d, want %d", embed.Color, c.wantColor)

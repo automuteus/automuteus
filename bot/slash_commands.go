@@ -245,7 +245,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 			}
 
 			if n := bot.activeNotice(); n != nil && n.Severity == notice.Critical {
-				return command.NewResponse(command.NewMaintenance, command.NewInfo{Notice: n.Message}, sett)
+				return command.NewResponse(command.NewMaintenance, command.NewInfo{Notice: noticeText(n, sett)}, sett)
 			}
 
 			voiceChannelID := getTrackingChannel(g, i.Member.User.ID)

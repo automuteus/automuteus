@@ -1,7 +1,8 @@
 // Package notice carries two kinds of platform events from operators and Galactus to every bot shard.
 //
-// A Notice is raised by an operator and stays active until cleared. Warnings are shown as a banner on every game's
-// status message; a critical notice also ends every running game and blocks new ones.
+// A Notice is raised by an operator and stays active until cleared. It is one of a fixed set of kinds rather than free
+// text, so every server sees it in its own language. Warnings are shown as a banner on every game's status message;
+// a critical notice also ends every running game and blocks new ones.
 //
 // A Shutdown is announced by a Galactus replica that is about to exit. It names the games whose capture
 // connections are being severed so the bot can end exactly those, and is never stored.
@@ -19,6 +20,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/rediskey"
 	"github.com/go-redis/redis/v8"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // Severity determines what the bot does with a notice.
@@ -36,8 +38,59 @@ func (s Severity) Valid() bool {
 	return s == Warning || s == Critical
 }
 
+// Kind is one of the preset notices an operator can raise. Each kind has a fixed severity and a localized message.
+type Kind string
+
+const (
+	// BotUpdate warns that the bot is being rolled out and may be slow to respond for a few minutes.
+	BotUpdate Kind = "bot_update"
+	// Maintenance ends every game and blocks new ones until it is cleared.
+	Maintenance Kind = "maintenance"
+)
+
+var kinds = map[Kind]struct {
+	severity Severity
+	message  *i18n.Message
+}{
+	BotUpdate: {Warning, &i18n.Message{
+		ID:    "notices.kind.botUpdate",
+		Other: "AutoMuteUs is being updated, so the bot may be slow to respond for a few minutes.",
+	}},
+	Maintenance: {Critical, &i18n.Message{
+		ID:    "notices.kind.maintenance",
+		Other: "AutoMuteUs is down for maintenance.",
+	}},
+}
+
+func (k Kind) Valid() bool {
+	_, ok := kinds[k]
+	return ok
+}
+
+// Severity returns what the bot does with a notice of this kind, or "" for an unknown kind.
+func (k Kind) Severity() Severity {
+	return kinds[k].severity
+}
+
+// Message returns the text shown to players for this kind, or nil for an unknown kind.
+func (k Kind) Message() *i18n.Message {
+	return kinds[k].message
+}
+
+// Notice returns a notice of this kind with its derived fields filled in. IssuedAt is left for Raise to set.
+func (k Kind) Notice() Notice {
+	n := Notice{Kind: k, Severity: k.Severity()}
+	if m := k.Message(); m != nil {
+		n.Message = m.Other
+	}
+	return n
+}
+
 // Notice is an operator-raised message, active until cleared.
 type Notice struct {
+	Kind Kind `json:"kind"`
+	// Severity and Message are derived from Kind when the notice is raised. Message is the English text, for bots
+	// that predate kinds and still render it as the banner.
 	Severity Severity `json:"severity"`
 	Message  string   `json:"message"`
 	IssuedAt int64    `json:"issuedAt"`
@@ -70,7 +123,7 @@ type Event struct {
 }
 
 var (
-	ErrInvalid      = errors.New("notice: severity must be warning or critical, and message is required")
+	ErrInvalid      = errors.New("notice: unknown kind")
 	ErrInvalidEvent = errors.New("notice: event must set exactly one of noticeChanged, shutdown, or gamesAvailable")
 )
 
@@ -88,11 +141,13 @@ func (e Event) valid() bool {
 	return set == 1
 }
 
-// Raise stores n as the active notice, replacing any previous one, and tells every shard to re-read it.
-func Raise(ctx context.Context, client *redis.Client, n Notice) error {
-	if !n.Severity.Valid() || n.Message == "" {
+// Raise stores a notice of kind k as the active notice, replacing any previous one, and tells every shard to re-read
+// it.
+func Raise(ctx context.Context, client *redis.Client, k Kind) error {
+	if !k.Valid() {
 		return ErrInvalid
 	}
+	n := k.Notice()
 	n.IssuedAt = time.Now().Unix()
 	b, err := json.Marshal(n)
 	if err != nil {

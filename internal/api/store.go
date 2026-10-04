@@ -63,8 +63,8 @@ func (s *DataStore) ActiveNotice(ctx context.Context) (*notice.Notice, error) {
 	return notice.Active(ctx, s.redis)
 }
 
-func (s *DataStore) RaiseNotice(ctx context.Context, n notice.Notice) error {
-	return notice.Raise(ctx, s.redis, n)
+func (s *DataStore) RaiseNotice(ctx context.Context, k notice.Kind) error {
+	return notice.Raise(ctx, s.redis, k)
 }
 
 func (s *DataStore) ClearNotice(ctx context.Context) error {

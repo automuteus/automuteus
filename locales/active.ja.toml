@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 重要なお知らせ"
 "notices.banner.warning" = "⚠️ 警告"
 "notices.critical.gameEnded" = "🛑 **このゲームは AutoMuteUs チームによって終了され、全員のミュートが解除されました。**\\n{{.Message}}\\nお知らせの期間が終わったら、`/new` で新しいゲームを開始してください。"
+"notices.kind.botUpdate" = "AutoMuteUs を更新中のため、数分間ボットの応答が遅くなる場合があります。"
+"notices.kind.maintenance" = "AutoMuteUs はメンテナンス中です。"
 "notices.shutdown.gameEnded" = "🛑 **AutoMuteUs のキャプチャサービスが再起動中のため、このゲームは終了され、全員のミュートが解除されました。**\\n1 分ほど待ってから `/new` で新しいゲームを開始してください。"
 "processplayer.error" = "{{.User}} のミュートまたはスピーカーミュート中にエラーが発生しました。{{.VoiceChannel}} でミュート / スピーカーミュートの権限がボットにあることを確認してください。"
 "responses.lobbyMessage.Footer.Text" = "ゲームで使用する色を以下から選択してください！（または {{.X}} を選択して解除）"

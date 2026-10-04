@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 AVISO CRÍTICO"
 "notices.banner.warning" = "⚠️ AVISO"
 "notices.critical.gameEnded" = "🛑 **Esta partida foi encerrada pela equipe do AutoMuteUs e todos foram desilenciados.**\\n{{.Message}}\\nUse `/new` para começar de novo quando o aviso terminar."
+"notices.kind.botUpdate" = "O AutoMuteUs está sendo atualizado, então o bot pode demorar para responder por alguns minutos."
+"notices.kind.maintenance" = "O AutoMuteUs está em manutenção."
 "notices.shutdown.gameEnded" = "🛑 **O serviço de captura do AutoMuteUs está reiniciando, então esta partida foi encerrada e todos foram desilenciados.**\\nUse `/new` daqui a um minuto para começar de novo."
 "processplayer.error" = "Erro ao silenciar ou ensurdecer {{.User}}. O bot tem permissão para silenciar/ensurdecer usuários em {{.VoiceChannel}}?"
 "responses.lobbyMessage.Footer.Text" = "Use a seleção abaixo para escolher sua cor no jogo! (ou {{.X}} para sair)"

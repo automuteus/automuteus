@@ -57,6 +57,8 @@
 "notices.banner.critical" = "🛑 CRITICAL NOTICE"
 "notices.banner.warning" = "⚠️ WARNING"
 "notices.critical.gameEnded" = "🛑 **This game has been ended by the AutoMuteUs team and everyone has been unmuted.**\\n{{.Message}}\\nRun `/new` to start again once the notice is over."
+"notices.kind.botUpdate" = "AutoMuteUs is being updated, so the bot may be slow to respond for a few minutes."
+"notices.kind.maintenance" = "AutoMuteUs is down for maintenance."
 "notices.shutdown.gameEnded" = "🛑 **The AutoMuteUs capture service is restarting, so this game has been ended and everyone has been unmuted.**\\nRun `/new` in a minute to start again."
 "processplayer.error" = "Error in muting or deafening {{.User}}. Does the bot have permissions to mute/deafen users in {{.VoiceChannel}}?"
 "reminders.dismiss.button" = "Hide this for a week"

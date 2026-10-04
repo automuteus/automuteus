@@ -26,7 +26,7 @@ func TestPreviewEmbeds_AreValidAndCarryNotice(t *testing.T) {
 		}
 	}
 
-	warned := PreviewEmbeds(sett, &notice.Notice{Severity: notice.Warning, Message: "degraded"})
+	warned := PreviewEmbeds(sett, &notice.Notice{Kind: notice.BotUpdate, Severity: notice.Warning})
 	for _, p := range warned {
 		if len(p.Embed.Fields) == 0 || !strings.Contains(p.Embed.Fields[0].Name, "WARNING") {
 			t.Errorf("%s: notice banner missing", p.Name)

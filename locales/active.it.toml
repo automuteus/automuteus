@@ -56,6 +56,8 @@
 "notices.banner.critical" = "🛑 AVVISO CRITICO"
 "notices.banner.warning" = "⚠️ ATTENZIONE"
 "notices.critical.gameEnded" = "🛑 **Questa partita è stata terminata dal team di AutoMuteUs e l'audio di tutti è stato riattivato.**\\n{{.Message}}\\nUsa `/new` per ricominciare quando l'avviso sarà terminato."
+"notices.kind.botUpdate" = "AutoMuteUs è in fase di aggiornamento, quindi il bot potrebbe rispondere lentamente per qualche minuto."
+"notices.kind.maintenance" = "AutoMuteUs è in manutenzione."
 "notices.shutdown.gameEnded" = "🛑 **Il servizio di capture di AutoMuteUs si sta riavviando, quindi questa partita è stata terminata e l'audio di tutti è stato riattivato.**\\nUsa `/new` tra un minuto per ricominciare."
 "processplayer.error" = "Errore nel silenziare o disattivare l'audio di {{.User}}. Il bot ha i permessi per silenziare/disattivare l'audio degli utenti in {{.VoiceChannel}}?"
 "responses.lobbyMessage.Footer.Text" = "Usa il menu qui sotto per scegliere il tuo colore in gioco! (oppure {{.X}} per uscire)"
