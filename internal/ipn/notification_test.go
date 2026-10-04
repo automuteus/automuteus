@@ -58,10 +58,28 @@ func TestGuildID(t *testing.T) {
 	for custom, ok := range map[string]bool{
 		"1105475628758749234": true, "  1105475628758749234 ": true, "": false, "123": false,
 		"99999999999999999999": false, "abcdefghijklmnopqrs": false, "-105475628758749234": false,
+		// The server is read the same whatever follows the colon.
+		"1105475628758749234:223456789012345678": true, "1105475628758749234:junk": true, "1105475628758749234:": true,
+		"junk:223456789012345678": false, ":223456789012345678": false,
 	} {
 		n := &Notification{values: map[string][]string{"custom": {custom}}}
 		if _, got := n.GuildID(); got != ok {
 			t.Errorf("%q: got %t", custom, got)
+		}
+	}
+}
+
+func TestPayerID(t *testing.T) {
+	for custom, want := range map[string]uint64{
+		"1105475628758749234:223456789012345678": 223456789012345678, " 1105475628758749234:223456789012345678 ": 223456789012345678,
+		// Only a plausible user ID counts; a payer is never required.
+		"1105475628758749234": 0, "1105475628758749234:": 0, "1105475628758749234:junk": 0, "1105475628758749234:123": 0,
+		"1105475628758749234:223456789012345678:extra": 0, "": 0,
+	} {
+		n := &Notification{values: map[string][]string{"custom": {custom}}}
+		got, ok := n.PayerID()
+		if ok != (want != 0) || got != want {
+			t.Errorf("%q: got %d, %t; want %d", custom, got, ok, want)
 		}
 	}
 }

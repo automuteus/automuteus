@@ -205,9 +205,10 @@ func (l *Listener) apply(ctx context.Context, tx pgx.Tx, id int64, n *Notificati
 			return "signup without a server, tier, or subscription ID", "", nil
 		}
 		// A signup only records the subscription; premium starts with its first payment.
-		_, err := tx.Exec(ctx, `INSERT INTO premium_subscriptions (provider, external_id, guild_id, tier, status)
-VALUES ($1, $2, $3::numeric, $4, 'active') ON CONFLICT (provider, external_id) DO UPDATE SET updated_at = now()`,
-			provider, truncate(sub, 64), strconv.FormatUint(guild, 10), int16(tier))
+		_, err := tx.Exec(ctx, `INSERT INTO premium_subscriptions (provider, external_id, guild_id, tier, status, payer_user_id)
+VALUES ($1, $2, $3::numeric, $4, 'active', $5::numeric) ON CONFLICT (provider, external_id) DO UPDATE SET
+	payer_user_id = COALESCE(premium_subscriptions.payer_user_id, EXCLUDED.payer_user_id), updated_at = now()`,
+			provider, truncate(sub, 64), strconv.FormatUint(guild, 10), int16(tier), n.payer())
 		return "", "", err
 
 	case n.Kind() == "subscr_cancel":
@@ -243,12 +244,13 @@ WHERE provider = $1 AND external_id = $2 RETURNING guild_id::text`, provider, su
 			external, subStatus = "txn:"+txnID, "cancelled"
 		}
 		var guildID string
-		err := tx.QueryRow(ctx, `INSERT INTO premium_subscriptions (provider, external_id, guild_id, tier, status, last_payment_at)
-VALUES ($1, $2, $3::numeric, $4, $5, $6)
+		err := tx.QueryRow(ctx, `INSERT INTO premium_subscriptions (provider, external_id, guild_id, tier, status, last_payment_at, payer_user_id)
+VALUES ($1, $2, $3::numeric, $4, $5, $6, $7::numeric)
 ON CONFLICT (provider, external_id) DO UPDATE SET
-	last_payment_at = GREATEST(premium_subscriptions.last_payment_at, EXCLUDED.last_payment_at), updated_at = now()
+	last_payment_at = GREATEST(premium_subscriptions.last_payment_at, EXCLUDED.last_payment_at),
+	payer_user_id = COALESCE(premium_subscriptions.payer_user_id, EXCLUDED.payer_user_id), updated_at = now()
 RETURNING guild_id::text`,
-			provider, truncate(external, 64), strconv.FormatUint(guild, 10), int16(tier), subStatus, int32(paid.Unix())).Scan(&guildID)
+			provider, truncate(external, 64), strconv.FormatUint(guild, 10), int16(tier), subStatus, int32(paid.Unix()), n.payer()).Scan(&guildID)
 		if err != nil {
 			return "", "", err
 		}
@@ -308,6 +310,14 @@ func writeLedger(ctx context.Context, tx pgx.Tx, n *Notification, paid time.Time
 	_, err = tx.Exec(ctx, "INSERT INTO transactions (tx_id, tx_time, gross, tx, guild_id) VALUES ($1, $2, $3, $4, $5::numeric)",
 		txnID, int32(paid.Unix()), n.Gross(), body, guild)
 	return err
+}
+
+// payer is the subscription's payer_user_id column value: the signed-in user's ID as text, or NULL.
+func (n *Notification) payer() interface{} {
+	if id, ok := n.PayerID(); ok {
+		return strconv.FormatUint(id, 10)
+	}
+	return nil
 }
 
 type candidate struct {
@@ -449,12 +459,13 @@ func CheckSchema(ctx context.Context, db *pgxpool.Pool) error {
 	err := db.QueryRow(ctx, `SELECT has_table_privilege('payment_events', 'SELECT, INSERT, UPDATE')
 	AND has_sequence_privilege('payment_events_event_id_seq', 'USAGE')
 	AND has_table_privilege('premium_subscriptions', 'SELECT, INSERT, UPDATE')
+	AND has_column_privilege('premium_subscriptions', 'payer_user_id', 'INSERT')
 	AND has_table_privilege('transactions', 'SELECT, INSERT, UPDATE')
 	AND has_table_privilege('guilds', 'SELECT, INSERT')
 	AND has_column_privilege('guilds', 'premium', 'UPDATE')
 	AND has_column_privilege('guilds', 'tx_time_unix', 'UPDATE')`).Scan(&ok)
 	if err != nil {
-		return fmt.Errorf("payment tables missing (apply storage/payments.sql): %w", err)
+		return fmt.Errorf("payment tables missing or out of date (apply storage/payments.sql): %w", err)
 	}
 	if !ok {
 		return errors.New("missing grants on the payment tables; see the end of storage/payments.sql")

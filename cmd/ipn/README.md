@@ -13,6 +13,10 @@ The logic lives in `internal/ipn`.
   notification land on the same row and are applied once.
 - It tracks subscriptions in `premium_subscriptions`, keyed by PayPal `subscr_id`, from signup to cancellation to end
   of term. The old listener dropped every notification without a `txn_id`.
+- It records who bought each subscription. The premium page sets PayPal's `custom` field to `<server>:<user>`, the
+  user being whoever was signed in to the site, and the listener stores the user in `payer_user_id`. PayPal fixes
+  `custom` at signup and repeats it for the life of the subscription, so older subscriptions (bare `<server>`) and
+  purchases made while signed out have no payer. The payer is recorded only; nothing acts on it yet.
 - It dates premium from PayPal's `payment_date` rather than from when the notification arrived.
 - It creates the `guilds` row when a server that has never used the bot pays. The old `UPDATE` silently did nothing in
   that case.
@@ -49,8 +53,10 @@ The listener also serves `GET /` for liveness and `GET /ready` for readiness; `/
 ## Deploying
 
 1. **Apply the schema.** As the database owner, run `storage/payments.sql`, then the `GRANT` lines at its end. Every
-   statement is safe to rerun, and nothing alters an existing table. The existing `transactions` table is left as it
-   is; `ipn_user` gains SELECT and UPDATE on it.
+   statement is safe to rerun; columns added since a table was created are added with `ALTER ... IF NOT EXISTS`
+   (currently `premium_subscriptions.payer_user_id`). The existing `transactions` table is left as it is; `ipn_user`
+   gains SELECT and UPDATE on it. Rerun the file before each image bump: the listener refuses to start when a column
+   it writes is missing.
 2. **Set PayPal's IPN encoding to UTF-8.** This is an account setting, not part of the IPN configuration: Account
    Settings → Website payments → Update next to "PayPal button language encoding" → More Options → Encoding: UTF-8,
    and Yes to using the same encoding for data sent from PayPal. Despite the name, that last option covers IPN
@@ -73,7 +79,8 @@ premium comes from `guilds` as before.
   PayPal retries these on its own schedule. `error` holds the last failure.
 - **Events that applied with a note:** `... WHERE processed_at IS NOT NULL AND error IS NOT NULL`. These include
   refunds to review, donations, and payments to the wrong receiver.
-- **A server's subscriptions:** `SELECT * FROM premium_subscriptions WHERE guild_id = <id>`.
+- **A server's subscriptions:** `SELECT external_id, tier, status, last_payment_at, payer_user_id FROM premium_subscriptions WHERE guild_id = <id>`.
+- **Who to thank for a server's Gold:** `payer_user_id` above is the Discord user who was signed in when they bought it.
 - **Tests:** `go test ./internal/ipn/` runs the parsing and verification tests. Set `TEST_POSTGRES_URL` to a disposable
   database to also replay signups, payments, cancellations, ends of term, refunds and concurrent deliveries. Those
   replays run as a role holding only the grants listed in `payments.sql`.

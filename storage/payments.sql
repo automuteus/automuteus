@@ -1,6 +1,7 @@
 -- Payment tables written by cmd/ipn. Unlike postgres.sql these are never applied by the bot or API; apply this file
 -- by hand as a role that may run DDL, then grant the IPN role what it needs (see the end of the file). Every statement
--- is safe to rerun, and nothing here alters or drops an existing table.
+-- is safe to rerun; columns added since the tables were first created are added with ALTER ... IF NOT EXISTS, and
+-- nothing here drops anything.
 
 -- One row per payment notification, as received and before any interpretation, so a notification can always be
 -- replayed or re-read later. provider says whose format body is in; event_key is the provider's own ID for the
@@ -42,6 +43,9 @@ create table if not exists premium_subscriptions
     PRIMARY KEY (provider, external_id)
 );
 create index if not exists premium_subscriptions_guild_id_index ON premium_subscriptions (guild_id);
+-- The Discord user signed in to the site when the subscription was bought, from PayPal's custom field
+-- ("<server>:<user>"); NULL for subscriptions from before it was recorded or bought while signed out.
+alter table premium_subscriptions add column if not exists payer_user_id numeric;
 
 -- The original PayPal ledger, kept exactly as the old listener wrote it: one row per PayPal transaction ID, tx the
 -- notification as JSON. Created here only for databases that never had it; an existing table is left alone.

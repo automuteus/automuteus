@@ -79,14 +79,34 @@ func (n *Notification) EventKey(body []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// GuildID is the Discord server named in custom, which the premium page fills in when a server is selected.
-func (n *Notification) GuildID() (uint64, bool) {
-	c := strings.TrimSpace(n.Get("custom"))
-	if len(c) < 17 || len(c) > 20 {
+// custom is what the premium page put in the checkout link: the Discord server ID, or since the payer was recorded
+// "<server>:<user>", the user being whoever was signed in to the site. PayPal fixes it at signup and repeats it on
+// every notification for that subscription, so older subscriptions keep sending the bare form for life.
+func (n *Notification) custom() (guild, payer string) {
+	guild, payer, _ = strings.Cut(strings.TrimSpace(n.Get("custom")), ":")
+	return guild, payer
+}
+
+// snowflake parses a Discord ID.
+func snowflake(s string) (uint64, bool) {
+	if len(s) < 17 || len(s) > 20 {
 		return 0, false
 	}
-	id, err := strconv.ParseUint(c, 10, 64)
+	id, err := strconv.ParseUint(s, 10, 64)
 	return id, err == nil
+}
+
+// GuildID is the Discord server named in custom, which the premium page fills in when a server is selected.
+func (n *Notification) GuildID() (uint64, bool) {
+	guild, _ := n.custom()
+	return snowflake(guild)
+}
+
+// PayerID is the Discord user who was signed in to the site when they paid, when custom names one. It is recorded
+// for the server's subscription and nothing more, so a missing or malformed user never affects the payment.
+func (n *Notification) PayerID() (uint64, bool) {
+	_, payer := n.custom()
+	return snowflake(payer)
 }
 
 // Tier is the premium tier paid for, from the item name or failing that the price, or FreeTier when it is not a

@@ -167,16 +167,24 @@ func TestLiveSubscriptionLifecycle(t *testing.T) {
 	const g = "900000000000000101" // no guild row yet: the old listener's UPDATE silently did nothing here
 	first := now.Add(-25 * 24 * time.Hour)
 
-	handle(t, l, notification("t1", first, "txn_type", "subscr_signup", "subscr_id", "I-A", "custom", g,
+	// The site puts the signed-in buyer after the server; PayPal repeats custom on every notification.
+	const u = "223456789012345678"
+	handle(t, l, notification("t1", first, "txn_type", "subscr_signup", "subscr_id", "I-A", "custom", g+":"+u,
 		"item_name", "AutoMuteUs Silver", "mc_amount3", "3.50"), http.StatusOK)
 	if count(t, db, "SELECT count(*) FROM guilds WHERE guild_id = $1::numeric", g) != 0 {
 		t.Fatal("a signup alone granted premium")
 	}
+	if count(t, db, "SELECT count(*) FROM premium_subscriptions WHERE external_id = 'I-A' AND guild_id = $1::numeric AND payer_user_id = $2::numeric", g, u) != 1 {
+		t.Fatal("signup did not record the server and payer")
+	}
 	expectAnnounced(t, v) // nothing changed yet
-	pay1 := notification("t2", first, "txn_type", "subscr_payment", "txn_id", "TX1", "subscr_id", "I-A", "custom", g,
+	pay1 := notification("t2", first, "txn_type", "subscr_payment", "txn_id", "TX1", "subscr_id", "I-A", "custom", g+":"+u,
 		"item_name", "AutoMuteUs Silver", "mc_gross", "3.50", "payment_status", "Completed", "first_name", "Zo\xeb")
 	handle(t, l, pay1, http.StatusOK)
 	expectGuild(t, db, g, 2, first.Unix())
+	if count(t, db, "SELECT count(*) FROM payment_events WHERE txn_id = 'TX1' AND guild_id = $1::numeric", g) != 1 {
+		t.Fatal("payment event not filed under the server")
+	}
 	// the API's stats caches are told once the premium row changed
 	expectAnnounced(t, v, g)
 
@@ -313,6 +321,10 @@ func TestLiveGrantsNothing(t *testing.T) {
 	handle(t, l, retry, http.StatusOK)
 	if n := count(t, db, "SELECT count(*) FROM transactions WHERE tx_id = 'S3'"); n != 1 {
 		t.Fatal("retry not processed")
+	}
+	// A one-off payment with the bare custom of an older checkout link, or a signed-out buyer, has no payer.
+	if n := count(t, db, "SELECT count(*) FROM premium_subscriptions WHERE external_id = 'txn:S3' AND payer_user_id IS NULL"); n != 1 {
+		t.Fatal("bare custom did not leave the payer NULL")
 	}
 }
 
