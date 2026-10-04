@@ -995,7 +995,7 @@ definitions:
     - BronzeTier
     - SilverTier
     - GoldTier
-    - TrialTier
+    - _
     - SelfHostTier
   settings.FieldError:
     properties:

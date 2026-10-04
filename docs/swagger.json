@@ -2706,7 +2706,7 @@
                 "BronzeTier",
                 "SilverTier",
                 "GoldTier",
-                "TrialTier",
+                "_",
                 "SelfHostTier"
             ]
         },

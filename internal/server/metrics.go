@@ -88,6 +88,8 @@ type Metrics struct {
 	workerCleanup        *prometheus.CounterVec
 	workerCleanupPending prometheus.Gauge
 	workerCleanupOldest  prometheus.Gauge
+	workerGuilds         *prometheus.GaugeVec
+	workerGuildLimit     *prometheus.GaugeVec
 	// operations are activity counters, not an exact count of HTTP requests or successful responses.
 	operations *prometheus.CounterVec
 
@@ -125,6 +127,14 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			Name: "automuteus_worker_cleanup_oldest_check_seconds",
 			Help: "Latest observed age of the oldest scheduled guild check attempt across the fleet.",
 		}),
+		workerGuilds: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "automuteus_worker_guilds",
+			Help: "Servers each worker bot is a member of, as last seen by this process's gateway for it.",
+		}, []string{"worker"}),
+		workerGuildLimit: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "automuteus_worker_guild_limit",
+			Help: "Most servers Discord lets each worker bot join. Absent for verified bots, which have no limit.",
+		}, []string{"worker"}),
 		operations: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "automuteus_discord_operations_total",
 			Help: "Coarse Discord message activity and observed rate limits in this process; not an exact HTTP request count.",
@@ -207,7 +217,7 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 	for _, result := range []string{"checked", "left", "deferred", "failed", "rate_limited"} {
 		m.workerCleanup.WithLabelValues(result)
 	}
-	registry.MustRegister(m.workerCleanup, m.workerCleanupPending, m.workerCleanupOldest)
+	registry.MustRegister(m.workerCleanup, m.workerCleanupPending, m.workerCleanupOldest, m.workerGuilds, m.workerGuildLimit)
 	return m
 }
 
@@ -236,6 +246,16 @@ func (m *Metrics) RecordWorkerCleanup(result string) { m.workerCleanup.WithLabel
 func (m *Metrics) SetWorkerCleanupStatus(pending, oldestSeconds float64) {
 	m.workerCleanupPending.Set(pending)
 	m.workerCleanupOldest.Set(oldestSeconds)
+}
+
+// SetWorkerGuilds records how many servers a worker bot is in, and how many it may join; limit 0 means no limit.
+func (m *Metrics) SetWorkerGuilds(worker string, guilds, limit int) {
+	m.workerGuilds.WithLabelValues(worker).Set(float64(guilds))
+	if limit > 0 {
+		m.workerGuildLimit.WithLabelValues(worker).Set(float64(limit))
+	} else {
+		m.workerGuildLimit.DeleteLabelValues(worker)
+	}
 }
 
 // RecordCaptureTask counts one task handed to (or withheld from) a capture client.

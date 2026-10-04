@@ -19,7 +19,6 @@ import (
 	storageutils "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/bwmarrin/discordgo"
-	"github.com/top-gg/go-dbl"
 )
 
 // In-memory implementations of the seams in deps.go. Together with newTestBot they let a test drive the bot with
@@ -164,7 +163,7 @@ func (f *fakeVoice) all() []task.UserModifyRequest {
 
 type fakePremium struct{ tier premium.Tier }
 
-func (f fakePremium) GetGuildOrUserPremiumStatus(bool, *dbl.Client, string, string) (premium.Tier, int, error) {
+func (f fakePremium) GetGuildPremiumStatus(context.Context, bool, string) (premium.Tier, int, error) {
 	return f.tier, premium.NoExpiryCode, nil
 }
 
@@ -244,6 +243,7 @@ func (f *fakeDiscord) ChannelMessageSendComplex(channelID string, data *discordg
 	if data.Embed != nil {
 		msg.Embeds = []*discordgo.MessageEmbed{data.Embed}
 	}
+	msg.Components = data.Components
 	return msg, nil
 }
 

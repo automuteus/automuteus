@@ -26,7 +26,6 @@ var PremiumBotConstraints = map[premium.Tier]int{
 	premium.BronzeTier:   0,
 	premium.SilverTier:   1,
 	premium.GoldTier:     3,
-	premium.TrialTier:    0, // Voting trials do not include priority workers; see invitesResponse.
 	premium.SelfHostTier: 100,
 }
 
@@ -49,7 +48,10 @@ type TokenProvider struct {
 
 	membershipMu sync.Mutex
 	memberships  map[string]*workerMembership
-	cleanup      *workerCleanup
+	// configuredWorkers is how many worker tokens this process was started with; until all of them are tracked,
+	// the fleet's membership in a guild is unknown.
+	configuredWorkers int
+	cleanup           *workerCleanup
 }
 
 // applyWithPrimary mutes/deafens a user with the primary bot's own session.
@@ -79,6 +81,9 @@ func (tp *TokenProvider) Init(client *redis.Client, sess *discordgo.Session) {
 }
 
 func (tokenProvider *TokenProvider) PopulateAndStartSessions(tokens []string) {
+	tokenProvider.membershipMu.Lock()
+	tokenProvider.configuredWorkers += len(tokens)
+	tokenProvider.membershipMu.Unlock()
 	for _, v := range tokens {
 		tokenProvider.openAndStartSessionWithToken(v)
 	}

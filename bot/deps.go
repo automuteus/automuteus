@@ -14,7 +14,6 @@ import (
 	"github.com/automuteus/automuteus/v8/pkg/task"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/bwmarrin/discordgo"
-	"github.com/top-gg/go-dbl"
 )
 
 // The interfaces below are the seams between the game-event logic (phase transitions, player updates, voice changes,
@@ -40,9 +39,23 @@ type VoiceModifier interface {
 	ModifyUsers(guildID, connectCode string, req task.UserModifyRequest, l lock.Lock) error
 }
 
-// PremiumSource answers what premium tier a guild (or user) currently holds.
+// WorkerInventory reports which worker bots are members of a guild, and which can't join any more servers.
+type WorkerInventory interface {
+	WorkersPresent(guildID string) (present, total int, known bool)
+	WorkerStatus(botID, guildID string) (member, full, known bool)
+}
+
+// ReminderStore paces status-message reminders per guild.
+type ReminderStore interface {
+	// ClaimReminder reports whether kind may be shown in guildID now and, if so, holds it back for cooldown.
+	ClaimReminder(ctx context.Context, guildID string, kind ReminderKind, cooldown time.Duration) (bool, error)
+	// SnoozeReminder holds kind back in guildID for d.
+	SnoozeReminder(ctx context.Context, guildID string, kind ReminderKind, d time.Duration) error
+}
+
+// PremiumSource answers what premium tier a guild currently holds.
 type PremiumSource interface {
-	GetGuildOrUserPremiumStatus(official bool, dbl *dbl.Client, guildID, userID string) (premium.Tier, int, error)
+	GetGuildPremiumStatus(ctx context.Context, official bool, guildID string) (premium.Tier, int, error)
 }
 
 // GameRecorder persists match history.
@@ -91,14 +104,16 @@ type Metrics interface {
 
 // Compile-time checks that the production types satisfy the seams.
 var (
-	_ GameStateStore = (*RedisInterface)(nil)
-	_ VoiceModifier  = (*tokenprovider.TokenProvider)(nil)
-	_ PremiumSource  = (*storageutils.PsqlInterface)(nil)
-	_ GameRecorder   = (*storageutils.PsqlInterface)(nil)
-	_ DiscordClient  = (*discordgo.Session)(nil)
-	_ GuildReader    = (*discordgo.State)(nil)
-	_ Metrics        = (*server.Metrics)(nil)
-	_ SettingsSource = (*storage.StorageInterface)(nil)
+	_ GameStateStore  = (*RedisInterface)(nil)
+	_ VoiceModifier   = (*tokenprovider.TokenProvider)(nil)
+	_ WorkerInventory = (*tokenprovider.TokenProvider)(nil)
+	_ ReminderStore   = redisReminders{}
+	_ PremiumSource   = (*storageutils.PsqlInterface)(nil)
+	_ GameRecorder    = (*storageutils.PsqlInterface)(nil)
+	_ DiscordClient   = (*discordgo.Session)(nil)
+	_ GuildReader     = (*discordgo.State)(nil)
+	_ Metrics         = (*server.Metrics)(nil)
+	_ SettingsSource  = (*storage.StorageInterface)(nil)
 )
 
 // useProductionDeps points every seam at the real infrastructure.
@@ -111,6 +126,7 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 	bot.guilds = sess.State
 	bot.metrics = server.DefaultMetrics
 	bot.notices = redisNotices{client: redisInterface.client}
+	bot.reminders = redisReminders{client: redisInterface.client}
 	bot.sleep = time.Sleep
 	bot.log = slog.Default()
 }
@@ -118,6 +134,7 @@ func (bot *Bot) useProductionDeps(sess *discordgo.Session, redisInterface *Redis
 // SetTokenProvider installs the provider used to issue mute/deafen requests.
 func (bot *Bot) SetTokenProvider(tp *tokenprovider.TokenProvider) {
 	bot.voice = tp
+	bot.workers = tp
 }
 
 // gameLog returns a logger carrying the identifiers of the game a request refers to, so that log lines from
@@ -135,7 +152,7 @@ func (bot *Bot) gameLog(gsr GameStateRequest) *slog.Logger {
 
 // premiumTier resolves the effective premium tier for a guild, treating expired premium as free.
 func (bot *Bot) premiumTier(guildID string) premium.Tier {
-	tier, days, _ := bot.premiumSource.GetGuildOrUserPremiumStatus(bot.official, nil, guildID, "")
+	tier, days, _ := bot.premiumSource.GetGuildPremiumStatus(context.Background(), bot.official, guildID)
 	if premium.IsExpired(tier, days) {
 		return premium.FreeTier
 	}

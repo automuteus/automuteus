@@ -321,7 +321,7 @@ limits, and database/Redis errors defer departures. A renewal can therefore canc
 queued cleanup. Workers with incomplete startup inventories prevent cleanup until
 membership is known. Sessions that fail to open are removed from that inventory so
 they cannot permanently block healthy workers. No full Discord guild cache is needed.
-Free, Bronze, and voting-trial servers have no priority workers; Silver retains one,
+Free and Bronze servers have no priority workers; Silver retains one,
 Gold three, and self-hosted installations up to 100.
 
 Monitor `automuteus_worker_cleanup_total{result}` (`checked`, `left`, `deferred`,

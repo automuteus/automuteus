@@ -9,12 +9,19 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// UnverifiedGuildLimit is the most servers Discord lets an unverified bot join.
+const UnverifiedGuildLimit = 100
+
 // Only IDs and availability are retained; worker sessions do not need guild caches.
 type workerMembership struct {
 	guilds     map[string]bool
 	ready      bool
 	connected  bool
 	quietUntil time.Time
+	// userID, name and guildLimit (0 for none) come from the worker's READY.
+	userID     string
+	name       string
+	guildLimit int
 }
 
 func (tp *TokenProvider) openWorkerSession(key string, s *discordgo.Session) error {
@@ -50,6 +57,46 @@ func (tp *TokenProvider) workerKnownAbsent(key, guild string) bool {
 	}
 	_, present := w.guilds[guild]
 	return !present
+}
+
+// WorkersPresent counts the worker bots that are members of guild, out of all workers this process runs. An
+// unavailable guild counts as present. known is false when no workers run, some configured worker is not tracked
+// (still starting, or failed to open), or any inventory is incomplete or disconnected; the count must not be acted
+// on then.
+func (tp *TokenProvider) WorkersPresent(guild string) (present, total int, known bool) {
+	tp.membershipMu.Lock()
+	defer tp.membershipMu.Unlock()
+	if len(tp.memberships) == 0 || len(tp.memberships) < tp.configuredWorkers {
+		return 0, 0, false
+	}
+	for _, w := range tp.memberships {
+		if !w.ready || !w.connected {
+			return 0, 0, false
+		}
+		if _, ok := w.guilds[guild]; ok {
+			present++
+		}
+	}
+	return present, len(tp.memberships), true
+}
+
+// WorkerStatus reports whether the worker bot with user ID botID is a member of guild, and whether it is in as many
+// servers as Discord allows it. known is false when this process does not run that worker or its inventory is
+// incomplete or disconnected.
+func (tp *TokenProvider) WorkerStatus(botID, guild string) (member, full, known bool) {
+	tp.membershipMu.Lock()
+	defer tp.membershipMu.Unlock()
+	for _, w := range tp.memberships {
+		if w.userID != botID {
+			continue
+		}
+		if !w.ready || !w.connected {
+			return false, false, false
+		}
+		_, member = w.guilds[guild]
+		return member, w.guildLimit > 0 && len(w.guilds) >= w.guildLimit, true
+	}
+	return false, false, false
 }
 
 func (tp *TokenProvider) trackWorker(key string, s *discordgo.Session) {
@@ -103,6 +150,28 @@ func (tp *TokenProvider) workerReady(key string, e *discordgo.Ready) {
 		w.guilds[g.ID] = !g.Unavailable
 	}
 	w.ready, w.connected = true, true
+	if e.User != nil {
+		w.userID, w.name = e.User.ID, e.User.Username
+		// Being in more servers than the limit also proves verification, in case READY omits the flag.
+		verified := e.User.PublicFlags&discordgo.UserFlagVerifiedBot != 0 ||
+			discordgo.UserFlags(e.User.Flags)&discordgo.UserFlagVerifiedBot != 0 ||
+			len(w.guilds) > UnverifiedGuildLimit
+		w.guildLimit = 0
+		if !verified {
+			w.guildLimit = UnverifiedGuildLimit
+		}
+	}
+	tp.logger("").Info("worker ready", "worker", w.name, "guilds", len(w.guilds), "guild_limit", w.guildLimit)
+	tp.publishWorkerGuilds(w)
+}
+
+// publishWorkerGuilds reports w's server count, so a worker nearing Discord's limit is visible before invites fail.
+// Callers hold membershipMu.
+func (tp *TokenProvider) publishWorkerGuilds(w *workerMembership) {
+	if tp.metrics == nil || w.name == "" {
+		return
+	}
+	tp.metrics.SetWorkerGuilds(w.name, len(w.guilds), w.guildLimit)
 }
 
 func (tp *TokenProvider) workerGuildCreate(key string, e *discordgo.GuildCreate) {
@@ -110,6 +179,7 @@ func (tp *TokenProvider) workerGuildCreate(key string, e *discordgo.GuildCreate)
 	defer tp.membershipMu.Unlock()
 	if w := tp.memberships[key]; w != nil {
 		w.guilds[e.ID] = !e.Unavailable
+		tp.publishWorkerGuilds(w)
 	}
 }
 
@@ -125,6 +195,7 @@ func (tp *TokenProvider) workerGuildDelete(key string, e *discordgo.GuildDelete)
 	} else {
 		delete(w.guilds, e.ID)
 	}
+	tp.publishWorkerGuilds(w)
 }
 
 // An incomplete/disconnected inventory must never determine which workers to retain.

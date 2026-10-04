@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
 	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/premium"
@@ -18,10 +19,51 @@ const basePremiumURL = "https://automute.us/premium?guild="
 
 // if you're reading this, adding these bots won't help you.
 // Galactus+AutoMuteUs verify the premium status internally before using these bots ;)
-var botInvites = []string{
-	"https://discord.com/api/oauth2/authorize?client_id=780323275624546304&permissions=12582912&scope=bot", // amu1
-	"https://discord.com/api/oauth2/authorize?client_id=780589033033302036&permissions=12582912&scope=bot", // amu4
-	"https://discord.com/api/oauth2/authorize?client_id=780589278195220480&permissions=12582912&scope=bot"} // amu5
+var premiumBotIDs = []string{
+	"780323275624546304", // amu1 (verified, so it has no server limit)
+	"769022114229125181", // amu2
+	"780323801173983262", // amu3
+	"780589033033302036", // amu4
+	"780589278195220480", // amu5
+}
+
+// BotStatus reports whether the bot with the given user ID is already in the server, and whether it is in as many
+// servers as Discord allows it, so it can't be invited anywhere new. Unknown is reported as neither.
+type BotStatus func(botID string) (member, full bool)
+
+// OfferedBot is one of the priority mute bots a server is offered.
+type OfferedBot struct {
+	ID     string
+	Member bool
+}
+
+// OfferedBots picks the priority mute bots offered to a server with tier, up to its allowance: the bots already in
+// the server first, then the first bots in premiumBotIDs that still have room. Fewer than the allowance are offered
+// when too many bots are full.
+func OfferedBots(tier premium.Tier, status BotStatus) (offered []OfferedBot, allowance int) {
+	allowance = tokenprovider.PremiumBotConstraints[tier]
+	if tier != premium.SilverTier && tier != premium.GoldTier {
+		return nil, 0
+	}
+	if status == nil {
+		status = func(string) (bool, bool) { return false, false }
+	}
+	members, invitable := []OfferedBot{}, []OfferedBot{}
+	for _, id := range premiumBotIDs {
+		switch member, full := status(id); {
+		case member:
+			members = append(members, OfferedBot{ID: id, Member: true})
+		case !full:
+			invitable = append(invitable, OfferedBot{ID: id})
+		}
+	}
+	offered = append(members, invitable...)
+	return offered[:min(len(offered), allowance)], allowance
+}
+
+func botInviteURL(botID string) string {
+	return "https://discord.com/api/oauth2/authorize?client_id=" + botID + "&permissions=12582912&scope=bot"
+}
 
 const (
 	PremiumInfo    string = "info"
@@ -52,13 +94,13 @@ func GetPremiumParams(options []*discordgo.ApplicationCommandInteractionDataOpti
 	return options[0].Name
 }
 
-func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg string, isAdmin bool, sett *settings.GuildSettings) *discordgo.InteractionResponse {
+func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg string, isAdmin bool, status BotStatus, sett *settings.GuildSettings) *discordgo.InteractionResponse {
 	var embed *discordgo.MessageEmbed
 	if arg == PremiumInvites {
 		if !isAdmin {
 			return InsufficientPermissionsResponse(sett)
 		}
-		embed = invitesResponse(tier, sett)
+		embed = invitesResponse(tier, status, sett)
 	} else {
 		embed = premiumEmbedResponse(guildID, tier, daysRem, sett)
 	}
@@ -73,11 +115,11 @@ func PremiumResponse(guildID string, tier premium.Tier, daysRem int, arg string,
 
 }
 
-func invitesResponse(tier premium.Tier, sett *settings.GuildSettings) *discordgo.MessageEmbed {
+func invitesResponse(tier premium.Tier, status BotStatus, sett *settings.GuildSettings) *discordgo.MessageEmbed {
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier == premium.FreeTier || tier == premium.BronzeTier || tier == premium.TrialTier {
+	if tier == premium.FreeTier || tier == premium.BronzeTier {
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponseNoAccess.desc",
 			Other: "{{.Tier}} users don't have access to Priority mute bots!\nPlease type `/premium` to see more details about AutoMuteUs Premium",
@@ -85,24 +127,39 @@ func invitesResponse(tier premium.Tier, sett *settings.GuildSettings) *discordgo
 			"Tier": premium.TierStrings[tier],
 		})
 	} else {
-		count := 0
-		if tier == premium.SilverTier {
-			count = 1
-		} else if tier == premium.GoldTier {
-			count = 3
-		}
+		offered, allowance := OfferedBots(tier, status)
 		desc = sett.LocalizeMessage(&i18n.Message{
 			ID:    "responses.premiumInviteResponse.desc",
 			Other: "{{.Tier}} users have access to {{.Count}} Priority mute bots: invites provided below!",
 		}, map[string]interface{}{
 			"Tier":  premium.TierStrings[tier],
-			"Count": count,
+			"Count": allowance,
 		})
 
-		for i := 0; i < count; i++ {
+		for i, bot := range offered {
+			value := fmt.Sprintf("[Invite Me](%s)", botInviteURL(bot.ID))
+			if bot.Member {
+				value = sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumInviteResponse.member",
+					Other: "✅ Already in this server",
+				})
+			}
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("Bot %s", emojiNums[i]),
-				Value:  fmt.Sprintf("[Invite Me](%s)", botInvites[i]),
+				Value:  value,
+				Inline: false,
+			})
+		}
+		if len(offered) < allowance {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumInviteResponse.full.title",
+					Other: "Bots at capacity",
+				}),
+				Value: sett.LocalizeMessage(&i18n.Message{
+					ID:    "responses.premiumInviteResponse.full",
+					Other: "Some Priority mute bots have reached Discord's server limit and can't be invited right now. Please check back later!",
+				}),
 				Inline: false,
 			})
 		}
@@ -132,7 +189,7 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 	desc := ""
 	var fields []*discordgo.MessageEmbedField
 
-	if tier != premium.FreeTier && tier != premium.TrialTier {
+	if tier != premium.FreeTier {
 		if daysRem > 0 || daysRem == premium.NoExpiryCode {
 			daysRemStr := ""
 			if daysRem > 0 {
@@ -192,18 +249,6 @@ func premiumEmbedResponse(guildID string, tier premium.Tier, daysRem int, sett *
 			"BaseURL": BasePremiumURL,
 			"GuildID": guildID,
 		})
-		if tier == premium.TrialTier {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID:    "responses.premiumResponse.Trial",
-				Other: "You're currently on a TRIAL of AutoMuteUs Premium\n\n",
-			})
-		} else {
-			desc += sett.LocalizeMessage(&i18n.Message{
-				ID: "responses.premiumResponse.TopGG",
-				Other: "or\n[Vote for the Bot on top.gg](https://top.gg/bot/753795015830011944) for 12 Hours of Free Premium!\n" +
-					"(One time per user)\n\n",
-			})
-		}
 		fields = []*discordgo.MessageEmbedField{
 			{
 				Name: sett.LocalizeMessage(&i18n.Message{

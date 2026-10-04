@@ -227,7 +227,7 @@ func TestLiveKeepsBetterPremium(t *testing.T) {
 	const legacy, manual, double = "900000000000000111", "900000000000000112", "900000000000000113"
 	legacyPaid := now.Add(-5 * 24 * time.Hour).Unix()
 	db.Exec(ctx, "INSERT INTO guilds (guild_id, guild_name, premium, tx_time_unix) VALUES ($1::numeric, 'x', 3, $2)", legacy, legacyPaid)
-	db.Exec(ctx, "INSERT INTO guilds (guild_id, guild_name, premium, tx_time_unix) VALUES ($1::numeric, 'x', 4, NULL)", manual)
+	db.Exec(ctx, "INSERT INTO guilds (guild_id, guild_name, premium, tx_time_unix) VALUES ($1::numeric, 'x', 2, NULL)", manual)
 
 	pay := func(track, g, sub, txn, item string, paid time.Time) {
 		t.Helper()
@@ -237,9 +237,9 @@ func TestLiveKeepsBetterPremium(t *testing.T) {
 	// Gold paid before subscriptions were tracked outranks a new Silver until it runs out.
 	pay("k1", legacy, "I-L", "TXL", "AutoMuteUs Silver", now.Add(-time.Hour))
 	expectGuild(t, db, legacy, 3, legacyPaid)
-	// A Trial with no expiry was granted by hand; a payment never shortens it.
+	// A Silver with no expiry was granted by hand; a payment never shortens it.
 	pay("k2", manual, "I-M", "TXM", "AutoMuteUs Gold", now.Add(-time.Hour))
-	if g := guild(t, db, manual); g.premium != 4 || g.txTime != nil {
+	if g := guild(t, db, manual); g.premium != 2 || g.txTime != nil {
 		t.Fatalf("manual grant changed: %+v", g)
 	}
 

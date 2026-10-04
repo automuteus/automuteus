@@ -387,14 +387,14 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 
 		case command.Premium.Name:
 			premArg := command.GetPremiumParams(i.ApplicationCommandData().Options)
-			premStatus, days, err := bot.PostgresInterface.GetGuildOrUserPremiumStatus(bot.official, bot.TopGGClient, i.GuildID, i.Member.User.ID)
+			premStatus, days, err := bot.PostgresInterface.GetGuildPremiumStatus(ctx, bot.official, i.GuildID)
 			if err != nil {
 				log.Println("Err in /premium get guild prem:", err)
 			}
 			if premium.IsExpired(premStatus, days) {
 				premStatus = premium.FreeTier
 			}
-			return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, sett)
+			return command.PremiumResponse(i.GuildID, premStatus, days, premArg, isAdmin, bot.workerStatus(i.GuildID), sett)
 
 		case command.Debug.Name:
 			action, opType, id := command.GetDebugParams(bot.PrimarySession, i.Member.User.ID, i.ApplicationCommandData().Options)
@@ -501,6 +501,11 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				return resp
 			}
 
+		case dismissReminderID:
+			if !isAdmin {
+				return command.InsufficientPermissionsResponse(sett)
+			}
+			return bot.dismissReminder(gsr, sett)
 		}
 	}
 

@@ -87,8 +87,6 @@
 "responses.premiumResponse.Stats" = "📊 Estatísticas de jogo e classificações"
 "responses.premiumResponse.StatsDesc" = "Usuários Premium têm acesso a um conjunto completo de estatísticas de jogadores e classificações!"
 "responses.premiumResponse.Title" = "💎 AutoMuteUs Premium 💎"
-"responses.premiumResponse.TopGG" = "ou\\n[Vote no bot no top.gg](https://top.gg/bot/753795015830011944) e ganhe 12 horas de Premium grátis!\\n(Uma vez por usuário)\\n\\n"
-"responses.premiumResponse.Trial" = "Você está em um TESTE do AutoMuteUs Premium\\n\\n"
 "softban.ignoring" = "Vou ignorar você pelos próximos 5 minutos, pare de spammar"
 "softban.warning" = "Pare de spammar comandos"
 "state.phase.DISCUSSION" = "DISCUSSÃO"

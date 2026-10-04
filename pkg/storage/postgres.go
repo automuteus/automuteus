@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
-	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/top-gg/go-dbl"
 )
 
 // The columns each Postgres* type reads. Queries name them instead of using SELECT *, because scany refuses a
@@ -22,7 +19,7 @@ import (
 // every read of that table here.
 const (
 	guildColumns = "guild_id, guild_name, premium, tx_time_unix, transferred_to, inherits_from"
-	userColumns  = "user_id, opt, vote_time_unix"
+	userColumns  = "user_id, opt"
 	gameColumns  = "game_id, guild_id, connect_code, start_time, win_type, end_time, play_map, region"
 )
 
@@ -130,22 +127,6 @@ func optUser(conn PgxIface, uid uint64, opt bool) error {
 	return nil
 }
 
-func setUserVoteTime(conn PgxIface, userID string, timeUnix int64) error {
-	uid, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return err
-	}
-	user, err := ensureUserExists(conn, uid)
-	if err != nil {
-		return err
-	}
-	if user.VoteTimeUnix != nil {
-		return errors.New("user already has a vote time recorded in the DB")
-	}
-	_, err = conn.Exec(context.Background(), "UPDATE users SET vote_time_unix = $1 WHERE user_id = $2;", timeUnix, uid)
-	return err
-}
-
 func (psqlInterface *PsqlInterface) GetUserByString(userID string) (*PostgresUser, error) {
 	conn, err := psqlInterface.Pool.Acquire(context.Background())
 	if err != nil {
@@ -205,81 +186,7 @@ func insertPlayer(conn PgxIface, player *PostgresUserGame) error {
 	return err
 }
 
-const (
-	SecsInADay  = 86400
-	SecsIn12Hrs = SecsInADay / 2
-	TopGGID     = "753795015830011944"
-)
-
-func isUserPremium(conn PgxIface, dbl *dbl.Client, userID string) (bool, error) {
-	// first check Postgres, because top.gg has ratelimits
-	u, err := getUserByString(conn, userID)
-	if err != nil {
-		return false, err
-	}
-	if u.VoteTimeUnix != nil {
-		// only premium if the first time they voted is within the last 12 hours
-		diff := time.Now().Unix() - int64(*u.VoteTimeUnix)
-		return diff < SecsIn12Hrs, nil
-	}
-	if dbl == nil {
-		return false, nil
-	}
-	// only check if the user has never voted before
-	voted, err := dbl.HasUserVoted(TopGGID, userID)
-	if err != nil {
-		return false, err
-	}
-	if voted {
-		// do this in the background so the overall check is quick. We can overwrite because we know that tx_time=nil
-		go func() {
-			err := setUserVoteTime(conn, userID, time.Now().Unix())
-			if err != nil {
-				log.Println(err)
-			}
-		}()
-		return true, nil
-	}
-	return false, nil
-}
-
-func (psqlInterface *PsqlInterface) GetGuildOrUserPremiumStatus(official bool, dbl *dbl.Client, guildID, userID string) (premium.Tier, int, error) {
-	if !official {
-		return premium.SelfHostTier, premium.NoExpiryCode, nil
-	}
-	conn, err := psqlInterface.Pool.Acquire(context.Background())
-	if err != nil {
-		return premium.FreeTier, 0, err
-	}
-	defer conn.Release()
-
-	return guildOrUserPremium(conn.Conn(), dbl, guildID, userID)
-}
-
-func guildOrUserPremium(conn PgxIface, dbl *dbl.Client, guildID, userID string) (premium.Tier, int, error) {
-	tier, daysRem := getGuildPremiumStatus(conn, guildID, 0)
-	// only check the user premium if the guild doesn't have it
-	if premium.IsExpired(tier, daysRem) && userID != "" {
-		prem, err := isUserPremium(conn, dbl, userID)
-		if err != nil {
-			log.Println(err)
-		}
-		if prem {
-			// no expiry because the expiry is handled per-user elsewhere
-			return premium.TrialTier, premium.NoExpiryCode, nil
-		}
-	}
-	return tier, daysRem, nil
-}
-
-func getGuildPremiumStatus(conn PgxIface, guildID string, depth int) (premium.Tier, int) {
-	tier, days, err := checkedGuildPremiumStatus(context.Background(), conn, guildID, depth)
-	if err != nil {
-		log.Println(err)
-		return premium.FreeTier, 0
-	}
-	return tier, days
-}
+const SecsInADay = 86400
 
 func (psqlInterface *PsqlInterface) EnsureGuildExists(guildID uint64, guildName string) (*PostgresGuild, error) {
 	conn, err := psqlInterface.Pool.Acquire(context.Background())

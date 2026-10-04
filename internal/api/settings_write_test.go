@@ -516,7 +516,7 @@ func TestUpdateSettings_MixedBodyIsRefusedWhole(t *testing.T) {
 }
 
 func TestUpdateSettings_PremiumGuildMayChangePremiumFields(t *testing.T) {
-	for _, record := range []*premium.PremiumRecord{paidGuild, {Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, {Tier: premium.TrialTier, Days: 3}} {
+	for _, record := range []*premium.PremiumRecord{paidGuild, {Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}} {
 		s := &fakeStore{premium: record}
 		r, _ := writeRouter(s, ownerAccess)
 		w := patchSettings(r, "valid", `{"autoRefresh":true,"leaderboardSize":5}`)
