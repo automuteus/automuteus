@@ -143,16 +143,20 @@ type fakeVoice struct {
 	mu       sync.Mutex
 	requests []task.UserModifyRequest
 	err      error
+	// elapsed is how long every batch reports taking; each change is reported as applied by the primary bot.
+	elapsed time.Duration
 }
 
-func (f *fakeVoice) ModifyUsers(_, _ string, req task.UserModifyRequest, l lock.Lock) error {
+func (f *fakeVoice) ModifyUsers(_, _ string, req task.UserModifyRequest, l lock.Lock) (task.ModifyResult, error) {
 	f.mu.Lock()
 	f.requests = append(f.requests, req)
+	res := task.ModifyResult{Elapsed: f.elapsed}
 	f.mu.Unlock()
+	res.Official = int64(len(req.Users))
 	if l != nil {
 		_ = l.Release(context.Background())
 	}
-	return f.err
+	return res, f.err
 }
 
 func (f *fakeVoice) all() []task.UserModifyRequest {
@@ -323,6 +327,7 @@ type fakeMetrics struct {
 	leaseWaits      int
 	adopted         map[server.AdoptSource]int
 	handedOver      int
+	reminders       map[string]int // "kind/action"
 }
 
 func (f *fakeMetrics) RecordDiscordRequests(t server.EventType, n int64) {
@@ -389,6 +394,21 @@ func (f *fakeMetrics) RecordGameHandedOver() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.handedOver++
+}
+
+func (f *fakeMetrics) RecordReminder(kind string, action server.ReminderAction) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.reminders == nil {
+		f.reminders = map[string]int{}
+	}
+	f.reminders[kind+"/"+string(action)]++
+}
+
+func (f *fakeMetrics) reminderCount(kind ReminderKind, action server.ReminderAction) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.reminders[string(kind)+"/"+string(action)]
 }
 
 func (f *fakeMetrics) adoptedFrom(source server.AdoptSource) int {

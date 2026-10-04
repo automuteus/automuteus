@@ -292,7 +292,7 @@ func TestModifyUsersDoesNotPerformMembershipMaintenance(t *testing.T) {
 	h := newCleanupHarness(t, nil)
 	h.worker(t, "a", "123")
 	h.c.tp.applyPrimary = func(_, _ string, _, _ bool) error { return nil }
-	if err := h.c.tp.ModifyUsers("123", "CODE", task.UserModifyRequest{Premium: premium.FreeTier, Users: []task.UserModify{{UserID: 456}}}, nil); err != nil {
+	if _, err := h.c.tp.ModifyUsers("123", "CODE", task.UserModifyRequest{Premium: premium.FreeTier, Users: []task.UserModify{{UserID: 456}}}, nil); err != nil {
 		t.Fatal(err)
 	}
 	// Any obsolete background membership check would emit a Discord request.

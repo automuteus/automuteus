@@ -105,7 +105,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 					},
 				},
 			}
-			err = bot.voice.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
+			_, err = bot.voice.ModifyUsers(m.GuildID, dgs.ConnectCode, req, voiceLock)
 			if err != nil {
 				gl.Error("failed to apply voice change", "user", m.UserID, "err", err)
 			}
@@ -133,6 +133,7 @@ func (bot *Bot) handleGameStartMessage(guildID, textChannelID, voiceChannelID, u
 
 	dgs.Running = true
 	dgs.Reminder = reminder
+	dgs.SlowMutes = 0
 
 	if voiceChannelID != "" {
 		dgs.VoiceChannel = voiceChannelID

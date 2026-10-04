@@ -26,8 +26,9 @@ the Active Games panels.
   duration percentiles + heatmap, capture-client task results, worker fallbacks.
 - **Discord API** – 429s per pod, message operations by type.
 - **Multi-Process Coordination** – handovers, adoptions, lease waits/losses.
-- **Worker Cleanup** – cleanup loop results, backlog, oldest pending check, servers per
-  worker bot, and how much of Discord's 100-server limit each unverified worker has used.
+- **Worker Bots** – servers per worker bot, and how much of Discord's 100-server limit each
+  unverified worker has used.
+- **Reminders** – status-message reminders shown and dismissed, by kind.
 - **Process Health** – CPU, RSS, goroutines, GC pause per pod. Collapsed and
   empty by default: the Alloy collector in `infra/monitoring/values.yaml` only
   keeps `automuteus_.+|up`. To populate it, widen the keep regex to
