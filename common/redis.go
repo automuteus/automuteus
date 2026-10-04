@@ -37,20 +37,6 @@ func UserSoftbanCountKey(userID string) string {
 	return "automuteus:ratelimit:softban:count:user:" + userID
 }
 
-func MarkUserRateLimit(client *redis.Client, userID, cmdType string, ttl time.Duration) {
-	err := client.Set(context.Background(), UserRateLimitGeneralKey(userID), "", GlobalUserRateLimitDuration).Err()
-	if err != nil {
-		log.Println(err)
-	}
-
-	if cmdType != "" && ttl > 0 {
-		err = client.Set(context.Background(), UserRateLimitSpecificKey(userID, cmdType), "", ttl).Err()
-		if err != nil {
-			log.Println(err)
-		}
-	}
-}
-
 func IncrementRateLimitExceed(client *redis.Client, userID string) bool {
 	t := time.Now().Unix()
 	_, err := client.ZAdd(context.Background(), UserSoftbanCountKey(userID), &redis.Z{
