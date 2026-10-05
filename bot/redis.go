@@ -110,7 +110,7 @@ func (redisInterface *RedisInterface) LockVoiceChanges(connectCode string, dur t
 		return nil
 	}
 
-	return lock
+	return trackLock(lock, rediskey.VoiceChangesForGameCodeLock(connectCode), dur)
 }
 
 // need at least one of these fields to fetch
@@ -196,7 +196,7 @@ func (redisInterface *RedisInterface) GetDiscordGameStateAndLock(gsr GameStateRe
 		return nil, nil
 	}
 
-	return lock, redisInterface.getDiscordGameState(gsr, true)
+	return trackLock(lock, key+":lock", time.Millisecond*LockTimeoutMs), redisInterface.getDiscordGameState(gsr, true)
 }
 
 func (redisInterface *RedisInterface) getDiscordGameState(gsr GameStateRequest, createOnNil bool) *GameState {
@@ -408,7 +408,7 @@ func (redisInterface *RedisInterface) DeleteDiscordGameState(dgs *GameState) {
 	case err != nil:
 		log.Fatalln(err)
 	default:
-		defer lock.Release(ctx)
+		defer trackLock(lock, key+":lock", time.Millisecond*LockTimeoutMs).Release(ctx)
 	}
 
 	// delete all the pointers to the underlying -actual- discord data
@@ -526,7 +526,7 @@ func (redisInterface *RedisInterface) LockSnowflake(snowflake string) lock.Lock 
 		log.Println(err)
 		return nil
 	}
-	return lock
+	return trackLock(lock, rediskey.SnowflakeLockID(snowflake), time.Millisecond*SnowflakeLockMs)
 }
 
 // Ping reports whether Redis is reachable. It is a readiness check for internal/server.Health.

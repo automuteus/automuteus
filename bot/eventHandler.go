@@ -465,19 +465,15 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 		defer bot.store.SetDiscordGameState(dgs, lock)
 
 		if player.Disconnected || player.Action == game.LEFT {
+			// the departing player is whoever is linked to them; pairing here would link someone to a player who
+			// is gone. A player who merely left stays linked, so they're relinked if they rejoin under the same name
+			userID := dgs.LinkedUserID(player.Name)
 			if player.Disconnected {
 				gl.Info("player disconnected; purging player data", "player", player.Name)
 				dgs.ClearPlayerDataByPlayerName(player.Name)
 			}
-			_, _, data := dgs.GameData.UpdatePlayer(player)
-
-			userID := dgs.AttemptPairingByMatchingNames(data)
-			// try pairing via the cached usernames
-			if userID == "" {
-				var uids map[string]interface{}
-				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-				userID = dgs.AttemptPairingByUserIDs(data, uids)
-			} else {
+			// once their player data is cleared, no other voice path will touch them, so unmute them here
+			if userID != "" {
 				err = bot.applyToSingle(dgs, premTier, userID, false, false)
 			}
 

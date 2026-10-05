@@ -60,6 +60,16 @@ func (dgs *GameState) ClearPlayerData(userID string) bool {
 	return false
 }
 
+// LinkedUserID returns the ID of the Discord user linked to the in-game player, or "" if nobody is.
+func (dgs *GameState) LinkedUserID(playerName string) string {
+	for userID, v := range dgs.UserData {
+		if v.GetPlayerName() == playerName {
+			return userID
+		}
+	}
+	return ""
+}
+
 func (dgs *GameState) ClearPlayerDataByPlayerName(playerName string) {
 	for i, v := range dgs.UserData {
 		if v.GetPlayerName() == playerName {
