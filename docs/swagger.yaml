@@ -147,14 +147,11 @@ definitions:
     type: object
   api.GuildLeaderboards:
     properties:
-      bestCrewmateDuo:
-        items:
-          $ref: '#/definitions/api.DuoWinrate'
-        type: array
       bestImpostorDuo:
         description: |-
-          The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID
-          first. Best is highest winrate first; worst is lowest first.
+          The duo boards rank pairs of players who were impostors together. Each pair appears once, lower user ID
+          first. Best is highest winrate first; worst is lowest first, both judged by the Wilson bounds on the
+          winrate, so a pair that went 7 for 8 ranks above one that went 2 for 2.
         items:
           $ref: '#/definitions/api.DuoWinrate'
         type: array
@@ -172,17 +169,10 @@ definitions:
         items:
           $ref: '#/definitions/api.PlayerWinrate'
         type: array
-      killedBy:
-        description: |-
-          KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.
-          The game never reports who made a kill, so a death counts against every impostor of that game.
-        items:
-          $ref: '#/definitions/api.KilledBy'
-        type: array
       minGames:
         description: |-
-          MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by
-          rate. The impostor duo boards use a fixed floor of two shared games instead.
+          MinGames is the guild's leaderboard minimum: the games a player needs to be ranked by rate. The impostor
+          duo boards use a fixed floor of two shared games instead.
         type: integer
       mostGames:
         description: MostGames ranks players by games recorded, with no minimum.
@@ -193,10 +183,6 @@ definitions:
         description: Winrate ranks players by winrate across both roles.
         items:
           $ref: '#/definitions/api.PlayerWinrate'
-        type: array
-      worstCrewmateDuo:
-        items:
-          $ref: '#/definitions/api.DuoWinrate'
         type: array
       worstImpostorDuo:
         items:
@@ -292,22 +278,6 @@ definitions:
       totalUsers:
         type: integer
       version:
-        type: string
-    type: object
-  api.KilledBy:
-    properties:
-      deaths:
-        description: Deaths is how many of the shared games the crewmate died in.
-        type: integer
-      games:
-        description: Games is how many games the two shared as crewmate and impostor,
-          the denominator of Rate.
-        type: integer
-      impostorId:
-        type: string
-      rate:
-        type: number
-      userId:
         type: string
     type: object
   api.MapRecord:
@@ -685,7 +655,7 @@ definitions:
       bestCrewmateTeammates:
         description: |-
           The teammate boards rank players who shared a role with the player. Best is highest winrate first;
-          worst is lowest first.
+          worst is lowest first, both judged by the Wilson bounds so a short run does not outrank a long one.
         items:
           $ref: '#/definitions/api.Teammate'
         type: array

@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
+	pgstorage "github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/automuteus/automuteus/v8/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -154,42 +156,12 @@ func TestLiveGuildStats(t *testing.T) {
 	if len(b.WorstImpostorDuo) != 1 || b.WorstImpostorDuo[0] != b.BestImpostorDuo[0] {
 		t.Errorf("worst impostor duo = %+v", b.WorstImpostorDuo)
 	}
-	// alice & carol shared three crewmate games and won two.
-	if len(b.BestCrewmateDuo) != 1 || b.BestCrewmateDuo[0] != (DuoWinrate{UserID: "1001", TeammateID: "1003", Wins: 2, Games: 3, Winrate: 66.7}) {
-		t.Errorf("best crewmate duo = %+v", b.BestCrewmateDuo)
-	}
 	// alice died first in two of her three crewmate games, carol in one of four. alice's deaths in the aborted
 	// game and in game 6 (no player record) do not count, and dave is not the first target of game 5 because an
 	// unlinked player died before him.
 	if len(b.FirstTarget) != 2 || b.FirstTarget[0] != (FirstTarget{UserID: "1001", FirstDeaths: 2, CrewmateGames: 3, Rate: 66.7}) || b.FirstTarget[1] != (FirstTarget{UserID: "1003", FirstDeaths: 1, CrewmateGames: 4, Rate: 25}) {
 		t.Errorf("first target = %+v", b.FirstTarget)
 	}
-	// alice died in two of three games with bob as impostor, and in one of two with dave. Only one death event
-	// per game counts even though carol died alongside her.
-	killed := map[string]KilledBy{}
-	for _, k := range b.KilledBy {
-		killed[k.UserID+"/"+k.ImpostorID] = k
-	}
-	if k := killed["1001/1002"]; k != (KilledBy{UserID: "1001", ImpostorID: "1002", Deaths: 2, Games: 3, Rate: 66.7}) {
-		t.Errorf("alice killed by bob = %+v", k)
-	}
-	if k := killed["1001/1004"]; k != (KilledBy{UserID: "1001", ImpostorID: "1004", Deaths: 1, Games: 2, Rate: 50}) {
-		t.Errorf("alice killed by dave = %+v", k)
-	}
-	if k := killed["1003/1002"]; k != (KilledBy{UserID: "1003", ImpostorID: "1002", Deaths: 2, Games: 3, Rate: 66.7}) {
-		t.Errorf("carol killed by bob = %+v", k)
-	}
-	if k := killed["1004/1003"]; k != (KilledBy{UserID: "1004", ImpostorID: "1003", Deaths: 1, Games: 1, Rate: 100}) {
-		t.Errorf("dave killed by carol = %+v", k)
-	}
-	if k := killed["1003/1004"]; k != (KilledBy{UserID: "1003", ImpostorID: "1004", Deaths: 2, Games: 3, Rate: 66.7}) {
-		t.Errorf("carol killed by dave = %+v", k)
-	}
-	// Game 6 adds no pair: carol and dave already shared games 2 and 3 in those roles.
-	if len(b.KilledBy) != 5 {
-		t.Errorf("killed by has %d pairs, want 5: %+v", len(b.KilledBy), b.KilledBy)
-	}
-
 	// A guild with no games at all must still produce a valid summary from the real query.
 	empty, err := buildGuildStats(ctx, pool, nil, nil, "900000000000000002", premium.PremiumRecord{Tier: premium.FreeTier}, sett, false)
 	if err != nil {
@@ -197,5 +169,90 @@ func TestLiveGuildStats(t *testing.T) {
 	}
 	if empty.Summary != (GuildStatsSummary{}) || empty.Leaderboards != nil {
 		t.Errorf("empty guild = %+v", empty)
+	}
+}
+
+// TestLiveGuildDuoRanking checks the duo boards rank by the Wilson bounds rather than the raw winrate: a pair
+// that won 7 of 8 is a better bet than one that won 2 of 2, and one that won 1 of 8 a worse one than 0 of 2.
+func TestLiveGuildDuoRanking(t *testing.T) {
+	url := os.Getenv("TEST_POSTGRES_URL")
+	if url == "" {
+		t.Skip("set disposable TEST_POSTGRES_URL")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	if err := storage.ApplySchemas(ctx, pool, false); err != nil {
+		t.Fatal(err)
+	}
+
+	const guild = uint64(900000000000000041)
+	users := []uint64{4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108}
+	t.Cleanup(func() {
+		pool.Exec(ctx, "DELETE FROM guilds WHERE guild_id = $1", guild)
+		pool.Exec(ctx, "DELETE FROM users WHERE user_id = ANY($1)", users)
+	})
+	pool.Exec(ctx, "DELETE FROM guilds WHERE guild_id = $1", guild)
+	exec := func(query string, args ...interface{}) {
+		t.Helper()
+		if _, err := pool.Exec(ctx, query, args...); err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+	}
+	exec("INSERT INTO guilds (guild_id, guild_name, premium) VALUES ($1, 'duo test', 0)", guild)
+	for _, u := range users {
+		exec("INSERT INTO users (user_id, opt) VALUES ($1, true) ON CONFLICT DO NOTHING", u)
+	}
+	pairs := []struct {
+		a, b        uint64
+		wins, games int
+	}{
+		{4101, 4102, 7, 8},
+		{4103, 4104, 2, 2},
+		{4105, 4106, 1, 8},
+		{4107, 4108, 0, 2},
+	}
+	start := int32(1_700_000_000)
+	for _, p := range pairs {
+		for i := 0; i < p.games; i++ {
+			won := i < p.wins
+			result := game.HumansByTask
+			if won {
+				result = game.ImpostorByKill
+			}
+			var gameID int64
+			if err := pool.QueryRow(ctx, "INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES ($1, 'ABCDEFGH', $2, $3, $4) RETURNING game_id",
+				guild, start, int16(result), start+600).Scan(&gameID); err != nil {
+				t.Fatal(err)
+			}
+			start += 1000
+			for _, u := range []uint64{p.a, p.b} {
+				exec("INSERT INTO users_games VALUES ($1, $2, $3, 'name', 0, $4, $5)", u, guild, gameID, int16(game.ImposterRole), won)
+			}
+		}
+	}
+
+	best, worst, err := pgstorage.GuildDuoRanking(ctx, pool, guild, game.ImposterRole, impostorDuoMinGames, leaderboardSize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firsts := func(rows []*pgstorage.PostgresBestTeammatePlayerRanking) []uint64 {
+		ids := make([]uint64, 0, len(rows))
+		for _, r := range rows {
+			ids = append(ids, r.UserID)
+		}
+		return ids
+	}
+	if got, want := firsts(best), []uint64{4101, 4103, 4105, 4107}; !reflect.DeepEqual(got, want) {
+		t.Errorf("best = %v, want %v", got, want)
+	}
+	if got, want := firsts(worst), []uint64{4105, 4107, 4101, 4103}; !reflect.DeepEqual(got, want) {
+		t.Errorf("worst = %v, want %v", got, want)
+	}
+	if r := best[0]; r.TeammateID != 4102 || r.WinCount != 7 || r.Count != 8 || r.WinRate != 87.5 {
+		t.Errorf("best pair = %+v", r)
 	}
 }

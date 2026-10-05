@@ -140,20 +140,22 @@ var (
 		"WHERE a.guild_id = $1 AND a.user_id = $2 " +
 		"GROUP BY b.user_id ORDER BY total DESC, b.user_id LIMIT $3"
 
-	// The guild duo boards restricted to one player, who is always user_id; teammate_id is the other.
-	userTeammatesSelect = "SELECT a.user_id, b.user_id AS teammate_id, " +
+	// The guild duo boards restricted to one player, who is always user_id; teammate_id is the other. Ranked by
+	// the Wilson bounds like the guild boards, which needs the counts named, hence the derived table.
+	userTeammatesSelect = "SELECT user_id, teammate_id, total, win, win_rate FROM (SELECT a.user_id, b.user_id AS teammate_id, " +
 		"COUNT(*) AS total, " +
 		"COUNT(*) FILTER (WHERE a.player_won) AS win, " +
 		"COUNT(*) FILTER (WHERE a.player_won)::decimal / COUNT(*) * 100 AS win_rate " +
 		"FROM users_games a " +
 		"INNER JOIN users_games b ON b.guild_id = $1 AND b.game_id = a.game_id AND b.user_id <> a.user_id AND b.player_role = $3 " +
 		"WHERE a.guild_id = $1 AND a.user_id = $2 AND a.player_role = $3 " +
-		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $4 "
-	userBestTeammatesQuery  = userTeammatesSelect + "ORDER BY win_rate DESC, win DESC, total DESC, b.user_id LIMIT $5"
-	userWorstTeammatesQuery = userTeammatesSelect + "ORDER BY win_rate ASC, win ASC, total DESC, b.user_id LIMIT $5"
+		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $4) t "
+	userBestTeammatesQuery  = userTeammatesSelect + "ORDER BY " + wilsonLower + " DESC, win DESC, total DESC, teammate_id LIMIT $5"
+	userWorstTeammatesQuery = userTeammatesSelect + "ORDER BY " + wilsonUpper + " ASC, win ASC, total DESC, teammate_id LIMIT $5"
 
-	// The guild's killed-by board restricted to one crewmate. The same caveat applies: the game never reports
-	// who made a kill, so a death counts against every impostor of that game.
+	// How often one crewmate died with each impostor in the game. The game never reports who made a kill, so a
+	// death counts against every impostor of that game; the page presents it as who they died with, not who
+	// killed them.
 	userKilledByQuery = "SELECT c.user_id, i.user_id AS teammate_id, " +
 		"COUNT(*) FILTER (WHERE d.game_id IS NOT NULL) AS total_death, " +
 		"COUNT(*) AS encounter, " +
