@@ -100,7 +100,7 @@ type UserStatsDetails struct {
 	// PlayedWith ranks the linked players the player shared the most games with.
 	PlayedWith []PlayedWith `json:"playedWith"`
 	// The teammate boards rank players who shared a role with the player. Best is highest winrate first;
-	// worst is lowest first.
+	// worst is lowest first, both judged by the Wilson bounds so a short run does not outrank a long one.
 	BestCrewmateTeammates  []Teammate `json:"bestCrewmateTeammates"`
 	WorstCrewmateTeammates []Teammate `json:"worstCrewmateTeammates"`
 	BestImpostorTeammates  []Teammate `json:"bestImpostorTeammates"`

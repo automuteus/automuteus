@@ -1563,14 +1563,8 @@ const docTemplate = `{
         "api.GuildLeaderboards": {
             "type": "object",
             "properties": {
-                "bestCrewmateDuo": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.DuoWinrate"
-                    }
-                },
                 "bestImpostorDuo": {
-                    "description": "The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID\nfirst. Best is highest winrate first; worst is lowest first.",
+                    "description": "The duo boards rank pairs of players who were impostors together. Each pair appears once, lower user ID\nfirst. Best is highest winrate first; worst is lowest first, both judged by the Wilson bounds on the\nwinrate, so a pair that went 7 for 8 ranks above one that went 2 for 2.",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.DuoWinrate"
@@ -1595,15 +1589,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.PlayerWinrate"
                     }
                 },
-                "killedBy": {
-                    "description": "KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.\nThe game never reports who made a kill, so a death counts against every impostor of that game.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.KilledBy"
-                    }
-                },
                 "minGames": {
-                    "description": "MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by\nrate. The impostor duo boards use a fixed floor of two shared games instead.",
+                    "description": "MinGames is the guild's leaderboard minimum: the games a player needs to be ranked by rate. The impostor\nduo boards use a fixed floor of two shared games instead.",
                     "type": "integer"
                 },
                 "mostGames": {
@@ -1618,12 +1605,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.PlayerWinrate"
-                    }
-                },
-                "worstCrewmateDuo": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.DuoWinrate"
                     }
                 },
                 "worstImpostorDuo": {
@@ -1759,28 +1740,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.KilledBy": {
-            "type": "object",
-            "properties": {
-                "deaths": {
-                    "description": "Deaths is how many of the shared games the crewmate died in.",
-                    "type": "integer"
-                },
-                "games": {
-                    "description": "Games is how many games the two shared as crewmate and impostor, the denominator of Rate.",
-                    "type": "integer"
-                },
-                "impostorId": {
-                    "type": "string"
-                },
-                "rate": {
-                    "type": "number"
-                },
-                "userId": {
                     "type": "string"
                 }
             }
@@ -2293,7 +2252,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/api.Activity"
                 },
                 "bestCrewmateTeammates": {
-                    "description": "The teammate boards rank players who shared a role with the player. Best is highest winrate first;\nworst is lowest first.",
+                    "description": "The teammate boards rank players who shared a role with the player. Best is highest winrate first;\nworst is lowest first, both judged by the Wilson bounds so a short run does not outrank a long one.",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.Teammate"

@@ -101,23 +101,15 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 		WillReturnRows(winRows().AddRow(uint64(11), int64(6), int64(9), 66.6667))
 	mock.ExpectQuery(winQuery).WithArgs(testGuildNum, int16(0), 4, 5).WillReturnRows(winRows())
 	mock.ExpectQuery(winQuery).WithArgs(testGuildNum, int16(1), 4, 5).WillReturnRows(winRows())
-	duoRows := func() *pgxmock.Rows {
-		return pgxmock.NewRows([]string{"user_id", "teammate_id", "total", "win", "win_rate"})
-	}
-	bestDuo := `b.user_id > a.user_id AND b.player_role = \$2 WHERE a.guild_id = \$1 AND a.player_role = \$2 GROUP BY a.user_id, b.user_id HAVING COUNT\(\*\) >= \$3 ORDER BY win_rate DESC, win DESC, total DESC, a.user_id, b.user_id LIMIT \$4`
-	worstDuo := `HAVING COUNT\(\*\) >= \$3 ORDER BY win_rate ASC, win ASC, total DESC, a.user_id, b.user_id LIMIT \$4`
-	// Impostor duos use the fixed floor of two shared games; crewmate duos use the guild minimum.
-	mock.ExpectQuery(bestDuo).WithArgs(testGuildNum, int16(1), 2, 5).
-		WillReturnRows(duoRows().AddRow(uint64(11), uint64(33), int64(3), int64(2), 66.6667))
-	mock.ExpectQuery(worstDuo).WithArgs(testGuildNum, int16(1), 2, 5).WillReturnRows(duoRows())
-	mock.ExpectQuery(bestDuo).WithArgs(testGuildNum, int16(0), 4, 5).WillReturnRows(duoRows())
-	mock.ExpectQuery(worstDuo).WithArgs(testGuildNum, int16(0), 4, 5).WillReturnRows(duoRows())
+	// One statement serves both impostor duo boards, at the fixed floor of two shared games.
+	mock.ExpectQuery(`WITH pairs AS \(SELECT a.user_id, b.user_id AS teammate_id, .* b.user_id > a.user_id AND b.player_role = \$2 WHERE a.guild_id = \$1 AND a.player_role = \$2 GROUP BY a.user_id, b.user_id HAVING COUNT\(\*\) >= \$3\), ranked AS .* ORDER BY lower_bound DESC, .* LIMIT \$4\) UNION ALL .* ORDER BY upper_bound ASC, .* LIMIT \$4\)`).
+		WithArgs(testGuildNum, int16(1), 2, 5).
+		WillReturnRows(pgxmock.NewRows([]string{"worst", "user_id", "teammate_id", "total", "win", "win_rate"}).
+			AddRow(false, uint64(11), uint64(33), int64(3), int64(2), 66.6667).
+			AddRow(true, uint64(22), uint64(55), int64(4), int64(1), 25.0))
 	mock.ExpectQuery(`WITH first_death AS \(SELECT DISTINCT ON \(e.game_id\) .* crew AS .* totals AS .* SELECT c.user_id, COUNT\(\*\) AS total_death, t.total, .* HAVING t.total >= \$2 ORDER BY death_rate DESC, total_death DESC, c.user_id LIMIT \$3`).
 		WithArgs(testGuildNum, 4, 5).
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "total_death", "total", "death_rate"}).AddRow(uint64(44), int64(3), int64(6), 50.0))
-	mock.ExpectQuery(`WITH crew AS .* imp AS .* died AS .* SELECT c.user_id, i.user_id AS teammate_id, .* FROM crew c INNER JOIN imp i .* LEFT JOIN died d .* HAVING COUNT\(\*\) >= \$2 ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT \$3`).
-		WithArgs(testGuildNum, 4, 5).
-		WillReturnRows(pgxmock.NewRows([]string{"user_id", "teammate_id", "total_death", "encounter", "death_rate"}).AddRow(uint64(44), uint64(11), int64(4), int64(5), 80.0))
 
 	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 10}, sett, false)
 	if err != nil {
@@ -139,13 +131,13 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 	if len(b.BestImpostorDuo) != 1 || b.BestImpostorDuo[0] != (DuoWinrate{UserID: "11", TeammateID: "33", Wins: 2, Games: 3, Winrate: 66.7}) {
 		t.Fatalf("best impostor duo = %+v", b.BestImpostorDuo)
 	}
+	if len(b.WorstImpostorDuo) != 1 || b.WorstImpostorDuo[0] != (DuoWinrate{UserID: "22", TeammateID: "55", Wins: 1, Games: 4, Winrate: 25}) {
+		t.Fatalf("worst impostor duo = %+v", b.WorstImpostorDuo)
+	}
 	if len(b.FirstTarget) != 1 || b.FirstTarget[0] != (FirstTarget{UserID: "44", FirstDeaths: 3, CrewmateGames: 6, Rate: 50}) {
 		t.Fatalf("first target = %+v", b.FirstTarget)
 	}
-	if len(b.KilledBy) != 1 || b.KilledBy[0] != (KilledBy{UserID: "44", ImpostorID: "11", Deaths: 4, Games: 5, Rate: 80}) {
-		t.Fatalf("killed by = %+v", b.KilledBy)
-	}
-	if got := b.userIDs(); strings.Join(got, ",") != "11,22,33,44" {
+	if got := b.userIDs(); strings.Join(got, ",") != "11,22,33,44,55" {
 		t.Fatalf("named users = %v", got)
 	}
 	// Empty boards must serialise as [] so the page can render them without null checks.
@@ -153,7 +145,7 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{`"crewmateWinrate":[]`, `"worstImpostorDuo":[]`, `"bestCrewmateDuo":[]`, `"worstCrewmateDuo":[]`, `"impostorWinrate":[]`} {
+	for _, key := range []string{`"crewmateWinrate":[]`, `"impostorWinrate":[]`} {
 		if !strings.Contains(string(body), key) {
 			t.Errorf("missing %s in %s", key, body)
 		}
@@ -172,10 +164,14 @@ func TestBuildGuildStats_BoardFailureFailsTheRollup(t *testing.T) {
 	boom := errors.New("boom")
 	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum, int16(-2)).WillReturnRows(summaryRows(1, 1, 0))
 	mock.ExpectQuery(`SELECT user_id, COUNT\(\*\) AS total FROM users_games`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnError(boom)
-	for i := 0; i < 9; i++ {
-		mock.ExpectQuery(`FROM users_games|FROM games g`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
+	// The three winrate boards and the duo boards take four arguments; first target takes three. Every board
+	// needs an answer, or one that finishes before most games fails would fail the rollup with its own error.
+	for i := 0; i < 4; i++ {
+		mock.ExpectQuery(`FROM users_games`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
 			WillReturnRows(pgxmock.NewRows([]string{"user_id"}))
 	}
+	mock.ExpectQuery(`WITH first_death`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WillReturnRows(pgxmock.NewRows([]string{"user_id"}))
 	_, err = buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.SelfHostTier, Days: premium.NoExpiryCode}, settings.MakeGuildSettings(), false)
 	if !errors.Is(err, boom) {
 		t.Fatalf("err = %v, want %v", err, boom)

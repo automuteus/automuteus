@@ -60,16 +60,22 @@ var (
 	// game, so they share the outcome; counting a's wins is counting the duo's wins. The teammate side is
 	// restricted to the guild as well, which is implied by sharing a game but not known to the planner: without
 	// it, production hashed all 27 million rows of users_games for every build.
-	guildDuoRankingSelect = "SELECT a.user_id, b.user_id AS teammate_id, " +
+	// The pairs are aggregated once and both ends of the ranking read from that, rather than one statement per
+	// board each repeating the self-join.
+	guildDuoRankingQuery = "WITH pairs AS (SELECT a.user_id, b.user_id AS teammate_id, " +
 		"COUNT(*) AS total, " +
-		"COUNT(*) FILTER (WHERE a.player_won) AS win, " +
-		"COUNT(*) FILTER (WHERE a.player_won)::decimal / COUNT(*) * 100 AS win_rate " +
+		"COUNT(*) FILTER (WHERE a.player_won) AS win " +
 		"FROM users_games a " +
 		"INNER JOIN users_games b ON b.guild_id = $1 AND b.game_id = a.game_id AND b.user_id > a.user_id AND b.player_role = $2 " +
 		"WHERE a.guild_id = $1 AND a.player_role = $2 " +
-		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $3 "
-	guildBestDuoQuery  = guildDuoRankingSelect + "ORDER BY win_rate DESC, win DESC, total DESC, a.user_id, b.user_id LIMIT $4"
-	guildWorstDuoQuery = guildDuoRankingSelect + "ORDER BY win_rate ASC, win ASC, total DESC, a.user_id, b.user_id LIMIT $4"
+		"GROUP BY a.user_id, b.user_id HAVING COUNT(*) >= $3), " +
+		"ranked AS (SELECT user_id, teammate_id, total, win, win::decimal / total * 100 AS win_rate, " +
+		wilsonLower + " AS lower_bound, " + wilsonUpper + " AS upper_bound FROM pairs) " +
+		"(SELECT false AS worst, user_id, teammate_id, total, win, win_rate FROM ranked " +
+		"ORDER BY lower_bound DESC, win DESC, total DESC, user_id, teammate_id LIMIT $4) " +
+		"UNION ALL " +
+		"(SELECT true AS worst, user_id, teammate_id, total, win, win_rate FROM ranked " +
+		"ORDER BY upper_bound ASC, win ASC, total DESC, user_id, teammate_id LIMIT $4)"
 
 	// The first death event of each finished game names the first target. A player's rate is measured against
 	// their crewmate games, since only crewmates can be killed. The earliest death is picked before anyone is
@@ -95,28 +101,24 @@ var (
 		"JOIN totals t ON t.user_id = c.user_id " +
 		"GROUP BY c.user_id, t.total HAVING t.total >= $2 " +
 		"ORDER BY death_rate DESC, total_death DESC, c.user_id LIMIT $3"
-
-	// The game never reports who made a kill, so a crewmate's death counts against every impostor of that game.
-	// encounter is how many games the pair shared in those roles. The guild's deaths are collected once rather
-	// than looked up per crewmate/impostor pair, of which a large guild has hundreds of thousands.
-	guildKilledByQuery = "WITH crew AS (SELECT game_id, user_id FROM users_games WHERE guild_id = $1 AND player_role = " + crewmateRole + "), " +
-		"imp AS (SELECT game_id, user_id FROM users_games WHERE guild_id = $1 AND player_role = " + impostorRole + "), " +
-		"died AS (SELECT DISTINCT e.game_id, e.user_id FROM game_events e JOIN games g ON g.game_id = e.game_id " +
-		"WHERE g.guild_id = $1 AND e.user_id IS NOT NULL AND e.payload ->> 'Action' = '" + diedAction + "') " +
-		"SELECT c.user_id, i.user_id AS teammate_id, " +
-		"COUNT(*) FILTER (WHERE d.game_id IS NOT NULL) AS total_death, " +
-		"COUNT(*) AS encounter, " +
-		"COUNT(*) FILTER (WHERE d.game_id IS NOT NULL)::decimal / COUNT(*) * 100 AS death_rate " +
-		"FROM crew c " +
-		"INNER JOIN imp i ON i.game_id = c.game_id " +
-		"LEFT JOIN died d ON d.game_id = c.game_id AND d.user_id = c.user_id " +
-		"GROUP BY c.user_id, i.user_id HAVING COUNT(*) >= $2 " +
-		"ORDER BY death_rate DESC, total_death DESC, encounter DESC, c.user_id, i.user_id LIMIT $3"
 )
 
 const (
 	crewmateRole = "0"
 	impostorRole = "1"
+)
+
+// Winrate boards with a low minimum rank pairs by the bounds of the Wilson score interval (95%) on their winrate
+// rather than the winrate itself, so a pair that went 7 for 8 outranks one that went 2 for 2 instead of every
+// unbeaten pair tying at the top. The expressions read win and total from the row; the winrate shown is unchanged.
+const (
+	wilsonP     = "(win::float8 / total)"
+	wilsonZ2N   = "(3.8416 / total)" // z² / n with z = 1.96
+	wilsonDenom = "(1 + " + wilsonZ2N + ")"
+	wilsonMid   = "(" + wilsonP + " + " + wilsonZ2N + " / 2)"
+	wilsonSpan  = "(1.96 * sqrt((" + wilsonP + " * (1 - " + wilsonP + ") + " + wilsonZ2N + " / 4) / total))"
+	wilsonLower = "((" + wilsonMid + " - " + wilsonSpan + ") / " + wilsonDenom + ")"
+	wilsonUpper = "((" + wilsonMid + " + " + wilsonSpan + ") / " + wilsonDenom + ")"
 )
 
 var (
@@ -165,16 +167,25 @@ func GuildWinRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, rol
 	return r, err
 }
 
-// GuildDuoRanking ranks pairs of players who shared a role in at least minGames games, best winrate first, or
-// worst first when worst is set.
-func GuildDuoRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, role game.GameRole, minGames, limit int, worst bool) ([]*PostgresBestTeammatePlayerRanking, error) {
-	query := guildBestDuoQuery
-	if worst {
-		query = guildWorstDuoQuery
+// GuildDuoRanking ranks pairs of players who shared a role in at least minGames games, returning the best and
+// the worst limit pairs. A guild with few pairs can see the same pair at both ends.
+func GuildDuoRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, role game.GameRole, minGames, limit int) (best, worst []*PostgresBestTeammatePlayerRanking, err error) {
+	var rows []*struct {
+		Worst bool `db:"worst"`
+		PostgresBestTeammatePlayerRanking
 	}
-	r := []*PostgresBestTeammatePlayerRanking{}
-	err := pgxscan.Select(ctx, q, &r, query, guildID, int16(role), minGames, limit)
-	return r, err
+	if err := pgxscan.Select(ctx, q, &rows, guildDuoRankingQuery, guildID, int16(role), minGames, limit); err != nil {
+		return nil, nil, err
+	}
+	best, worst = []*PostgresBestTeammatePlayerRanking{}, []*PostgresBestTeammatePlayerRanking{}
+	for _, r := range rows {
+		if r.Worst {
+			worst = append(worst, &r.PostgresBestTeammatePlayerRanking)
+		} else {
+			best = append(best, &r.PostgresBestTeammatePlayerRanking)
+		}
+	}
+	return best, worst, nil
 }
 
 // GuildFirstTargetRanking ranks players by how often they were the first to die, among those with at least
@@ -182,13 +193,5 @@ func GuildDuoRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, rol
 func GuildFirstTargetRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, minGames, limit int) ([]*PostgresUserMostFrequentFirstTargetRanking, error) {
 	r := []*PostgresUserMostFrequentFirstTargetRanking{}
 	err := pgxscan.Select(ctx, q, &r, guildFirstTargetQuery, guildID, minGames, limit)
-	return r, err
-}
-
-// GuildKilledByRanking ranks crewmate/impostor pairs by how often the crewmate died with that impostor in the
-// game, among pairs that shared at least minGames games in those roles.
-func GuildKilledByRanking(ctx context.Context, q pgxscan.Querier, guildID uint64, minGames, limit int) ([]*PostgresUserMostFrequentKilledByanking, error) {
-	r := []*PostgresUserMostFrequentKilledByanking{}
-	err := pgxscan.Select(ctx, q, &r, guildKilledByQuery, guildID, minGames, limit)
 	return r, err
 }

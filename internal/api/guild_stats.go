@@ -54,6 +54,7 @@ const leaderboardSize = 5
 
 // impostorDuoMinGames is the fixed floor for the impostor duo boards. Two players are impostors together far
 // less often than crewmates, so the guild's leaderboard minimum would leave those boards empty for most guilds.
+// The boards rank by the Wilson bounds on winrate, so pairs near the floor do not crowd out proven ones.
 const impostorDuoMinGames = 2
 
 // statsQueryParallelism bounds how many of a document's queries run at once. Running all of them together made a
@@ -92,8 +93,8 @@ type GuildStatsSummary struct {
 // GuildLeaderboards are the premium boards, each trimmed to five entries and, where a minimum applies, to players
 // with at least the guild's leaderboard minimum of games. Every board is present, possibly empty.
 type GuildLeaderboards struct {
-	// MinGames is the guild's leaderboard minimum: the games a player or crewmate duo needs to be ranked by
-	// rate. The impostor duo boards use a fixed floor of two shared games instead.
+	// MinGames is the guild's leaderboard minimum: the games a player needs to be ranked by rate. The impostor
+	// duo boards use a fixed floor of two shared games instead.
 	MinGames int `json:"minGames"`
 	// MostGames ranks players by games recorded, with no minimum.
 	MostGames []PlayerGames `json:"mostGames"`
@@ -101,17 +102,13 @@ type GuildLeaderboards struct {
 	Winrate         []PlayerWinrate `json:"winrate"`
 	CrewmateWinrate []PlayerWinrate `json:"crewmateWinrate"`
 	ImpostorWinrate []PlayerWinrate `json:"impostorWinrate"`
-	// The duo boards rank pairs of players who shared a role in a game. Each pair appears once, lower user ID
-	// first. Best is highest winrate first; worst is lowest first.
+	// The duo boards rank pairs of players who were impostors together. Each pair appears once, lower user ID
+	// first. Best is highest winrate first; worst is lowest first, both judged by the Wilson bounds on the
+	// winrate, so a pair that went 7 for 8 ranks above one that went 2 for 2.
 	BestImpostorDuo  []DuoWinrate `json:"bestImpostorDuo"`
 	WorstImpostorDuo []DuoWinrate `json:"worstImpostorDuo"`
-	BestCrewmateDuo  []DuoWinrate `json:"bestCrewmateDuo"`
-	WorstCrewmateDuo []DuoWinrate `json:"worstCrewmateDuo"`
 	// FirstTarget ranks players by how often they were the first to die.
 	FirstTarget []FirstTarget `json:"firstTarget"`
-	// KilledBy ranks crewmate and impostor pairs by how often the crewmate died with that impostor in the game.
-	// The game never reports who made a kill, so a death counts against every impostor of that game.
-	KilledBy []KilledBy `json:"killedBy"`
 }
 
 type PlayerGames struct {
@@ -141,16 +138,6 @@ type FirstTarget struct {
 	// CrewmateGames is how many games the player was a crewmate in, the denominator of Rate.
 	CrewmateGames int64   `json:"crewmateGames"`
 	Rate          float64 `json:"rate"`
-}
-
-type KilledBy struct {
-	UserID     string `json:"userId"`
-	ImpostorID string `json:"impostorId"`
-	// Deaths is how many of the shared games the crewmate died in.
-	Deaths int64 `json:"deaths"`
-	// Games is how many games the two shared as crewmate and impostor, the denominator of Rate.
-	Games int64   `json:"games"`
-	Rate  float64 `json:"rate"`
 }
 
 // GuildStats builds the stats page document for a guild. The summary is one query; the premium boards run
@@ -258,33 +245,14 @@ func buildGuildLeaderboards(ctx context.Context, db pgxscan.Querier, gid uint64,
 			return nil
 		})
 	}
-	duoBoards := []struct {
-		name  string
-		role  game.GameRole
-		min   int
-		worst bool
-		dest  *[]DuoWinrate
-	}{
-		{"best impostor duo", game.ImposterRole, impostorDuoMinGames, false, &boards.BestImpostorDuo},
-		{"worst impostor duo", game.ImposterRole, impostorDuoMinGames, true, &boards.WorstImpostorDuo},
-		{"best crewmate duo", game.CrewmateRole, minGames, false, &boards.BestCrewmateDuo},
-		{"worst crewmate duo", game.CrewmateRole, minGames, true, &boards.WorstCrewmateDuo},
-	}
-	for _, b := range duoBoards {
-		b := b
-		g.Go(func() error {
-			rows, err := pgstorage.GuildDuoRanking(ctx, db, gid, b.role, b.min, size, b.worst)
-			if err != nil {
-				return fmt.Errorf("%s: %w", b.name, err)
-			}
-			out := make([]DuoWinrate, 0, len(rows))
-			for _, r := range rows {
-				out = append(out, DuoWinrate{UserID: snowflake(r.UserID), TeammateID: snowflake(r.TeammateID), Wins: r.WinCount, Games: r.Count, Winrate: round1(r.WinRate)})
-			}
-			*b.dest = out
-			return nil
-		})
-	}
+	g.Go(func() error {
+		best, worst, err := pgstorage.GuildDuoRanking(ctx, db, gid, game.ImposterRole, impostorDuoMinGames, size)
+		if err != nil {
+			return fmt.Errorf("impostor duos: %w", err)
+		}
+		boards.BestImpostorDuo, boards.WorstImpostorDuo = duoWinrates(best), duoWinrates(worst)
+		return nil
+	})
 	g.Go(func() error {
 		rows, err := pgstorage.GuildFirstTargetRanking(ctx, db, gid, minGames, size)
 		if err != nil {
@@ -296,21 +264,18 @@ func buildGuildLeaderboards(ctx context.Context, db pgxscan.Querier, gid uint64,
 		}
 		return nil
 	})
-	g.Go(func() error {
-		rows, err := pgstorage.GuildKilledByRanking(ctx, db, gid, minGames, size)
-		if err != nil {
-			return fmt.Errorf("killed by: %w", err)
-		}
-		boards.KilledBy = make([]KilledBy, 0, len(rows))
-		for _, r := range rows {
-			boards.KilledBy = append(boards.KilledBy, KilledBy{UserID: snowflake(r.UserID), ImpostorID: snowflake(r.TeammateID), Deaths: r.TotalDeath, Games: r.Encounter, Rate: round1(r.DeathRate)})
-		}
-		return nil
-	})
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 	return boards, nil
+}
+
+func duoWinrates(rows []*pgstorage.PostgresBestTeammatePlayerRanking) []DuoWinrate {
+	out := make([]DuoWinrate, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, DuoWinrate{UserID: snowflake(r.UserID), TeammateID: snowflake(r.TeammateID), Wins: r.WinCount, Games: r.Count, Winrate: round1(r.WinRate)})
+	}
+	return out
 }
 
 // userIDs lists every user named on any board, once each, in a stable order.
@@ -329,16 +294,13 @@ func (b *GuildLeaderboards) userIDs() []string {
 			add(r.UserID)
 		}
 	}
-	for _, board := range [][]DuoWinrate{b.BestImpostorDuo, b.WorstImpostorDuo, b.BestCrewmateDuo, b.WorstCrewmateDuo} {
+	for _, board := range [][]DuoWinrate{b.BestImpostorDuo, b.WorstImpostorDuo} {
 		for _, r := range board {
 			add(r.UserID, r.TeammateID)
 		}
 	}
 	for _, r := range b.FirstTarget {
 		add(r.UserID)
-	}
-	for _, r := range b.KilledBy {
-		add(r.UserID, r.ImpostorID)
 	}
 	ids := make([]string, 0, len(seen))
 	for id := range seen {
