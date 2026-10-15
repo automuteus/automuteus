@@ -22,13 +22,10 @@ func newSuccessEmbed(info NewInfo, sett *settings.GuildSettings) *discordgo.Mess
 				"**Nothing happens?**\n" +
 				"• Don't have the capture yet? [Download it here]({{.downloadURL}}) and run it once. Then click the link above again.\n" +
 				"• Or, try pasting this link into your web browser's address bar: `{{.hyperlink}}`\n" +
-				"• Or, type the URL and code below into the capture yourself and press Connect.\n" +
-				"**Didn't work or it errors?**\n" +
-				"The capture also needs the [.NET 5 Desktop Runtime]({{.runtimeURL}}) or it won't open.",
+				"• Or, type the URL and code below into the capture yourself and press Connect.",
 		}, map[string]interface{}{
 			"apiHyperlink": info.ApiHyperlink,
 			"downloadURL":  CaptureDownloadURL,
-			"runtimeURL":   DotNetRuntimeDownloadURL,
 			"hyperlink":    info.Hyperlink,
 		}) + "\n\n" + sett.LocalizeMessage(&i18n.Message{
 			// The click-here link opens the Capture App; the Capture Mod is handed the aucapture:// link instead.

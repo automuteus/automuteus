@@ -32,7 +32,7 @@
 "commands.new.nochannel" = "ゲームを開始する前に、ボイスチャンネルに参加してください！"
 "commands.new.success.code" = "コード"
 "commands.new.success.footer" = "キャプチャが接続されると、このチャンネルのゲームメッセージが更新されます。"
-"commands.new.success.steps" = "## [ここをクリックしてキャプチャを接続]({{.apiHyperlink}})\\nAutoMuteUs Capture が自動で起動し、このゲームに接続します。\\n\\n**何も起こらない場合**\\n• キャプチャをまだ持っていない場合は、[こちらからダウンロード]({{.downloadURL}}) して一度起動してから、もう一度上のリンクをクリックしてください。\\n• または、このリンクをブラウザのアドレスバーに貼り付けてみてください： `{{.hyperlink}}`\\n• または、下の URL とコードをキャプチャに直接入力して「Connect」を押してください。\\n**うまくいかない、またはエラーが出る場合**\\nキャプチャを起動するには [.NET 5 Desktop Runtime]({{.runtimeURL}}) も必要です。"
+"commands.new.success.steps" = "## [ここをクリックしてキャプチャを接続]({{.apiHyperlink}})\\nAutoMuteUs Capture が自動で起動し、このゲームに接続します。\\n\\n**何も起こらない場合**\\n• キャプチャをまだ持っていない場合は、[こちらからダウンロード]({{.downloadURL}}) して一度起動してから、もう一度上のリンクをクリックしてください。\\n• または、このリンクをブラウザのアドレスバーに貼り付けてみてください： `{{.hyperlink}}`\\n• または、下の URL とコードをキャプチャに直接入力して「Connect」を押してください。"
 "commands.new.success.title" = "🎮 ゲームを作成しました！"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "ごめんなさい、あなたはそのコマンドを実行する権限を持っていないようです。"

@@ -32,7 +32,7 @@
 "commands.new.nochannel" = "在开始比赛前，请加入一个语音频道！"
 "commands.new.success.code" = "代码"
 "commands.new.success.footer" = "捕获软件连接后，此频道中的游戏消息将会更新。"
-"commands.new.success.steps" = "## [点击这里连接你的捕获软件]({{.apiHyperlink}})\\nAutoMuteUs Capture 会自动打开并连接到这局游戏。\\n\\n**没有反应？**\\n• 还没有捕获软件？[在这里下载]({{.downloadURL}})并运行一次，然后再次点击上面的链接。\\n• 或者，试着将此链接粘贴到浏览器的地址栏中：`{{.hyperlink}}`\\n• 或者，在捕获软件中手动输入下方的网址和代码，然后点击 Connect。\\n**无法使用或出现错误？**\\n捕获软件还需要安装 [.NET 5 桌面运行时]({{.runtimeURL}})，否则无法打开。"
+"commands.new.success.steps" = "## [点击这里连接你的捕获软件]({{.apiHyperlink}})\\nAutoMuteUs Capture 会自动打开并连接到这局游戏。\\n\\n**没有反应？**\\n• 还没有捕获软件？[在这里下载]({{.downloadURL}})并运行一次，然后再次点击上面的链接。\\n• 或者，试着将此链接粘贴到浏览器的地址栏中：`{{.hyperlink}}`\\n• 或者，在捕获软件中手动输入下方的网址和代码，然后点击 Connect。"
 "commands.new.success.title" = "🎮 游戏已创建！"
 "commands.new.success.url" = "网址"
 "commands.no_permissions" = "抱歉，你没有使用此命令所需的权限。"

@@ -32,7 +32,7 @@
 "commands.new.nochannel" = "Entre em um canal de voz antes de iniciar uma partida!"
 "commands.new.success.code" = "Código"
 "commands.new.success.footer" = "Assim que a captura se conectar, a mensagem do jogo neste canal será atualizada."
-"commands.new.success.steps" = "## [Clique aqui para conectar sua captura]({{.apiHyperlink}})\\nO AutoMuteUs Capture vai abrir sozinho e se conectar a esta partida.\\n\\n**Nada aconteceu?**\\n• Ainda não tem a captura? [Baixe aqui]({{.downloadURL}}) e execute uma vez. Depois clique no link acima de novo.\\n• Ou tente colar este link na barra de endereços do seu navegador: `{{.hyperlink}}`\\n• Ou digite você mesmo na captura a URL e o código abaixo e clique em Connect.\\n**Não funcionou ou deu erro?**\\nA captura também precisa do [.NET 5 Desktop Runtime]({{.runtimeURL}}), senão ela não abre."
+"commands.new.success.steps" = "## [Clique aqui para conectar sua captura]({{.apiHyperlink}})\\nO AutoMuteUs Capture vai abrir sozinho e se conectar a esta partida.\\n\\n**Nada aconteceu?**\\n• Ainda não tem a captura? [Baixe aqui]({{.downloadURL}}) e execute uma vez. Depois clique no link acima de novo.\\n• Ou tente colar este link na barra de endereços do seu navegador: `{{.hyperlink}}`\\n• Ou digite você mesmo na captura a URL e o código abaixo e clique em Connect."
 "commands.new.success.title" = "🎮 Partida criada!"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "Desculpe, você não tem as permissões necessárias para usar esse comando."
