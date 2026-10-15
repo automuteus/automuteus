@@ -17,11 +17,13 @@ create table if not exists games
     win_type     smallint,                                    --imposter win, crewmate win, etc
     end_time     integer,                                     --2038 problem, but I do not care
     play_map     smallint,                                    --game.PlayMap at match start; NULL if unknown
-    region       smallint                                     --game.Region at match start; NULL if unknown
+    region       smallint,                                    --game.Region at match start; NULL if unknown
+    capture_kind    text,                                     --capture.KindApp/KindMod at match start; NULL if unreported
+    capture_version text                                      --that capture client's version; NULL if unreported
 );
 
--- add play_map and region to games created before they existed. Checking the catalog first skips the
--- ALTER, and its brief exclusive lock on games, on every startup after the first.
+-- add columns to games created before they existed. Checking the catalog first skips the ALTER, and its brief
+-- exclusive lock on games, on every startup after the first.
 do $$
 begin
     if not exists (select 1 from information_schema.columns
@@ -31,6 +33,10 @@ begin
     if not exists (select 1 from information_schema.columns
                    where table_schema = current_schema() and table_name = 'games' and column_name = 'region') then
         alter table games add column region smallint;
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = current_schema() and table_name = 'games' and column_name = 'capture_kind') then
+        alter table games add column capture_kind text, add column capture_version text;
     end if;
 end
 $$;

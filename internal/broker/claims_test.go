@@ -218,7 +218,7 @@ func TestRelease_HolderUnlinksTheGame(t *testing.T) {
 	if err != nil || len(jobs) != 1 {
 		t.Fatalf("jobs = %v, %v; want one connection job", jobs, err)
 	}
-	if want := `{"type":` + strconv.Itoa(int(task.ConnectionJob)) + `,"payload":"false"}`; jobs[0] != want {
+	if want := `{"type":` + strconv.Itoa(int(task.ConnectionJob)) + `,"payload":"{\"connected\":false}"}`; jobs[0] != want {
 		t.Errorf("job = %s, want %s", jobs[0], want)
 	}
 	if mr.Exists(rediskey.CaptureMuteReady("ABCDEFGH")) {

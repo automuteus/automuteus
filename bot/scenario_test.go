@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -164,6 +165,58 @@ func TestProcessJob_LobbyToTasks_RecordsMapAndRegion(t *testing.T) {
 	if g.Region == nil || *g.Region != int16(game.EU) {
 		t.Errorf("region = %v, want %d", g.Region, game.EU)
 	}
+}
+
+func TestProcessJob_LobbyToTasks_RecordsCaptureKind(t *testing.T) {
+	for name, tc := range map[string]struct {
+		connection    string
+		kind, version *string
+	}{
+		"reported":            {`{"connected":true,"kind":"capture-mod","version":"1.0.0"}`, ptr(capture.KindMod), ptr("1.0.0")},
+		"unreported":          {`{"connected":true}`, nil, nil},
+		"from older Galactus": {"true", nil, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			bot, deps := newTestBot(t)
+			sett := settings.MakeGuildSettings()
+
+			deps.store.put(runningGame(deps, game.LOBBY))
+			gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+			bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: tc.connection}, sett, premium.FreeTier, gsr)
+			if !deps.store.get().Linked {
+				t.Fatal("the game should be linked")
+			}
+			bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+
+			if len(deps.recorder.games) != 1 {
+				t.Fatalf("recorder games = %+v", deps.recorder.games)
+			}
+			g := deps.recorder.games[0]
+			if !sameString(g.CaptureKind, tc.kind) || !sameString(g.CaptureVersion, tc.version) {
+				t.Errorf("recorded %v %v, want %v %v", g.CaptureKind, g.CaptureVersion, tc.kind, tc.version)
+			}
+		})
+	}
+}
+
+func TestProcessJob_Disconnection_ForgetsCaptureKind(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	deps.store.put(runningGame(deps, game.LOBBY))
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: `{"connected":true,"kind":"capture-app","version":"6.0.0"}`}, sett, premium.FreeTier, gsr)
+	bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: `{"connected":false}`}, sett, premium.FreeTier, gsr)
+
+	if got := deps.store.get(); got.Linked || got.CaptureKind != "" || got.CaptureVersion != "" {
+		t.Errorf("after disconnecting: linked %v, kind %q, version %q", got.Linked, got.CaptureKind, got.CaptureVersion)
+	}
+}
+
+func ptr(s string) *string { return &s }
+
+func sameString(a, b *string) bool {
+	return (a == nil) == (b == nil) && (a == nil || *a == *b)
 }
 
 func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/discord"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
@@ -219,11 +220,17 @@ func (bot *Bot) processJob(job task.Job, sett *settings.GuildSettings, premTier 
 
 	switch job.JobType {
 	case task.ConnectionJob:
+		status, err := capture.ParseConnectionStatus(payload)
+		if err != nil {
+			gl.Error("malformed connection payload", "err", err)
+			break
+		}
 		lock, dgs := bot.store.GetDiscordGameStateAndLock(dgsRequest)
 		for lock == nil {
 			lock, dgs = bot.store.GetDiscordGameStateAndLock(dgsRequest)
 		}
-		dgs.Linked = payload == "true"
+		dgs.Linked = status.Connected
+		dgs.CaptureKind, dgs.CaptureVersion = status.Kind, status.Version
 		dgs.ConnectCode = dgsRequest.ConnectCode
 		bot.store.SetDiscordGameState(dgs, lock)
 
@@ -632,6 +639,12 @@ func startGameInPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder) uint
 	if region, ok := game.RegionFromString(regionName); ok {
 		r := int16(region)
 		pgame.Region = &r
+	}
+	if dgs.CaptureKind != "" {
+		pgame.CaptureKind = &dgs.CaptureKind
+	}
+	if dgs.CaptureVersion != "" {
+		pgame.CaptureVersion = &dgs.CaptureVersion
 	}
 	i, err := psql.AddInitialGame(pgame)
 	if err != nil {

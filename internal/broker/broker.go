@@ -207,7 +207,7 @@ func (broker *Broker) release(ctx context.Context, socketID string) (string, boo
 		log.Println(err)
 	}
 
-	if err := task.PushJob(ctx, broker.client, c.code, task.ConnectionJob, "false"); err != nil {
+	if err := task.PushJob(ctx, broker.client, c.code, task.ConnectionJob, capture.ConnectionStatus{}.Payload()); err != nil {
 		log.Println(err)
 	}
 	if err := broker.client.Del(ctx, rediskey.CaptureMuteReady(c.code)).Err(); err != nil {
@@ -283,11 +283,15 @@ func (broker *Broker) Start(port string) {
 		} else {
 			kill := broker.claim(context.Background(), s, s.ID(), msg)
 
-			err := task.PushJob(context.Background(), broker.client, msg, task.ConnectionJob, "true")
+			u := s.URL()
+			kind, version := capture.IdentityFromQuery(u.Query())
+			log.Printf("Capture client %s is %q version %q", broker.holder(s.ID()), kind, version)
+			connected := capture.ConnectionStatus{Connected: true, Kind: kind, Version: version}.Payload()
+			err := task.PushJob(context.Background(), broker.client, msg, task.ConnectionJob, connected)
 			if err != nil {
 				log.Println(err)
 			}
-			go broker.AckWorker(context.Background(), msg, kill)
+			go broker.AckWorker(context.Background(), msg, connected, kill)
 		}
 	})
 
@@ -460,8 +464,8 @@ func (broker *Broker) refreshCaptureReady(connCode string) {
 	}
 }
 
-// anytime a bot "acks", then push a notification
-func (broker *Broker) AckWorker(ctx context.Context, connCode string, killChan <-chan struct{}) {
+// AckWorker repeats a capture client's connection job, connected, every time a bot "acks" its game.
+func (broker *Broker) AckWorker(ctx context.Context, connCode, connected string, killChan <-chan struct{}) {
 	pubsub := task.AckSubscribe(ctx, broker.client, connCode)
 	channel := pubsub.Channel()
 	defer pubsub.Close()
@@ -471,7 +475,7 @@ func (broker *Broker) AckWorker(ctx context.Context, connCode string, killChan <
 		case <-killChan:
 			return
 		case <-channel:
-			err := task.PushJob(ctx, broker.client, connCode, task.ConnectionJob, "true")
+			err := task.PushJob(ctx, broker.client, connCode, task.ConnectionJob, connected)
 			if err != nil {
 				log.Println(err)
 			}
