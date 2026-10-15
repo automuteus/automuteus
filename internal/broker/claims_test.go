@@ -189,8 +189,8 @@ func TestRelease_ReplacedCaptureLeavesTheGameAlone(t *testing.T) {
 	}
 	mr.Del(rediskey.JobNamespace + "ABCDEFGH")
 
-	if _, ok := one.release(ctx, "1"); ok {
-		t.Error("a replaced capture client's room should not be cleared")
+	if one.release(ctx, "1") {
+		t.Error("a replaced capture client should not unlink the game")
 	}
 	if mr.Exists(rediskey.JobNamespace + "ABCDEFGH") {
 		t.Error("a replaced capture client's disconnect told the bot the game was unlinked")
@@ -205,14 +205,18 @@ func TestRelease_HolderUnlinksTheGame(t *testing.T) {
 	ctx := context.Background()
 	b := NewBroker(mr.Addr(), "", "")
 	kill := b.claim(ctx, &fakeConn{}, "1", "ABCDEFGH")
+	notify := task.Subscribe(ctx, b.client, "ABCDEFGH")
+	defer notify.Close()
+	if _, err := notify.Receive(ctx); err != nil {
+		t.Fatal(err)
+	}
 	if err := mr.Set(rediskey.CaptureMuteReady("ABCDEFGH"), "1"); err != nil {
 		t.Fatal(err)
 	}
 	mr.Del(rediskey.JobNamespace + "ABCDEFGH")
 
-	code, ok := b.release(ctx, "1")
-	if !ok || code != "ABCDEFGH" {
-		t.Fatalf("release = %q, %v", code, ok)
+	if !b.release(ctx, "1") {
+		t.Fatal("the holder's disconnect should unlink the game")
 	}
 	jobs, err := mr.List(rediskey.JobNamespace + "ABCDEFGH")
 	if err != nil || len(jobs) != 1 {
@@ -227,6 +231,14 @@ func TestRelease_HolderUnlinksTheGame(t *testing.T) {
 	if !isClosed(kill) || b.holds("1") {
 		t.Error("a disconnected capture client must be forgotten and its workers stopped")
 	}
+	if ttl := mr.TTL(rediskey.JobNamespace + "ABCDEFGH"); ttl != time.Duration(task.JobTTLSeconds)*time.Second {
+		t.Errorf("disconnect queue TTL = %v, want %ds", ttl, task.JobTTLSeconds)
+	}
+	select {
+	case <-notify.Channel():
+	case <-time.After(2 * time.Second):
+		t.Error("disconnect did not notify the bot to consume its queue")
+	}
 }
 
 // The holder key only garbage-collects; once it expires, a disconnect is treated as the holder's.
@@ -237,7 +249,7 @@ func TestRelease_ExpiredHolderStillUnlinksTheGame(t *testing.T) {
 	b.claim(ctx, &fakeConn{}, "1", "ABCDEFGH")
 	mr.FastForward(CaptureHolderTTL + time.Second)
 
-	if _, ok := b.release(ctx, "1"); !ok {
+	if !b.release(ctx, "1") {
 		t.Error("with no holder recorded, the disconnecting capture client should unlink its game")
 	}
 }

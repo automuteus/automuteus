@@ -184,36 +184,54 @@ func (broker *Broker) retireReplaced(ctx context.Context, connCode string) {
 	}
 }
 
+// Ownership checking, queueing the disconnect, and withdrawing mute readiness must be atomic with a new claim.
+// Keep the queue TTL and notification behavior of task.PushJob, including when the holder has expired.
+var releaseCapture = redis.NewScript(`
+local holder = redis.call('GET', KEYS[1])
+if holder and holder ~= ARGV[1] then
+    return 0
+end
+local count = redis.call('RPUSH', KEYS[3], ARGV[2])
+if count < 2 then
+    redis.call('EXPIRE', KEYS[3], ARGV[3])
+end
+redis.call('DEL', KEYS[2])
+redis.call('PUBLISH', KEYS[4], '1')
+return 1
+`)
+
 // release forgets a disconnected capture client and, unless it was replaced, tells the bot its game is unlinked. It
-// returns the connect code whose room should be cleared, if any. A replaced client's late disconnect must leave its
-// successor's game alone, even if this broker never heard the claim that replaced it.
-func (broker *Broker) release(ctx context.Context, socketID string) (string, bool) {
+// reports whether it unlinked the game. A replaced client's late disconnect must leave its successor's game alone,
+// even if this broker never heard the claim that replaced it.
+func (broker *Broker) release(ctx context.Context, socketID string) bool {
 	broker.connectionsLock.Lock()
 	c, ok := broker.connections[socketID]
 	delete(broker.connections, socketID)
 	broker.connectionsLock.Unlock()
 	if !ok {
 		// it never sent a connect code, or was already retired as replaced
-		return "", false
+		return false
 	}
 	close(c.kill)
 
-	holder, err := broker.client.Get(ctx, rediskey.CaptureHolder(c.code)).Result()
-	if err == nil && holder != broker.holder(socketID) {
-		log.Printf("Replaced capture client %s disconnected; connect code %s stays with %s", broker.holder(socketID), c.code, holder)
-		return "", false
-	}
-	if err != nil && !errors.Is(err, redis.Nil) {
+	job, err := json.Marshal(task.Job{JobType: task.ConnectionJob, Payload: capture.ConnectionStatus{}.Payload()})
+	if err != nil {
 		log.Println(err)
+		return false
 	}
-
-	if err := task.PushJob(ctx, broker.client, c.code, task.ConnectionJob, capture.ConnectionStatus{}.Payload()); err != nil {
+	queue := rediskey.JobNamespace + c.code
+	unlinked, err := releaseCapture.Run(ctx, broker.client, []string{
+		rediskey.CaptureHolder(c.code), rediskey.CaptureMuteReady(c.code), queue, queue + ":notify",
+	}, broker.holder(socketID), string(job), task.JobTTLSeconds).Int64()
+	if err != nil {
 		log.Println(err)
+		return false
 	}
-	if err := broker.client.Del(ctx, rediskey.CaptureMuteReady(c.code)).Err(); err != nil {
-		log.Println(err)
+	if unlinked == 0 {
+		log.Printf("Replaced capture client %s disconnected; connect code %s stays linked", broker.holder(socketID), c.code)
+		return false
 	}
-	return c.code, true
+	return true
 }
 
 // connectCode is the connect code a socket reports for, if it has sent one and still holds it.
@@ -399,9 +417,9 @@ func (broker *Broker) Start(port string) {
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
 		log.Println("Client connection closed: ", reason)
 
-		if cCode, ok := broker.release(context.Background(), s.ID()); ok {
-			server.ClearRoom("/", cCode)
-		}
+		// socket.io has already taken this socket out of its rooms. Clearing the whole room here would also remove a
+		// newcomer that joined it.
+		broker.release(context.Background(), s.ID())
 	})
 	go server.Serve()
 	defer server.Close()
