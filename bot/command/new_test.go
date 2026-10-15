@@ -25,7 +25,7 @@ func TestNewResponseSuccess(t *testing.T) {
 	}
 	embed := resp.Data.Embeds[0]
 
-	for _, want := range []string{info.Hyperlink, info.ApiHyperlink, CaptureDownloadURL, DotNetRuntimeDownloadURL} {
+	for _, want := range []string{info.Hyperlink, info.ApiHyperlink, CaptureDownloadURL} {
 		if !strings.Contains(embed.Description, want) {
 			t.Errorf("embed description is missing %q", want)
 		}

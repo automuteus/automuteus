@@ -32,7 +32,7 @@
 "commands.new.nochannel" = "Entra in un canale vocale prima di avviare una partita!"
 "commands.new.success.code" = "Codice"
 "commands.new.success.footer" = "Quando la capture si sarà connessa, il messaggio della partita in questo canale si aggiornerà."
-"commands.new.success.steps" = "## [Clicca qui per connettere la tua capture]({{.apiHyperlink}})\\nAutoMuteUs Capture si aprirà da sola e si connetterà a questa partita.\\n\\n**Non succede niente?**\\n• Non hai ancora la capture? [Scaricala qui]({{.downloadURL}}) e avviala una volta. Poi clicca di nuovo sul link qui sopra.\\n• Oppure prova a incollare questo link nella barra degli indirizzi del browser: `{{.hyperlink}}`\\n• Oppure inserisci tu stesso nella capture l'URL e il codice qui sotto e premi Connect.\\n**Non ha funzionato o dà errore?**\\nLa capture richiede anche il [.NET 5 Desktop Runtime]({{.runtimeURL}}), altrimenti non si apre."
+"commands.new.success.steps" = "## [Clicca qui per connettere la tua capture]({{.apiHyperlink}})\\nAutoMuteUs Capture si aprirà da sola e si connetterà a questa partita.\\n\\n**Non succede niente?**\\n• Non hai ancora la capture? [Scaricala qui]({{.downloadURL}}) e avviala una volta. Poi clicca di nuovo sul link qui sopra.\\n• Oppure prova a incollare questo link nella barra degli indirizzi del browser: `{{.hyperlink}}`\\n• Oppure inserisci tu stesso nella capture l'URL e il codice qui sotto e premi Connect."
 "commands.new.success.title" = "🎮 Partita creata!"
 "commands.new.success.url" = "URL"
 "commands.no_permissions" = "Scusa, non hai i permessi necessari per usare questo comando."
