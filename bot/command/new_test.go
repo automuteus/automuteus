@@ -30,6 +30,10 @@ func TestNewResponseSuccess(t *testing.T) {
 			t.Errorf("embed description is missing %q", want)
 		}
 	}
+	// Capture Mod users are pointed at the aucapture:// link, which the click-here link would hide behind a redirect
+	if !strings.Contains(embed.Description, "Capture Mod") {
+		t.Error("embed description doesn't tell Capture Mod users what to do")
+	}
 	if strings.Contains(embed.Description, "{{") {
 		t.Errorf("embed description has an unexpanded template: %q", embed.Description)
 	}

@@ -30,6 +30,10 @@ func newSuccessEmbed(info NewInfo, sett *settings.GuildSettings) *discordgo.Mess
 			"downloadURL":  CaptureDownloadURL,
 			"runtimeURL":   DotNetRuntimeDownloadURL,
 			"hyperlink":    info.Hyperlink,
+		}) + "\n\n" + sett.LocalizeMessage(&i18n.Message{
+			// The click-here link opens the Capture App; the Capture Mod is handed the aucapture:// link instead.
+			ID:    "commands.new.success.captureMod",
+			Other: "**Using the Capture Mod?** Copy the `aucapture://` link above, then press **Paste capture link** in Among Us.",
 		}),
 		Color: 15844367, // GOLD
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
