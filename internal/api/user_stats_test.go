@@ -28,7 +28,7 @@ func TestBuildUserStats_FreeGuildGetsSummaryAndRecentMatchesOnly(t *testing.T) {
 		WithArgs(testGuildNum, testUserNum, 10).
 		WillReturnRows(pgxmock.NewRows([]string{"game_id", "start_time", "end_time", "win_type", "play_map", "player_name", "player_color", "player_role", "player_won"}).
 			AddRow(int64(42), int32(9000), int32(9600), int16(game.ImpostorBySabotage), int16p(int16(game.AIRSHIP)), "Bo", int16(game.Cyan), int16(game.ImposterRole), true).
-			AddRow(int64(41), int32(8000), int32(8500), int16(game.Unknown), (*int16)(nil), "Bo", int16(game.Lime), int16(game.CrewmateRole), false))
+			AddRow(int64(41), int32(8000), int32(8500), int16(game.UnknownEnding), (*int16)(nil), "Bo", int16(game.Lime), int16(game.CrewmateRole), false))
 
 	stats, err := buildUserStats(context.Background(), mock, nil, nil, testGuildID, "223456789012345678", premium.PremiumRecord{Tier: premium.FreeTier}, settings.MakeGuildSettings(), time.Unix(10000, 0))
 	if err != nil {

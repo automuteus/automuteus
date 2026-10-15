@@ -78,6 +78,9 @@ func TestLiveGuildStats(t *testing.T) {
 		// 6: crewmates win by task. alice died first, but her player record for this game is gone (added
 		// below, as after a stats reset), so the game has no first target and her retained games are unaffected.
 		{game.HumansByTask, []player{{carol, game.CrewmateRole, false, false}, {dave, game.ImposterRole, false, false}}},
+		// 7: nobody won (a role mod's custom win). Like an aborted game it records no players, but it isn't
+		// aborted, so only the result keeps it out of the summary.
+		{game.UnknownEnding, nil},
 	}
 	start := int32(1_700_000_000)
 	for i, g := range games {

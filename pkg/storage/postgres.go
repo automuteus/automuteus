@@ -158,7 +158,7 @@ func getUser(conn PgxIface, userID uint64) (*PostgresUser, error) {
 }
 
 func insertGame(conn PgxIface, game *PostgresGame) (uint64, error) {
-	t, err := conn.Query(context.Background(), "INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time, play_map, region) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime, game.PlayMap, game.Region)
+	t, err := conn.Query(context.Background(), "INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time, play_map, region, capture_kind, capture_version) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING game_id;", game.GuildID, game.ConnectCode, game.StartTime, game.WinType, game.EndTime, game.PlayMap, game.Region, game.CaptureKind, game.CaptureVersion)
 	if t != nil {
 		if t.Next() {
 			g := uint64(0)

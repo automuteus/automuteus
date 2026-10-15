@@ -14,8 +14,8 @@ import (
 func TestShutdown_WithdrawsCaptureReadyAndRaisesCriticalNotice(t *testing.T) {
 	mr := miniredis.RunT(t)
 	b := NewBroker(mr.Addr(), "", "")
-	b.connections["sock-1"] = "ABCDEFGH"
-	b.connections["sock-2"] = "IJKLMNOP"
+	b.connections["sock-1"] = &captureClient{code: "ABCDEFGH"}
+	b.connections["sock-2"] = &captureClient{code: "IJKLMNOP"}
 	ctx := context.Background()
 	for _, code := range []string{"ABCDEFGH", "IJKLMNOP"} {
 		if err := b.client.Set(ctx, rediskey.CaptureMuteReady(code), "1", 0).Err(); err != nil {
@@ -65,9 +65,9 @@ func TestShutdown_OnlyAffectsThisBrokersClients(t *testing.T) {
 	ctx := context.Background()
 	a := NewBroker(mr.Addr(), "", "")
 	b := NewBroker(mr.Addr(), "", "")
-	a.connections["sock-a"] = "AAAAAAAA"
-	b.connections["sock-b1"] = "BBBBBBBB"
-	b.connections["sock-b2"] = "CCCCCCCC"
+	a.connections["sock-a"] = &captureClient{code: "AAAAAAAA"}
+	b.connections["sock-b1"] = &captureClient{code: "BBBBBBBB"}
+	b.connections["sock-b2"] = &captureClient{code: "CCCCCCCC"}
 	for _, code := range []string{"AAAAAAAA", "BBBBBBBB", "CCCCCCCC"} {
 		if err := a.client.Set(ctx, rediskey.CaptureMuteReady(code), "1", 0).Err(); err != nil {
 			t.Fatal(err)

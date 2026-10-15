@@ -19,6 +19,9 @@ type PostgresGame struct {
 	// PlayMap and Region are recorded at match start; nil for older games or when the capture never reported a lobby.
 	PlayMap *int16 `db:"play_map"`
 	Region  *int16 `db:"region"`
+	// CaptureKind and CaptureVersion are the capture client linked at match start; nil when it didn't report them.
+	CaptureKind    *string `db:"capture_kind"`
+	CaptureVersion *string `db:"capture_version"`
 }
 
 type PostgresUser struct {

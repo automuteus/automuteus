@@ -107,6 +107,9 @@ var matchResults = map[game.GameResult]string{
 	game.ImpostorByKill:     "impostorKill",
 	game.ImpostorBySabotage: "impostorSabotage",
 	game.ImpostorDisconnect: "impostorDisconnect",
+	// Hide and Seek: crewmates survive the timer, or the seeker catches everyone
+	game.HideAndSeekHumansByTimer:   "crewmateHideAndSeekTimer",
+	game.HideAndSeekImpostorByKills: "impostorHideAndSeekKills",
 }
 
 var matchMaps = map[game.PlayMap]string{

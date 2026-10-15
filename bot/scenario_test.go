@@ -1,11 +1,14 @@
 package bot
 
 import (
+	"encoding/json"
+	"log/slog"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/game"
 	"github.com/automuteus/automuteus/v8/pkg/premium"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
@@ -166,6 +169,58 @@ func TestProcessJob_LobbyToTasks_RecordsMapAndRegion(t *testing.T) {
 	}
 }
 
+func TestProcessJob_LobbyToTasks_RecordsCaptureKind(t *testing.T) {
+	for name, tc := range map[string]struct {
+		connection    string
+		kind, version *string
+	}{
+		"reported":            {`{"connected":true,"kind":"capture-mod","version":"1.0.0"}`, ptr(capture.KindMod), ptr("1.0.0")},
+		"unreported":          {`{"connected":true}`, nil, nil},
+		"from older Galactus": {"true", nil, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			bot, deps := newTestBot(t)
+			sett := settings.MakeGuildSettings()
+
+			deps.store.put(runningGame(deps, game.LOBBY))
+			gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+			bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: tc.connection}, sett, premium.FreeTier, gsr)
+			if !deps.store.get().Linked {
+				t.Fatal("the game should be linked")
+			}
+			bot.processJob(phaseJob(game.TASKS), sett, premium.FreeTier, gsr)
+
+			if len(deps.recorder.games) != 1 {
+				t.Fatalf("recorder games = %+v", deps.recorder.games)
+			}
+			g := deps.recorder.games[0]
+			if !sameString(g.CaptureKind, tc.kind) || !sameString(g.CaptureVersion, tc.version) {
+				t.Errorf("recorded %v %v, want %v %v", g.CaptureKind, g.CaptureVersion, tc.kind, tc.version)
+			}
+		})
+	}
+}
+
+func TestProcessJob_Disconnection_ForgetsCaptureKind(t *testing.T) {
+	bot, deps := newTestBot(t)
+	sett := settings.MakeGuildSettings()
+
+	deps.store.put(runningGame(deps, game.LOBBY))
+	gsr := GameStateRequest{GuildID: scenarioGuild, ConnectCode: scenarioConnectCode}
+	bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: `{"connected":true,"kind":"capture-app","version":"6.0.0"}`}, sett, premium.FreeTier, gsr)
+	bot.processJob(task.Job{JobType: task.ConnectionJob, Payload: `{"connected":false}`}, sett, premium.FreeTier, gsr)
+
+	if got := deps.store.get(); got.Linked || got.CaptureKind != "" || got.CaptureVersion != "" {
+		t.Errorf("after disconnecting: linked %v, kind %q, version %q", got.Linked, got.CaptureKind, got.CaptureVersion)
+	}
+}
+
+func ptr(s string) *string { return &s }
+
+func sameString(a, b *string) bool {
+	return (a == nil) == (b == nil) && (a == nil || *a == *b)
+}
+
 func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {
 	bot, deps := newTestBot(t)
 	sett := settings.MakeGuildSettings()
@@ -206,5 +261,69 @@ func TestProcessJob_GameOver_RecordsPayloadAgainstClosingMatch(t *testing.T) {
 	deps.recorder.mu.Lock()
 	if got := deps.notices.statsAnnouncements(); len(got[0]) != 1 || got[0][0] != scenarioGuild {
 		t.Fatalf("stats announcements = %v, want [[%s]]", got, scenarioGuild)
+	}
+}
+
+// Results are credited to the side the game says won, Hide and Seek included; a game nobody won is recorded without
+// players, so it counts toward nobody's stats.
+func TestDumpGameToPostgres_CreditsTheWinningSide(t *testing.T) {
+	for name, tc := range map[string]struct {
+		result                   game.GameResult
+		crewmateWon, impostorWon bool
+		recordsPlayers           bool
+	}{
+		"crewmates by tasks":    {game.HumansByTask, true, false, true},
+		"impostors by sabotage": {game.ImpostorBySabotage, false, true, true},
+		// the game's own values, as the capture client sends them; see GameManager.DidHumansWin
+		"impostors disconnected (5)": {game.GameResult(5), true, false, true},
+		"crewmates disconnected (6)": {game.GameResult(6), false, true, true},
+		"hide and seek timer":        {game.HideAndSeekHumansByTimer, true, false, true},
+		"hide and seek seeker":       {game.HideAndSeekImpostorByKills, false, true, true},
+		"unknown ending":             {game.UnknownEnding, false, false, false},
+		"a result we don't know":     {game.GameResult(9), false, false, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dgs := NewDiscordGameState(scenarioGuild)
+			dgs.MatchID, dgs.MatchStartUnix = 7, time.Now().Unix()-60
+			addLinkedUser(dgs, "10", "alice", true, false, false)
+			addLinkedUser(dgs, "11", "bob", true, false, false)
+			gameOver := game.Gameover{GameOverReason: tc.result, PlayerInfos: []game.PlayerInfo{
+				{Name: "alice", IsImpostor: false}, {Name: "bob", IsImpostor: true},
+			}}
+			recorder := &fakeRecorder{}
+			payload, _ := json.Marshal(gameOver)
+
+			if !dumpGameToPostgres(slog.Default(), *dgs, recorder, gameOver, string(payload)) {
+				t.Fatal("the match should be recorded")
+			}
+			if len(recorder.results) != 1 || recorder.results[0].winType != int16(tc.result) {
+				t.Fatalf("results = %+v, want one with win type %d", recorder.results, tc.result)
+			}
+			won := map[string]bool{}
+			for _, p := range recorder.results[0].players {
+				won[p.PlayerName] = p.PlayerWon
+			}
+			if !tc.recordsPlayers {
+				if len(won) != 0 {
+					t.Errorf("players %v were recorded for a match nobody won", won)
+				}
+				return
+			}
+			if len(won) != 2 || won["alice"] != tc.crewmateWon || won["bob"] != tc.impostorWon {
+				t.Errorf("won = %v, want alice (crew) %v and bob (impostor) %v", won, tc.crewmateWon, tc.impostorWon)
+			}
+			if winners := getWinners(*dgs, gameOver); len(winners) != 1 {
+				t.Errorf("winners = %+v, want exactly the winning side's one player", winners)
+			}
+		})
+	}
+}
+
+func TestGetWinners_NobodyWinsAnUnknownEnding(t *testing.T) {
+	dgs := NewDiscordGameState(scenarioGuild)
+	addLinkedUser(dgs, "10", "alice", true, false, false)
+	gameOver := game.Gameover{GameOverReason: game.UnknownEnding, PlayerInfos: []game.PlayerInfo{{Name: "alice"}}}
+	if winners := getWinners(*dgs, gameOver); len(winners) != 0 {
+		t.Errorf("winners = %+v, want none", winners)
 	}
 }

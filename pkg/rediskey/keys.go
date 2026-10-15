@@ -96,6 +96,16 @@ func CaptureMuteReady(connectCode string) string {
 	return "automuteus:capture:muteready:" + connectCode
 }
 
+// CaptureHolder names the one capture client currently holding a connect code, as "<galactus instance>:<socket ID>".
+// The newest capture client to send a connect code takes it over; see docs/adr/0001-newest-capture-replaces.md.
+func CaptureHolder(connectCode string) string {
+	return "automuteus:capture:holder:" + connectCode
+}
+
+// CaptureClaimsChannel carries each connect code a capture client takes over, so every Galactus replica can retire
+// the capture client it replaced.
+const CaptureClaimsChannel = "automuteus:capture:claims"
+
 // RoomCodesForConnCode is written by Galactus (cmd/galactus) whenever a capture client reports a lobby,
 // mapping a connect code to the current Among Us room code. Forked repos/communities read it directly, and the bot
 // serves it via GET /game/roomcode, so the key name must stay stable.

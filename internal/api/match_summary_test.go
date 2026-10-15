@@ -119,7 +119,7 @@ func TestBuildMatchSummary_Status(t *testing.T) {
 	}{
 		{"in progress", -1, -1, "inProgress", "", "", 0},
 		{"aborted", int16(game.Aborted), 1200, "aborted", "", "", 1200},
-		{"unknown result", int16(game.Unknown), 1200, "finished", "unknown", "", 1200},
+		{"unknown result", int16(game.UnknownEnding), 1200, "finished", "unknown", "", 1200},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			mock := newStatsMock(t)

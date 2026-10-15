@@ -86,3 +86,68 @@ func TestReadsTolerateNewColumns(t *testing.T) {
 		t.Errorf("MatchEvents = %+v, %v", events, err)
 	}
 }
+
+// TestAddInitialGame_RecordsCaptureKind covers a games table from before capture kinds were recorded gaining the
+// columns, and a match recording which capture client it was played with, or nothing when that's unknown.
+func TestAddInitialGame_RecordsCaptureKind(t *testing.T) {
+	url := os.Getenv("TEST_POSTGRES_URL")
+	if url == "" {
+		t.Skip("set a disposable TEST_POSTGRES_URL")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	if err := schema.ApplySchemas(ctx, pool, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, "ALTER TABLE games DROP COLUMN capture_kind, DROP COLUMN capture_version"); err != nil {
+		t.Fatal(err)
+	}
+	if err := schema.ApplySchemas(ctx, pool, false); err != nil {
+		t.Fatalf("upgrading a games table without capture columns: %v", err)
+	}
+
+	const guildID uint64 = 900000000000000061
+	cleanup := func() {
+		pool.Exec(ctx, "DELETE FROM games WHERE guild_id = $1", guildID)
+		pool.Exec(ctx, "DELETE FROM guilds WHERE guild_id = $1", guildID)
+	}
+	cleanup()
+	t.Cleanup(cleanup)
+
+	db := &PsqlInterface{Pool: pool}
+	if _, err := db.EnsureGuildExists(guildID, "live test"); err != nil {
+		t.Fatal(err)
+	}
+	kind, version := capture.KindMod, "1.0.0"
+	for _, want := range []PostgresGame{
+		{CaptureKind: &kind, CaptureVersion: &version},
+		{},
+	} {
+		g := want
+		g.GuildID, g.ConnectCode, g.StartTime, g.WinType, g.EndTime = guildID, "ABCDEFGH", 1, -1, -1
+		gameID, err := db.AddInitialGame(&g)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var gotKind, gotVersion *string
+		err = pool.QueryRow(ctx, "SELECT capture_kind, capture_version FROM games WHERE game_id = $1", gameID).Scan(&gotKind, &gotVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if deref(gotKind) != deref(want.CaptureKind) || deref(gotVersion) != deref(want.CaptureVersion) ||
+			(gotKind == nil) != (want.CaptureKind == nil) {
+			t.Errorf("recorded %v %v, want %v %v", gotKind, gotVersion, want.CaptureKind, want.CaptureVersion)
+		}
+	}
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}

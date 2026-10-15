@@ -20,6 +20,10 @@ type GameState struct {
 	Running    bool `json:"running"`
 	Subscribed bool `json:"subscribed"`
 
+	// CaptureKind and CaptureVersion describe the linked capture client; empty when it didn't report them.
+	CaptureKind    string `json:"captureKind,omitempty"`
+	CaptureVersion string `json:"captureVersion,omitempty"`
+
 	MatchID        int64 `json:"matchID"`
 	MatchStartUnix int64 `json:"matchStartUnix"`
 
@@ -46,6 +50,8 @@ func (dgs *GameState) Reset() {
 	// Explicitly does not reset the GuildID!
 	dgs.ConnectCode = ""
 	dgs.Linked = false
+	dgs.CaptureKind = ""
+	dgs.CaptureVersion = ""
 	dgs.Running = false
 	dgs.Subscribed = false
 	dgs.MatchID = -1

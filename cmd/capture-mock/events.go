@@ -49,7 +49,8 @@ var resultNames = map[game.GameResult]string{
 	game.HumansByVote: "HumansByVote", game.HumansByTask: "HumansByTask",
 	game.ImpostorByVote: "ImpostorByVote", game.ImpostorByKill: "ImpostorByKill",
 	game.ImpostorBySabotage: "ImpostorBySabotage", game.ImpostorDisconnect: "ImpostorDisconnect",
-	game.HumansDisconnect: "HumansDisconnect", game.Unknown: "Unknown",
+	game.HumansDisconnect: "HumansDisconnect", game.HideAndSeekHumansByTimer: "HideAndSeekHumansByTimer",
+	game.HideAndSeekImpostorByKills: "HideAndSeekImpostorByKills", game.UnknownEnding: "UnknownEnding",
 }
 
 var (

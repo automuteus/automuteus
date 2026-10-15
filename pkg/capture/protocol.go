@@ -11,5 +11,7 @@ const (
 	GameOverEvent     = "gameover"
 	TaskCompleteEvent = "taskComplete"
 	TaskFailedEvent   = "taskFailed"
+	// KillSelfEvent tells a capture client it was replaced and must quit rather than reconnect.
+	KillSelfEvent     = "killself"
 	ConnectCodeLength = 8
 )
