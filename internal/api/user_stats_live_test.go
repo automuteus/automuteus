@@ -87,8 +87,8 @@ func TestLiveUserStats(t *testing.T) {
 			[]event{{alice, 200, game.EXILED}}},
 		// 4: alice and bob win as impostors; no map recorded.
 		{guild, 20, game.ImpostorByVote, nil, []player{{alice, game.ImposterRole, "alice", game.Red}, {bob, game.ImposterRole, "bob", 2}, {carol, game.CrewmateRole, "carol", 1}, {dave, game.CrewmateRole, "dave", 3}}, nil},
-		// 5: no result reported, so nobody won; counts as a game but not toward streaks.
-		{guild, 25, game.Unknown, nil, []player{{alice, game.CrewmateRole, "alice", game.Red}, {carol, game.CrewmateRole, "carol", 1}, {dave, game.ImposterRole, "dave", 3}}, nil},
+		// 5: no side won; counts as a game but not toward streaks.
+		{guild, 25, game.UnknownEnding, nil, []player{{alice, game.CrewmateRole, "alice", game.Red}, {carol, game.CrewmateRole, "carol", 1}, {dave, game.ImposterRole, "dave", 3}}, nil},
 		// 6: aborted, so no players are recorded; alice's death in it counts nowhere.
 		{guild, 30, game.Aborted, nil, nil, []event{{alice, 60, game.DIED}}},
 		// 7: crewmates win even though alice (crew) was voted out.
@@ -108,7 +108,7 @@ func TestLiveUserStats(t *testing.T) {
 		}
 		ids[i+1] = gameID
 		impostorWin := g.result == game.ImpostorByKill || g.result == game.ImpostorByVote
-		known := g.result != game.Unknown
+		known := g.result != game.UnknownEnding
 		for _, p := range g.players {
 			won := known && (p.role == game.ImposterRole) == impostorWin
 			exec("INSERT INTO users_games VALUES ($1, $2, $3, $4, $5, $6, $7)", p.id, g.guild, gameID, p.name, p.color, int16(p.role), won)

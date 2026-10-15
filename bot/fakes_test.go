@@ -176,7 +176,14 @@ type fakeRecorder struct {
 	games   []*storageutils.PostgresGame
 	events  []*storageutils.PostgresGameEvent
 	updates []int64
+	// results holds each recorded match's win type and player rows, in the order of updates
+	results []recordedResult
 	aborted []int64
+}
+
+type recordedResult struct {
+	winType int16
+	players []*storageutils.PostgresUserGame
 }
 
 func (f *fakeRecorder) AddInitialGame(g *storageutils.PostgresGame) (uint64, error) {
@@ -190,10 +197,11 @@ func (f *fakeRecorder) EnsureUserExists(userID uint64) (*storageutils.PostgresUs
 	return &storageutils.PostgresUser{UserID: userID}, nil
 }
 
-func (f *fakeRecorder) UpdateGameAndPlayers(gameID int64, _ int16, _ int64, _ []*storageutils.PostgresUserGame) error {
+func (f *fakeRecorder) UpdateGameAndPlayers(gameID int64, winType int16, _ int64, players []*storageutils.PostgresUserGame) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.updates = append(f.updates, gameID)
+	f.results = append(f.results, recordedResult{winType, players})
 	return nil
 }
 

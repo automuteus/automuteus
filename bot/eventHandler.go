@@ -432,10 +432,10 @@ type winnerRecord struct {
 func getWinners(dgs GameState, gameOver game.Gameover) []winnerRecord {
 	var winners []winnerRecord
 
-	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
-		gameOver.GameOverReason == game.ImpostorByVote ||
-		gameOver.GameOverReason == game.ImpostorBySabotage ||
-		gameOver.GameOverReason == game.ImpostorDisconnect
+	imposterWin, decided := gameOver.GameOverReason.Winner()
+	if !decided {
+		return nil
+	}
 
 	for _, player := range dgs.UserData {
 		if player.GetPlayerName() != amongus.UnlinkedPlayerName {
@@ -674,13 +674,11 @@ func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameO
 
 	userGames := make([]*storage.PostgresUserGame, 0)
 
-	imposterWin := gameOver.GameOverReason == game.ImpostorByKill ||
-		gameOver.GameOverReason == game.ImpostorBySabotage ||
-		gameOver.GameOverReason == game.ImpostorByVote ||
-		gameOver.GameOverReason == game.ImpostorDisconnect
+	// a match nobody won is recorded like an aborted one: its result and end, but no players, so it counts nowhere
+	imposterWin, decided := gameOver.GameOverReason.Winner()
 
 	for _, v := range dgs.UserData {
-		if v.GetPlayerName() != amongus.UnlinkedPlayerName {
+		if decided && v.GetPlayerName() != amongus.UnlinkedPlayerName {
 			inGameData, found := dgs.GameData.GetByName(v.GetPlayerName())
 			if !found {
 				gl.Warn("no in-game data for linked player", "player", v.GetPlayerName())

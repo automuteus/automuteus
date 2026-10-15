@@ -45,7 +45,7 @@ func TestLiveGuildsWithStats(t *testing.T) {
 	}
 	exec("INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES ($1, 'AAAAAAAA', 1, $2, 2)", finished, int16(game.HumansByTask))
 	exec("INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES ($1, 'AAAAAAAA', 1, $2, 2)", aborted, int16(game.Aborted))
-	exec("INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES ($1, 'AAAAAAAA', 1, $2, -1)", running, int16(game.Unknown))
+	exec("INSERT INTO games (guild_id, connect_code, start_time, win_type, end_time) VALUES ($1, 'AAAAAAAA', 1, $2, -1)", running, int16(-1))
 
 	store := &DataStore{postgres: pool, stats: pool}
 	ids := []string{"900000000000000015", "900000000000000014", "900000000000000013", "900000000000000012", "900000000000000011"}

@@ -14,8 +14,8 @@ import (
 // guild only to keep the top few.
 // They accept any pgxscan.Querier so a pool, a connection, or a mock can serve them.
 
-// GuildSummary counts the finished games of a guild and how many each side won. Aborted and still-running games
-// are excluded, as they are from the slash command.
+// GuildSummary counts the finished games of a guild and how many each side won. Only games a side won count:
+// aborted, still-running, and unknown endings are excluded.
 type GuildSummary struct {
 	GamesPlayed  int64 `db:"games"`
 	CrewmateWins int64 `db:"crewmate_wins"`
@@ -32,17 +32,17 @@ type GuildPlayerGames struct {
 const AnyRole int16 = -1
 
 var (
-	crewmateWinTypes = winTypeList(game.HumansByVote, game.HumansByTask, game.HumansDisconnect)
-	impostorWinTypes = winTypeList(game.ImpostorByVote, game.ImpostorByKill, game.ImpostorBySabotage, game.ImpostorDisconnect)
+	crewmateWinTypes = winTypeList(game.HumanWins...)
+	impostorWinTypes = winTypeList(game.ImpostorWins...)
 
 	guildSummaryQuery = "SELECT COUNT(*) AS games, " +
 		"COUNT(*) FILTER (WHERE win_type IN (" + crewmateWinTypes + ")) AS crewmate_wins, " +
 		"COUNT(*) FILTER (WHERE win_type IN (" + impostorWinTypes + ")) AS impostor_wins " +
-		"FROM games WHERE guild_id = $1 AND end_time <> -1 AND win_type <> $2"
+		"FROM games WHERE guild_id = $1 AND end_time <> -1 AND win_type IN (" + crewmateWinTypes + "," + impostorWinTypes + ")"
 
 	// One indexed probe per guild, stopping at its first finished game, so a busy guild costs no more than a quiet one.
 	guildsWithStatsQuery = "SELECT g.id FROM unnest($1::numeric[]) AS g(id) WHERE EXISTS " +
-		"(SELECT 1 FROM games WHERE guild_id = g.id AND end_time <> -1 AND win_type <> $2)"
+		"(SELECT 1 FROM games WHERE guild_id = g.id AND end_time <> -1 AND win_type IN (" + crewmateWinTypes + "," + impostorWinTypes + "))"
 
 	guildMostGamesQuery = "SELECT user_id, COUNT(*) AS total FROM users_games WHERE guild_id = $1 " +
 		"GROUP BY user_id ORDER BY total DESC, user_id LIMIT $2"
@@ -137,7 +137,7 @@ func winTypeList(types ...game.GameResult) string {
 // GuildSummaryStats counts a guild's finished games and the wins of each side.
 func GuildSummaryStats(ctx context.Context, q pgxscan.Querier, guildID uint64) (GuildSummary, error) {
 	var s GuildSummary
-	err := pgxscan.Get(ctx, q, &s, guildSummaryQuery, guildID, int16(game.Aborted))
+	err := pgxscan.Get(ctx, q, &s, guildSummaryQuery, guildID)
 	return s, err
 }
 
@@ -148,7 +148,7 @@ func GuildsWithStats(ctx context.Context, q pgxscan.Querier, guildIDs []uint64) 
 	if len(guildIDs) == 0 {
 		return r, nil
 	}
-	err := pgxscan.Select(ctx, q, &r, guildsWithStatsQuery, guildIDs, int16(game.Aborted))
+	err := pgxscan.Select(ctx, q, &r, guildsWithStatsQuery, guildIDs)
 	return r, err
 }
 

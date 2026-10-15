@@ -41,8 +41,8 @@ func summaryRows(games, crew, imp int64) *pgxmock.Rows {
 
 func TestBuildGuildStats_FreeGuildGetsSummaryOnly(t *testing.T) {
 	mock := newStatsMock(t)
-	mock.ExpectQuery(`SELECT COUNT\(\*\) AS games, .* FROM games WHERE guild_id = \$1 AND end_time <> -1 AND win_type <> \$2`).
-		WithArgs(testGuildNum, int16(-2)).
+	mock.ExpectQuery(`SELECT COUNT\(\*\) AS games, .* FROM games WHERE guild_id = \$1 AND end_time <> -1 AND win_type IN \(0,1,5,7,2,3,4,6,8\)`).
+		WithArgs(testGuildNum).
 		WillReturnRows(summaryRows(8, 5, 2))
 
 	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.FreeTier}, settings.MakeGuildSettings(), false)
@@ -67,7 +67,7 @@ func TestBuildGuildStats_FreeGuildGetsSummaryOnly(t *testing.T) {
 
 func TestBuildGuildStats_ExpiredPremiumIsFree(t *testing.T) {
 	mock := newStatsMock(t)
-	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum, int16(-2)).WillReturnRows(summaryRows(0, 0, 0))
+	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum).WillReturnRows(summaryRows(0, 0, 0))
 	stats, err := buildGuildStats(context.Background(), mock, nil, nil, testGuildID, premium.PremiumRecord{Tier: premium.GoldTier, Days: 0}, settings.MakeGuildSettings(), false)
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func TestBuildGuildStats_PremiumRunsEveryBoardWithGuildSettings(t *testing.T) {
 	sett.SetLeaderboardSize(9)
 	sett.SetLeaderboardMin(4)
 
-	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum, int16(-2)).WillReturnRows(summaryRows(20, 12, 8))
+	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum).WillReturnRows(summaryRows(20, 12, 8))
 	mock.ExpectQuery(`SELECT user_id, COUNT\(\*\) AS total FROM users_games WHERE guild_id = \$1 GROUP BY user_id ORDER BY total DESC, user_id LIMIT \$2`).
 		WithArgs(testGuildNum, 5).
 		WillReturnRows(pgxmock.NewRows([]string{"user_id", "total"}).AddRow(uint64(11), int64(9)).AddRow(uint64(22), int64(4)))
@@ -162,7 +162,7 @@ func TestBuildGuildStats_BoardFailureFailsTheRollup(t *testing.T) {
 	defer mock.Close()
 	mock.MatchExpectationsInOrder(false)
 	boom := errors.New("boom")
-	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum, int16(-2)).WillReturnRows(summaryRows(1, 1, 0))
+	mock.ExpectQuery(`FROM games WHERE guild_id`).WithArgs(testGuildNum).WillReturnRows(summaryRows(1, 1, 0))
 	mock.ExpectQuery(`SELECT user_id, COUNT\(\*\) AS total FROM users_games`).WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnError(boom)
 	// The three winrate boards and the duo boards take four arguments; first target takes three. Every board
 	// needs an answer, or one that finishes before most games fails would fail the rollup with its own error.
