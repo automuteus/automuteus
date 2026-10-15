@@ -152,8 +152,12 @@ func (broker *Broker) serveClaims(ctx context.Context, pubsub *redis.PubSub) {
 // retireReplaced tells every capture client of this broker on connCode that isn't its holder to quit, and stops
 // listening to it. Its events are ignored from here on, and its disconnect won't unlink the game.
 func (broker *Broker) retireReplaced(ctx context.Context, connCode string) {
+	// Read the holder under the lock: claim writes the holder before registering its socket, so a socket registered
+	// after this read can't be mistaken for one the holder replaced.
+	broker.connectionsLock.Lock()
 	holder, err := broker.client.Get(ctx, rediskey.CaptureHolder(connCode)).Result()
 	if err != nil {
+		broker.connectionsLock.Unlock()
 		if !errors.Is(err, redis.Nil) {
 			log.Println(err)
 		}
@@ -161,7 +165,6 @@ func (broker *Broker) retireReplaced(ctx context.Context, connCode string) {
 	}
 
 	var replaced []*captureClient
-	broker.connectionsLock.Lock()
 	for socketID, c := range broker.connections {
 		if c.code == connCode && broker.holder(socketID) != holder {
 			log.Printf("Capture client %s replaced by %s for connect code %s", broker.holder(socketID), holder, connCode)

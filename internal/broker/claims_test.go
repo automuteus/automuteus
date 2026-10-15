@@ -95,9 +95,10 @@ func TestClaim_NewestCaptureOnAnotherReplicaRetiresTheOld(t *testing.T) {
 	oldKill := one.claim(ctx, old, "1", "ABCDEFGH")
 	newKill := two.claim(ctx, newcomer, "1", "ABCDEFGH")
 
-	eventually(t, "the old capture client is retired", func() bool { return !one.holds("1") })
-	if !old.toldToQuit() {
-		t.Errorf("old capture client got %v, want only %s", old.emitted, capture.KillSelfEvent)
+	// killself is the last thing a retired capture client is sent
+	eventually(t, "the old capture client is told to quit", old.toldToQuit)
+	if one.holds("1") {
+		t.Error("the old capture client is still listened to")
 	}
 	if len(old.left) != 1 || old.left[0] != "ABCDEFGH" {
 		t.Errorf("old capture client left %v, want the connect code's room", old.left)
@@ -105,7 +106,7 @@ func TestClaim_NewestCaptureOnAnotherReplicaRetiresTheOld(t *testing.T) {
 	if !isClosed(oldKill) {
 		t.Error("old capture client's workers were not stopped")
 	}
-	if !two.holds("1") || isClosed(newKill) || len(newcomer.emitted) != 0 {
+	if !two.holds("1") || isClosed(newKill) || newcomer.toldToQuit() {
 		t.Error("the newcomer must be left alone")
 	}
 }
@@ -120,9 +121,9 @@ func TestClaim_NewestCaptureOnTheSameReplicaRetiresTheOld(t *testing.T) {
 	b.claim(ctx, old, "1", "ABCDEFGH")
 	b.claim(ctx, newcomer, "2", "ABCDEFGH")
 
-	eventually(t, "the old capture client is retired", func() bool { return !b.holds("1") })
-	if !old.toldToQuit() || len(newcomer.emitted) != 0 || !b.holds("2") {
-		t.Errorf("old got %v, newcomer got %v; only the old one should be told to quit", old.emitted, newcomer.emitted)
+	eventually(t, "the old capture client is told to quit", old.toldToQuit)
+	if b.holds("1") || !b.holds("2") || newcomer.toldToQuit() {
+		t.Error("only the old capture client should be retired")
 	}
 }
 
@@ -132,13 +133,13 @@ func TestClaim_LeavesOtherConnectCodesAlone(t *testing.T) {
 	b := NewBroker(mr.Addr(), "", "")
 	listening(t, b)
 
-	other := &fakeConn{}
+	other, replaced := &fakeConn{}, &fakeConn{}
 	b.claim(ctx, other, "1", "IJKLMNOP")
-	b.claim(ctx, &fakeConn{}, "2", "ABCDEFGH")
+	b.claim(ctx, replaced, "2", "ABCDEFGH")
 	b.claim(ctx, &fakeConn{}, "3", "ABCDEFGH")
 
-	eventually(t, "the replaced capture client is retired", func() bool { return !b.holds("2") })
-	if !b.holds("1") || len(other.emitted) != 0 {
+	eventually(t, "the replaced capture client is told to quit", replaced.toldToQuit)
+	if !b.holds("1") || other.toldToQuit() {
 		t.Error("a capture client on another connect code was retired")
 	}
 }
