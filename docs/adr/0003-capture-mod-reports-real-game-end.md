@@ -1,0 +1,3 @@
+# The Capture Mod reports the real game end, not a predicted one
+
+After a vote-out, the Capture App counts the remaining impostors and, if it thinks the game is over, reports the lobby early so players are unmuted a few seconds sooner. The Capture Mod doesn't predict: it reports the end when the game itself does. Role mods add neutral killers and custom wins that break the impostor count, and a wrong prediction unmutes everyone mid-game, which is far worse than a few seconds' wait. Capture Mod users therefore get unmuted slightly later than Capture App users after a game-ending vote; that's intended.

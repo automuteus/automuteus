@@ -5,7 +5,8 @@
 *.so
 *.dylib
 /amongusdiscord
-docs/
+docs/*
+!docs/adr/
 
 # Test binary, built with `go test -c`
 *.test
