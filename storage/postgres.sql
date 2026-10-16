@@ -1,3 +1,7 @@
+-- Applied automatically only on self-hosted installs (storage.ApplySchemas skips it for official deployments).
+-- Official production applies schema changes by hand: when you change this file, put the exact SQL in the PR's
+-- deploy notes, to run before the bot deploys, or the bot's writes fail against the old schema.
+
 create table if not exists guilds
 (
     guild_id numeric PRIMARY KEY,
