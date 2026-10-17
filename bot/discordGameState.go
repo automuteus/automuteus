@@ -91,8 +91,9 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.
 	num := 0
 
 	for _, player := range dgs.GameData.PlayerData {
+		// Role mods can add colors past the game's own, which have no emoji or slot here.
 		if player.Color < 0 || player.Color > 17 {
-			break
+			continue
 		}
 		for _, userData := range dgs.UserData {
 			if userData.InGameName == player.Name {

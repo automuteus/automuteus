@@ -8,6 +8,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/game"
+	"github.com/automuteus/automuteus/v8/pkg/settings"
 )
 
 const gameStateFixturePath = "testdata/game_state_v8.json"
@@ -206,5 +207,31 @@ func TestGameState_ResetKeepsGuildID(t *testing.T) {
 	fresh := NewDiscordGameState("123456789012345678")
 	if !reflect.DeepEqual(&dgs, fresh) {
 		t.Errorf("Reset state differs from a fresh state.\n  reset: %+v\n  fresh: %+v", dgs, *fresh)
+	}
+}
+
+// A player with a color the bot doesn't know, such as one a role mod adds, is left out of the player list without
+// taking anyone else with them.
+func TestGameState_ToEmojiEmbedFieldsSkipsUnknownColors(t *testing.T) {
+	dgs := NewDiscordGameState("123456789012345678")
+	dgs.GameData.PlayerData = map[string]amongus.PlayerData{
+		"modded": {Name: "modded", Color: 18, IsAlive: true},
+	}
+	for color := game.Red; color <= game.Coral; color++ {
+		name := game.GetColorStringForInt(color)
+		dgs.GameData.PlayerData[name] = amongus.PlayerData{Name: name, Color: color, IsAlive: true}
+	}
+
+	// Map order is random, so the modded player lands at a different point in the loop on each run.
+	for i := 0; i < 20; i++ {
+		fields := dgs.ToEmojiEmbedFields(GlobalAlivenessEmojis, settings.MakeGuildSettings())
+		if len(fields) != 18 {
+			t.Fatalf("got %d fields, want all 18 known colors", len(fields))
+		}
+		for _, field := range fields {
+			if field.Name == "modded" {
+				t.Fatal("the player with an unknown color was listed")
+			}
+		}
 	}
 }
