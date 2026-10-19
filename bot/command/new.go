@@ -39,6 +39,9 @@ func NewResponse(status NewStatus, info NewInfo, sett *settings.GuildSettings) *
 
 	switch status {
 	case NewSuccess:
+		// The bare link is the whole message content so mobile users can long-press and Copy Text to get exactly
+		// the link. Embed text can't be copied on mobile, and Copy Text would include any markdown around it.
+		content = info.Hyperlink
 		embeds = []*discordgo.MessageEmbed{newSuccessEmbed(info, sett)}
 	case NewNoVoiceChannel:
 		content = sett.LocalizeMessage(&i18n.Message{
