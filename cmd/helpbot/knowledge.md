@@ -96,7 +96,7 @@ Default rules:
 
 ### Why muting is slow
 
-Discord limits how quickly a single bot can change members' mute and deafen state in a server (roughly 10 changes per 10 seconds). With many players, a round of mutes can take several seconds. This is a Discord limit, not a bug.
+Discord limits how quickly a single bot can change members' mute and deafen state in a server (roughly 10 changes per 10 seconds). With many players, a round of mutes can take several seconds. This is a Discord limit, not a bug. Lowering the delays in settings doesn't help with this: the delays only wait for the game's animations to finish, and the rate limit applies either way.
 
 Premium Silver and Gold add priority mute bots that share the work, which makes mutes much faster. Free and Bronze servers may see a "🐢 Muting is slow in this server" note on the game message when this happens. Running two or more games in one server at the same time shares the same limit, so premium is practically required for that.
 
