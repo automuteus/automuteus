@@ -5,6 +5,8 @@
 *.so
 *.dylib
 /amongusdiscord
+/helpbot
+/seed-stats
 docs/*
 !docs/adr/
 

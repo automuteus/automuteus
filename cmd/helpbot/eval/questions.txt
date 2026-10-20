@@ -1,0 +1,129 @@
+# Eval questions for cmd/helpbot, paraphrased from #official-bot-support and
+# #self-hosted-support (Oct 2025 – Oct 2026). One question per block, blocks
+# separated by a line containing only "---". A "# expect:" line notes what a good
+# answer must do; the eval doesn't grade, it's there for the human reviewer.
+#
+# Keep these paraphrased: no usernames, IDs, or links copied from Discord.
+
+AutoMuteUs can't recognize Among Us anymore, it just says "Waiting for Among Us". It was working fine yesterday and I have a big lobby waiting
+# expect: Among Us update → check #updates for the offsets post, restart Capture App; no reinstall
+---
+When I open the capture exe it says I must download .NET, I press yes and nothing happens
+# expect: get the latest Capture App (6.0.0+ needs no .NET); .NET 5 Desktop Runtime x64 only for old versions
+---
+I tried installing .NET Framework 3.8 and 4 but the capture still won't start
+# expect: .NET Framework is the wrong thing; update the Capture App
+---
+The bot works, everyone linked, the game message updates, but nobody is getting deafened
+# expect: permissions, especially voice channel overrides; Mute/Deafen Members; re-invite link
+---
+The bot says it can't mute or deafen because of permission issues, what do I do?
+# expect: Mute Members + Deafen Members in that voice channel, check overrides
+---
+how do I set this bot up? do I need to play among us on my pc?
+# expect: one player on Windows PC runs the Capture; /new from voice; link colors
+---
+Only the host has a PC and everyone else is on mobile, will it work? And can dead players talk to each other?
+# expect: yes, one PC player; dead players can talk during tasks by default
+---
+does every player have to play on a windows pc or just the host?
+# expect: just one player (not necessarily host) needs PC + Capture
+---
+Does the bot work with Endless Host Roles?
+# expect: Capture App doesn't support mods; Capture Mod is new and may work, not officially supported for heavy role mods
+---
+does the bot work with Town of Us?
+# expect: same as above; mention Capture Mod
+---
+Is there a mobile version? Does it work on BlueStacks?
+# expect: Android via Starlight + Capture Mod; no BlueStacks/iOS; otherwise one Windows PC player
+---
+Linux support?
+# expect: Windows only; old Linux fork unmaintained
+---
+I saw itch.io isn't supported, will it be in the future?
+# expect: not supported, no plans/date
+---
+is the bot down? /new isn't working and I'm in the middle of a game
+# expect: check #official-bot-status, needs human if widespread; nothing user can do in an outage
+---
+I'm trying to buy premium and it keeps declining my card, I have enough money on it. I'm in Denmark and the bank verification never pops up
+# expect: PayPal only; contact PayPal/bank; needs human for anything account-specific
+---
+My friend bought Silver, how do I get the extra bot into the server and turn it on?
+# expect: /premium invites (admin), works automatically, check /premium info
+---
+I just bought Gold and invited the bots. We have a game running, do I need to /end and /new for it to apply?
+# expect: no, takes effect within minutes
+---
+I have Bronze but I can't change the leaderboard minimum in settings
+# expect: need Administrator/Manage Server (or owner) on the dashboard
+---
+One of our members found out they can delete stats. How do I stop regular members from clearing stats?
+# expect: members can reset only their own stats, by design; only admins can reset others
+---
+I kicked someone and want to remove them from our stats leaderboard, how?
+# expect: admin resets that player on the dashboard; human if it fails
+---
+When I play with 15 players the muting is laggy, is that normal?
+# expect: Discord rate limit; Silver/Gold priority bots; User Bot option
+---
+sometimes the bot doesn't mute some people, and when a meeting is called it doesn't unmute and I have to relink
+# expect: linking, tracked channel, rate limits, voice rules; /refresh
+---
+What is the User Bot thing in the capture for? Does it have to be green?
+# expect: optional own bot token for faster muting; only AutoMuteUs indicator must be green
+---
+Do people need to link their color? I don't want them to have to. Can I just set the same rule for alive and dead?
+# expect: linking required; unlinked are ignored; /link for them; names remembered
+---
+Can I run two voice channels with automute in one server?
+# expect: yes, separate text channel per game; premium recommended for rate limits
+---
+I can't get the bot connected to the discord. Manual connect doesn't seem to work either
+# expect: latest /new code, galactus.automute.us alive check, run as admin, Manual Connection → Submit
+---
+when I click the link to connect the bot with the among us game, nothing happens
+# expect: run Capture App once, paste link in browser, manual connect
+---
+The app won't let me proceed after the splash screen on Windows 11
+# expect: update, Reset Config / delete %APPDATA%\AmongUsCapture, antivirus, run as admin
+---
+"Duplicate login detected" — whenever I use this bot the game errors and kicks people
+# expect: not AutoMuteUs, it's Among Us
+---
+Is there Hebrew? The website says there is but it didn't work
+# expect: not available; Crowdin to contribute
+---
+Is there a game timer feature?
+# expect: no
+---
+can i get the bot on my phone? how do i download automute
+# expect: capture.automute.us for PC; Android via Starlight + Capture Mod; one Capture per game
+---
+Pirated version works?
+# expect: not supported, no help fixing it
+---
+@Moderator can I have help
+# expect: point to rules (don't ping Moderators), ask what the problem is
+---
+# Multi-turn: checks the API accepts rebuilt history, and that the bot hands off after its steps fail.
+USER: Title: capture won't connect
+
+The capture app sees my game but the discord message still says no capture linked
+BOT: Make sure you used the link from your **latest** `/new`, then open https://galactus.automute.us in a browser — it should say it's alive. If it loads, try running the Capture App as Administrator.
+USER: galactus says alive, I used the newest link, ran as admin, still says no capture linked
+# expect: one more idea at most (manual connect/firewall/VPN), or hand off as not_covered
+---
+# Japanese: the bot must answer in Japanese.
+昨日まで使えていたのに、AutoMuteUsのキャプチャが「Waiting for Among Us」のまま動きません
+# expect: in Japanese; Among Us update → #updates offsets post, restart Capture App
+---
+キャプチャを開くと.NETをインストールしろと出て、はいを押しても何も起きません
+# expect: in Japanese; latest Capture App needs no .NET
+---
+スマホだけでも使えますか？PCを持っている人がいません
+# expect: in Japanese; Android via Starlight + Capture Mod, otherwise one Windows PC player
+---
+ミュートはされるけど会議のときにミュート解除されない人がいます
+# expect: in Japanese; linking, tracked channel, voice rules, rate limits

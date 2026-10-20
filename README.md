@@ -150,6 +150,9 @@ This repository builds three service binaries:
 * **API** (`cmd/api`): HTTP endpoints for the website, settings, game state, and capture links.
   Published as `automuteus/api` (`Dockerfile.api`), using the same release tag and commit as the bot and Galactus.
 
+It also builds `cmd/helpbot`, the official server's Claude-powered help bot (`automuteus/helpbot`,
+`Dockerfile.helpbot`). Only the official deployment runs it; see [`cmd/helpbot/README.md`](cmd/helpbot/README.md).
+
 ```sh
 go build .               # bot
 go build ./cmd/galactus  # broker
