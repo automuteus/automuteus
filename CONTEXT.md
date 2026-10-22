@@ -34,3 +34,8 @@ _Avoid_: connect link, capture URL
 **Unknown Ending**:
 A game end the Capture can't name, such as a role mod's custom win. Neither side won, so it doesn't count toward stats.
 _Avoid_: unknown win, crew win (for these)
+
+### Help bot
+
+**Help bot knowledge**:
+`cmd/helpbot/knowledge.md`, the user-facing facts the official server's help bot answers from. Update it when user-facing behavior changes.

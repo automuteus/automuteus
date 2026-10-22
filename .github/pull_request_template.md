@@ -1,0 +1,1 @@
+- [ ] User-facing behavior changed? Update `cmd/helpbot/knowledge.md`.
