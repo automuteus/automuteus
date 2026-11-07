@@ -97,9 +97,10 @@ func (auData *GameData) ClearPlayerData(name string) {
 func (auData *GameData) applyPlayerUpdate(update game.Player) (bool, bool, PlayerData) {
 	if _, ok := auData.PlayerData[update.Name]; !ok {
 		auData.PlayerData[update.Name] = PlayerData{
-			Color:   update.Color,
-			Name:    update.Name,
-			IsAlive: !update.IsDead,
+			Color:      update.Color,
+			Name:       update.Name,
+			IsAlive:    !update.IsDead,
+			FriendCode: update.FriendCode,
 		}
 		log.Printf("Added new player instance for %s\n", update.Name)
 		return true, false, auData.PlayerData[update.Name]
@@ -109,9 +110,10 @@ func (auData *GameData) applyPlayerUpdate(update game.Player) (bool, bool, Playe
 	isAliveUpdate := auData.PlayerData[update.Name].IsAlive != !update.IsDead
 	if isUpdate {
 		p := PlayerData{
-			Color:   update.Color,
-			Name:    update.Name,
-			IsAlive: !update.IsDead,
+			Color:      update.Color,
+			Name:       update.Name,
+			IsAlive:    !update.IsDead,
+			FriendCode: update.FriendCode,
 		}
 		auData.PlayerData[update.Name] = p
 	}
@@ -124,6 +126,19 @@ func (auData *GameData) GetByColor(text string) (PlayerData, bool) {
 
 	for _, playerData := range auData.PlayerData {
 		if game.GetColorStringForInt(playerData.Color) == text {
+			return playerData, true
+		}
+	}
+	return UnlinkedPlayer, false
+}
+
+// GetByFriendCode returns the player with the given Friend Code. An empty code matches nobody.
+func (auData *GameData) GetByFriendCode(friendCode string) (PlayerData, bool) {
+	if friendCode == "" {
+		return UnlinkedPlayer, false
+	}
+	for _, playerData := range auData.PlayerData {
+		if playerData.FriendCode == friendCode {
 			return playerData, true
 		}
 	}

@@ -96,7 +96,7 @@ func (dgs *GameState) ToEmojiEmbedFields(emojis AlivenessEmojis, sett *settings.
 			continue
 		}
 		for _, userData := range dgs.UserData {
-			if userData.InGameName == player.Name {
+			if userData.IsLinkedTo(player) {
 				emoji := emojis[player.IsAlive][player.Color]
 				unsorted[player.Color] = &discordgo.MessageEmbedField{
 					Name:   player.Name,

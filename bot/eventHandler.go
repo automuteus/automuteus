@@ -3,6 +3,7 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/internal/server"
@@ -473,11 +474,13 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 
 		if player.Disconnected || player.Action == game.LEFT {
 			// the departing player is whoever is linked to them; pairing here would link someone to a player who
-			// is gone. A player who merely left stays linked, so they're relinked if they rejoin under the same name
-			userID := dgs.LinkedUserID(player.Name)
+			// is gone. A player who merely left stays linked, so they're relinked if they rejoin under the same name,
+			// or under any name with the same Friend Code
+			departing := amongus.PlayerData{Name: player.Name, FriendCode: player.FriendCode}
+			userID := dgs.LinkedUserID(departing)
 			if player.Disconnected {
 				gl.Info("player disconnected; purging player data", "player", player.Name)
-				dgs.ClearPlayerDataByPlayerName(player.Name)
+				dgs.ClearPlayerDataByPlayer(departing)
 			}
 			// once their player data is cleared, no other voice path will touch them, so unmute them here
 			if userID != "" {
@@ -497,21 +500,13 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 		switch {
 		case player.Action == game.JOINED:
 			gl.Info("player joined", "player", player.Name, "color", player.Color)
-			userID := dgs.AttemptPairingByMatchingNames(data)
-			if userID == "" {
-				var uids map[string]interface{}
-				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-				userID = dgs.AttemptPairingByUserIDs(data, uids)
-			}
+			var userID string
+			userID, err = bot.pairPlayer(dgs, data)
 			bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
 			return true, userID, dgs, err
 		case updated:
-			userID := dgs.AttemptPairingByMatchingNames(data)
-			if userID == "" {
-				var uids map[string]interface{}
-				uids, err = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, player.Name)
-				userID = dgs.AttemptPairingByUserIDs(data, uids)
-			}
+			var userID string
+			userID, err = bot.pairPlayer(dgs, data)
 			if isAliveUpdated && dgs.GameData.GetPhase() == game.TASKS {
 				if sett.GetUnmuteDeadDuringTasks() || player.Action == game.EXILED {
 					bot.DispatchRefreshOrEdit(dgs, dgsRequest, sett)
@@ -530,6 +525,30 @@ func (bot *Bot) processPlayer(sett *settings.GuildSettings, player game.Player, 
 		}
 	}
 	return false, "", nil, nil
+}
+
+// pairPlayer links the player to a Discord user, and returns that user's ID, or "" if nobody was linked.
+//
+// A Friend Code identifies the same account whatever its name, so it's tried first: a user already linked to the
+// account follows it, then a user this guild remembers playing on it. Then come the name-based ways: a matching
+// Discord name, then a user remembered playing under this name.
+func (bot *Bot) pairPlayer(dgs *GameState, data amongus.PlayerData) (string, error) {
+	var codeErr error
+	if data.FriendCode != "" {
+		if userID := dgs.RelinkByFriendCode(data); userID != "" {
+			return userID, nil
+		}
+		var uids map[string]interface{}
+		uids, codeErr = bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, amongus.FriendCodeCacheKey(data.FriendCode))
+		if userID := dgs.AttemptPairingByFriendCode(data, uids); userID != "" {
+			return userID, codeErr
+		}
+	}
+	if userID := dgs.AttemptPairingByMatchingNames(data); userID != "" {
+		return userID, codeErr
+	}
+	uids, err := bot.store.GetUsernameOrUserIDMappings(dgs.GuildID, data.Name)
+	return dgs.AttemptPairingByUserIDs(data, uids), errors.Join(codeErr, err)
 }
 
 func (bot *Bot) processTransition(phase game.Phase, dgsRequest GameStateRequest, sett *settings.GuildSettings, premTier premium.Tier) {
@@ -679,7 +698,7 @@ func dumpGameToPostgres(gl *slog.Logger, dgs GameState, psql GameRecorder, gameO
 
 	for _, v := range dgs.UserData {
 		if decided && v.GetPlayerName() != amongus.UnlinkedPlayerName {
-			inGameData, found := dgs.GameData.GetByName(v.GetPlayerName())
+			inGameData, found := dgs.LinkedPlayer(v)
 			if !found {
 				gl.Warn("no in-game data for linked player", "player", v.GetPlayerName())
 				continue

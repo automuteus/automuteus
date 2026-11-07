@@ -59,7 +59,7 @@ func (bot *Bot) applyToAll(dgs *GameState, premTier premium.Tier, mute, deaf boo
 
 		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
-		_, linked := dgs.GameData.GetByName(userData.InGameName)
+		_, linked := dgs.LinkedPlayer(userData)
 		// only actually tracked if we're in a tracked channel AND linked to a player
 		tracked = tracked && linked
 
@@ -106,7 +106,7 @@ func computeVoiceChanges(dgs *GameState, sett *settings.GuildSettings, voiceStat
 
 		tracked := voiceState.ChannelID != "" && dgs.VoiceChannel == voiceState.ChannelID
 
-		auData, found := dgs.GameData.GetByName(userData.InGameName)
+		auData, found := dgs.LinkedPlayer(userData)
 		var isAlive bool
 		if !muteSpectators {
 			// only actually tracked if we're in the tracked channel AND linked to a player

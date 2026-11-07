@@ -36,3 +36,22 @@ func TestGameData_UpdatePhase(t *testing.T) {
 		t.Error("GameData was not reset properly when transitioning from TASKS->MENU")
 	}
 }
+
+func TestGameData_FriendCode(t *testing.T) {
+	gd := NewGameData()
+	gd.UpdatePhase(game.LOBBY)
+	if _, _, data := gd.UpdatePlayer(game.Player{Action: game.JOINED, Name: "alice", Color: game.Red, FriendCode: "alice#1111"}); data.FriendCode != "alice#1111" {
+		t.Errorf("stored Friend Code = %q, want alice#1111", data.FriendCode)
+	}
+	if p, ok := gd.GetByFriendCode("alice#1111"); !ok || p.Name != "alice" {
+		t.Errorf("GetByFriendCode = %+v (found %v), want alice", p, ok)
+	}
+	if _, ok := gd.GetByFriendCode(""); ok {
+		t.Error("an empty Friend Code matched a player")
+	}
+
+	gd.PlayerData["bob"] = PlayerData{Color: game.Blue, Name: "bob", IsAlive: true}
+	if updated, _, _ := gd.UpdatePlayer(game.Player{Action: game.FORCEUPDATED, Name: "bob", Color: game.Blue, FriendCode: "bob#2222"}); !updated {
+		t.Error("learning a player's Friend Code wasn't an update")
+	}
+}
