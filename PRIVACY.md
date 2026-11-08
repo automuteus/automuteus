@@ -11,7 +11,9 @@ General Data Protection Regulation](https://eur-lex.europa.eu/legal-content/EN/T
 
 # What Data does AutoMuteUs collect?
 AutoMuteUs collects a very small amount of user information for statistics. Your Discord UserID, and any in-game names you have used
-are the only Personally-Identifiable Information (PII) that the bot requires to gather statistics. All other data collected by AutoMuteUs
+are the only Personally-Identifiable Information (PII) that the bot requires to gather statistics. To link you automatically in
+later games, the bot also remembers, for each server, the in-game names and Among Us Friend Codes you were linked to there
+(shown by `/privacy showme`). Friend Codes are not used for statistics. All other data collected by AutoMuteUs
 is non-identifiable in-game data, such as player color, crewmate/imposter role, etc. An example of a game data record recorded
 by AutoMuteUs is shown below:
 ```

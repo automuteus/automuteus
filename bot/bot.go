@@ -355,6 +355,13 @@ func linkPlayer(redis *RedisInterface, dgs *GameState, userID, color string) (co
 			if err != nil {
 				log.Println(err)
 			}
+			// remember the account too, so they're relinked even if they come back under another name
+			if auData.FriendCode != "" {
+				err = redis.AddUsernameLink(dgs.GuildID, userID, amongus.FriendCodeCacheKey(auData.FriendCode))
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			return command.LinkSuccess, nil
 		} else {
 			err := fmt.Sprintf("No player in the current game was found matching %s", discord.MentionByUserID(userID))

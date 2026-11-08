@@ -3,6 +3,9 @@ package command
 import (
 	"bytes"
 	"fmt"
+	"strings"
+
+	"github.com/automuteus/automuteus/v8/pkg/amongus"
 	"github.com/automuteus/automuteus/v8/pkg/settings"
 	"github.com/automuteus/automuteus/v8/pkg/storage"
 	"github.com/bwmarrin/discordgo"
@@ -77,7 +80,8 @@ func PrivacyResponse(status string, cached map[string]interface{}, user *storage
 			})))
 			buf.WriteString("\n```\n")
 			for n := range cached {
-				buf.WriteString(fmt.Sprintf("%s\n", n))
+				// remembered Friend Codes are shown as the codes themselves
+				buf.WriteString(fmt.Sprintf("%s\n", strings.TrimPrefix(n, amongus.FriendCodeCacheKeyPrefix)))
 			}
 			buf.WriteString("```")
 			content = buf.String()

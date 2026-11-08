@@ -355,6 +355,7 @@ func (m *model) playerForm() tea.Cmd {
 		for _, seen := range m.s.view.players {
 			if seen.Name == p.Name {
 				p.Color = seen.Color
+				p.FriendCode = seen.FriendCode
 			}
 		}
 		p.IsDead = p.Action == game.DIED || p.Action == game.EXILED
@@ -368,6 +369,7 @@ func (m *model) playerForm() tea.Cmd {
 			return nil
 		}, huh.NewGroup(
 			selectOf("Color", colorOptions, &p.Color).Height(8),
+			huh.NewInput().Title("Friend Code").Description("Optional, like name#1234").Value(&p.FriendCode),
 			huh.NewConfirm().Title("Is dead?").Value(&p.IsDead),
 			huh.NewConfirm().Title("Disconnected?").Value(&p.Disconnected),
 			huh.NewConfirm().Title("Is impostor?").Description("Sent at gameover").Value(&impostor),

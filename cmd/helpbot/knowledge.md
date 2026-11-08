@@ -60,7 +60,7 @@ Only one Capture can hold a Connect Code. If a second Capture connects with the 
 
 Each Discord user in the voice channel has to be linked to their in-game color so the bot knows who to mute.
 
-- **Automatic**: the bot links people whose in-game name matches their Discord username or server nickname (ignoring case and spaces), and remembers names people were linked to before in this server (for a week).
+- **Automatic**: the bot links people whose in-game name matches their Discord username or server nickname (ignoring case and spaces), and remembers the in-game names and Among Us Friend Codes people were linked to before in this server (for a week). A remembered Friend Code relinks someone even after they change their in-game name. Friend Codes need a Capture that reports them.
 - **Yourself**: use the "Select your in-game color" menu on the game message. Pick ❌ / unlink to leave. Anyone can link themselves.
 - **Someone else**: `/link user:@them color:red` and `/unlink user:@them`. These need game-control permission (see Permissions).
 
@@ -70,7 +70,7 @@ Unlinked players show as "**Unlinked**" in the player list and are **never muted
 
 Only users already in the tracked voice channel can be linked.
 
-Linking can't be skipped: unlinked people are left alone on purpose (so music bots aren't touched), even if alive and dead players have the same rules. For big lobbies where people struggle to link themselves, a host or "match admin" can link everyone with `/link`. Because the bot remembers in-game names, players who keep the same in-game name usually only need linking once, even if their color changes between games.
+Linking can't be skipped: unlinked people are left alone on purpose (so music bots aren't touched), even if alive and dead players have the same rules. For big lobbies where people struggle to link themselves, a host or "match admin" can link everyone with `/link`. Because the bot remembers in-game names and Friend Codes, players usually only need linking once, even if their color or in-game name changes between games. A linked player also stays linked if they change their name or leave and rejoin during a game.
 
 Modded clients with extra colors: the bot supports the 18 standard colors (Red, Blue, Green, Pink, Orange, Yellow, Black, White, Purple, Brown, Cyan, Lime, Maroon, Rose, Banana, Gray, Tan, Coral). Players using a color beyond those are ignored entirely: they can't be listed, linked or muted.
 

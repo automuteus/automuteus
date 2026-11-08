@@ -69,7 +69,7 @@ func (bot *Bot) handleVoiceStateChange(s *discordgo.Session, m *discordgo.VoiceS
 
 	tracked := m.ChannelID != "" && dgs.VoiceChannel == m.ChannelID
 
-	auData, found := dgs.GameData.GetByName(userData.InGameName)
+	auData, found := dgs.LinkedPlayer(userData)
 
 	var isAlive bool
 
