@@ -17,6 +17,7 @@ import (
 
 	"github.com/automuteus/automuteus/v8/bot/command"
 	"github.com/automuteus/automuteus/v8/bot/tokenprovider"
+	"github.com/automuteus/automuteus/v8/internal/prune"
 	"github.com/automuteus/automuteus/v8/internal/server"
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	"github.com/automuteus/automuteus/v8/pkg/locale"
@@ -82,6 +83,10 @@ func discordMainWrapper() error {
 	logging.Setup(logOut)
 
 	emojiGuildID := os.Getenv("EMOJI_GUILD_ID")
+	pruneConfig, err := prune.ConfigFromEnv(emojiGuildID)
+	if err != nil {
+		return err
+	}
 
 	log.Println(version + "-" + commit)
 
@@ -248,6 +253,10 @@ func discordMainWrapper() error {
 			return err
 		}
 	}
+	var pruner *prune.Sweeper
+	if pruneConfig.Enabled() {
+		pruner = bot.StartPruning(pruneConfig, bots)
+	}
 
 	// readiness reflects this process's own dependencies: every shard's gateway session, Redis, and Postgres
 	for i, shard := range shards {
@@ -320,6 +329,9 @@ func discordMainWrapper() error {
 	<-sc
 	log.Printf("Received Sigterm or Kill signal. Bot will terminate in 1 second")
 	health.SetDraining()
+	if pruner != nil {
+		pruner.Stop()
+	}
 	// refuse new events and hand running games to twin processes before anything is closed
 	for _, v := range bots {
 		v.Drain()

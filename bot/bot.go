@@ -249,8 +249,13 @@ func (bot *Bot) leaveGuild(_ *discordgo.Session, m *discordgo.GuildDelete) {
 	if m.Unavailable {
 		return
 	} // A temporary Discord outage is not a guild removal.
-	log.Println("Bot was removed from Guild " + m.ID)
 	bot.RedisInterface.LeaveUniqueGuildCounter(m.ID)
+	if bot.RedisInterface.leftForInactivity(m.ID) {
+		// The guild did not ask the bot to go, so its settings wait for it to invite the bot back.
+		log.Println("Bot left inactive Guild " + m.ID)
+		return
+	}
+	log.Println("Bot was removed from Guild " + m.ID)
 
 	err := bot.StorageInterface.DeleteGuildSettings(m.ID)
 	if err != nil {
@@ -319,8 +324,12 @@ func (bot *Bot) RefreshGameStateMessage(gsr GameStateRequest, sett *settings.Gui
 
 func (bot *Bot) getInfo() command.BotInfo {
 	ctx := context.Background()
-	totalGuilds := rediskey.GetGuildCounter(ctx, bot.RedisInterface.client)
 	activeGames := rediskey.GetActiveGames(ctx, bot.RedisInterface.client, GameTimeoutSeconds)
+
+	totalGuilds, err := rediskey.CountGuilds(ctx, bot.RedisInterface.client, bot.PostgresInterface.Pool)
+	if err != nil {
+		log.Println(err)
+	}
 
 	totalUsers, err := rediskey.CountTotalUsers(ctx, bot.RedisInterface.client, bot.PostgresInterface.Pool)
 	if err != nil {

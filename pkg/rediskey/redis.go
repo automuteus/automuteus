@@ -2,20 +2,16 @@ package rediskey
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-redis/redis/v8"
-	"log"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// CountGuilds returns the number of guilds the bot has ever been added to.
-func CountGuilds(ctx context.Context, client *redis.Client) (int64, error) {
-	return client.SCard(ctx, TotalGuildsSet).Result()
-}
+const TotalGuildsExpiration = time.Minute * 5
 
-func GetGuildCounter(ctx context.Context, client *redis.Client) int64 {
-	count, err := CountGuilds(ctx, client)
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-	return count
+// CountGuilds returns the number of guilds the bot has ever been added to, including those it has since left or been
+// removed from. The bot's /info command and the HTTP API share the cached figure.
+func CountGuilds(ctx context.Context, client *redis.Client, pool *pgxpool.Pool) (int64, error) {
+	return cachedCount(ctx, client, pool, TotalGuilds, "SELECT COUNT(*) FROM guilds", TotalGuildsExpiration)
 }

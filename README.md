@@ -354,6 +354,45 @@ Use a window longer than the configured check interval. Also alert on an increas
 sweep and retry on a later pass, so `oldest_check_seconds` alone cannot prove checks
 are succeeding. These are query examples; no alerting service is installed by the bot.
 
+### Leaving inactive servers
+
+Every server the bot is in costs each process serving it memory, and most servers that
+ever add the bot stop playing. Setting `PRUNE_INACTIVE_DAYS` makes the bot leave servers
+that have not started a match in that many days. It is off when unset, and must be at
+least `90`.
+
+Leaving loses nothing a returning server would miss. Match history and premium stay in
+Postgres, and the server's settings are kept when the bot is the one that left; being
+removed by the server still deletes them. The server only has to invite the bot again.
+
+A server is never left while any of these hold:
+
+- the bot joined it within the last 90 days, or someone started a game there with `/new`
+  in the last 90 days;
+- a game is running there;
+- it has active premium (official bot only);
+- it is `EMOJI_GUILD_ID`, which pruning requires to be set, or is listed in
+  `PRUNE_KEEP_GUILD_IDS` (comma-separated). List any server the bot must stay in without
+  playing, such as a support server.
+
+A failed lookup, an unavailable server, or one the gateway has not yet sent in full also
+keeps the server until a later pass.
+
+`PRUNE_DRY_RUN` defaults to `true`: the bot leaves nothing and records each server it
+would have left in the Redis set `automuteus:guilds:prune:dry-run`, so `SCARD` on that
+key is how many servers would go. Set `PRUNE_DRY_RUN=false` to leave them. The count of
+servers left so far is in `automuteus:guilds:prune:left`, and each departure is logged.
+
+Each process walks the servers of its own shards, one every `PRUNE_CHECK_INTERVAL`
+(default `5s`, minimum `1s`). `PRUNE_LEAVE_INTERVAL` (default `45s`, minimum `5s`) is the
+least time between two departures anywhere in the fleet, a budget shared in Redis; each
+departure adds up to one-third of it as jitter. A failed or rate-limited attempt spends
+the budget too, and a rate limit holds every process back for as long as Discord asks.
+At the default pace the fleet leaves about 1,600 servers a day.
+
+`/info` and the API's `/bot/info` report how many servers have ever added the bot, so
+that figure does not fall as inactive servers are left.
+
 ### Platform notices
 
 Operators can show a banner on every running game's status message, or end every

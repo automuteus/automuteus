@@ -51,7 +51,7 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 	pointer := rediskey.ConnectCodePtr(guildID, code)
 	defer pool.Exec(ctx, "DELETE FROM guild_settings WHERE guild_hash=$1", hash)
 	pool.Exec(ctx, "DELETE FROM guild_settings WHERE guild_hash=$1", hash)
-	keys := []string{key, pointer, rediskey.RoomCodesForConnCode(code), rediskey.TotalGuildsSet, rediskey.ActiveGamesZSet, rediskey.TotalUsers, rediskey.TotalGames}
+	keys := []string{key, pointer, rediskey.RoomCodesForConnCode(code), rediskey.TotalGuildsSet, rediskey.ActiveGamesZSet, rediskey.TotalUsers, rediskey.TotalGames, rediskey.TotalGuilds}
 	defer r.Del(ctx, keys...)
 	state := bot.NewDiscordGameState(guildID)
 	state.ConnectCode = code
@@ -69,12 +69,12 @@ func TestLiveAPIWithoutBotProcess(t *testing.T) {
 	r.SAdd(ctx, rediskey.TotalGuildsSet, hash)
 	r.ZAdd(ctx, rediskey.ActiveGamesZSet, &redis.Z{Score: float64(time.Now().Unix()), Member: code})
 	// Force /bot/info to exercise SQL count fallback and populate shared caches.
-	r.Del(ctx, rediskey.TotalUsers, rediskey.TotalGames)
+	r.Del(ctx, rediskey.TotalUsers, rediskey.TotalGames, rediskey.TotalGuilds)
 	w := request(t, router, "/bot/info", false)
 	if w.Code != 200 || strings.Contains(w.Body.String(), "shard") || !strings.Contains(w.Body.String(), `"activeGames":1`) {
 		t.Fatalf("info: %d %s", w.Code, w.Body)
 	}
-	if r.Exists(ctx, rediskey.TotalUsers, rediskey.TotalGames).Val() != 2 {
+	if r.Exists(ctx, rediskey.TotalUsers, rediskey.TotalGames, rediskey.TotalGuilds).Val() != 3 {
 		t.Fatal("counts were not cached")
 	}
 	w = request(t, router, "/game/state?guildID="+guildID+"&connectCode="+code, true)

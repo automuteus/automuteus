@@ -180,7 +180,7 @@ func (s *DataStore) Ping(ctx context.Context) error {
 func (s *DataStore) Info(ctx context.Context) (Info, error) {
 	info := Info{Version: s.config.Version, Commit: s.config.Commit}
 	var err error
-	if info.TotalGuilds, err = rediskey.CountGuilds(ctx, s.redis); err != nil {
+	if info.TotalGuilds, err = rediskey.CountGuilds(ctx, s.redis, s.postgres); err != nil {
 		return info, err
 	}
 	if info.ActiveGames, err = rediskey.CountActiveGames(ctx, s.redis, rediskey.ActiveGameTimeoutSeconds); err != nil {
