@@ -78,21 +78,32 @@ create table if not exists users_games
     PRIMARY KEY (user_id, game_id)
 );
 
-create index if not exists guilds_id_index ON guilds (guild_id); --query guilds by ID
+-- Lookups by a table's own ID use its primary key; users_games (user_id, game_id) also serves lookups by user.
 create index if not exists guilds_premium_index ON guilds (premium); --query guilds by prem status
 
-create index if not exists games_game_id_index ON games (game_id); --query games by ID
 create index if not exists games_guild_id_index ON games (guild_id); --query games by guild ID
-create index if not exists games_win_type_index on games (win_type); --query games by win type
-create index if not exists games_connect_code_index on games (connect_code); --query games by connect code
 
-create index if not exists users_user_id_index ON users (user_id); --query for user info by their ID
-
-create index if not exists users_games_user_id_index ON users_games (user_id); --query games by user ID
 create index if not exists users_games_game_id_index ON users_games (game_id); --query games by game ID
 create index if not exists users_games_guild_id_index ON users_games (guild_id); --query games by guild ID
-create index if not exists users_games_role_index ON users_games (player_role); --query games by win status
-create index if not exists users_games_won_index ON users_games (player_won); --query games by win status
 
 create index if not exists game_events_game_id_index on game_events (game_id); --query for game events by the game ID
-create index if not exists game_events_user_id_index on game_events (user_id); --query for game events by the user ID
+-- Most events carry no user (the player was never linked), and nothing looks those up by user, so only linked
+-- events are indexed. This is what finds a user's events when they opt out.
+create index if not exists game_events_user_id_notnull_index on game_events (user_id) where user_id is not null;
+-- Death events in match order, for the first-death stats (guildFirstTargetQuery in pkg/storage/guild_stats.go).
+-- '2' is game.DIED; that query writes the action as a literal so the planner can match this predicate.
+create index if not exists game_events_deaths_index on game_events (game_id, event_time, event_id) include (user_id)
+    where (payload ->> 'Action') = '2';
+
+-- Indexes that earlier versions created and no query used: copies of a primary key or of its leading column, and
+-- single-column indexes on values every query reaches through the guild or game instead. Dropping one that is
+-- already gone takes no lock, so this costs nothing after the first startup.
+drop index if exists guilds_id_index;
+drop index if exists games_game_id_index;
+drop index if exists games_win_type_index;
+drop index if exists games_connect_code_index;
+drop index if exists users_user_id_index;
+drop index if exists users_games_user_id_index;
+drop index if exists users_games_role_index;
+drop index if exists users_games_won_index;
+drop index if exists game_events_user_id_index; --replaced by game_events_user_id_notnull_index
