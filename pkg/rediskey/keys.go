@@ -1,6 +1,11 @@
 package rediskey
 
+// TotalGuildsSet holds the hashed ID of every guild the bot is in now. It answers whether the bot is in a guild; the
+// figure shown to people is CountGuilds, which also counts guilds the bot has left.
 const TotalGuildsSet = "automuteus:count:guilds"
+
+// TotalGuilds caches CountGuilds.
+const TotalGuilds = "automuteus:guilds:total"
 const ActiveGamesZSet = "automuteus:games"
 
 // ActiveGamesByGuildZSet scores "guildID:connectCode" members by last activity, so a bot process can discover the

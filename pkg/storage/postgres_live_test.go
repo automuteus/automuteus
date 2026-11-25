@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/automuteus/automuteus/v8/pkg/capture"
 	schema "github.com/automuteus/automuteus/v8/storage"
@@ -150,4 +151,54 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// TestLiveGuildPlayedSince runs the query that decides whether the bot may leave a guild for inactivity.
+func TestLiveGuildPlayedSince(t *testing.T) {
+	url := os.Getenv("TEST_POSTGRES_URL")
+	if url == "" {
+		t.Skip("set a disposable TEST_POSTGRES_URL")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	if err := schema.ApplySchemas(ctx, pool, false); err != nil {
+		t.Fatal(err)
+	}
+	const played, never uint64 = 900000000000000071, 900000000000000072
+	cleanup := func() {
+		pool.Exec(ctx, "DELETE FROM guilds WHERE guild_id = ANY($1)", []uint64{played, never})
+	}
+	cleanup()
+	t.Cleanup(cleanup)
+
+	db := &PsqlInterface{Pool: pool}
+	for _, guild := range []uint64{played, never} {
+		if _, err := db.EnsureGuildExists(guild, "live test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const lastMatch = 1700000000
+	if _, err := db.AddInitialGame(&PostgresGame{GuildID: played, ConnectCode: "ABCDEFGH", StartTime: lastMatch, WinType: -1, EndTime: -1}); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name  string
+		guild uint64
+		since int64
+		want  bool
+	}{
+		{"match after the cutoff", played, lastMatch - 1, true},
+		{"match at the cutoff", played, lastMatch, true},
+		{"match before the cutoff", played, lastMatch + 1, false},
+		{"another guild's match", never, 0, false},
+	} {
+		got, err := db.GuildPlayedSince(ctx, strconv.FormatUint(tc.guild, 10), time.Unix(tc.since, 0))
+		if err != nil || got != tc.want {
+			t.Errorf("%s: played = %v, %v; want %v", tc.name, got, err, tc.want)
+		}
+	}
 }

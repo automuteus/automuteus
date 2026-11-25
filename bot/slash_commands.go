@@ -271,6 +271,7 @@ func (bot *Bot) slashCommandHandler(s *discordgo.Session, i *discordgo.Interacti
 				bot.RedisInterface.SetDiscordGameState(dgs, lock)
 
 				bot.RedisInterface.RefreshActiveGame(dgs.GuildID, dgs.ConnectCode)
+				bot.RedisInterface.MarkGuildUsed(dgs.GuildID)
 
 				killChan := make(chan EndGameMessage, 1)
 
